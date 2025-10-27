@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
+// Явно указываем выполнение в Node.js среде (не Edge), т.к. nodemailer требует Node
+export const runtime = 'nodejs';
+
 export async function POST(req: NextRequest) {
   try {
     console.log("[EMAIL API] Получен запрос на отправку письма");
