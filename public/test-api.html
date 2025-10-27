@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email API Tester - Anonimka.Online</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0f;
+            color: #00d4ff;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .neon-text {
+            text-shadow: 0 0 10px currentColor;
+        }
+        .test-button {
+            background: transparent;
+            border: 2px solid #00d4ff;
+            color: #00d4ff;
+            padding: 12px 24px;
+            cursor: pointer;
+            margin: 10px;
+            font-family: inherit;
+        }
+        .test-button:hover {
+            background: #00d4ff;
+            color: #0a0a0f;
+        }
+        .log-area {
+            background: #000;
+            border: 1px solid #00d4ff;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .success { color: #39ff14; }
+        .error { color: #ff006e; }
+        .info { color: #00d4ff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="neon-text">🧪 Email API Tester</h1>
+        <p>Тестирование системы отправки email для Anonimka.Online</p>
+        
+        <div>
+            <button class="test-button" onclick="testEmailAPI()">🚀 Тест Email API</button>
+            <button class="test-button" onclick="clearLogs()">🗑️ Очистить логи</button>
+        </div>
+
+        <h3>📊 Логи тестирования:</h3>
+        <div id="logs" class="log-area">Нажмите "Тест Email API" для начала...\n</div>
+
+        <h3>ℹ️ Информация о системе:</h3>
+        <ul>
+            <li><strong>API:</strong> /api/send-email</li>
+            <li><strong>SMTP:</strong> smtp.yandex.ru:587</li>
+            <li><strong>От:</strong> wish.online@yandex.kz</li>
+            <li><strong>К:</strong> vorobey469@yandex.ru</li>
+            <li><strong>Технология:</strong> Next.js + Nodemailer</li>
+        </ul>
+    </div>
+
+    <script>
+        function addLog(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString('ru-RU');
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            
+            logs.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logs.scrollTop = logs.scrollHeight;
+            
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = 'Логи очищены...\n';
+        }
+
+        async function testEmailAPI() {
+            addLog('🧪 Начинаем тестирование Email API...', 'info');
+            
+            const testData = {
+                senderEmail: 'test@example.com',
+                subject: 'Тест API Anonimka.Online',
+                message: `Тестовое сообщение отправленное в ${new Date().toLocaleString('ru-RU')}
+
+Это автоматический тест email API системы Anonimka.Online.
+
+Система использует:
+- Next.js API Routes  
+- Nodemailer с Yandex SMTP
+- Те же настройки что и whish.online
+- Vercel Serverless Functions
+
+Отправитель: wish.online@yandex.kz
+Получатель: vorobey469@yandex.ru`
+            };
+
+            try {
+                addLog('📤 Отправляем POST запрос...', 'info');
+                
+                const response = await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData),
+                });
+
+                addLog(`📊 HTTP Status: ${response.status} ${response.statusText}`, 'info');
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    addLog('✅ УСПЕХ! Email успешно отправлен!', 'success');
+                    addLog(`📧 MessageId: ${result.messageId}`, 'success');
+                    addLog(`💌 Ответ: ${result.message}`, 'success');
+                    addLog('📬 Проверьте почту vorobey469@yandex.ru', 'success');
+                } else {
+                    addLog(`❌ ОШИБКА: ${result.error}`, 'error');
+                    if (result.details) {
+                        addLog(`🔍 Детали: ${JSON.stringify(result.details, null, 2)}`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                addLog(`❌ СЕТЕВАЯ ОШИБКА: ${error.message}`, 'error');
+            }
+            
+            addLog('🏁 Тестирование завершено', 'info');
+        }
+
+        // Автотест при загрузке (опционально)
+        // window.onload = () => setTimeout(testEmailAPI, 1000);
+    </script>
+</body>
+</html>

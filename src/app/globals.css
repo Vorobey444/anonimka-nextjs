@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Cyberpunk стили для Anonimka */
+:root {
+  --neon-blue: #00d4ff;
+  --neon-pink: #ff006e;
+  --neon-green: #39ff14;
+  --neon-purple: #bf00ff;
+  --dark-bg: #0a0a0f;
+  --darker-bg: #050508;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--dark-bg);
+  color: var(--neon-blue);
+  font-family: 'Courier New', monospace;
+  overflow-x: hidden;
+}
+
+/* Neon text effect */
+.neon-text {
+  text-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 15px currentColor,
+    0 0 20px currentColor;
+}
+
+/* Neon border effect */
+.neon-border {
+  border: 2px solid var(--neon-blue);
+  box-shadow: 
+    0 0 5px var(--neon-blue),
+    inset 0 0 5px var(--neon-blue);
+}
+
+/* Button styles */
+.neon-button {
+  background: transparent;
+  border: 2px solid var(--neon-blue);
+  color: var(--neon-blue);
+  padding: 12px 24px;
+  font-family: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.neon-button:hover {
+  background: var(--neon-blue);
+  color: var(--dark-bg);
+  box-shadow: 
+    0 0 20px var(--neon-blue),
+    inset 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+.neon-button:active {
+  transform: scale(0.98);
+}
+
+/* Input styles */
+.neon-input {
+  background: rgba(10, 10, 15, 0.8);
+  border: 2px solid rgba(0, 212, 255, 0.3);
+  color: var(--neon-blue);
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 16px;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.neon-input:focus {
+  outline: none;
+  border-color: var(--neon-blue);
+  box-shadow: 
+    0 0 10px var(--neon-blue),
+    inset 0 0 10px rgba(0, 212, 255, 0.1);
+}
+
+.neon-input::placeholder {
+  color: rgba(0, 212, 255, 0.5);
+}
+
+/* Card styles */
+.neon-card {
+  background: rgba(5, 5, 8, 0.9);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  padding: 24px;
+  margin: 16px 0;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.neon-card:hover {
+  border-color: var(--neon-blue);
+  box-shadow: 
+    0 0 15px rgba(0, 212, 255, 0.3),
+    inset 0 0 15px rgba(0, 212, 255, 0.1);
+}
+
+/* Success/Error states */
+.text-success {
+  color: var(--neon-green);
+  text-shadow: 0 0 10px var(--neon-green);
+}
+
+.text-error {
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px var(--neon-pink);
+}
+
+/* Loading animation */
+.loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0, 212, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--neon-blue);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .neon-card {
+    padding: 16px;
+    margin: 12px 0;
+  }
+  
+  .neon-button {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}
