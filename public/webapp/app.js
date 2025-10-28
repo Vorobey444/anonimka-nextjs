@@ -479,29 +479,98 @@ function updateFormLocationDisplay() {
 function showBrowseAds() {
     showScreen('browseAds');
     
-    // Небольшая задержка для убеждения что DOM загружен
+    // Отображаем текущую локацию
+    const browseLocationDisplay = document.getElementById('browseLocationDisplay');
+    if (userLocation && browseLocationDisplay) {
+        const locationText = `${locationData[userLocation.country].flag} ${userLocation.region}, ${userLocation.city}`;
+        browseLocationDisplay.textContent = locationText;
+    } else if (browseLocationDisplay) {
+        browseLocationDisplay.textContent = 'Локация не установлена';
+    }
+    
+    // Загружаем объявления по локации пользователя
     setTimeout(() => {
-        // Если есть сохраненная локация пользователя, автоматически используем её
         if (userLocation) {
-            console.log('Применяем автоматический фильтр по локации:', userLocation);
-            
-            // Устанавливаем фильтр на локацию пользователя
-            filterSelectedCountry = userLocation.country;
-            filterSelectedRegion = userLocation.region;
-            filterSelectedCity = userLocation.city;
-            
-            // Обновляем UI фильтра
-            setFilterLocationUI();
-            
-            // Загружаем объявления по локации пользователя
+            console.log('Загружаем объявления по локации:', userLocation);
             loadAdsByLocation(userLocation.country, userLocation.region, userLocation.city);
         } else {
-            console.log('Локация пользователя не установлена, показываем все объявления');
-            // Если локации нет, сбрасываем фильтр и показываем все объявления
-            resetFilterLocationSelection();
+            console.log('Локация не установлена, показываем все объявления');
             loadAds();
         }
     }, 100);
+}
+
+// Показать мои объявления
+function showMyAds() {
+    showScreen('myAds');
+    loadMyAds();
+}
+
+// Загрузить мои объявления
+async function loadMyAds() {
+    const myAdsList = document.getElementById('myAdsList');
+    if (!myAdsList) return;
+    
+    myAdsList.innerHTML = '<div class="loading">Загрузка ваших объявлений...</div>';
+    
+    try {
+        const userId = getCurrentUserId();
+        const ads = await getAllAds();
+        const myAds = ads.filter(ad => ad.tg_id === userId);
+        
+        if (myAds.length === 0) {
+            myAdsList.innerHTML = `
+                <div class="no-ads">
+                    <p>📭 У вас пока нет объявлений</p>
+                    <button class="neon-button primary" onclick="showCreateAd()">
+                        Создать первое объявление
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        // Отображаем объявления с кнопками действий
+        myAdsList.innerHTML = myAds.map((ad, index) => `
+            <div class="ad-card" data-ad-id="${ad.id}">
+                ${ad.is_pinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
+                <div class="ad-info">
+                    <div class="ad-field">
+                        <span class="icon">${ad.gender === 'male' ? '👨' : '👩'}</span>
+                        <span>${ad.my_age} лет, ${ad.body_type}</span>
+                    </div>
+                    <div class="ad-field">
+                        <span class="icon">🎯</span>
+                        <span>${ad.goal}</span>
+                    </div>
+                    <div class="ad-field">
+                        <span class="icon">📍</span>
+                        <span>${locationData[ad.country].flag} ${ad.region}, ${ad.city}</span>
+                    </div>
+                    <div class="ad-field">
+                        <span class="icon">📝</span>
+                        <span>${ad.text ? ad.text.substring(0, 100) + (ad.text.length > 100 ? '...' : '') : 'Без описания'}</span>
+                    </div>
+                    <div class="ad-field">
+                        <span class="icon">📅</span>
+                        <span>${new Date(ad.created_at).toLocaleDateString('ru-RU')}</span>
+                    </div>
+                </div>
+                <div class="ad-actions">
+                    <button class="delete-ad-btn" onclick="deleteMyAd(${ad.id})">
+                        🗑️ Удалить
+                    </button>
+                    <button class="pin-ad-btn" onclick="pinMyAd(${ad.id}, ${!ad.is_pinned})">
+                        ${ad.is_pinned ? '📌 Открепить' : '📌 Закрепить (24ч)'}
+                    </button>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Ошибка загрузки моих объявлений:', error);
+        myAdsList.innerHTML = '<div class="error">❌ Ошибка загрузки объявлений</div>';
+    }
 }
 
 // Управление шагами формы
@@ -862,6 +931,24 @@ async function loadAds(filters = {}) {
     }
 }
 
+// Вспомогательная функция для получения всех объявлений
+async function getAllAds() {
+    const ads = await window.SupabaseClient.getAds();
+    
+    // Сортируем: сначала закрепленные (и еще не истекшие), потом обычные по дате
+    const now = new Date();
+    return ads.sort((a, b) => {
+        const aPinned = a.is_pinned && (!a.pinned_until || new Date(a.pinned_until) > now);
+        const bPinned = b.is_pinned && (!b.pinned_until || new Date(b.pinned_until) > now);
+        
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        
+        // Если оба закреплены или оба не закреплены, сортируем по дате
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
+}
+
 function displayAds(ads, city = null) {
     const adsList = document.getElementById('adsList');
     
@@ -877,14 +964,28 @@ function displayAds(ads, city = null) {
     }
 
     // Фильтруем по городу если задан
-    const filteredAds = city ? ads.filter(ad => ad.city === city) : ads;
+    let filteredAds = city ? ads.filter(ad => ad.city === city) : ads;
+    
+    // Сортируем: закрепленные вверху
+    const now = new Date();
+    filteredAds = filteredAds.sort((a, b) => {
+        const aPinned = a.is_pinned && (!a.pinned_until || new Date(a.pinned_until) > now);
+        const bPinned = b.is_pinned && (!b.pinned_until || new Date(b.pinned_until) > now);
+        
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
 
     adsList.innerHTML = filteredAds.map((ad, index) => {
         // Supabase возвращает поля с подчёркиваниями (age_from, my_age и т.д.)
         const myAge = ad.my_age || ad.myAge || '?';
+        const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > now);
         
         return `
         <div class="ad-card" onclick="showAdDetails(${index})">
+            ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
             <div class="ad-info">
                 <div class="ad-field">
                     <span class="icon">🏙</span>
@@ -1105,6 +1206,121 @@ async function contactAuthor(adIndex) {
         console.error('Error sending message:', error);
         alert('❌ Ошибка при отправке сообщения. Попробуйте позже.');
     }
+}
+
+// Удалить мое объявление
+async function deleteMyAd(adId) {
+    if (!confirm('Вы уверены, что хотите удалить это объявление?')) {
+        return;
+    }
+    
+    try {
+        const deleted = await deleteAd(adId);
+        
+        if (deleted) {
+            tg.showAlert('✅ Объявление успешно удалено');
+            // Перезагружаем список
+            loadMyAds();
+        } else {
+            tg.showAlert('❌ Не удалось удалить объявление');
+        }
+    } catch (error) {
+        console.error('Error deleting ad:', error);
+        tg.showAlert('❌ Ошибка при удалении объявления');
+    }
+}
+
+// Закрепить/открепить мое объявление
+async function pinMyAd(adId, shouldPin) {
+    try {
+        const pinned = await togglePinAd(adId, shouldPin);
+        
+        if (pinned) {
+            if (shouldPin) {
+                tg.showAlert('✅ Функция успешно оплачена и включена!\n\nВаше объявление будет закреплено поверх других на 24 часа.');
+            } else {
+                tg.showAlert('✅ Объявление откреплено');
+            }
+            // Перезагружаем список
+            loadMyAds();
+        } else {
+            tg.showAlert('❌ Не удалось изменить статус закрепления');
+        }
+    } catch (error) {
+        console.error('Error pinning ad:', error);
+        tg.showAlert('❌ Ошибка при изменении статуса закрепления');
+    }
+}
+
+// Автоопределение локации
+function autoDetectLocation() {
+    if (!navigator.geolocation) {
+        tg.showAlert('❌ Геолокация не поддерживается вашим браузером');
+        return;
+    }
+    
+    tg.showAlert('📍 Определяем вашу локацию...');
+    
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const { latitude, longitude } = position.coords;
+            console.log('Координаты:', latitude, longitude);
+            
+            try {
+                // Используем API для обратного геокодирования
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ru`);
+                const data = await response.json();
+                
+                console.log('Данные геокодирования:', data);
+                
+                const country = data.address.country;
+                const region = data.address.state || data.address.region;
+                const city = data.address.city || data.address.town || data.address.village;
+                
+                // Определяем, какая страна в нашем списке
+                let detectedCountry = null;
+                if (country === 'Россия' || country === 'Russia') {
+                    detectedCountry = 'russia';
+                } else if (country === 'Казахстан' || country === 'Kazakhstan') {
+                    detectedCountry = 'kazakhstan';
+                }
+                
+                if (detectedCountry && region && city) {
+                    // Устанавливаем локацию
+                    userLocation = {
+                        country: detectedCountry,
+                        region: region,
+                        city: city
+                    };
+                    
+                    localStorage.setItem('userLocation', JSON.stringify(userLocation));
+                    
+                    // Обновляем отображение
+                    updateUserLocationDisplay();
+                    
+                    tg.showAlert(`✅ Локация определена:\n${locationData[detectedCountry].flag} ${region}, ${city}`);
+                    
+                    // Возвращаемся в главное меню
+                    setTimeout(() => showMainMenu(), 1000);
+                } else {
+                    tg.showAlert('❌ Не удалось определить локацию. Пожалуйста, выберите вручную.');
+                }
+                
+            } catch (error) {
+                console.error('Ошибка геокодирования:', error);
+                tg.showAlert('❌ Ошибка при определении локации. Пожалуйста, выберите вручную.');
+            }
+        },
+        (error) => {
+            console.error('Ошибка геолокации:', error);
+            tg.showAlert('❌ Не удалось получить доступ к геолокации. Пожалуйста, разрешите доступ или выберите локацию вручную.');
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
 }
 
 // Сброс формы

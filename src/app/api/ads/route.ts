@@ -180,8 +180,139 @@ export async function OPTIONS(req: NextRequest) {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, PATCH, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
+}
+
+// DELETE - удаление объявления
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    console.log("[ADS API] Удаление объявления:", id);
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "ID объявления не указан" },
+        { status: 400 }
+      );
+    }
+
+    // Проверяем наличие Supabase переменных
+    const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
+    
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+      console.error("[ADS API] Supabase переменные не настроены");
+      return NextResponse.json(
+        { success: false, error: "База данных не настроена" },
+        { status: 500 }
+      );
+    }
+
+    // Удаляем из Supabase REST API
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/ads?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Supabase error: ${response.statusText}`);
+    }
+
+    console.log("[ADS API] Объявление удалено:", id);
+    
+    return NextResponse.json({
+      success: true,
+      message: "Объявление удалено"
+    });
+
+  } catch (error: any) {
+    console.error("[ADS API] Ошибка при удалении объявления:", error);
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error?.message || "Ошибка при удалении объявления"
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH - обновление объявления (закрепление)
+export async function PATCH(req: NextRequest) {
+  try {
+    console.log("[ADS API] Обновление объявления");
+    
+    const body = await req.json();
+    const { id, is_pinned, pinned_until } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "ID объявления не указан" },
+        { status: 400 }
+      );
+    }
+
+    console.log("[ADS API] Данные для обновления:", { id, is_pinned, pinned_until });
+
+    // Проверяем наличие Supabase переменных
+    const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
+    
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+      console.error("[ADS API] Supabase переменные не настроены");
+      return NextResponse.json(
+        { success: false, error: "База данных не настроена" },
+        { status: 500 }
+      );
+    }
+
+    const updateData: any = {};
+    if (is_pinned !== undefined) updateData.is_pinned = is_pinned;
+    if (pinned_until !== undefined) updateData.pinned_until = pinned_until;
+
+    // Обновляем в Supabase REST API
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/ads?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(updateData)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Supabase error: ${response.statusText} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    
+    console.log("[ADS API] Объявление обновлено:", result);
+    
+    return NextResponse.json({
+      success: true,
+      message: "Объявление обновлено",
+      ad: result[0]
+    });
+
+  } catch (error: any) {
+    console.error("[ADS API] Ошибка при обновлении объявления:", error);
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error?.message || "Ошибка при обновлении объявления"
+      },
+      { status: 500 }
+    );
+  }
 }

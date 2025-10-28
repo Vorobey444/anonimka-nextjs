@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -53,6 +53,14 @@
             </div>
             
             <div class="location-setup-container">
+                <!-- Кнопка автоопределения -->
+                <div class="auto-location-section">
+                    <button class="neon-button primary full-width" onclick="autoDetectLocation()">
+                        📍 Определить автоматически
+                    </button>
+                    <p class="or-divider">или выберите вручную</p>
+                </div>
+
                 <!-- Выбор страны -->
                 <div class="setup-country-selection">
                     <h3>Страна</h3>
@@ -125,7 +133,11 @@
                     <span class="icon">👀</span>
                     Смотреть объявления
                 </button>
-                <button class="neon-button tertiary" onclick="showLocationSetup()">
+                <button class="neon-button tertiary" onclick="showMyAds()">
+                    <span class="icon">📋</span>
+                    Мои объявления
+                </button>
+                <button class="neon-button quaternary" onclick="showLocationSetup()">
                     <span class="icon">📍</span>
                     Сменить город
                 </button>

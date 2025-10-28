@@ -62,8 +62,65 @@
     return { success: true };
   }
 
+  // Функция для удаления объявления
+  async function deleteAd(adId) {
+    console.log('deleteAd(): удаление объявления', adId);
+    
+    try {
+      const response = await fetch(`/api/ads?id=${adId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('Объявление удалено:', adId);
+        return true;
+      } else {
+        throw new Error(data.error || 'Ошибка удаления объявления');
+      }
+    } catch (error) {
+      console.error('Ошибка deleteAd:', error);
+      throw error;
+    }
+  }
+
+  // Функция для закрепления/откrepления объявления
+  async function togglePinAd(adId, shouldPin) {
+    console.log('togglePinAd(): изменение статуса закрепления', adId, shouldPin);
+    
+    try {
+      const response = await fetch(`/api/ads`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: adId,
+          is_pinned: shouldPin,
+          pinned_until: shouldPin ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('Статус закрепления изменен:', data.ad);
+        return true;
+      } else {
+        throw new Error(data.error || 'Ошибка изменения статуса');
+      }
+    } catch (error) {
+      console.error('Ошибка togglePinAd:', error);
+      throw error;
+    }
+  }
+
   // Экспортируем функции в глобальную область
-  window.SupabaseClient = { getAds, createAd, sendEmail };
+  window.SupabaseClient = { getAds, createAd, sendEmail, deleteAd, togglePinAd };
   
   console.log('✅ Supabase Client инициализирован');
 })();
