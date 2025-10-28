@@ -289,42 +289,102 @@ async function submitAd() {
     }
 
     try {
-        // Подготавливаем данные
+        // Получаем текст объявления
+        const adTextElement = document.getElementById('adText');
+        const adText = adTextElement ? adTextElement.value.trim() : '';
+        
+        if (!adText) {
+            tg.showAlert('Пожалуйста, введите текст объявления');
+            return;
+        }
+
+        // Подготавливаем данные для отправки в Supabase
         const adData = {
-            ...formData,
-            userId: tg.initDataUnsafe?.user?.id || 'anonymous',
-            timestamp: Date.now()
+            gender: formData.gender,
+            target: formData.target,
+            goal: formData.goal,
+            ageFrom: formData.ageFrom,
+            ageTo: formData.ageTo,
+            myAge: formData.myAge,
+            body: formData.body,
+            text: adText,
+            country: formData.country || 'Россия',
+            region: formData.region || '',
+            city: formData.city,
+            userId: tg.initDataUnsafe?.user?.id || 'anonymous'
         };
 
-        console.log('Отправка объявления:', adData);
+        console.log('Отправка объявления в Supabase:', adData);
 
-        // Отправляем данные боту
-        tg.sendData(JSON.stringify({
-            action: 'createAd',
-            data: adData
-        }));
+        // Показываем индикатор загрузки
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Публикуем...';
+        }
+
+        // Отправляем в Supabase через наш API
+        const result = await window.SupabaseClient.createAd(adData);
+        
+        console.log('Объявление опубликовано:', result);
 
         // Показываем успех
-        tg.showAlert('Объявление успешно создано!', () => {
-            showMainMenu();
+        tg.showAlert('✅ Объявление успешно опубликовано!', () => {
+            // Очищаем форму
+            formData = {};
+            currentStep = 1;
+            showScreen('mainMenu');
         });
 
     } catch (error) {
         console.error('Ошибка создания объявления:', error);
-        tg.showAlert('Ошибка при создании объявления');
+        tg.showAlert('❌ Ошибка при публикации объявления: ' + error.message);
+    } finally {
+        // Восстанавливаем кнопку
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🚀 Опубликовать';
+        }
     }
 }
 
 // Загрузка и отображение объявлений
-async function loadAds() {
+async function loadAds(filters = {}) {
     try {
-        // Запрашиваем объявления у бота
-        tg.sendData(JSON.stringify({
-            action: 'getAds'
-        }));
+        console.log('Загрузка объявлений с фильтрами:', filters);
+        
+        // Показываем индикатор загрузки
+        const adsList = document.getElementById('adsList');
+        if (adsList) {
+            adsList.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p>Загружаем объявления...</p>
+                </div>
+            `;
+        }
+
+        // Запрашиваем объявления из Supabase через API
+        const ads = await window.SupabaseClient.getAds(filters);
+        
+        console.log('Получено объявлений:', ads.length);
+        
+        // Отображаем объявления
+        displayAds(ads, filters.city);
 
     } catch (error) {
         console.error('Ошибка загрузки объявлений:', error);
+        const adsList = document.getElementById('adsList');
+        if (adsList) {
+            adsList.innerHTML = `
+                <div class="no-ads">
+                    <div class="neon-icon">⚠️</div>
+                    <h3>Ошибка загрузки</h3>
+                    <p>${error.message}</p>
+                </div>
+            `;
+        }
     }
 }
 
@@ -345,7 +405,11 @@ function displayAds(ads, city = null) {
     // Фильтруем по городу если задан
     const filteredAds = city ? ads.filter(ad => ad.city === city) : ads;
 
-    adsList.innerHTML = filteredAds.map((ad, index) => `
+    adsList.innerHTML = filteredAds.map((ad, index) => {
+        // Supabase возвращает поля с подчёркиваниями (age_from, my_age и т.д.)
+        const myAge = ad.my_age || ad.myAge || '?';
+        
+        return `
         <div class="ad-card" onclick="showAdDetails(${index})">
             <div class="ad-info">
                 <div class="ad-field">
@@ -371,14 +435,18 @@ function displayAds(ads, city = null) {
                 <div class="ad-field">
                     <span class="icon">🎂</span>
                     <span class="label">Возраст:</span>
-                    <span class="value">${ad.myAge} лет</span>
+                    <span class="value">${myAge} лет</span>
                 </div>
             </div>
             <div class="ad-text">
                 "${ad.text.substring(0, 100)}${ad.text.length > 100 ? '...' : ''}"
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
+    
+    // Сохраняем объявления для showAdDetails
+    window.currentAds = filteredAds;
 }
 
 function handleCityFilter(city) {
@@ -1797,14 +1865,16 @@ function resetFilterLocationSelection() {
 // Загрузка объявлений по локации
 function loadAdsByLocation(country, region, city) {
     try {
-        tg.sendData(JSON.stringify({
-            action: 'getAdsByLocation',
-            country: country,
-            region: region,
-            city: city
-        }));
-        
         console.log('Запрос объявлений по локации:', {country, region, city});
+        
+        // Формируем фильтры для загрузки
+        const filters = {};
+        if (country) filters.country = country;
+        if (city) filters.city = city;
+        
+        // Загружаем через наш API
+        loadAds(filters);
+        
     } catch (error) {
         console.error('Ошибка загрузки объявлений по локации:', error);
     }
