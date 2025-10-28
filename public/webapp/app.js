@@ -137,8 +137,98 @@ function showTelegramAuthModal() {
     
     modal.style.display = 'flex';
     
-    // Инициализируем Telegram Login Widget
+    // Генерируем уникальный auth token для этой сессии
+    const authToken = 'auth_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('telegram_auth_token', authToken);
+    
+    // Генерируем QR-код
+    generateTelegramQR(authToken);
+    
+    // Инициализируем Telegram Login Widget как запасной вариант
     initTelegramLoginWidget();
+    
+    // Проверяем авторизацию каждые 3 секунды через API
+    const checkInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`/api/telegram-auth?auth_token=${authToken}`);
+            const result = await response.json();
+            
+            if (result.authorized && result.user_data) {
+                console.log('✅ Авторизация через QR-код успешна:', result.user_data);
+                
+                // Сохраняем данные пользователя
+                localStorage.setItem('telegram_user', JSON.stringify(result.user_data));
+                localStorage.removeItem('telegram_auth_token');
+                
+                // Закрываем модальное окно
+                clearInterval(checkInterval);
+                closeTelegramAuthModal();
+                
+                // Показываем уведомление
+                alert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${result.user_data.first_name}!`);
+                
+                // Перезагружаем страницу
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Ошибка проверки авторизации:', error);
+        }
+    }, 3000);
+    
+    // Останавливаем проверку через 5 минут
+    setTimeout(() => {
+        clearInterval(checkInterval);
+        console.log('Timeout: проверка авторизации остановлена');
+    }, 300000);
+}
+
+// Генерация QR-кода для Telegram авторизации
+function generateTelegramQR(authToken) {
+    const qrcodeContainer = document.getElementById('qrcode');
+    const qrLoading = document.getElementById('qrLoading');
+    
+    if (!qrcodeContainer) return;
+    
+    // Очищаем контейнер
+    qrcodeContainer.innerHTML = '';
+    
+    // Показываем загрузку
+    if (qrLoading) {
+        qrLoading.classList.remove('hidden');
+    }
+    
+    // Создаем deep link для Telegram бота
+    // Формат: https://t.me/bot_username?start=auth_token
+    const botUsername = 'anon_board_bot';
+    const telegramDeepLink = `https://t.me/${botUsername}?start=${authToken}`;
+    
+    console.log('Генерация QR-кода для:', telegramDeepLink);
+    
+    // Генерируем QR-код через небольшую задержку для плавности
+    setTimeout(() => {
+        try {
+            new QRCode(qrcodeContainer, {
+                text: telegramDeepLink,
+                width: 240,
+                height: 240,
+                colorDark: "#8338ec",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // Скрываем загрузку
+            if (qrLoading) {
+                qrLoading.classList.add('hidden');
+            }
+            
+            console.log('QR-код успешно сгенерирован');
+        } catch (error) {
+            console.error('Ошибка генерации QR-кода:', error);
+            if (qrLoading) {
+                qrLoading.innerHTML = '<p style="color: #ff0066;">❌ Ошибка генерации QR-кода</p>';
+            }
+        }
+    }, 100);
 }
 
 // Закрыть модальное окно (только если пользователь авторизован)
