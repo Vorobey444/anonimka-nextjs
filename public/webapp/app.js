@@ -501,6 +501,7 @@ function showBrowseAds() {
 }
 
 // Показать мои объявления
+// Показать мои объявления
 function showMyAds() {
     showScreen('myAds');
     loadMyAds();
@@ -509,21 +510,45 @@ function showMyAds() {
 // Загрузить мои объявления
 async function loadMyAds() {
     const myAdsList = document.getElementById('myAdsList');
-    if (!myAdsList) return;
+    if (!myAdsList) {
+        console.error('❌ Элемент myAdsList не найден!');
+        return;
+    }
     
     myAdsList.innerHTML = '<div class="loading">Загрузка ваших объявлений...</div>';
     
     try {
         const userId = getCurrentUserId();
+        console.log('📋 Загрузка объявлений для пользователя:', userId);
+        
+        if (userId.startsWith('web_')) {
+            myAdsList.innerHTML = `
+                <div class="no-ads">
+                    <div class="neon-icon">🔐</div>
+                    <h3>Требуется авторизация</h3>
+                    <p>Авторизуйтесь через Telegram чтобы видеть свои объявления</p>
+                    <button class="neon-button primary" onclick="showTelegramAuthModal()">
+                        Авторизоваться
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
         const ads = await getAllAds();
+        console.log('📋 Всего объявлений:', ads.length);
+        
         const myAds = ads.filter(ad => ad.tg_id === userId);
+        console.log('📋 Мои объявления:', myAds.length);
         
         if (myAds.length === 0) {
             myAdsList.innerHTML = `
                 <div class="no-ads">
-                    <p>📭 У вас пока нет объявлений</p>
+                    <div class="neon-icon">📭</div>
+                    <h3>У вас пока нет объявлений</h3>
+                    <p>Создайте первое объявление и оно появится здесь</p>
                     <button class="neon-button primary" onclick="showCreateAd()">
-                        Создать первое объявление
+                        ✏️ Создать объявление
                     </button>
                 </div>
             `;
@@ -531,25 +556,28 @@ async function loadMyAds() {
         }
         
         // Отображаем объявления с кнопками действий
-        myAdsList.innerHTML = myAds.map((ad, index) => `
+        myAdsList.innerHTML = myAds.map((ad, index) => {
+            const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > new Date());
+            
+            return `
             <div class="ad-card" data-ad-id="${ad.id}">
-                ${ad.is_pinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
+                ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
                 <div class="ad-info">
                     <div class="ad-field">
                         <span class="icon">${ad.gender === 'male' ? '👨' : '👩'}</span>
-                        <span>${ad.my_age} лет, ${ad.body_type}</span>
+                        <span>${ad.my_age || '?'} лет, ${ad.body_type || 'не указано'}</span>
                     </div>
                     <div class="ad-field">
                         <span class="icon">🎯</span>
-                        <span>${ad.goal}</span>
+                        <span>${ad.goal || 'не указано'}</span>
                     </div>
                     <div class="ad-field">
                         <span class="icon">📍</span>
-                        <span>${locationData[ad.country].flag} ${ad.region}, ${ad.city}</span>
+                        <span>${locationData[ad.country]?.flag || '🌍'} ${ad.region}, ${ad.city}</span>
                     </div>
                     <div class="ad-field">
                         <span class="icon">📝</span>
-                        <span>${ad.text ? ad.text.substring(0, 100) + (ad.text.length > 100 ? '...' : '') : 'Без описания'}</span>
+                        <span>${ad.text ? (ad.text.substring(0, 100) + (ad.text.length > 100 ? '...' : '')) : 'Без описания'}</span>
                     </div>
                     <div class="ad-field">
                         <span class="icon">📅</span>
@@ -560,16 +588,28 @@ async function loadMyAds() {
                     <button class="delete-ad-btn" onclick="deleteMyAd(${ad.id})">
                         🗑️ Удалить
                     </button>
-                    <button class="pin-ad-btn" onclick="pinMyAd(${ad.id}, ${!ad.is_pinned})">
-                        ${ad.is_pinned ? '📌 Открепить' : '📌 Закрепить (24ч)'}
+                    <button class="pin-ad-btn" onclick="pinMyAd(${ad.id}, ${!isPinned})">
+                        ${isPinned ? '✖️ Открепить' : '📌 Закрепить (24ч)'}
                     </button>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
+        
+        console.log('✅ Мои объявления отображены');
         
     } catch (error) {
-        console.error('Ошибка загрузки моих объявлений:', error);
-        myAdsList.innerHTML = '<div class="error">❌ Ошибка загрузки объявлений</div>';
+        console.error('❌ Ошибка загрузки моих объявлений:', error);
+        myAdsList.innerHTML = `
+            <div class="no-ads">
+                <div class="neon-icon">⚠️</div>
+                <h3>Ошибка загрузки</h3>
+                <p>${error.message || 'Неизвестная ошибка'}</p>
+                <button class="neon-button primary" onclick="loadMyAds()">
+                    🔄 Попробовать снова
+                </button>
+            </div>
+        `;
     }
 }
 
@@ -1255,11 +1295,21 @@ async function pinMyAd(adId, shouldPin) {
 // Автоопределение локации
 function autoDetectLocation() {
     if (!navigator.geolocation) {
-        tg.showAlert('❌ Геолокация не поддерживается вашим браузером');
+        alert('❌ Геолокация не поддерживается вашим браузером');
         return;
     }
     
-    tg.showAlert('📍 Определяем вашу локацию...');
+    // Показываем loading
+    const setupContainer = document.querySelector('.location-setup-container');
+    if (setupContainer) {
+        setupContainer.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>📍 Определяем вашу локацию...</p>
+                <p style="font-size: 0.9rem; opacity: 0.7;">Пожалуйста, разрешите доступ к геолокации</p>
+            </div>
+        `;
+    }
     
     navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -1267,21 +1317,27 @@ function autoDetectLocation() {
             console.log('Координаты:', latitude, longitude);
             
             try {
-                // Используем API для обратного геокодирования
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ru`);
-                const data = await response.json();
+                // Используем BigDataCloud API (бесплатный, без ключа)
+                const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=ru`);
                 
+                if (!response.ok) {
+                    throw new Error('Ошибка API геокодирования');
+                }
+                
+                const data = await response.json();
                 console.log('Данные геокодирования:', data);
                 
-                const country = data.address.country;
-                const region = data.address.state || data.address.region;
-                const city = data.address.city || data.address.town || data.address.village;
+                const country = data.countryName;
+                const region = data.principalSubdivision || data.locality;
+                const city = data.city || data.locality;
+                
+                console.log('Обработанные данные:', { country, region, city });
                 
                 // Определяем, какая страна в нашем списке
                 let detectedCountry = null;
-                if (country === 'Россия' || country === 'Russia') {
+                if (country && (country.includes('Росси') || country === 'Russia')) {
                     detectedCountry = 'russia';
-                } else if (country === 'Казахстан' || country === 'Kazakhstan') {
+                } else if (country && (country.includes('Казах') || country === 'Kazakhstan')) {
                     detectedCountry = 'kazakhstan';
                 }
                 
@@ -1298,26 +1354,42 @@ function autoDetectLocation() {
                     // Обновляем отображение
                     updateUserLocationDisplay();
                     
-                    tg.showAlert(`✅ Локация определена:\n${locationData[detectedCountry].flag} ${region}, ${city}`);
+                    alert(`✅ Локация определена:\n${locationData[detectedCountry].flag} ${region}, ${city}`);
                     
                     // Возвращаемся в главное меню
-                    setTimeout(() => showMainMenu(), 1000);
+                    setTimeout(() => showMainMenu(), 500);
                 } else {
-                    tg.showAlert('❌ Не удалось определить локацию. Пожалуйста, выберите вручную.');
+                    // Показываем то что получили
+                    console.log('Не удалось определить:', { detectedCountry, region, city, rawCountry: country });
+                    alert(`❌ Не удалось определить локацию.\n\nПолучены данные: ${country || 'неизвестно'}\n\nПожалуйста, выберите вручную.`);
+                    // Перезагружаем экран локации
+                    showLocationSetup();
                 }
                 
             } catch (error) {
                 console.error('Ошибка геокодирования:', error);
-                tg.showAlert('❌ Ошибка при определении локации. Пожалуйста, выберите вручную.');
+                alert('❌ Ошибка при определении локации. Пожалуйста, выберите вручную.');
+                showLocationSetup();
             }
         },
         (error) => {
             console.error('Ошибка геолокации:', error);
-            tg.showAlert('❌ Не удалось получить доступ к геолокации. Пожалуйста, разрешите доступ или выберите локацию вручную.');
+            let errorMsg = '❌ Не удалось получить доступ к геолокации.\n\n';
+            if (error.code === 1) {
+                errorMsg += 'Вы отклонили запрос на доступ к геолокации.';
+            } else if (error.code === 2) {
+                errorMsg += 'Геолокация недоступна.';
+            } else if (error.code === 3) {
+                errorMsg += 'Превышено время ожидания.';
+            }
+            errorMsg += '\n\nПожалуйста, выберите локацию вручную.';
+            
+            alert(errorMsg);
+            showLocationSetup();
         },
         {
             enableHighAccuracy: true,
-            timeout: 10000,
+            timeout: 15000,
             maximumAge: 0
         }
     );
