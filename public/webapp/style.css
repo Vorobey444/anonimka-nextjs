@@ -251,6 +251,13 @@ h3 {
     width: 100%;
     margin: 10px 0;
     transition: all 0.3s ease;
+    display: block !important; /* Принудительно показываем */
+}
+
+.neon-textarea {
+    resize: vertical;
+    min-height: 120px;
+    font-family: inherit;
 }
 
 .neon-input:focus, .neon-textarea:focus {
