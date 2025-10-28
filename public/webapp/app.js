@@ -218,15 +218,13 @@ function previousStep() {
 
 function validateCurrentStep() {
     switch(currentStep) {
-        case 1:
-            return formData.city || document.getElementById('customCity').value.trim();
-        case 2:
+        case 1: // Пол
             return formData.gender;
-        case 3:
+        case 2: // Кого ищет
             return formData.target;
-        case 4:
+        case 3: // Цель
             return formData.goal;
-        case 5:
+        case 4: // Возраст партнера
             const ageFrom = document.getElementById('ageFrom').value;
             const ageTo = document.getElementById('ageTo').value;
             if (ageFrom && ageTo) {
@@ -235,21 +233,22 @@ function validateCurrentStep() {
                 return true;
             }
             return false;
-        case 6:
+        case 5: // Мой возраст
             const myAge = document.getElementById('myAge').value;
             if (myAge) {
                 formData.myAge = myAge;
                 return true;
             }
             return false;
-        case 7:
+        case 6: // Телосложение
             return formData.body;
-        case 8:
+        case 7: // Текст объявления
             const adText = document.getElementById('adText').value.trim();
-            if (adText) {
+            if (adText && adText.length >= 10) {
                 formData.text = adText;
                 return true;
             }
+            tg.showAlert('Пожалуйста, введите текст объявления (минимум 10 символов)');
             return false;
     }
     return false;
