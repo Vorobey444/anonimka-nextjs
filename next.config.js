@@ -33,12 +33,15 @@ const nextConfig = {
         ],
         destination: 'https://anonimka.online/:path*',
         permanent: true
-      },
-      // Редирект корня на SPA
+      }
+    ]
+  },
+  async rewrites() {
+    return [
+      // Корневая страница отдаёт legacy SPA из /webapp/
       {
         source: '/',
-        destination: '/webapp/',
-        permanent: false
+        destination: '/webapp/index.html'
       }
     ]
   }
