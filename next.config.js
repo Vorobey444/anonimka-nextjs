@@ -25,6 +25,16 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // Принудительный редирект с www на корень домена
+      {
+        source: '/:path*',
+        has: [
+          { type: 'host', value: 'www.anonimka.online' }
+        ],
+        destination: 'https://anonimka.online/:path*',
+        permanent: true
+      },
+      // Редирект корня на SPA
       {
         source: '/',
         destination: '/webapp/',
