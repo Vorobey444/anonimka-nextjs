@@ -187,8 +187,28 @@ function showBrowseAds() {
 
 // Управление шагами формы
 function showStep(step) {
+    console.log(`📍 Показываем шаг ${step} из ${totalSteps}`);
+    
     document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
-    document.getElementById(`step${step}`).classList.add('active');
+    const stepElement = document.getElementById(`step${step}`);
+    
+    if (!stepElement) {
+        console.error(`❌ Элемент step${step} не найден!`);
+        return;
+    }
+    
+    stepElement.classList.add('active');
+    console.log(`✅ Шаг ${step} активен`, stepElement);
+    
+    // Для шага 7 проверяем textarea
+    if (step === 7) {
+        const textarea = document.getElementById('adText');
+        console.log('🔍 Проверка textarea на шаге 7:', {
+            exists: !!textarea,
+            value: textarea?.value,
+            visible: textarea ? window.getComputedStyle(textarea).display : 'N/A'
+        });
+    }
     
     // Обновляем кнопки навигации
     const prevBtn = document.getElementById('prevBtn');
@@ -198,6 +218,12 @@ function showStep(step) {
     prevBtn.style.display = step > 1 ? 'block' : 'none';
     nextBtn.style.display = step < totalSteps ? 'block' : 'none';
     submitBtn.style.display = step === totalSteps ? 'block' : 'none';
+    
+    console.log('🔘 Кнопки:', {
+        prev: prevBtn.style.display,
+        next: nextBtn.style.display,
+        submit: submitBtn.style.display
+    });
 }
 
 function nextStep() {
@@ -217,37 +243,55 @@ function previousStep() {
 }
 
 function validateCurrentStep() {
+    console.log(`🔍 Валидация шага ${currentStep}`, formData);
+    
     switch(currentStep) {
         case 1: // Пол
-            return formData.gender;
+            const hasGender = !!formData.gender;
+            console.log(`Шаг 1 (Пол): ${hasGender ? '✅' : '❌'}`, formData.gender);
+            return hasGender;
         case 2: // Кого ищет
-            return formData.target;
+            const hasTarget = !!formData.target;
+            console.log(`Шаг 2 (Кого ищет): ${hasTarget ? '✅' : '❌'}`, formData.target);
+            return hasTarget;
         case 3: // Цель
-            return formData.goal;
+            const hasGoal = !!formData.goal;
+            console.log(`Шаг 3 (Цель): ${hasGoal ? '✅' : '❌'}`, formData.goal);
+            return hasGoal;
         case 4: // Возраст партнера
             const ageFrom = document.getElementById('ageFrom').value;
             const ageTo = document.getElementById('ageTo').value;
             if (ageFrom && ageTo) {
                 formData.ageFrom = ageFrom;
                 formData.ageTo = ageTo;
+                console.log(`Шаг 4 (Возраст партнера): ✅ ${ageFrom}-${ageTo}`);
                 return true;
             }
+            console.log(`Шаг 4 (Возраст партнера): ❌`);
             return false;
         case 5: // Мой возраст
             const myAge = document.getElementById('myAge').value;
             if (myAge) {
                 formData.myAge = myAge;
+                console.log(`Шаг 5 (Мой возраст): ✅ ${myAge}`);
                 return true;
             }
+            console.log(`Шаг 5 (Мой возраст): ❌`);
             return false;
         case 6: // Телосложение
-            return formData.body;
+            const hasBody = !!formData.body;
+            console.log(`Шаг 6 (Телосложение): ${hasBody ? '✅' : '❌'}`, formData.body);
+            return hasBody;
         case 7: // Текст объявления
-            const adText = document.getElementById('adText').value.trim();
+            const adText = document.getElementById('adText')?.value.trim();
+            console.log(`Шаг 7 (Текст): textarea элемент:`, document.getElementById('adText'));
+            console.log(`Шаг 7 (Текст): значение:`, adText);
             if (adText && adText.length >= 10) {
                 formData.text = adText;
+                console.log(`Шаг 7 (Текст): ✅ ${adText.length} символов`);
                 return true;
             }
+            console.log(`Шаг 7 (Текст): ❌ слишком короткий текст`);
             tg.showAlert('Пожалуйста, введите текст объявления (минимум 10 символов)');
             return false;
     }
