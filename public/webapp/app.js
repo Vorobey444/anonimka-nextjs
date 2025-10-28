@@ -1,6 +1,40 @@
 // Инициализация Telegram Web App
-let tg = window.Telegram.WebApp;
-tg.expand();
+let tg = window.Telegram?.WebApp || {
+    expand: () => {},
+    setHeaderColor: () => {},
+    setBackgroundColor: () => {},
+    MainButton: {
+        setText: () => {},
+        onClick: () => {},
+        show: () => {},
+        hide: () => {}
+    },
+    BackButton: {
+        onClick: () => {},
+        show: () => {},
+        hide: () => {}
+    },
+    showAlert: (msg, callback) => {
+        alert(msg);
+        if (callback) callback();
+    },
+    showPopup: (params, callback) => {
+        alert(params.message);
+        if (callback) callback();
+    },
+    initDataUnsafe: {
+        user: null
+    },
+    ready: () => {}
+};
+
+// Проверка, запущено ли приложение в Telegram
+const isTelegramWebApp = !!window.Telegram?.WebApp?.initData;
+console.log('Запущено в Telegram WebApp:', isTelegramWebApp);
+
+if (isTelegramWebApp) {
+    tg.expand();
+}
 
 // Данные формы
 let formData = {};
@@ -26,6 +60,36 @@ function initializeTelegramWebApp() {
     
     // Настройка кнопки назад
     tg.BackButton.onClick(() => handleBackButton());
+    
+    // Показываем предупреждение если не в Telegram
+    if (!isTelegramWebApp) {
+        console.warn('⚠️ Приложение запущено вне Telegram WebApp. Некоторые функции недоступны.');
+        
+        // Показываем уведомление через 2 секунды
+        setTimeout(() => {
+            const warning = document.createElement('div');
+            warning.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(255, 153, 0, 0.95);
+                color: #000;
+                padding: 15px 25px;
+                border-radius: 10px;
+                z-index: 10000;
+                font-weight: bold;
+                box-shadow: 0 4px 15px rgba(255, 153, 0, 0.3);
+                max-width: 90%;
+                text-align: center;
+            `;
+            warning.innerHTML = '⚠️ Для полного функционала откройте через Telegram бота<br><small>Функция приватных чатов будет ограничена</small>';
+            document.body.appendChild(warning);
+            
+            // Удаляем через 7 секунд
+            setTimeout(() => warning.remove(), 7000);
+        }, 2000);
+    }
     
     console.log('Telegram Web App initialized');
 }
@@ -463,10 +527,15 @@ async function submitAd() {
             country: formData.country || 'Россия',
             region: formData.region || '',
             city: formData.city,
-            tgId: tg.initDataUnsafe?.user?.id?.toString() || 'anonymous'
+            // Получаем tg_id если в Telegram, иначе генерируем временный ID
+            tgId: isTelegramWebApp && tg.initDataUnsafe?.user?.id 
+                ? tg.initDataUnsafe.user.id.toString() 
+                : 'web_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
         };
 
         console.log('Отправка объявления в Supabase:', adData);
+        console.log('Telegram User ID:', isTelegramWebApp ? tg.initDataUnsafe?.user?.id : 'N/A (не в Telegram)');
+
 
         // Показываем индикатор загрузки
         const submitBtn = document.getElementById('submitBtn');
