@@ -15,17 +15,26 @@ let tg = window.Telegram?.WebApp || {
         hide: () => {}
     },
     showAlert: (msg, callback) => {
+        console.log('ALERT:', msg);
         alert(msg);
-        if (callback) callback();
+        if (callback && typeof callback === 'function') {
+            setTimeout(callback, 0);
+        }
     },
     showPopup: (params, callback) => {
+        console.log('POPUP:', params.message);
         alert(params.message);
-        if (callback) callback();
+        if (callback && typeof callback === 'function') {
+            setTimeout(callback, 0);
+        }
     },
     initDataUnsafe: {
         user: null
     },
-    ready: () => {}
+    ready: () => {},
+    close: () => {
+        console.log('close() called');
+    }
 };
 
 // Проверка, запущено ли приложение в Telegram
