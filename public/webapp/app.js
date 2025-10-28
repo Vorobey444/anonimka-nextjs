@@ -256,6 +256,44 @@ function previousStep() {
     }
 }
 
+// Функции для контроля возраста
+function increaseAge(inputId) {
+    const input = document.getElementById(inputId);
+    const currentValue = parseInt(input.value) || 18;
+    const maxValue = parseInt(input.max) || 100;
+    
+    if (currentValue < maxValue) {
+        input.value = currentValue + 1;
+        validateAgeRange();
+    }
+}
+
+function decreaseAge(inputId) {
+    const input = document.getElementById(inputId);
+    const currentValue = parseInt(input.value) || 18;
+    const minValue = parseInt(input.min) || 18;
+    
+    if (currentValue > minValue) {
+        input.value = currentValue - 1;
+        validateAgeRange();
+    }
+}
+
+function validateAgeRange() {
+    const ageFrom = document.getElementById('ageFrom');
+    const ageTo = document.getElementById('ageTo');
+    
+    if (ageFrom && ageTo) {
+        const fromValue = parseInt(ageFrom.value) || 18;
+        const toValue = parseInt(ageTo.value) || 18;
+        
+        // Если "от" больше "до", корректируем "до"
+        if (fromValue > toValue) {
+            ageTo.value = fromValue;
+        }
+    }
+}
+
 function validateCurrentStep() {
     console.log(`🔍 Валидация шага ${currentStep}`, formData);
     

@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Анонимная доска объявлений</title>
-    <link rel="stylesheet" href="/webapp/style.css?v=4.1">
+    <link rel="stylesheet" href="/webapp/style.css?v=4.2">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/webapp/supabase-client.js?v=3.0"></script>
 </head>
@@ -374,18 +374,30 @@
                     <div class="age-range">
                         <div class="input-group">
                             <label>От</label>
-                            <input type="number" id="ageFrom" min="18" max="100" class="neon-input small">
+                            <div class="age-control">
+                                <button type="button" class="age-btn minus" onclick="decreaseAge('ageFrom')">−</button>
+                                <input type="number" id="ageFrom" min="18" max="100" value="18" class="neon-input small" onchange="validateAgeRange()">
+                                <button type="button" class="age-btn plus" onclick="increaseAge('ageFrom')">+</button>
+                            </div>
                         </div>
                         <div class="input-group">
                             <label>До</label>
-                            <input type="number" id="ageTo" min="18" max="100" class="neon-input small">
+                            <div class="age-control">
+                                <button type="button" class="age-btn minus" onclick="decreaseAge('ageTo')">−</button>
+                                <input type="number" id="ageTo" min="18" max="100" value="18" class="neon-input small" onchange="validateAgeRange()">
+                                <button type="button" class="age-btn plus" onclick="increaseAge('ageTo')">+</button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-step" id="step5">
                     <h3>🎂 Ваш возраст</h3>
-                    <input type="number" id="myAge" min="18" max="100" class="neon-input" placeholder="Введите ваш возраст">
+                    <div class="age-control centered">
+                        <button type="button" class="age-btn minus" onclick="decreaseAge('myAge')">−</button>
+                        <input type="number" id="myAge" min="18" max="100" value="18" class="neon-input">
+                        <button type="button" class="age-btn plus" onclick="increaseAge('myAge')">+</button>
+                    </div>
                 </div>
 
                 <div class="form-step" id="step6">
@@ -401,7 +413,27 @@
 
                 <div class="form-step" id="step7">
                     <h3>💬 Текст объявления</h3>
-                    <textarea id="adText" class="neon-textarea" placeholder="Расскажите о себе и что ищете..." rows="6"></textarea>
+                    <textarea 
+                        id="adText" 
+                        placeholder="Расскажите о себе и что ищете..." 
+                        rows="6"
+                        style="
+                            width: 100%;
+                            padding: 15px;
+                            background: rgba(26, 26, 46, 0.8);
+                            border: 2px solid #ff00ff;
+                            border-radius: 15px;
+                            color: #e0e0ff;
+                            font-size: 16px;
+                            resize: vertical;
+                            min-height: 120px;
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            box-sizing: border-box;
+                            display: block !important;
+                            visibility: visible !important;
+                            opacity: 1 !important;
+                        "
+                    ></textarea>
                 </div>
             </form>
 
