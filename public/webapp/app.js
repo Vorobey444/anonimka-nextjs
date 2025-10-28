@@ -2125,6 +2125,9 @@ function showContacts() {
     updateActiveMenuItem('contacts');
 }
 
+// Флаг для отслеживания инициализации обработчиков формы
+let emailFormHandlersInitialized = false;
+
 function showEmailForm() {
     showScreen('emailForm');
     // Очищаем форму при открытии
@@ -2136,13 +2139,15 @@ function showEmailForm() {
     // Показываем подсказку
     showEmailStatus('loading', '💡 Заполните форму ниже. Письмо будет отправлено через защищённый сервер anonimka.online');
     
-    // Убеждаемся, что обработчики событий подключены
-    setTimeout(() => {
-        setupEmailFormHandlers();
-    }, 100);
+    // Инициализируем обработчики только один раз
+    if (!emailFormHandlersInitialized) {
+        setTimeout(() => {
+            setupEmailFormHandlers();
+        }, 100);
+    }
 }
 
-// Отдельная функция для настройки обработчиков формы
+// Отдельная функция для настройки обработчиков формы (вызывается только один раз)
 function setupEmailFormHandlers() {
     const contactForm = document.getElementById('contactForm');
     const sendBtn = document.getElementById('sendEmailBtn');
@@ -2152,15 +2157,12 @@ function setupEmailFormHandlers() {
     console.log('sendBtn найдена:', !!sendBtn);
     
     if (contactForm) {
-        // Удаляем старые обработчики и добавляем новые
-        contactForm.removeEventListener('submit', handleEmailSubmit);
         contactForm.addEventListener('submit', handleEmailSubmit);
         console.log('Обработчик submit добавлен к форме');
+        emailFormHandlersInitialized = true;
     }
     
     if (sendBtn) {
-        // Удаляем старые обработчики и добавляем новые
-        sendBtn.removeEventListener('click', handleEmailButtonClick);
         sendBtn.addEventListener('click', handleEmailButtonClick);
         console.log('Обработчик click добавлен к кнопке');
     }
@@ -2434,23 +2436,6 @@ function openManualMailto(senderEmail, subject, message) {
 // Глобальные функции для использования в onclick
 window.copyEmailData = copyEmailData;
 window.openManualMailto = openManualMailto;
-
-// Тестовая функция
-window.testFunction = function() {
-    console.log('🧪 Тест функции сработал!');
-    alert('Тест работает! Проверьте консоль.');
-    
-    // Тестируем основную функцию
-    const senderEmailEl = document.getElementById('senderEmail');
-    const subjectEl = document.getElementById('emailSubject');
-    const messageEl = document.getElementById('emailMessage');
-    
-    if (senderEmailEl) senderEmailEl.value = 'test@example.com';
-    if (subjectEl) subjectEl.value = 'Тестовое сообщение';
-    if (messageEl) messageEl.value = 'Это тестовое сообщение для проверки работы формы';
-    
-    console.log('Форма заполнена тестовыми данными');
-};
 
 // Показать статус отправки
 function showEmailStatus(type, message) {
