@@ -2150,29 +2150,15 @@ function showEmailForm() {
 // Отдельная функция для настройки обработчиков формы (вызывается только один раз)
 function setupEmailFormHandlers() {
     const contactForm = document.getElementById('contactForm');
-    const sendBtn = document.getElementById('sendEmailBtn');
     
     console.log('setupEmailFormHandlers вызвана');
     console.log('contactForm найдена:', !!contactForm);
-    console.log('sendBtn найдена:', !!sendBtn);
     
     if (contactForm) {
         contactForm.addEventListener('submit', handleEmailSubmit);
         console.log('Обработчик submit добавлен к форме');
         emailFormHandlersInitialized = true;
     }
-    
-    if (sendBtn) {
-        sendBtn.addEventListener('click', handleEmailButtonClick);
-        console.log('Обработчик click добавлен к кнопке');
-    }
-}
-
-// Отдельный обработчик для кнопки
-function handleEmailButtonClick(event) {
-    event.preventDefault();
-    console.log('handleEmailButtonClick вызвана');
-    handleEmailSubmit(event);
 }
 
 function showRules() {
