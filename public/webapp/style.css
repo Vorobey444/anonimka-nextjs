@@ -194,6 +194,17 @@ h3 {
     display: block;
 }
 
+/* Специальное правило для textarea на шаге 7 */
+.form-step.active #adText,
+.form-step#step7.active textarea,
+#step7 .neon-textarea {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: 120px !important;
+}
+
 /* Сетки кнопок */
 .city-grid, .gender-select, .target-select, .goal-select, .body-select {
     display: grid;
