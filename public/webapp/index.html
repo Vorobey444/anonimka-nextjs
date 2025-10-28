@@ -14,13 +14,6 @@
     <script src="/webapp/supabase-client.js?v=3.0"></script>
 </head>
 <body>
-    <!-- Глобальная кнопка гамбургер-меню -->
-    <button class="global-hamburger-menu" onclick="toggleHamburgerMenu()">
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-    </button>
-
     <div class="app-container">
         <!-- Автоматическое определение локации -->
         <div id="autoLocationDetection" class="screen">
@@ -477,53 +470,28 @@
                 <h2>Объявления</h2>
             </div>
             
-            <div class="location-selector">
-                <h3>� Выберите локацию</h3>
-                
-                <!-- Выбор страны для фильтра -->
-                <div class="form-country-selection">
-                    <h4>Страна</h4>
-                    <div class="country-buttons">
-                        <button type="button" class="country-btn form-country filter-country" data-country="russia">
-                            <span class="flag">🇷🇺</span>
-                            Россия
-                        </button>
-                        <button type="button" class="country-btn form-country filter-country" data-country="kazakhstan">
-                            <span class="flag">🇰🇿</span>
-                            Казахстан
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Выбор региона для фильтра -->
-                <div class="form-region-selection filter-region-selection" style="display: none;">
-                    <h4>Регион/область</h4>
-                    <div class="search-container">
-                        <input type="text" class="form-region-input filter-region-input" placeholder="Начните вводить название...">
-                        <div class="suggestions-list form-region-suggestions filter-region-suggestions"></div>
-                    </div>
-                </div>
-
-                <!-- Выбор города для фильтра -->
-                <div class="form-city-selection filter-city-selection" style="display: none;">
-                    <h4>Город</h4>
-                    <div class="search-container">
-                        <input type="text" class="form-city-input filter-city-input" placeholder="Введите название города...">
-                        <div class="suggestions-list form-city-suggestions filter-city-suggestions"></div>
-                    </div>
-                </div>
-
-                <!-- Отображение выбранной локации для фильтра -->
-                <div class="form-selected-location filter-selected-location" style="display: none;">
-                    <div class="location-display">
-                        <span class="form-location-text filter-location-text"></span>
-                        <button type="button" class="reset-form-location reset-filter-location">🔄 Изменить</button>
-                    </div>
-                </div>
+            <div class="current-location-display">
+                <p class="location-label"> Ваша локация:</p>
+                <p class="location-value" id="browseLocationDisplay">Загрузка...</p>
+                <button class="neon-button small" onclick="showLocationSetup()">
+                     Сменить локацию
+                </button>
             </div>
 
             <div id="adsList" class="ads-list">
                 <!-- Объявления будут загружены через JS -->
+            </div>
+        </div>
+
+        <!-- Мои объявления -->
+        <div id="myAds" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>Мои объявления</h2>
+            </div>
+
+            <div id="myAdsList" class="ads-list">
+                <!-- Объявления пользователя будут загружены через JS -->
             </div>
         </div>
 
