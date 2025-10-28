@@ -413,29 +413,34 @@
 
                 <div class="form-step" id="step7">
                     <h3>💬 Текст объявления</h3>
-                    <textarea 
-                        id="adText" 
-                        placeholder="Расскажите о себе и что ищете..." 
-                        rows="6"
-                        style="
-                            width: 100%;
-                            padding: 15px;
-                            background: rgba(26, 26, 46, 0.8);
-                            border: 2px solid #ff00ff;
-                            border-radius: 15px;
-                            color: #e0e0ff;
-                            font-size: 16px;
-                            resize: vertical;
-                            min-height: 120px;
-                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                            box-sizing: border-box;
-                            display: block !important;
-                            visibility: visible !important;
-                            opacity: 1 !important;
-                        "
-                    ></textarea>
                 </div>
             </form>
+
+            <!-- Textarea вынесен отдельно для обхода проблем с display -->
+            <div id="textareaContainer" style="display: none; text-align: center; padding: 0 20px;">
+                <textarea 
+                    id="adText" 
+                    placeholder="Расскажите о себе и что ищете..." 
+                    rows="6"
+                    style="
+                        width: 100%;
+                        max-width: 500px;
+                        padding: 15px;
+                        background: rgba(26, 26, 46, 0.8);
+                        border: 2px solid #ff00ff;
+                        border-radius: 15px;
+                        color: #e0e0ff;
+                        font-size: 16px;
+                        resize: vertical;
+                        min-height: 120px;
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        box-sizing: border-box;
+                        display: block !important;
+                        visibility: visible !important;
+                        opacity: 1 !important;
+                    "
+                ></textarea>
+            </div>
 
             <div class="form-navigation">
                 <button id="prevBtn" class="nav-btn" onclick="previousStep()" style="display: none;">← Назад</button>

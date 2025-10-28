@@ -191,18 +191,27 @@ h3 {
 }
 
 .form-step.active {
-    display: block;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+}
+
+.form-step.active * {
+    display: revert !important;
 }
 
 /* Специальное правило для textarea на шаге 7 */
 .form-step.active #adText,
 .form-step#step7.active textarea,
-#step7 .neon-textarea {
+#step7 .neon-textarea,
+#adText {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
     height: auto !important;
     min-height: 120px !important;
+    position: relative !important;
+    z-index: 999 !important;
 }
 
 /* Сетки кнопок */

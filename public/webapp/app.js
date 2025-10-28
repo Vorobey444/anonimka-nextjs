@@ -200,24 +200,62 @@ function showStep(step) {
     stepElement.classList.add('active');
     console.log(`✅ Шаг ${step} активен`, stepElement);
     
-    // Для шага 7 принудительно показываем textarea
+    // Показываем/скрываем контейнер textarea
+    const textareaContainer = document.getElementById('textareaContainer');
+    if (textareaContainer) {
+        if (step === 7) {
+            textareaContainer.style.display = 'block';
+            console.log('✅ Показали контейнер textarea');
+        } else {
+            textareaContainer.style.display = 'none';
+        }
+    }
+    
+    // Для шага 7 принудительно показываем textarea МАКСИМАЛЬНО АГРЕССИВНО
     if (step === 7) {
         const textarea = document.getElementById('adText');
         if (textarea) {
-            // Убираем все стили, которые могут скрывать textarea
-            textarea.style.display = 'block';
-            textarea.style.visibility = 'visible';
-            textarea.style.opacity = '1';
-            textarea.style.height = 'auto';
-            textarea.style.minHeight = '120px';
+            // Убираем все классы
+            textarea.className = '';
             
-            console.log('🔍 Принудительно показали textarea:', {
+            // Применяем inline стили с максимальным приоритетом
+            textarea.setAttribute('style', `
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                width: 100% !important;
+                padding: 15px !important;
+                background: rgba(26, 26, 46, 0.8) !important;
+                border: 2px solid #ff00ff !important;
+                border-radius: 15px !important;
+                color: #e0e0ff !important;
+                font-size: 16px !important;
+                resize: vertical !important;
+                min-height: 120px !important;
+                height: auto !important;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+                box-sizing: border-box !important;
+                position: relative !important;
+                z-index: 9999 !important;
+            `);
+            
+            // Также применим стили напрямую через style API
+            textarea.style.cssText = `
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+            `;
+            
+            console.log('🔍 АГРЕССИВНО показали textarea:', {
                 exists: true,
+                className: textarea.className,
                 value: textarea.value,
                 display: textarea.style.display,
                 visibility: textarea.style.visibility,
                 computedDisplay: window.getComputedStyle(textarea).display,
-                computedVisibility: window.getComputedStyle(textarea).visibility
+                computedVisibility: window.getComputedStyle(textarea).visibility,
+                offsetHeight: textarea.offsetHeight,
+                offsetWidth: textarea.offsetWidth
             });
         } else {
             console.error('❌ Textarea #adText не найден!');
