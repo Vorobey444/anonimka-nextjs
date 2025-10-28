@@ -200,14 +200,28 @@ function showStep(step) {
     stepElement.classList.add('active');
     console.log(`✅ Шаг ${step} активен`, stepElement);
     
-    // Для шага 7 проверяем textarea
+    // Для шага 7 принудительно показываем textarea
     if (step === 7) {
         const textarea = document.getElementById('adText');
-        console.log('🔍 Проверка textarea на шаге 7:', {
-            exists: !!textarea,
-            value: textarea?.value,
-            visible: textarea ? window.getComputedStyle(textarea).display : 'N/A'
-        });
+        if (textarea) {
+            // Убираем все стили, которые могут скрывать textarea
+            textarea.style.display = 'block';
+            textarea.style.visibility = 'visible';
+            textarea.style.opacity = '1';
+            textarea.style.height = 'auto';
+            textarea.style.minHeight = '120px';
+            
+            console.log('🔍 Принудительно показали textarea:', {
+                exists: true,
+                value: textarea.value,
+                display: textarea.style.display,
+                visibility: textarea.style.visibility,
+                computedDisplay: window.getComputedStyle(textarea).display,
+                computedVisibility: window.getComputedStyle(textarea).visibility
+            });
+        } else {
+            console.error('❌ Textarea #adText не найден!');
+        }
     }
     
     // Обновляем кнопки навигации
