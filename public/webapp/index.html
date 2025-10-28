@@ -376,7 +376,7 @@
                             <label>От</label>
                             <div class="age-control">
                                 <button type="button" class="age-btn minus" onclick="decreaseAge('ageFrom')">−</button>
-                                <input type="number" id="ageFrom" min="18" max="100" value="18" class="neon-input small" onchange="validateAgeRange()">
+                                <input type="number" id="ageFrom" min="18" max="100" class="neon-input small" placeholder="18" onchange="validateAgeRange()">
                                 <button type="button" class="age-btn plus" onclick="increaseAge('ageFrom')">+</button>
                             </div>
                         </div>
@@ -384,7 +384,7 @@
                             <label>До</label>
                             <div class="age-control">
                                 <button type="button" class="age-btn minus" onclick="decreaseAge('ageTo')">−</button>
-                                <input type="number" id="ageTo" min="18" max="100" value="18" class="neon-input small" onchange="validateAgeRange()">
+                                <input type="number" id="ageTo" min="18" max="100" class="neon-input small" placeholder="18" onchange="validateAgeRange()">
                                 <button type="button" class="age-btn plus" onclick="increaseAge('ageTo')">+</button>
                             </div>
                         </div>
@@ -395,7 +395,7 @@
                     <h3>🎂 Ваш возраст</h3>
                     <div class="age-control centered">
                         <button type="button" class="age-btn minus" onclick="decreaseAge('myAge')">−</button>
-                        <input type="number" id="myAge" min="18" max="100" value="18" class="neon-input">
+                        <input type="number" id="myAge" min="18" max="100" class="neon-input" placeholder="Введите ваш возраст">
                         <button type="button" class="age-btn plus" onclick="increaseAge('myAge')">+</button>
                     </div>
                 </div>

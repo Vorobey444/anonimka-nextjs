@@ -259,8 +259,15 @@ function previousStep() {
 // Функции для контроля возраста
 function increaseAge(inputId) {
     const input = document.getElementById(inputId);
-    const currentValue = parseInt(input.value) || 18;
+    let currentValue = parseInt(input.value);
     const maxValue = parseInt(input.max) || 100;
+    
+    // Если поле пустое, устанавливаем начальное значение 18
+    if (isNaN(currentValue) || !input.value) {
+        input.value = 18;
+        validateAgeRange();
+        return;
+    }
     
     if (currentValue < maxValue) {
         input.value = currentValue + 1;
@@ -270,8 +277,15 @@ function increaseAge(inputId) {
 
 function decreaseAge(inputId) {
     const input = document.getElementById(inputId);
-    const currentValue = parseInt(input.value) || 18;
+    let currentValue = parseInt(input.value);
     const minValue = parseInt(input.min) || 18;
+    
+    // Если поле пустое, устанавливаем начальное значение 18
+    if (isNaN(currentValue) || !input.value) {
+        input.value = 18;
+        validateAgeRange();
+        return;
+    }
     
     if (currentValue > minValue) {
         input.value = currentValue - 1;
