@@ -1,4 +1,4 @@
-// Инициализация Telegram Web App
+// Инициализация Telegram Web App с безопасными fallback методами
 let tg = window.Telegram?.WebApp || {
     expand: () => {},
     setHeaderColor: () => {},
@@ -14,26 +14,54 @@ let tg = window.Telegram?.WebApp || {
         show: () => {},
         hide: () => {}
     },
-    showAlert: (msg, callback) => {
-        console.log('ALERT:', msg);
-        alert(msg);
-        if (callback && typeof callback === 'function') {
-            setTimeout(callback, 0);
-        }
-    },
-    showPopup: (params, callback) => {
-        console.log('POPUP:', params.message);
-        alert(params.message);
-        if (callback && typeof callback === 'function') {
-            setTimeout(callback, 0);
-        }
-    },
     initDataUnsafe: {
         user: null
     },
     ready: () => {},
-    close: () => {
-        console.log('close() called');
+    close: () => {}
+};
+
+// Безопасная обертка для showAlert с fallback на alert()
+const originalShowAlert = tg.showAlert;
+tg.showAlert = function(msg, callback) {
+    console.log('showAlert called:', msg);
+    
+    // Если оригинальный метод существует и поддерживается
+    if (originalShowAlert && typeof originalShowAlert === 'function') {
+        try {
+            originalShowAlert.call(tg, msg, callback);
+            return;
+        } catch (e) {
+            console.warn('showAlert failed, using fallback:', e.message);
+        }
+    }
+    
+    // Fallback на обычный alert
+    alert(msg);
+    if (callback && typeof callback === 'function') {
+        setTimeout(callback, 0);
+    }
+};
+
+// Безопасная обертка для showPopup с fallback на alert()
+const originalShowPopup = tg.showPopup;
+tg.showPopup = function(params, callback) {
+    console.log('showPopup called:', params);
+    
+    // Если оригинальный метод существует и поддерживается
+    if (originalShowPopup && typeof originalShowPopup === 'function') {
+        try {
+            originalShowPopup.call(tg, params, callback);
+            return;
+        } catch (e) {
+            console.warn('showPopup failed, using fallback:', e.message);
+        }
+    }
+    
+    // Fallback на обычный alert
+    alert(params.message || params.title || 'Уведомление');
+    if (callback && typeof callback === 'function') {
+        setTimeout(callback, 0);
     }
 };
 
