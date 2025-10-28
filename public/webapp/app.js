@@ -44,6 +44,7 @@ const totalSteps = 7;
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
     initializeTelegramWebApp();
+    checkTelegramAuth(); // Проверка авторизации
     checkUserLocation();
     setupEventListeners();
     setupContactsEventListeners();
@@ -92,6 +93,133 @@ function initializeTelegramWebApp() {
     }
     
     console.log('Telegram Web App initialized');
+}
+
+// Проверка авторизации через Telegram
+function checkTelegramAuth() {
+    // Если запущено через Telegram WebApp, авторизация не нужна
+    if (isTelegramWebApp && tg.initDataUnsafe?.user?.id) {
+        const userData = {
+            id: tg.initDataUnsafe.user.id,
+            first_name: tg.initDataUnsafe.user.first_name,
+            last_name: tg.initDataUnsafe.user.last_name,
+            username: tg.initDataUnsafe.user.username,
+            photo_url: tg.initDataUnsafe.user.photo_url
+        };
+        
+        // Сохраняем в localStorage
+        localStorage.setItem('telegram_user', JSON.stringify(userData));
+        console.log('✅ Авторизован через Telegram WebApp:', userData);
+        return;
+    }
+    
+    // Проверяем сохранённые данные
+    const savedUser = localStorage.getItem('telegram_user');
+    if (savedUser) {
+        try {
+            const userData = JSON.parse(savedUser);
+            console.log('✅ Найдена сохранённая авторизация:', userData);
+            return;
+        } catch (e) {
+            console.error('Ошибка парсинга данных пользователя:', e);
+        }
+    }
+    
+    // Если нет авторизации - показываем модальное окно
+    console.log('❌ Пользователь не авторизован, показываем модальное окно');
+    showTelegramAuthModal();
+}
+
+// Показать модальное окно авторизации
+function showTelegramAuthModal() {
+    const modal = document.getElementById('telegramAuthModal');
+    if (!modal) return;
+    
+    modal.style.display = 'flex';
+    
+    // Инициализируем Telegram Login Widget
+    initTelegramLoginWidget();
+}
+
+// Закрыть модальное окно (только если пользователь авторизован)
+function closeTelegramAuthModal() {
+    const savedUser = localStorage.getItem('telegram_user');
+    if (!savedUser) {
+        alert('Для продолжения использования сайта необходимо авторизоваться через Telegram');
+        return;
+    }
+    
+    const modal = document.getElementById('telegramAuthModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Инициализация Telegram Login Widget
+function initTelegramLoginWidget() {
+    const container = document.getElementById('telegramLoginWidget');
+    if (!container) return;
+    
+    // Очищаем контейнер
+    container.innerHTML = '';
+    
+    // ВАЖНО: Замените 'YOUR_BOT_USERNAME' на имя вашего бота (без @)
+    const botUsername = 'YOUR_BOT_USERNAME'; // TODO: заменить на реальное имя бота
+    
+    // Создаём iframe для Telegram Login Widget
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.setAttribute('data-telegram-login', botUsername);
+    script.setAttribute('data-size', 'large');
+    script.setAttribute('data-auth-url', window.location.origin + '/webapp/auth.html');
+    script.setAttribute('data-request-access', 'write');
+    
+    container.appendChild(script);
+    
+    console.log('Telegram Login Widget инициализирован для бота:', botUsername);
+}
+
+// Callback после успешной авторизации через Telegram
+window.onTelegramAuth = function(user) {
+    console.log('✅ Успешная авторизация через Telegram:', user);
+    
+    // Сохраняем данные пользователя
+    localStorage.setItem('telegram_user', JSON.stringify(user));
+    
+    // Закрываем модальное окно
+    const modal = document.getElementById('telegramAuthModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    // Показываем уведомление
+    alert('✅ Вы успешно авторизованы!\nТеперь вы можете создавать объявления и получать уведомления.');
+    
+    // Перезагружаем страницу для применения авторизации
+    location.reload();
+};
+
+// Получить ID текущего пользователя
+function getCurrentUserId() {
+    // Если в Telegram WebApp
+    if (isTelegramWebApp && tg.initDataUnsafe?.user?.id) {
+        return tg.initDataUnsafe.user.id.toString();
+    }
+    
+    // Если авторизован через Login Widget
+    const savedUser = localStorage.getItem('telegram_user');
+    if (savedUser) {
+        try {
+            const userData = JSON.parse(savedUser);
+            return userData.id?.toString();
+        } catch (e) {
+            console.error('Ошибка получения ID пользователя:', e);
+        }
+    }
+    
+    // Fallback - временный ID
+    return 'web_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
 function setupEventListeners() {
@@ -527,14 +655,12 @@ async function submitAd() {
             country: formData.country || 'Россия',
             region: formData.region || '',
             city: formData.city,
-            // Получаем tg_id если в Telegram, иначе генерируем временный ID
-            tgId: isTelegramWebApp && tg.initDataUnsafe?.user?.id 
-                ? tg.initDataUnsafe.user.id.toString() 
-                : 'web_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+            // Используем новую функцию для получения ID
+            tgId: getCurrentUserId()
         };
 
         console.log('Отправка объявления в Supabase:', adData);
-        console.log('Telegram User ID:', isTelegramWebApp ? tg.initDataUnsafe?.user?.id : 'N/A (не в Telegram)');
+        console.log('Telegram User ID:', getCurrentUserId());
 
 
         // Показываем индикатор загрузки

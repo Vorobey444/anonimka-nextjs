@@ -1908,6 +1908,158 @@ h3 {
     margin-bottom: 0.5rem;
 }
 
+/* Модальное окно авторизации через Telegram */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+}
+
+.modal-content {
+    position: relative;
+    background: linear-gradient(135deg, var(--bg-card), #1a1a2e);
+    border: 2px solid var(--neon-purple);
+    border-radius: 20px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 50px rgba(131, 56, 236, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid rgba(131, 56, 236, 0.3);
+}
+
+.modal-header h2 {
+    font-size: 1.5rem;
+    color: var(--neon-purple);
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-gray);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.modal-close:hover {
+    color: var(--neon-pink);
+    background: rgba(255, 0, 255, 0.1);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+.auth-warning {
+    background: rgba(255, 153, 0, 0.1);
+    border: 2px solid rgba(255, 153, 0, 0.5);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.warning-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+}
+
+.auth-warning h3 {
+    color: #ff9900;
+    margin-bottom: 10px;
+}
+
+.auth-warning p {
+    color: var(--text-light);
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.auth-warning ul {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0 0 0;
+    text-align: left;
+}
+
+.auth-warning ul li {
+    color: var(--text-light);
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 153, 0, 0.2);
+}
+
+.auth-warning ul li:last-child {
+    border-bottom: none;
+}
+
+.telegram-login-container {
+    text-align: center;
+}
+
+.telegram-login-container h4 {
+    color: var(--neon-cyan);
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+}
+
+#telegramLoginWidget {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100px;
+    margin: 20px 0;
+}
+
+.login-hint {
+    color: var(--text-gray);
+    font-size: 0.9rem;
+    margin-top: 15px;
+}
+
 .version {
     color: var(--text-gray);
     font-size: 0.9rem;

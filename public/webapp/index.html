@@ -9,6 +9,7 @@
     <title>Анонимная доска объявлений</title>
     <link rel="stylesheet" href="/webapp/style.css?v=4.2">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-widget.js?22"></script>
     <script src="/webapp/supabase-client.js?v=3.0"></script>
 </head>
 <body>
@@ -520,6 +521,36 @@
             <button class="neon-button primary full-width" onclick="contactAuthor()">
                 ✉️ Написать автору
             </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно авторизации через Telegram -->
+    <div id="telegramAuthModal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔐 Авторизация через Telegram</h2>
+                <button class="modal-close" onclick="closeTelegramAuthModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="auth-warning">
+                    <div class="warning-icon">⚠️</div>
+                    <h3>Требуется авторизация</h3>
+                    <p>Для продолжения использования сайта необходимо авторизоваться через Telegram.</p>
+                    <p>Это позволит:</p>
+                    <ul>
+                        <li>✅ Создавать объявления</li>
+                        <li>✅ Получать уведомления о сообщениях</li>
+                        <li>✅ Создавать приватные чаты</li>
+                    </ul>
+                </div>
+                
+                <div class="telegram-login-container">
+                    <h4>Отсканируйте QR-код в мобильном приложении Telegram:</h4>
+                    <div id="telegramLoginWidget"></div>
+                    <p class="login-hint">Или нажмите кнопку ниже для входа через бот</p>
+                </div>
+            </div>
         </div>
     </div>
 
