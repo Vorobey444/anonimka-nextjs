@@ -163,8 +163,8 @@ function initTelegramLoginWidget() {
     // Очищаем контейнер
     container.innerHTML = '';
     
-    // ВАЖНО: Замените 'YOUR_BOT_USERNAME' на имя вашего бота (без @)
-    const botUsername = 'YOUR_BOT_USERNAME'; // TODO: заменить на реальное имя бота
+    // Имя бота для Telegram Login Widget
+    const botUsername = 'anon_board_bot';
     
     // Создаём iframe для Telegram Login Widget
     const script = document.createElement('script');
