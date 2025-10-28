@@ -2237,41 +2237,8 @@ function openTelegramChat() {
 function setupContactsEventListeners() {
     console.log('Настройка обработчиков контактов');
     
-    // Добавляем обработчик для формы отправки письма
-    const contactForm = document.getElementById('contactForm');
-    if (contactForm) {
-        console.log('Найдена форма contactForm, добавляем обработчик');
-        contactForm.addEventListener('submit', handleEmailSubmit);
-        
-        // Дополнительно добавляем обработчик на кнопку
-        const sendBtn = document.getElementById('sendEmailBtn');
-        if (sendBtn) {
-            console.log('Найдена кнопка sendEmailBtn, добавляем обработчик клика');
-            sendBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                console.log('Клик по кнопке отправки письма');
-                handleEmailSubmit(e);
-            });
-        }
-    } else {
-        console.log('Форма contactForm не найдена');
-        // Пробуем найти через таймаут
-        setTimeout(() => {
-            const form = document.getElementById('contactForm');
-            if (form) {
-                console.log('Форма найдена через таймаут, добавляем обработчик');
-                form.addEventListener('submit', handleEmailSubmit);
-                
-                const btn = document.getElementById('sendEmailBtn');
-                if (btn) {
-                    btn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        handleEmailSubmit(e);
-                    });
-                }
-            }
-        }, 1000);
-    }
+    // НЕ добавляем обработчики формы здесь - они добавляются в setupEmailFormHandlers
+    // который вызывается из showEmailForm()
     
     // Добавляем обработчики событий для Telegram контакта
     const telegramContact = document.querySelector('.contact-item[onclick*="openTelegramChat"]');

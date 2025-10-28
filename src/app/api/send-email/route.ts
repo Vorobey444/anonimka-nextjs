@@ -65,7 +65,8 @@ export async function POST(req: NextRequest) {
   day: 'numeric', 
   hour: '2-digit',
   minute: '2-digit',
-  second: '2-digit'
+  second: '2-digit',
+  timeZone: 'Asia/Almaty' // Часовой пояс Казахстана (UTC+5/+6)
 })}
 
 ═══════════════════════════════════
