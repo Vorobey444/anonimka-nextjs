@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       country,
       region,
       city,
-      userId 
+      tgId 
     } = body;
     
     console.log("[ADS API] Данные объявления:", {
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
       country: country || 'Россия',
       region: region || '',
       city,
-      user_id: userId || 'anonymous',
+      tg_id: tgId || 'anonymous',
       created_at: new Date().toISOString()
     };
 

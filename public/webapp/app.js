@@ -311,7 +311,7 @@ async function submitAd() {
             country: formData.country || 'Россия',
             region: formData.region || '',
             city: formData.city,
-            userId: tg.initDataUnsafe?.user?.id || 'anonymous'
+            tgId: tg.initDataUnsafe?.user?.id?.toString() || 'anonymous'
         };
 
         console.log('Отправка объявления в Supabase:', adData);
