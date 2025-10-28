@@ -206,59 +206,64 @@ function showStep(step) {
         if (step === 7) {
             textareaContainer.style.display = 'block';
             console.log('✅ Показали контейнер textarea');
+            
+            // ЯДЕРНАЯ ОПЦИЯ: Удаляем старый textarea и создаём новый с нуля
+            let textarea = document.getElementById('adText');
+            if (textarea) {
+                textarea.remove();
+                console.log('🗑️ Удалили старый textarea');
+            }
+            
+            // Создаём textarea динамически
+            textarea = document.createElement('textarea');
+            textarea.id = 'adText';
+            textarea.placeholder = 'Расскажите о себе и что ищете...';
+            textarea.rows = 6;
+            
+            // Применяем стили напрямую
+            Object.assign(textarea.style, {
+                display: 'block',
+                visibility: 'visible',
+                opacity: '1',
+                width: '100%',
+                maxWidth: '500px',
+                padding: '15px',
+                background: 'rgba(26, 26, 46, 0.8)',
+                border: '2px solid #ff00ff',
+                borderRadius: '15px',
+                color: '#e0e0ff',
+                fontSize: '16px',
+                resize: 'vertical',
+                minHeight: '120px',
+                height: 'auto',
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                boxSizing: 'border-box',
+                position: 'relative',
+                zIndex: '9999',
+                margin: '0 auto'
+            });
+            
+            // Вставляем в контейнер
+            textareaContainer.innerHTML = '';
+            textareaContainer.appendChild(textarea);
+            
+            // Проверяем через небольшую задержку
+            setTimeout(() => {
+                const check = document.getElementById('adText');
+                console.log('🔍 ДИНАМИЧЕСКИ созданный textarea:', {
+                    exists: !!check,
+                    display: check?.style.display,
+                    visibility: check?.style.visibility,
+                    computedDisplay: check ? window.getComputedStyle(check).display : 'n/a',
+                    computedVisibility: check ? window.getComputedStyle(check).visibility : 'n/a',
+                    offsetHeight: check?.offsetHeight,
+                    offsetWidth: check?.offsetWidth,
+                    clientHeight: check?.clientHeight,
+                    clientWidth: check?.clientWidth
+                });
+            }, 100);
         } else {
             textareaContainer.style.display = 'none';
-        }
-    }
-    
-    // Для шага 7 принудительно показываем textarea МАКСИМАЛЬНО АГРЕССИВНО
-    if (step === 7) {
-        const textarea = document.getElementById('adText');
-        if (textarea) {
-            // Убираем все классы
-            textarea.className = '';
-            
-            // Применяем inline стили с максимальным приоритетом
-            textarea.setAttribute('style', `
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                width: 100% !important;
-                padding: 15px !important;
-                background: rgba(26, 26, 46, 0.8) !important;
-                border: 2px solid #ff00ff !important;
-                border-radius: 15px !important;
-                color: #e0e0ff !important;
-                font-size: 16px !important;
-                resize: vertical !important;
-                min-height: 120px !important;
-                height: auto !important;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-                box-sizing: border-box !important;
-                position: relative !important;
-                z-index: 9999 !important;
-            `);
-            
-            // Также применим стили напрямую через style API
-            textarea.style.cssText = `
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-            `;
-            
-            console.log('🔍 АГРЕССИВНО показали textarea:', {
-                exists: true,
-                className: textarea.className,
-                value: textarea.value,
-                display: textarea.style.display,
-                visibility: textarea.style.visibility,
-                computedDisplay: window.getComputedStyle(textarea).display,
-                computedVisibility: window.getComputedStyle(textarea).visibility,
-                offsetHeight: textarea.offsetHeight,
-                offsetWidth: textarea.offsetWidth
-            });
-        } else {
-            console.error('❌ Textarea #adText не найден!');
         }
     }
     
