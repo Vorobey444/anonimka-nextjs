@@ -2060,6 +2060,93 @@ h3 {
     margin-top: 15px;
 }
 
+/* Детали объявления */
+.ad-full {
+    padding: 20px 0;
+}
+
+.ad-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(131, 56, 236, 0.3);
+}
+
+.ad-header h3 {
+    color: var(--neon-purple);
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.ad-date {
+    color: var(--text-gray);
+    font-size: 0.9rem;
+}
+
+.ad-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.info-item {
+    display: flex;
+    gap: 12px;
+    padding: 15px;
+    background: rgba(131, 56, 236, 0.1);
+    border: 1px solid rgba(131, 56, 236, 0.3);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.info-item:hover {
+    background: rgba(131, 56, 236, 0.15);
+    border-color: rgba(131, 56, 236, 0.5);
+    transform: translateY(-2px);
+}
+
+.info-item .icon {
+    font-size: 1.8rem;
+}
+
+.info-item .label {
+    color: var(--text-gray);
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+
+.info-item .value {
+    color: var(--text-light);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.ad-description {
+    background: linear-gradient(135deg, rgba(131, 56, 236, 0.1), rgba(255, 0, 255, 0.05));
+    border: 2px solid rgba(255, 0, 255, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.ad-description h4 {
+    color: var(--neon-pink);
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.ad-description p {
+    color: var(--text-light);
+    line-height: 1.6;
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
 .version {
     color: var(--text-gray);
     font-size: 0.9rem;

@@ -813,13 +813,171 @@ function handleCityFilter(city) {
 }
 
 function showAdDetails(index) {
-    // Здесь будет логика показа деталей объявления
-    // Пока просто переход на экран деталей
+    const ad = window.currentAds?.[index];
+    
+    if (!ad) {
+        alert('Объявление не найдено');
+        return;
+    }
+    
+    const adContent = document.getElementById('adContent');
+    if (!adContent) return;
+    
+    // Сохраняем индекс для кнопки "Написать автору"
+    window.currentAdIndex = index;
+    
+    const myAge = ad.my_age || ad.myAge || '?';
+    const ageFrom = ad.age_from || ad.ageFrom || '?';
+    const ageTo = ad.age_to || ad.ageTo || '?';
+    const bodyType = ad.body_type || ad.body || '?';
+    
+    adContent.innerHTML = `
+        <div class="ad-full">
+            <div class="ad-header">
+                <h3>📍 ${ad.city}</h3>
+                <span class="ad-date">${new Date(ad.created_at).toLocaleDateString('ru-RU')}</span>
+            </div>
+            
+            <div class="ad-info-grid">
+                <div class="info-item">
+                    <span class="icon">👤</span>
+                    <div>
+                        <div class="label">Пол</div>
+                        <div class="value">${ad.gender}</div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <span class="icon">🔍</span>
+                    <div>
+                        <div class="label">Ищет</div>
+                        <div class="value">${ad.target}</div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <span class="icon">🎯</span>
+                    <div>
+                        <div class="label">Цель</div>
+                        <div class="value">${ad.goal}</div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <span class="icon">📅</span>
+                    <div>
+                        <div class="label">Возраст партнера</div>
+                        <div class="value">${ageFrom} - ${ageTo} лет</div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <span class="icon">🎂</span>
+                    <div>
+                        <div class="label">Мой возраст</div>
+                        <div class="value">${myAge} лет</div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <span class="icon">💪</span>
+                    <div>
+                        <div class="label">Телосложение</div>
+                        <div class="value">${bodyType}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="ad-description">
+                <h4>💬 О себе:</h4>
+                <p>${ad.text}</p>
+            </div>
+        </div>
+    `;
+    
+    // Обновляем кнопку "Написать автору"
+    const contactBtn = document.querySelector('#adDetails button.neon-button');
+    if (contactBtn) {
+        contactBtn.onclick = () => contactAuthor(index);
+    }
+    
     showScreen('adDetails');
 }
 
-function contactAuthor() {
-    tg.showAlert('Функция связи с автором будет доступна в следующей версии');
+// Написать автору объявления
+async function contactAuthor(adIndex) {
+    const ad = window.currentAds?.[adIndex];
+    
+    if (!ad) {
+        alert('Объявление не найдено');
+        return;
+    }
+    
+    // Проверяем авторизацию
+    const currentUserId = getCurrentUserId();
+    if (currentUserId.startsWith('web_')) {
+        alert('⚠️ Для отправки сообщений необходимо авторизоваться через Telegram');
+        showTelegramAuthModal();
+        return;
+    }
+    
+    // Проверяем, не пытается ли пользователь написать самому себе
+    if (ad.tg_id === currentUserId) {
+        alert('Вы не можете отправить сообщение на своё объявление');
+        return;
+    }
+    
+    // Запрашиваем текст сообщения
+    const message = prompt('Введите сообщение автору объявления:');
+    
+    if (!message || message.trim() === '') {
+        return;
+    }
+    
+    try {
+        // Получаем имя пользователя
+        const savedUser = localStorage.getItem('telegram_user');
+        let senderName = 'Пользователь';
+        
+        if (savedUser) {
+            try {
+                const userData = JSON.parse(savedUser);
+                senderName = userData.first_name || 'Пользователь';
+                if (userData.last_name) {
+                    senderName += ' ' + userData.last_name;
+                }
+            } catch (e) {
+                console.error('Error parsing user data:', e);
+            }
+        }
+        
+        // Отправляем сообщение через API
+        const response = await fetch('/api/send-message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                adId: ad.id,
+                senderTgId: currentUserId,
+                receiverTgId: ad.tg_id,
+                messageText: message.trim(),
+                senderName: senderName
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Сообщение отправлено!\n\nАвтор объявления получит уведомление в Telegram боте и сможет начать с вами приватный чат.');
+        } else {
+            alert('❌ Ошибка при отправке сообщения: ' + (result.error || 'Unknown error'));
+        }
+        
+    } catch (error) {
+        console.error('Error sending message:', error);
+        alert('❌ Ошибка при отправке сообщения. Попробуйте позже.');
+    }
 }
 
 // Сброс формы
