@@ -189,6 +189,10 @@ function checkTelegramAuth() {
             photo_url: tg.initDataUnsafe.user.photo_url
         };
         
+        // Проверяем, была ли уже авторизация
+        const savedUser = localStorage.getItem('telegram_user');
+        const isNewAuth = !savedUser || JSON.stringify(userData) !== savedUser;
+        
         // Сохраняем в localStorage
         localStorage.setItem('telegram_user', JSON.stringify(userData));
         localStorage.setItem('telegram_auth_time', Date.now().toString());
@@ -196,9 +200,17 @@ function checkTelegramAuth() {
         
         // Закрываем модальное окно если оно было открыто
         const modal = document.getElementById('telegramAuthModal');
-        if (modal && modal.style.display !== 'none') {
+        if (modal) {
             modal.style.display = 'none';
             console.log('✅ Модальное окно авторизации закрыто');
+            
+            // Если это новая авторизация (вернулись из бота), показываем уведомление
+            if (isNewAuth) {
+                // Даем время модальному окну закрыться
+                setTimeout(() => {
+                    tg.showAlert(`✅ Добро пожаловать, ${userData.first_name}!\n\nТеперь вы можете пользоваться всеми функциями приложения.`);
+                }, 300);
+            }
         }
         
         return true;
