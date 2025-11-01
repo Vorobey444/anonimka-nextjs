@@ -85,6 +85,18 @@ document.addEventListener('DOMContentLoaded', function() {
     checkUserLocation();
     setupEventListeners();
     setupContactsEventListeners();
+    
+    // Добавляем обработчик видимости страницы
+    // Если пользователь вернулся после сканирования QR
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            console.log('📱 Страница стала видимой, повторная проверка авторизации');
+            // Проверяем авторизацию еще раз
+            setTimeout(() => {
+                checkTelegramAuth();
+            }, 500);
+        }
+    });
 });
 
 function initializeTelegramWebApp() {
@@ -150,7 +162,16 @@ function checkTelegramAuth() {
         
         // Сохраняем в localStorage
         localStorage.setItem('telegram_user', JSON.stringify(userData));
+        localStorage.setItem('telegram_auth_time', Date.now().toString());
         console.log('✅ Авторизован через Telegram WebApp:', userData);
+        
+        // Закрываем модальное окно если оно было открыто
+        const modal = document.getElementById('telegramAuthModal');
+        if (modal && modal.style.display !== 'none') {
+            modal.style.display = 'none';
+            console.log('✅ Модальное окно авторизации закрыто');
+        }
+        
         return true;
     }
     
