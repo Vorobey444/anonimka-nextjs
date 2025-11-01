@@ -78,18 +78,18 @@ export async function POST(request: NextRequest) {
     `.trim();
 
     // Inline клавиатура с кнопкой "Создать чат"
-    // Используем web_app вместо callback_data для вызова API напрямую
+    // Используем callback_data для обработки ботом
     const keyboard = {
       inline_keyboard: [
         [
           {
             text: '💬 Написать в личку',
-            url: `https://anonimka.online/api/create-chat-redirect?ad_id=${adId}&sender_tg_id=${senderTgId}&receiver_tg_id=${receiverTgId}`
+            callback_data: `create_chat_${adId}_${senderTgId}_${receiverTgId}`
           }
         ],
         [
           {
-            text: '� Открыть приложение',
+            text: '📱 Открыть приложение',
             web_app: {
               url: `https://anonimka.online/webapp`
             }
