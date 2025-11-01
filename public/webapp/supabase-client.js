@@ -92,14 +92,21 @@
         throw new Error(errorMsg);
       }
       
-      const url = `/api/ads?id=${adId}&tgId=${tgId}`;
+      const url = `/api/ads`;
+      const requestBody = {
+        id: adId,
+        tgId: tgId
+      };
+      
       console.log('deleteAd(): запрос к', url);
+      console.log('deleteAd(): тело запроса:', requestBody);
       
       const response = await fetch(url, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify(requestBody)
       });
       
       console.log('deleteAd(): response status =', response.status);

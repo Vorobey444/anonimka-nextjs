@@ -189,9 +189,9 @@ export async function OPTIONS(req: NextRequest) {
 // DELETE - удаление объявления
 export async function DELETE(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    const tgId = searchParams.get('tgId');
+    // Читаем данные из тела запроса вместо URL параметров (для обхода AdBlock)
+    const body = await req.json();
+    const { id, tgId } = body;
 
     console.log("[ADS API] Удаление объявления:", { id, tgId });
 
