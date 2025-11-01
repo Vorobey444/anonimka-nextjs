@@ -191,13 +191,21 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const tgId = searchParams.get('tgId');
 
-    console.log("[ADS API] Удаление объявления:", id);
+    console.log("[ADS API] Удаление объявления:", { id, tgId });
 
     if (!id) {
       return NextResponse.json(
         { success: false, error: "ID объявления не указан" },
         { status: 400 }
+      );
+    }
+
+    if (!tgId) {
+      return NextResponse.json(
+        { success: false, error: "Требуется авторизация" },
+        { status: 401 }
       );
     }
 
@@ -209,6 +217,35 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: "База данных не настроена" },
         { status: 500 }
+      );
+    }
+
+    // Сначала проверяем, что объявление принадлежит пользователю
+    const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/ads?id=eq.${id}&select=tg_id`, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    });
+
+    if (!checkResponse.ok) {
+      throw new Error(`Supabase error: ${checkResponse.statusText}`);
+    }
+
+    const ads = await checkResponse.json();
+    
+    if (!ads || ads.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Объявление не найдено" },
+        { status: 404 }
+      );
+    }
+
+    if (ads[0].tg_id !== tgId) {
+      console.log("[ADS API] Попытка удалить чужое объявление:", { adOwner: ads[0].tg_id, requester: tgId });
+      return NextResponse.json(
+        { success: false, error: "Вы можете удалять только свои объявления" },
+        { status: 403 }
       );
     }
 
@@ -225,7 +262,7 @@ export async function DELETE(req: NextRequest) {
       throw new Error(`Supabase error: ${response.statusText}`);
     }
 
-    console.log("[ADS API] Объявление удалено:", id);
+    console.log("[ADS API] Объявление успешно удалено:", id);
     
     return NextResponse.json({
       success: true,

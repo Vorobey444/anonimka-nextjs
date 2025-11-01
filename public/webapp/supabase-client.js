@@ -67,7 +67,14 @@
     console.log('deleteAd(): удаление объявления', adId);
     
     try {
-      const response = await fetch(`/api/ads?id=${adId}`, {
+      // Получаем Telegram ID пользователя
+      const tgId = tg.initDataUnsafe?.user?.id;
+      
+      if (!tgId) {
+        throw new Error('Не удалось получить ваш Telegram ID');
+      }
+      
+      const response = await fetch(`/api/ads?id=${adId}&tgId=${tgId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
