@@ -51,18 +51,22 @@ tg.showPopup = function(params, callback) {
     // Если оригинальный метод существует и поддерживается
     if (originalShowPopup && typeof originalShowPopup === 'function') {
         try {
-            originalShowPopup.call(tg, params, callback);
-            return;
+            // Проверяем версию WebApp
+            const version = parseFloat(tg.version || '6.0');
+            if (version >= 6.2) {
+                originalShowPopup.call(tg, params, callback);
+                return;
+            } else {
+                console.warn('showPopup not supported in version ' + version + ', using showAlert');
+            }
         } catch (e) {
             console.warn('showPopup failed, using fallback:', e.message);
         }
     }
     
-    // Fallback на обычный alert
-    alert(params.message || params.title || 'Уведомление');
-    if (callback && typeof callback === 'function') {
-        setTimeout(callback, 0);
-    }
+    // Fallback на showAlert вместо обычного alert
+    const message = params.message || params.title || 'Уведомление';
+    tg.showAlert(message, callback);
 };
 
 // Проверка, запущено ли приложение в Telegram
@@ -1387,7 +1391,7 @@ async function deleteMyAd(adId) {
     }
     
     try {
-        const deleted = await deleteAd(adId);
+        const deleted = await window.SupabaseClient.deleteAd(adId);
         
         if (deleted) {
             tg.showAlert('✅ Объявление успешно удалено');
@@ -1405,7 +1409,7 @@ async function deleteMyAd(adId) {
 // Закрепить/открепить мое объявление
 async function pinMyAd(adId, shouldPin) {
     try {
-        const pinned = await togglePinAd(adId, shouldPin);
+        const pinned = await window.SupabaseClient.togglePinAd(adId, shouldPin);
         
         if (pinned) {
             if (shouldPin) {
@@ -2515,14 +2519,19 @@ function resetLocationSelection() {
         btn.classList.remove('active');
     });
     
-    // Очищаем поля ввода
-    document.querySelector('.form-region-input').value = '';
-    document.querySelector('.form-city-input').value = '';
+    // Очищаем поля ввода (с проверкой существования)
+    const regionInput = document.querySelector('.form-region-input');
+    const cityInput = document.querySelector('.form-city-input');
+    if (regionInput) regionInput.value = '';
+    if (cityInput) cityInput.value = '';
     
-    // Скрываем все секции кроме выбора страны
-    document.querySelector('.form-region-selection').style.display = 'none';
-    document.querySelector('.form-city-selection').style.display = 'none';
-    document.querySelector('.form-selected-location').style.display = 'none';
+    // Скрываем все секции кроме выбора страны (с проверкой существования)
+    const regionSection = document.querySelector('.form-region-selection');
+    const citySection = document.querySelector('.form-city-selection');
+    const selectedSection = document.querySelector('.form-selected-location');
+    if (regionSection) regionSection.style.display = 'none';
+    if (citySection) citySection.style.display = 'none';
+    if (selectedSection) selectedSection.style.display = 'none';
     
     hideAllSuggestions();
     
