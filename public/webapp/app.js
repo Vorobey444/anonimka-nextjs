@@ -1236,62 +1236,23 @@ function showAdDetails(index) {
     adContent.innerHTML = `
         <div class="ad-full">
             <div class="ad-header">
-                <h3>📍 ${ad.city}</h3>
+                <h3>${ad.city}</h3>
                 <span class="ad-date">${new Date(ad.created_at).toLocaleDateString('ru-RU')}</span>
             </div>
             
-            <div class="ad-info-grid">
-                <div class="info-item">
-                    <span class="icon">👤</span>
-                    <div>
-                        <div class="label">Пол</div>
-                        <div class="value">${ad.gender}</div>
-                    </div>
+            <div class="ad-info-compact">
+                <div class="info-row">
+                    <span class="info-label">${ad.gender}, ${myAge} лет, ${bodyType}</span>
                 </div>
-                
-                <div class="info-item">
-                    <span class="icon">🔍</span>
-                    <div>
-                        <div class="label">Ищет</div>
-                        <div class="value">${ad.target}</div>
-                    </div>
+                <div class="info-row">
+                    <span class="info-label">Ищет ${ad.target}, ${ageFrom}-${ageTo} лет</span>
                 </div>
-                
-                <div class="info-item">
-                    <span class="icon">🎯</span>
-                    <div>
-                        <div class="label">Цель</div>
-                        <div class="value">${ad.goal}</div>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <span class="icon">📅</span>
-                    <div>
-                        <div class="label">Возраст партнера</div>
-                        <div class="value">${ageFrom} - ${ageTo} лет</div>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <span class="icon">🎂</span>
-                    <div>
-                        <div class="label">Мой возраст</div>
-                        <div class="value">${myAge} лет</div>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <span class="icon">💪</span>
-                    <div>
-                        <div class="label">Телосложение</div>
-                        <div class="value">${bodyType}</div>
-                    </div>
+                <div class="info-row">
+                    <span class="info-label">Цель: ${ad.goal}</span>
                 </div>
             </div>
             
             <div class="ad-description">
-                <h4>💬 О себе:</h4>
                 <p>${ad.text}</p>
             </div>
         </div>

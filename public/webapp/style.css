@@ -2282,6 +2282,31 @@ h3 {
     word-wrap: break-word;
 }
 
+/* Компактное отображение информации */
+.ad-info-compact {
+    background: rgba(131, 56, 236, 0.08);
+    border: 1px solid rgba(131, 56, 236, 0.2);
+    border-radius: 12px;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+}
+
+.info-row {
+    padding: 6px 0;
+    color: var(--text-light);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.info-row:not(:last-child) {
+    border-bottom: 1px solid rgba(131, 56, 236, 0.1);
+}
+
+.info-label {
+    color: var(--text-light);
+    font-weight: 500;
+}
+
 .version {
     color: var(--text-gray);
     font-size: 0.9rem;
