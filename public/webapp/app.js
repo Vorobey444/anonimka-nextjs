@@ -679,6 +679,8 @@ async function loadMyAds() {
         // Отображаем объявления с кнопками действий
         myAdsList.innerHTML = myAds.map((ad, index) => {
             const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > new Date());
+            const ageFrom = ad.age_from || ad.ageFrom || '?';
+            const ageTo = ad.age_to || ad.ageTo || '?';
             
             return `
             <div class="ad-card" data-ad-id="${ad.id}">
@@ -691,6 +693,10 @@ async function loadMyAds() {
                     <div class="ad-field">
                         <span class="icon">🎯</span>
                         <span>${ad.goal || 'не указано'}</span>
+                    </div>
+                    <div class="ad-field">
+                        <span class="icon">🔍</span>
+                        <span>Ищет ${ad.target || '?'}, ${ageFrom}-${ageTo} лет</span>
                     </div>
                     <div class="ad-field">
                         <span class="icon">📍</span>
@@ -1142,6 +1148,8 @@ function displayAds(ads, city = null) {
     adsList.innerHTML = filteredAds.map((ad, index) => {
         // Supabase возвращает поля с подчёркиваниями (age_from, my_age и т.д.)
         const myAge = ad.my_age || ad.myAge || '?';
+        const ageFrom = ad.age_from || ad.ageFrom || '?';
+        const ageTo = ad.age_to || ad.ageTo || '?';
         const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > now);
         
         return `
@@ -1170,8 +1178,13 @@ function displayAds(ads, city = null) {
                 </div>
                 <div class="ad-field">
                     <span class="icon">🎂</span>
-                    <span class="label">Возраст:</span>
+                    <span class="label">Мой возраст:</span>
                     <span class="value">${myAge} лет</span>
+                </div>
+                <div class="ad-field">
+                    <span class="icon">📅</span>
+                    <span class="label">Возраст партнера:</span>
+                    <span class="value">${ageFrom} - ${ageTo} лет</span>
                 </div>
             </div>
             <div class="ad-text">
