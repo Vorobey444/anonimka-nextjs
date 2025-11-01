@@ -134,7 +134,11 @@ function initializeTelegramWebApp() {
 
 // Проверка авторизации через Telegram
 function checkTelegramAuth() {
-    // Если запущено через Telegram WebApp, авторизация не нужна
+    console.log('🔐 Проверка авторизации...');
+    console.log('isTelegramWebApp:', isTelegramWebApp);
+    console.log('tg.initDataUnsafe:', tg.initDataUnsafe);
+    
+    // Если запущено через Telegram WebApp, авторизация автоматическая
     if (isTelegramWebApp && tg.initDataUnsafe?.user?.id) {
         const userData = {
             id: tg.initDataUnsafe.user.id,
@@ -147,36 +151,72 @@ function checkTelegramAuth() {
         // Сохраняем в localStorage
         localStorage.setItem('telegram_user', JSON.stringify(userData));
         console.log('✅ Авторизован через Telegram WebApp:', userData);
-        return;
+        return true;
     }
     
-    // Проверяем сохранённые данные
+    // Проверяем сохранённые данные из предыдущей сессии
     const savedUser = localStorage.getItem('telegram_user');
     if (savedUser) {
         try {
             const userData = JSON.parse(savedUser);
             console.log('✅ Найдена сохранённая авторизация:', userData);
-            return;
+            // Проверяем, не истекла ли авторизация (опционально)
+            const authTime = localStorage.getItem('telegram_auth_time');
+            const now = Date.now();
+            // Авторизация действительна 30 дней
+            if (authTime && (now - parseInt(authTime)) < 30 * 24 * 60 * 60 * 1000) {
+                return true;
+            }
         } catch (e) {
             console.error('Ошибка парсинга данных пользователя:', e);
+            localStorage.removeItem('telegram_user');
         }
     }
     
     // Если нет авторизации - показываем модальное окно
     console.log('❌ Пользователь не авторизован, показываем модальное окно');
     showTelegramAuthModal();
+    return false;
 }
 
 // Показать модальное окно авторизации
 function showTelegramAuthModal() {
-    const modal = document.getElementById('telegramAuthModal');
-    if (!modal) return;
+    console.log('📱 Показываем модальное окно авторизации');
     
+    const modal = document.getElementById('telegramAuthModal');
+    if (!modal) {
+        console.error('❌ Модальное окно авторизации не найдено!');
+        return;
+    }
+    
+    // Блокируем весь интерфейс (делаем модальное окно обязательным)
     modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
+    
+    // Блокируем закрытие по клику вне модального окна
+    const overlay = modal.querySelector('.modal-overlay');
+    if (overlay) {
+        overlay.onclick = (e) => {
+            e.stopPropagation();
+            alert('⚠️ Для продолжения необходимо авторизоваться через Telegram');
+        };
+    }
+    
+    // Блокируем кнопку закрытия
+    const closeBtn = modal.querySelector('.modal-close');
+    if (closeBtn) {
+        closeBtn.onclick = (e) => {
+            e.preventDefault();
+            alert('⚠️ Для продолжения необходимо авторизоваться через Telegram');
+            return false;
+        };
+    }
     
     // Генерируем уникальный auth token для этой сессии
     const authToken = 'auth_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem('telegram_auth_token', authToken);
+    
+    console.log('🔑 Auth token сгенерирован:', authToken);
     
     // Генерируем QR-код
     generateTelegramQR(authToken);
@@ -184,39 +224,43 @@ function showTelegramAuthModal() {
     // Инициализируем Telegram Login Widget как запасной вариант
     initTelegramLoginWidget();
     
-    // Проверяем авторизацию каждые 3 секунды через API
+    // Проверяем авторизацию каждые 3 секунды через localStorage
+    // (в реальном проекте лучше использовать WebSocket или Server-Sent Events)
     const checkInterval = setInterval(async () => {
         try {
-            const response = await fetch(`/api/telegram-auth?auth_token=${authToken}`);
-            const result = await response.json();
+            // Проверяем, не авторизовался ли пользователь через бота
+            const savedUser = localStorage.getItem('telegram_user');
+            const authTime = localStorage.getItem('telegram_auth_time');
             
-            if (result.authorized && result.user_data) {
-                console.log('✅ Авторизация через QR-код успешна:', result.user_data);
+            if (savedUser && authTime) {
+                const userData = JSON.parse(savedUser);
+                const timeDiff = Date.now() - parseInt(authTime);
                 
-                // Сохраняем данные пользователя
-                localStorage.setItem('telegram_user', JSON.stringify(result.user_data));
-                localStorage.removeItem('telegram_auth_token');
-                
-                // Закрываем модальное окно
-                clearInterval(checkInterval);
-                closeTelegramAuthModal();
-                
-                // Показываем уведомление
-                alert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${result.user_data.first_name}!`);
-                
-                // Перезагружаем страницу
-                location.reload();
+                // Если авторизация произошла менее 10 секунд назад
+                if (timeDiff < 10000) {
+                    console.log('✅ Обнаружена новая авторизация:', userData);
+                    
+                    // Закрываем модальное окно
+                    clearInterval(checkInterval);
+                    modal.style.display = 'none';
+                    
+                    // Показываем уведомление
+                    alert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${userData.first_name}!`);
+                    
+                    // Перезагружаем страницу
+                    location.reload();
+                }
             }
         } catch (error) {
             console.error('Ошибка проверки авторизации:', error);
         }
-    }, 3000);
+    }, 2000);
     
-    // Останавливаем проверку через 5 минут
+    // Останавливаем проверку через 10 минут
     setTimeout(() => {
         clearInterval(checkInterval);
-        console.log('Timeout: проверка авторизации остановлена');
-    }, 300000);
+        console.log('⏰ Timeout: проверка авторизации остановлена');
+    }, 600000);
 }
 
 // Генерация QR-кода для Telegram авторизации
@@ -236,7 +280,7 @@ function generateTelegramQR(authToken) {
     
     // Создаем deep link для Telegram бота
     // Формат: https://t.me/bot_username?start=auth_token
-    const botUsername = 'anon_board_bot';
+    const botUsername = 'anonimka_kz_bot'; // @anonimka_kz_bot
     const telegramDeepLink = `https://t.me/${botUsername}?start=${authToken}`;
     
     console.log('Генерация QR-кода для:', telegramDeepLink);
@@ -291,7 +335,7 @@ function initTelegramLoginWidget() {
     container.innerHTML = '';
     
     // Имя бота для Telegram Login Widget
-    const botUsername = 'anon_board_bot';
+    const botUsername = 'anonimka_kz_bot'; // @anonimka_kz_bot
     
     // Создаём iframe для Telegram Login Widget
     const script = document.createElement('script');
