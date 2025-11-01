@@ -15,5 +15,29 @@
       "src": "/(.*)",
       "dest": "/$1"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "anonimka.online"
+        }
+      ],
+      "destination": "https://anonimka.kz/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.anonimka.online"
+        }
+      ],
+      "destination": "https://anonimka.kz/:path*",
+      "permanent": true
+    }
   ]
 }
