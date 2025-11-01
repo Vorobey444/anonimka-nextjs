@@ -241,8 +241,19 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    if (ads[0].tg_id !== tgId) {
-      console.log("[ADS API] Попытка удалить чужое объявление:", { adOwner: ads[0].tg_id, requester: tgId });
+    // Сравниваем с приведением к числу (т.к. из body может прийти строка)
+    const adOwnerId = Number(ads[0].tg_id);
+    const requesterId = Number(tgId);
+    
+    if (adOwnerId !== requesterId) {
+      console.log("[ADS API] Попытка удалить чужое объявление:", { 
+        adOwner: ads[0].tg_id, 
+        adOwnerType: typeof ads[0].tg_id,
+        requester: tgId,
+        requesterType: typeof tgId,
+        adOwnerNum: adOwnerId,
+        requesterNum: requesterId
+      });
       return NextResponse.json(
         { success: false, error: "Вы можете удалять только свои объявления" },
         { status: 403 }
@@ -338,8 +349,19 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    if (ads[0].tg_id !== tgId) {
-      console.log("[ADS API] Попытка обновить чужое объявление:", { adOwner: ads[0].tg_id, requester: tgId });
+    // Сравниваем с приведением к числу (т.к. из body может прийти строка)
+    const adOwnerId = Number(ads[0].tg_id);
+    const requesterId = Number(tgId);
+    
+    if (adOwnerId !== requesterId) {
+      console.log("[ADS API] Попытка обновить чужое объявление:", { 
+        adOwner: ads[0].tg_id, 
+        adOwnerType: typeof ads[0].tg_id,
+        requester: tgId,
+        requesterType: typeof tgId,
+        adOwnerNum: adOwnerId,
+        requesterNum: requesterId
+      });
       return NextResponse.json(
         { success: false, error: "Вы можете обновлять только свои объявления" },
         { status: 403 }
