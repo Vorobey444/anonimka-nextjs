@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { adId, senderTgId, receiverTgId, messageText, senderName } = await request.json();
+    const { adId, senderTgId, receiverTgId, messageText, photoUrl, senderName } = await request.json();
 
-    // Валидация
-    if (!adId || !senderTgId || !receiverTgId || !messageText) {
+    // Валидация: должен быть либо текст, либо фото
+    if (!adId || !senderTgId || !receiverTgId || (!messageText && !photoUrl)) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields. Need either messageText or photoUrl' },
         { status: 400 }
       );
     }
@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
         ad_id: adId,
         sender_tg_id: senderTgId,
         receiver_tg_id: receiverTgId,
-        message_text: messageText,
+        message_text: messageText || null,
+        photo_url: photoUrl || null,
+        message_type: photoUrl ? 'photo' : 'text',
         is_read: false
       })
     });
@@ -67,7 +69,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Формируем текст уведомления
-    const notificationText = `
+    const notificationText = photoUrl 
+      ? `
+🔔 <b>Новое сообщение на ваше объявление!</b>
+
+От: ${senderName || 'Пользователь'}
+
+📷 <i>Фотография</i>
+${messageText ? `\n💬 <i>"${messageText}"</i>` : ''}
+
+Нажмите кнопку ниже, чтобы ответить и начать приватный чат.
+    `.trim()
+      : `
 🔔 <b>Новое сообщение на ваше объявление!</b>
 
 От: ${senderName || 'Пользователь'}
