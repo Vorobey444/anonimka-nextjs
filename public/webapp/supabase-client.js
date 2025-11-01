@@ -70,27 +70,39 @@
       // Получаем Telegram ID пользователя
       const tgId = tg.initDataUnsafe?.user?.id;
       
+      console.log('deleteAd(): tgId =', tgId);
+      
       if (!tgId) {
-        throw new Error('Не удалось получить ваш Telegram ID');
+        const errorMsg = 'Не удалось получить ваш Telegram ID. Откройте приложение через бота.';
+        console.error('deleteAd():', errorMsg);
+        throw new Error(errorMsg);
       }
       
-      const response = await fetch(`/api/ads?id=${adId}&tgId=${tgId}`, {
+      const url = `/api/ads?id=${adId}&tgId=${tgId}`;
+      console.log('deleteAd(): запрос к', url);
+      
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         }
       });
       
+      console.log('deleteAd(): response status =', response.status);
+      
       const data = await response.json();
+      console.log('deleteAd(): response data =', data);
       
       if (data.success) {
-        console.log('Объявление удалено:', adId);
+        console.log('deleteAd(): объявление успешно удалено:', adId);
         return true;
       } else {
-        throw new Error(data.error || 'Ошибка удаления объявления');
+        const errorMsg = data.error || 'Ошибка удаления объявления';
+        console.error('deleteAd(): ошибка от сервера:', errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.error('Ошибка deleteAd:', error);
+      console.error('deleteAd(): критическая ошибка:', error);
       throw error;
     }
   }
@@ -100,28 +112,49 @@
     console.log('togglePinAd(): изменение статуса закрепления', adId, shouldPin);
     
     try {
+      // Получаем Telegram ID пользователя
+      const tgId = tg.initDataUnsafe?.user?.id;
+      
+      console.log('togglePinAd(): tgId =', tgId);
+      
+      if (!tgId) {
+        const errorMsg = 'Не удалось получить ваш Telegram ID. Откройте приложение через бота.';
+        console.error('togglePinAd():', errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      const requestBody = {
+        id: adId,
+        tgId: tgId,
+        is_pinned: shouldPin,
+        pinned_until: shouldPin ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null
+      };
+      
+      console.log('togglePinAd(): request body =', requestBody);
+      
       const response = await fetch(`/api/ads`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          id: adId,
-          is_pinned: shouldPin,
-          pinned_until: shouldPin ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null
-        })
+        body: JSON.stringify(requestBody)
       });
       
+      console.log('togglePinAd(): response status =', response.status);
+      
       const data = await response.json();
+      console.log('togglePinAd(): response data =', data);
       
       if (data.success) {
-        console.log('Статус закрепления изменен:', data.ad);
+        console.log('togglePinAd(): статус закрепления изменен:', data.ad);
         return true;
       } else {
-        throw new Error(data.error || 'Ошибка изменения статуса');
+        const errorMsg = data.error || 'Ошибка изменения статуса';
+        console.error('togglePinAd(): ошибка от сервера:', errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.error('Ошибка togglePinAd:', error);
+      console.error('togglePinAd(): критическая ошибка:', error);
       throw error;
     }
   }

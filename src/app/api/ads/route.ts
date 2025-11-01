@@ -288,7 +288,9 @@ export async function PATCH(req: NextRequest) {
     console.log("[ADS API] Обновление объявления");
     
     const body = await req.json();
-    const { id, is_pinned, pinned_until } = body;
+    const { id, tgId, is_pinned, pinned_until } = body;
+
+    console.log("[ADS API] Данные для обновления:", { id, tgId, is_pinned, pinned_until });
 
     if (!id) {
       return NextResponse.json(
@@ -297,7 +299,12 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    console.log("[ADS API] Данные для обновления:", { id, is_pinned, pinned_until });
+    if (!tgId) {
+      return NextResponse.json(
+        { success: false, error: "Требуется авторизация" },
+        { status: 401 }
+      );
+    }
 
     // Проверяем наличие Supabase переменных
     const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
@@ -310,9 +317,40 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    // Сначала проверяем, что объявление принадлежит пользователю
+    const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/ads?id=eq.${id}&select=tg_id`, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    });
+
+    if (!checkResponse.ok) {
+      throw new Error(`Supabase error: ${checkResponse.statusText}`);
+    }
+
+    const ads = await checkResponse.json();
+    
+    if (!ads || ads.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Объявление не найдено" },
+        { status: 404 }
+      );
+    }
+
+    if (ads[0].tg_id !== tgId) {
+      console.log("[ADS API] Попытка обновить чужое объявление:", { adOwner: ads[0].tg_id, requester: tgId });
+      return NextResponse.json(
+        { success: false, error: "Вы можете обновлять только свои объявления" },
+        { status: 403 }
+      );
+    }
+
     const updateData: any = {};
     if (is_pinned !== undefined) updateData.is_pinned = is_pinned;
     if (pinned_until !== undefined) updateData.pinned_until = pinned_until;
+
+    console.log("[ADS API] Обновляем объявление:", updateData);
 
     // Обновляем в Supabase REST API
     const response = await fetch(`${SUPABASE_URL}/rest/v1/ads?id=eq.${id}`, {
@@ -333,7 +371,7 @@ export async function PATCH(req: NextRequest) {
 
     const result = await response.json();
     
-    console.log("[ADS API] Объявление обновлено:", result);
+    console.log("[ADS API] Объявление успешно обновлено:", result);
     
     return NextResponse.json({
       success: true,
