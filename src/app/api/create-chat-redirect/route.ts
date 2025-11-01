@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         <body>
           <h1>❌ Ошибка</h1>
           <p>Недостаточно параметров для создания чата</p>
-          <a href="https://t.me/anonimka_online_bot">Вернуться к боту</a>
+          <a href="https://t.me/anonimka_kz_bot">Вернуться к боту</a>
         </body>
         </html>
         `,
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         <html>
         <head>
           <meta charset="UTF-8">
-          <meta http-equiv="refresh" content="2;url=https://t.me/anonimka_online_bot">
+          <meta http-equiv="refresh" content="2;url=https://t.me/anonimka_kz_bot">
           <title>Чат создан</title>
           <style>
             body {
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
             <h1>✅</h1>
             <p><strong>Приватный чат создан!</strong></p>
             <p>Возвращаемся в бота...</p>
-            <a href="https://t.me/anonimka_online_bot">Вернуться к боту</a>
+            <a href="https://t.me/anonimka_kz_bot">Вернуться к боту</a>
           </div>
         </body>
         </html>
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
             <h1>❌</h1>
             <p><strong>Ошибка создания чата</strong></p>
             <p>${result.error || 'Неизвестная ошибка'}</p>
-            <a href="https://t.me/anonimka_online_bot">Вернуться к боту</a>
+            <a href="https://t.me/anonimka_kz_bot">Вернуться к боту</a>
           </div>
         </body>
         </html>
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
       <body>
         <h1>❌ Ошибка сервера</h1>
         <p>${error instanceof Error ? error.message : 'Неизвестная ошибка'}</p>
-        <a href="https://t.me/anonimka_online_bot">Вернуться к боту</a>
+        <a href="https://t.me/anonimka_kz_bot">Вернуться к боту</a>
       </body>
       </html>
       `,
