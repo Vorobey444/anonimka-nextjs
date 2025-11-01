@@ -22,51 +22,36 @@ let tg = window.Telegram?.WebApp || {
 };
 
 // Безопасная обертка для showAlert с fallback на alert()
-const originalShowAlert = tg.showAlert;
-tg.showAlert = function(msg, callback) {
-    console.log('showAlert called:', msg);
-    
-    // Если оригинальный метод существует и поддерживается
-    if (originalShowAlert && typeof originalShowAlert === 'function') {
+// Сохраняем оригинальные методы
+const originalShowAlert = tg.showAlert ? tg.showAlert.bind(tg) : null;
+const originalShowPopup = tg.showPopup ? tg.showPopup.bind(tg) : null;
+
+// Безопасная обертка для showPopup с fallback на showAlert
+tg.showPopup = function(params, callback) {
+    // Проверяем версию и наличие метода
+    const version = parseFloat(tg.version || '6.0');
+    if (version >= 6.2 && originalShowPopup) {
         try {
-            originalShowAlert.call(tg, msg, callback);
+            originalShowPopup(params, callback);
             return;
         } catch (e) {
-            console.warn('showAlert failed, using fallback:', e.message);
+            console.warn('showPopup failed:', e.message);
         }
     }
     
-    // Fallback на обычный alert
-    alert(msg);
-    if (callback && typeof callback === 'function') {
-        setTimeout(callback, 0);
-    }
-};
-
-// Безопасная обертка для showPopup с fallback на alert()
-const originalShowPopup = tg.showPopup;
-tg.showPopup = function(params, callback) {
-    console.log('showPopup called:', params);
-    
-    // Если оригинальный метод существует и поддерживается
-    if (originalShowPopup && typeof originalShowPopup === 'function') {
-        try {
-            // Проверяем версию WebApp
-            const version = parseFloat(tg.version || '6.0');
-            if (version >= 6.2) {
-                originalShowPopup.call(tg, params, callback);
-                return;
-            } else {
-                console.warn('showPopup not supported in version ' + version + ', using showAlert');
-            }
-        } catch (e) {
-            console.warn('showPopup failed, using fallback:', e.message);
-        }
-    }
-    
-    // Fallback на showAlert вместо обычного alert
+    // Fallback: используем оригинальный showAlert напрямую
     const message = params.message || params.title || 'Уведомление';
-    tg.showAlert(message, callback);
+    if (originalShowAlert) {
+        try {
+            originalShowAlert(message, callback);
+        } catch (e) {
+            alert(message);
+            if (callback) setTimeout(callback, 0);
+        }
+    } else {
+        alert(message);
+        if (callback) setTimeout(callback, 0);
+    }
 };
 
 // Проверка, запущено ли приложение в Telegram
