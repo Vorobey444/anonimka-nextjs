@@ -67,10 +67,24 @@
     console.log('deleteAd(): удаление объявления', adId);
     
     try {
-      // Получаем Telegram ID пользователя
-      const tgId = tg.initDataUnsafe?.user?.id;
+      // Получаем Telegram ID пользователя из WebApp или localStorage
+      let tgId = tg.initDataUnsafe?.user?.id;
       
-      console.log('deleteAd(): tgId =', tgId);
+      // Если не нашли в WebApp, пробуем localStorage (для QR/Login Widget авторизации)
+      if (!tgId) {
+        const userData = localStorage.getItem('telegram_user');
+        if (userData) {
+          try {
+            const user = JSON.parse(userData);
+            tgId = user.id;
+            console.log('deleteAd(): tgId получен из localStorage =', tgId);
+          } catch (e) {
+            console.error('deleteAd(): ошибка парсинга localStorage:', e);
+          }
+        }
+      } else {
+        console.log('deleteAd(): tgId получен из WebApp =', tgId);
+      }
       
       if (!tgId) {
         const errorMsg = 'Не удалось получить ваш Telegram ID. Откройте приложение через бота.';
@@ -112,10 +126,24 @@
     console.log('togglePinAd(): изменение статуса закрепления', adId, shouldPin);
     
     try {
-      // Получаем Telegram ID пользователя
-      const tgId = tg.initDataUnsafe?.user?.id;
+      // Получаем Telegram ID пользователя из WebApp или localStorage
+      let tgId = tg.initDataUnsafe?.user?.id;
       
-      console.log('togglePinAd(): tgId =', tgId);
+      // Если не нашли в WebApp, пробуем localStorage (для QR/Login Widget авторизации)
+      if (!tgId) {
+        const userData = localStorage.getItem('telegram_user');
+        if (userData) {
+          try {
+            const user = JSON.parse(userData);
+            tgId = user.id;
+            console.log('togglePinAd(): tgId получен из localStorage =', tgId);
+          } catch (e) {
+            console.error('togglePinAd(): ошибка парсинга localStorage:', e);
+          }
+        }
+      } else {
+        console.log('togglePinAd(): tgId получен из WebApp =', tgId);
+      }
       
       if (!tgId) {
         const errorMsg = 'Не удалось получить ваш Telegram ID. Откройте приложение через бота.';
