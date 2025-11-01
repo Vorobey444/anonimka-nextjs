@@ -97,6 +97,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 500);
         }
     });
+    
+    // Обработчик сообщений от всплывающего окна авторизации
+    window.addEventListener('message', function(event) {
+        // Проверяем источник сообщения
+        if (event.origin !== window.location.origin) {
+            return;
+        }
+        
+        // Обработка успешной авторизации через Login Widget
+        if (event.data && event.data.type === 'telegram_auth' && event.data.user) {
+            console.log('✅ Получены данные авторизации от всплывающего окна:', event.data.user);
+            
+            // Сохраняем данные
+            localStorage.setItem('telegram_user', JSON.stringify(event.data.user));
+            localStorage.setItem('telegram_auth_time', Date.now().toString());
+            
+            // Закрываем модальное окно
+            const modal = document.getElementById('telegramAuthModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            
+            // Показываем уведомление
+            alert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${event.data.user.first_name}!`);
+            
+            // Перезагружаем страницу
+            location.reload();
+        }
+    });
 });
 
 function initializeTelegramWebApp() {
@@ -372,21 +401,23 @@ function initTelegramLoginWidget() {
     console.log('Telegram Login Widget инициализирован для бота:', botUsername);
 }
 
-// Callback после успешной авторизации через Telegram
+// Callback после успешной авторизации через Telegram Login Widget
 window.onTelegramAuth = function(user) {
-    console.log('✅ Успешная авторизация через Telegram:', user);
+    console.log('✅ Успешная авторизация через Telegram Login Widget:', user);
     
     // Сохраняем данные пользователя
     localStorage.setItem('telegram_user', JSON.stringify(user));
+    localStorage.setItem('telegram_auth_time', Date.now().toString());
     
     // Закрываем модальное окно
     const modal = document.getElementById('telegramAuthModal');
     if (modal) {
         modal.style.display = 'none';
+        console.log('✅ Модальное окно авторизации закрыто');
     }
     
     // Показываем уведомление
-    alert('✅ Вы успешно авторизованы!\nТеперь вы можете создавать объявления и получать уведомления.');
+    alert(`✅ Вы успешно авторизованы!\n\nДобро пожаловать, ${user.first_name}!\n\nТеперь вы можете создавать объявления и получать уведомления.`);
     
     // Перезагружаем страницу для применения авторизации
     location.reload();
