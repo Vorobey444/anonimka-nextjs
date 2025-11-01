@@ -286,11 +286,34 @@ function showTelegramAuthModal() {
     // Инициализируем Telegram Login Widget как запасной вариант
     initTelegramLoginWidget();
     
-    // Проверяем авторизацию каждые 3 секунды через localStorage
-    // (в реальном проекте лучше использовать WebSocket или Server-Sent Events)
+    // Проверяем авторизацию каждые 2 секунды через API сервера
     const checkInterval = setInterval(async () => {
         try {
-            // Проверяем, не авторизовался ли пользователь через бота
+            // Проверяем на сервере, не авторизовался ли пользователь через QR на телефоне
+            const response = await fetch(`/api/auth?token=${authToken}`);
+            const data = await response.json();
+            
+            if (data.authorized && data.user) {
+                console.log('✅ Авторизация через QR получена с сервера:', data.user);
+                
+                // Сохраняем данные пользователя
+                localStorage.setItem('telegram_user', JSON.stringify(data.user));
+                localStorage.setItem('telegram_auth_time', Date.now().toString());
+                localStorage.removeItem('telegram_auth_token');
+                
+                // Закрываем модальное окно
+                clearInterval(checkInterval);
+                modal.style.display = 'none';
+                
+                // Показываем уведомление
+                tg.showAlert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${data.user.first_name}!\n\nТеперь вы можете пользоваться сайтом как с компьютера, так и с телефона.`);
+                
+                // Перезагружаем страницу через 1 секунду
+                setTimeout(() => location.reload(), 1000);
+                return;
+            }
+            
+            // Также проверяем localStorage (на случай авторизации через Login Widget)
             const savedUser = localStorage.getItem('telegram_user');
             const authTime = localStorage.getItem('telegram_auth_time');
             
@@ -300,17 +323,18 @@ function showTelegramAuthModal() {
                 
                 // Если авторизация произошла менее 10 секунд назад
                 if (timeDiff < 10000) {
-                    console.log('✅ Обнаружена новая авторизация:', userData);
+                    console.log('✅ Обнаружена авторизация через Login Widget:', userData);
                     
                     // Закрываем модальное окно
                     clearInterval(checkInterval);
                     modal.style.display = 'none';
+                    localStorage.removeItem('telegram_auth_token');
                     
                     // Показываем уведомление
-                    alert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${userData.first_name}!`);
+                    tg.showAlert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${userData.first_name}!`);
                     
                     // Перезагружаем страницу
-                    location.reload();
+                    setTimeout(() => location.reload(), 1000);
                 }
             }
         } catch (error) {
