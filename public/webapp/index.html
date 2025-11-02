@@ -509,12 +509,40 @@
                 <h2>💬 Мои чаты</h2>
             </div>
 
+            <!-- Вкладки -->
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="switchChatTab('active')">
+                    <span class="tab-icon">✅</span>
+                    <span class="tab-label">Открытые чаты</span>
+                    <span class="tab-badge" id="activeChatsCount">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchChatTab('requests')">
+                    <span class="tab-icon">📨</span>
+                    <span class="tab-label">Запросы</span>
+                    <span class="tab-badge" id="requestsCount">0</span>
+                </button>
+            </div>
+
             <div class="chats-container">
-                <div id="chatsList" class="chats-list">
-                    <!-- Чаты будут загружены через JS -->
-                    <div class="loading-placeholder">
-                        <div class="neon-icon pulse">💬</div>
-                        <p>Загрузка чатов...</p>
+                <!-- Вкладка: Открытые чаты -->
+                <div id="activeChatsTab" class="tab-content active">
+                    <div id="activeChats" class="chats-list">
+                        <!-- Открытые чаты будут загружены через JS -->
+                        <div class="loading-placeholder">
+                            <div class="neon-icon pulse">💬</div>
+                            <p>Загрузка чатов...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вкладка: Запросы -->
+                <div id="requestsTab" class="tab-content">
+                    <div id="chatRequests" class="chats-list">
+                        <!-- Запросы на чаты будут загружены через JS -->
+                        <div class="loading-placeholder">
+                            <div class="neon-icon pulse">📨</div>
+                            <p>Загрузка запросов...</p>
+                        </div>
                     </div>
                 </div>
             </div>

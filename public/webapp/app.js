@@ -3742,9 +3742,26 @@ async function showMyChats() {
     await loadMyChats();
 }
 
+// Переключение вкладок
+function switchChatTab(tab) {
+    // Переключаем активную кнопку
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.closest('.tab-btn').classList.add('active');
+    
+    // Переключаем контент
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    if (tab === 'active') {
+        document.getElementById('activeChatsTab').classList.add('active');
+    } else if (tab === 'requests') {
+        document.getElementById('requestsTab').classList.add('active');
+    }
+}
+
 // Загрузить список чатов пользователя
 async function loadMyChats() {
-    const chatsList = document.getElementById('chatsList');
+    const activeChats = document.getElementById('activeChats');
+    const chatRequests = document.getElementById('chatRequests');
     
     try {
         // Пытаемся получить userId из Telegram или localStorage
@@ -3764,19 +3781,21 @@ async function loadMyChats() {
         
         if (!userId) {
             console.error('❌ User ID не найден ни в Telegram, ни в localStorage');
-            chatsList.innerHTML = `
+            const errorHTML = `
                 <div class="empty-chats">
                     <div class="neon-icon">🔒</div>
                     <h3>Необходима авторизация</h3>
                     <p>Для доступа к чатам откройте приложение через Telegram бота</p>
                 </div>
             `;
+            activeChats.innerHTML = errorHTML;
+            chatRequests.innerHTML = errorHTML;
             return;
         }
 
         console.log('📡 Загружаем чаты для пользователя:', userId);
 
-        // Получаем чаты из Supabase
+        // Получаем все чаты из Supabase
         const { data: chats, error } = await supabase
             .from('private_chats')
             .select('*')
@@ -3789,7 +3808,7 @@ async function loadMyChats() {
         if (error) {
             console.error('❌ Ошибка загрузки чатов:', error);
             console.error('Детали ошибки:', JSON.stringify(error, null, 2));
-            chatsList.innerHTML = `
+            const errorHTML = `
                 <div class="empty-chats">
                     <div class="neon-icon">⚠️</div>
                     <h3>Ошибка загрузки</h3>
@@ -3797,40 +3816,87 @@ async function loadMyChats() {
                     <p style="font-size: 12px; color: #888;">${error.message || 'Неизвестная ошибка'}</p>
                 </div>
             `;
+            activeChats.innerHTML = errorHTML;
+            chatRequests.innerHTML = errorHTML;
             return;
         }
 
-        if (!chats || chats.length === 0) {
-            chatsList.innerHTML = `
+        // Разделяем чаты на принятые и запросы
+        const acceptedChats = chats?.filter(chat => chat.accepted) || [];
+        const pendingRequests = chats?.filter(chat => !chat.accepted) || [];
+
+        // Обновляем счетчики
+        document.getElementById('activeChatsCount').textContent = acceptedChats.length;
+        document.getElementById('requestsCount').textContent = pendingRequests.length;
+
+        // Отображаем открытые чаты
+        if (acceptedChats.length === 0) {
+            activeChats.innerHTML = `
                 <div class="empty-chats">
                     <div class="neon-icon">💬</div>
-                    <h3>У вас пока нет чатов</h3>
-                    <p>Начните диалог, написав в личку по объявлению!</p>
+                    <h3>Нет открытых чатов</h3>
+                    <p>Принятые чаты появятся здесь</p>
                 </div>
             `;
-            return;
+        } else {
+            activeChats.innerHTML = acceptedChats.map(chat => {
+                const lastMessageTime = chat.updated_at ? formatChatTime(chat.updated_at) : '';
+                return `
+                    <div class="chat-card" onclick="openChat('${chat.id}')">
+                        <div class="chat-card-header">
+                            <span class="chat-ad-id">💬 Объявление #${chat.ad_id || 'N/A'}</span>
+                            <span class="chat-time">${lastMessageTime}</span>
+                        </div>
+                        <div class="chat-preview">
+                            Нажмите для открытия чата
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
-        // Отображаем чаты
-        chatsList.innerHTML = chats.map(chat => {
-            const lastMessageTime = chat.updated_at ? formatChatTime(chat.updated_at) : '';
-            return `
-                <div class="chat-card" onclick="openChat('${chat.id}')">
-                    <div class="chat-card-header">
-                        <span class="chat-ad-id">💬 Объявление #${chat.ad_id || 'N/A'}</span>
-                        <span class="chat-time">${lastMessageTime}</span>
-                    </div>
-                    <div class="chat-preview">
-                        Нажмите для открытия чата
-                    </div>
+        // Отображаем запросы на чаты
+        if (pendingRequests.length === 0) {
+            chatRequests.innerHTML = `
+                <div class="empty-chats">
+                    <div class="neon-icon">📨</div>
+                    <h3>Нет новых запросов</h3>
+                    <p>Запросы на чаты от других пользователей появятся здесь</p>
                 </div>
             `;
-        }).join('');
+        } else {
+            chatRequests.innerHTML = pendingRequests.map(chat => {
+                const requestTime = chat.created_at ? formatChatTime(chat.created_at) : '';
+                // Определяем, кто отправитель (не текущий пользователь)
+                const isUser1 = chat.user1 === userId;
+                const senderName = isUser1 ? 'Анонимный пользователь' : 'Анонимный пользователь';
+                
+                return `
+                    <div class="chat-request-card">
+                        <div class="request-header">
+                            <span class="request-ad-id">📨 Объявление #${chat.ad_id || 'N/A'}</span>
+                            <span class="request-time">${requestTime}</span>
+                        </div>
+                        <div class="request-message">
+                            ${senderName} хочет начать диалог по вашему объявлению
+                        </div>
+                        <div class="request-actions">
+                            <button class="request-btn request-btn-accept" onclick="acceptChatRequest('${chat.id}')">
+                                ✅ Создать приватный чат
+                            </button>
+                            <button class="request-btn request-btn-reject" onclick="rejectChatRequest('${chat.id}')">
+                                ❌ Отклонить
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
 
     } catch (error) {
         console.error('❌ Критическая ошибка в loadMyChats:', error);
         console.error('Stack trace:', error.stack);
-        chatsList.innerHTML = `
+        const errorHTML = `
             <div class="empty-chats">
                 <div class="neon-icon">⚠️</div>
                 <h3>Ошибка</h3>
@@ -3838,6 +3904,58 @@ async function loadMyChats() {
                 <p style="font-size: 12px; color: #888;">${error.message}</p>
             </div>
         `;
+        activeChats.innerHTML = errorHTML;
+        chatRequests.innerHTML = errorHTML;
+    }
+}
+
+// Принять запрос на чат
+async function acceptChatRequest(chatId) {
+    try {
+        console.log('✅ Принимаем запрос на чат:', chatId);
+        
+        const { data, error } = await supabase
+            .from('private_chats')
+            .update({ accepted: true })
+            .eq('id', chatId);
+
+        if (error) {
+            console.error('Ошибка принятия запроса:', error);
+            tg.showAlert('Ошибка при принятии запроса');
+            return;
+        }
+
+        tg.showAlert('✅ Чат создан!');
+        await loadMyChats(); // Перезагружаем список
+        
+    } catch (error) {
+        console.error('Критическая ошибка acceptChatRequest:', error);
+        tg.showAlert('Произошла ошибка');
+    }
+}
+
+// Отклонить запрос на чат
+async function rejectChatRequest(chatId) {
+    try {
+        console.log('❌ Отклоняем запрос на чат:', chatId);
+        
+        const { data, error } = await supabase
+            .from('private_chats')
+            .delete()
+            .eq('id', chatId);
+
+        if (error) {
+            console.error('Ошибка отклонения запроса:', error);
+            tg.showAlert('Ошибка при отклонении запроса');
+            return;
+        }
+
+        tg.showAlert('Запрос отклонён');
+        await loadMyChats(); // Перезагружаем список
+        
+    } catch (error) {
+        console.error('Критическая ошибка rejectChatRequest:', error);
+        tg.showAlert('Произошла ошибка');
     }
 }
 

@@ -2420,6 +2420,79 @@ h3 {
 
 /* ===== СТИЛИ ДЛЯ ЧАТОВ ===== */
 
+/* Вкладки чатов */
+.tabs-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 0 5px;
+}
+
+.tab-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 12px 10px;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.6), rgba(16, 16, 32, 0.6));
+    border: 2px solid rgba(255, 0, 110, 0.2);
+    border-radius: 12px;
+    color: var(--text-gray);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.tab-btn:hover {
+    border-color: var(--neon-pink);
+    transform: translateY(-2px);
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, rgba(255, 0, 110, 0.2), rgba(131, 56, 236, 0.2));
+    border-color: var(--neon-pink);
+    color: var(--text-light);
+    box-shadow: var(--shadow-pink);
+}
+
+.tab-icon {
+    font-size: 1.5rem;
+}
+
+.tab-label {
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.tab-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: var(--neon-pink);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+}
+
+.tab-btn.active .tab-badge {
+    background: var(--neon-cyan);
+}
+
+/* Контент вкладок */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 /* Контейнер чатов */
 .chats-container {
     padding: 10px 0;
@@ -2501,6 +2574,98 @@ h3 {
     border-radius: 12px;
     font-size: 0.75rem;
     font-weight: bold;
+}
+
+/* Карточка запроса на чат */
+.chat-request-card {
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.9), rgba(16, 16, 32, 0.9));
+    border: 2px solid rgba(0, 217, 255, 0.3);
+    border-radius: 15px;
+    padding: 15px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+
+.chat-request-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(131, 56, 236, 0.05));
+    opacity: 1;
+}
+
+.request-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 1;
+}
+
+.request-ad-id {
+    font-size: 0.9rem;
+    color: var(--neon-cyan);
+    font-weight: 600;
+}
+
+.request-time {
+    font-size: 0.75rem;
+    color: var(--text-gray);
+}
+
+.request-message {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 15px;
+    line-height: 1.5;
+    position: relative;
+    z-index: 1;
+}
+
+.request-actions {
+    display: flex;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
+}
+
+.request-btn {
+    flex: 1;
+    padding: 10px 15px;
+    border: 2px solid;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: transparent;
+}
+
+.request-btn-accept {
+    border-color: var(--neon-cyan);
+    color: var(--neon-cyan);
+}
+
+.request-btn-accept:hover {
+    background: var(--neon-cyan);
+    color: var(--bg-dark);
+    box-shadow: var(--shadow-cyan);
+}
+
+.request-btn-reject {
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+}
+
+.request-btn-reject:hover {
+    background: var(--neon-pink);
+    color: var(--bg-dark);
+    box-shadow: var(--shadow-pink);
 }
 
 /* Экран чата */
