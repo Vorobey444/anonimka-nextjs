@@ -170,6 +170,146 @@ h3 {
     50% { box-shadow: var(--shadow-pink); }
 }
 
+/* Блок никнейма на главной странице */
+.nickname-section {
+    max-width: 280px;
+    margin: 20px auto;
+    padding: 15px;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.8), rgba(16, 16, 32, 0.8));
+    border: 2px solid var(--neon-cyan);
+    border-radius: 15px;
+    box-shadow: var(--shadow-cyan);
+}
+
+.nickname-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.nickname-header h3 {
+    font-size: 1rem;
+    color: var(--neon-cyan);
+    margin: 0;
+}
+
+.nickname-icon {
+    font-size: 1.5rem;
+}
+
+.nickname-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.nickname-display {
+    flex: 1;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--text-light);
+    text-align: left;
+}
+
+.nickname-edit-btn {
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(0, 153, 255, 0.2));
+    border: 2px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.nickname-edit-btn:hover {
+    background: var(--neon-cyan);
+    color: var(--bg-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-cyan);
+}
+
+.edit-icon {
+    font-size: 1rem;
+}
+
+.nickname-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.nickname-editor .neon-input {
+    width: 100%;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.nickname-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.nickname-save-btn,
+.nickname-cancel-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.nickname-save-btn {
+    background: rgba(0, 255, 0, 0.1);
+    border-color: #00ff00;
+    color: #00ff00;
+}
+
+.nickname-save-btn:hover {
+    background: #00ff00;
+    color: var(--bg-dark);
+}
+
+.nickname-cancel-btn {
+    background: rgba(255, 0, 110, 0.1);
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+}
+
+.nickname-cancel-btn:hover {
+    background: var(--neon-pink);
+    color: var(--bg-dark);
+}
+
+.suggestion-btn-main {
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.8), rgba(16, 16, 32, 0.8));
+    border: 2px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+}
+
+.suggestion-btn-main:hover {
+    background: var(--neon-cyan);
+    color: var(--bg-dark);
+    box-shadow: var(--shadow-cyan);
+}
+
 /* Меню кнопки */
 .menu-buttons {
     display: flex;
