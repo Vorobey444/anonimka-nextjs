@@ -2069,6 +2069,9 @@ h3 {
 /* Навигация */
 .hamburger-nav {
     padding: 2rem 0;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 180px);
 }
 
 .hamburger-item {
@@ -2119,6 +2122,20 @@ h3 {
     font-size: 1.2rem;
     width: 24px;
     text-align: center;
+}
+
+/* Кнопка выхода */
+.logout-item {
+    margin-top: auto;
+    border-top: 2px solid rgba(255, 0, 110, 0.2);
+    border-bottom: none;
+    background: linear-gradient(135deg, rgba(255, 0, 110, 0.05), rgba(255, 50, 50, 0.05));
+}
+
+.logout-item:hover {
+    background: linear-gradient(135deg, rgba(255, 0, 110, 0.15), rgba(255, 50, 50, 0.15));
+    color: #ff3232;
+    text-shadow: 0 0 10px rgba(255, 50, 50, 0.6);
 }
 
 /* Информационные экраны */

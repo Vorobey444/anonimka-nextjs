@@ -244,6 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
         checkTelegramAuth(); // Проверка авторизации
         initializeNickname(); // Инициализация никнейма
         updateChatBadge(); // Первое обновление счетчика
+        updateLogoutButtonVisibility(); // Обновление кнопки выхода
     }, 300);
     
     checkUserLocation();
@@ -291,6 +292,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Показываем уведомление
             alert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${event.data.user.first_name}!`);
+            
+            // Обновляем кнопку выхода
+            updateLogoutButtonVisibility();
             
             // Перезагружаем страницу
             location.reload();
@@ -839,6 +843,9 @@ window.onTelegramAuth = function(user) {
     // Показываем уведомление
     alert(`✅ Вы успешно авторизованы!\n\nДобро пожаловать, ${user.first_name}!\n\nТеперь вы можете создавать объявления и получать уведомления.`);
     
+    // Обновляем кнопку выхода
+    updateLogoutButtonVisibility();
+    
     // Перезагружаем страницу для применения авторизации
     location.reload();
 };
@@ -863,6 +870,49 @@ function getCurrentUserId() {
     
     // Fallback - временный ID
     return 'web_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// Функция выхода из аккаунта
+function handleLogout() {
+    if (!confirm('Вы уверены, что хотите выйти из аккаунта?\n\nВам потребуется заново авторизоваться через Telegram.')) {
+        return;
+    }
+    
+    console.log('🚪 Выход из аккаунта...');
+    
+    // Очищаем все данные авторизации
+    localStorage.removeItem('telegram_user');
+    localStorage.removeItem('telegram_auth_time');
+    localStorage.removeItem('telegram_auth_token');
+    localStorage.removeItem('user_nickname');
+    
+    // Закрываем гамбургер меню
+    closeHamburgerMenu();
+    
+    // Показываем модальное окно авторизации
+    setTimeout(() => {
+        showTelegramAuthModal();
+        console.log('✅ Выход выполнен, показано модальное окно авторизации');
+    }, 300);
+}
+
+// Обновить отображение кнопки выхода (показывать только для браузерной авторизации)
+function updateLogoutButtonVisibility() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    
+    // Показываем кнопку только если пользователь НЕ в Telegram WebApp
+    if (!isTelegramWebApp) {
+        const savedUser = localStorage.getItem('telegram_user');
+        if (savedUser) {
+            logoutBtn.style.display = 'flex';
+        } else {
+            logoutBtn.style.display = 'none';
+        }
+    } else {
+        // В Telegram WebApp кнопка выхода не нужна
+        logoutBtn.style.display = 'none';
+    }
 }
 
 function setupEventListeners() {
