@@ -1424,7 +1424,7 @@ async function submitAd() {
 // Загрузка и отображение объявлений
 async function loadAds(filters = {}) {
     try {
-        console.log('Загрузка объявлений с фильтрами:', filters);
+        console.log('🔄 Загрузка объявлений с фильтрами:', filters);
         
         // Показываем индикатор загрузки
         const adsList = document.getElementById('adsList');
@@ -1438,15 +1438,17 @@ async function loadAds(filters = {}) {
         }
 
         // Запрашиваем объявления из Supabase через API
+        console.log('📡 Вызов window.SupabaseClient.getAds...');
         const ads = await window.SupabaseClient.getAds(filters);
         
-        console.log('Получено объявлений:', ads.length);
+        console.log('✅ Получено объявлений:', ads.length);
+        console.log('📋 Первое объявление:', ads[0]);
         
         // Отображаем объявления
         displayAds(ads, filters.city);
 
     } catch (error) {
-        console.error('Ошибка загрузки объявлений:', error);
+        console.error('❌ Ошибка загрузки объявлений:', error);
         const adsList = document.getElementById('adsList');
         if (adsList) {
             adsList.innerHTML = `
@@ -1454,6 +1456,7 @@ async function loadAds(filters = {}) {
                     <div class="neon-icon">⚠️</div>
                     <h3>Ошибка загрузки</h3>
                     <p>${error.message}</p>
+                    <button class="neon-button" onclick="loadAds()">🔄 Попробовать снова</button>
                 </div>
             `;
         }
@@ -3257,18 +3260,20 @@ function resetFilterLocationSelection() {
 // Загрузка объявлений по локации
 function loadAdsByLocation(country, region, city) {
     try {
-        console.log('Запрос объявлений по локации:', {country, region, city});
+        console.log('🌍 Запрос объявлений по локации:', {country, region, city});
         
         // Формируем фильтры для загрузки
         const filters = {};
         if (country) filters.country = country;
         if (city) filters.city = city;
         
+        console.log('🔍 Итоговые фильтры для API:', filters);
+        
         // Загружаем через наш API
         loadAds(filters);
         
     } catch (error) {
-        console.error('Ошибка загрузки объявлений по локации:', error);
+        console.error('❌ Ошибка загрузки объявлений по локации:', error);
     }
 }
 
