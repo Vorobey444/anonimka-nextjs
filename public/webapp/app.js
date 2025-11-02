@@ -122,7 +122,7 @@ if (isTelegramWebApp) {
 // Данные формы
 let formData = {};
 let currentStep = 1;
-const totalSteps = 7;
+const totalSteps = 8; // Добавили шаг с никнеймом
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
@@ -131,6 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Задержка перед проверкой авторизации, чтобы Telegram успел передать initDataUnsafe
     setTimeout(() => {
         checkTelegramAuth(); // Проверка авторизации
+        initializeNickname(); // Инициализация никнейма
     }, 300);
     
     checkUserLocation();
@@ -310,6 +311,101 @@ function checkTelegramAuth() {
     console.log('❌ Пользователь не авторизован, показываем модальное окно');
     showTelegramAuthModal();
     return false;
+}
+
+// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С НИКНЕЙМОМ =====
+
+// Инициализация никнейма
+function initializeNickname() {
+    console.log('🎭 Инициализация никнейма...');
+    
+    const nicknameInput = document.getElementById('nicknameInput');
+    const defaultNicknameText = document.getElementById('defaultNicknameText');
+    
+    if (!nicknameInput || !defaultNicknameText) {
+        console.warn('⚠️ Поля никнейма не найдены');
+        return;
+    }
+    
+    // Получаем имя пользователя из Telegram
+    let telegramName = 'Анонимный';
+    
+    if (isTelegramWebApp && tg.initDataUnsafe?.user) {
+        const user = tg.initDataUnsafe.user;
+        telegramName = user.first_name || user.username || 'Анонимный';
+        console.log('✅ Имя из Telegram:', telegramName);
+    } else {
+        // Пробуем из localStorage
+        const savedUser = localStorage.getItem('telegram_user');
+        if (savedUser) {
+            try {
+                const user = JSON.parse(savedUser);
+                telegramName = user.first_name || user.username || 'Анонимный';
+                console.log('✅ Имя из localStorage:', telegramName);
+            } catch (e) {
+                console.error('Ошибка парсинга сохраненного пользователя:', e);
+            }
+        }
+    }
+    
+    // Устанавливаем дефолтное имя
+    defaultNicknameText.textContent = `Имя из Telegram: "${telegramName}"`;
+    
+    // Проверяем сохраненный никнейм
+    const savedNickname = localStorage.getItem('user_nickname');
+    if (savedNickname) {
+        nicknameInput.value = savedNickname;
+        console.log('✅ Загружен сохраненный никнейм:', savedNickname);
+    } else {
+        // Автоматически используем имя из Telegram
+        nicknameInput.value = telegramName;
+        console.log('✅ Использовано имя из Telegram:', telegramName);
+    }
+    
+    // Сохраняем никнейм при изменении
+    nicknameInput.addEventListener('input', function() {
+        const nickname = this.value.trim();
+        if (nickname) {
+            localStorage.setItem('user_nickname', nickname);
+            console.log('💾 Никнейм сохранен:', nickname);
+        }
+    });
+}
+
+// Использовать имя по умолчанию (из Telegram)
+function useDefaultNickname() {
+    const nicknameInput = document.getElementById('nicknameInput');
+    
+    // Получаем имя пользователя из Telegram
+    let telegramName = 'Анонимный';
+    
+    if (isTelegramWebApp && tg.initDataUnsafe?.user) {
+        const user = tg.initDataUnsafe.user;
+        telegramName = user.first_name || user.username || 'Анонимный';
+    } else {
+        const savedUser = localStorage.getItem('telegram_user');
+        if (savedUser) {
+            try {
+                const user = JSON.parse(savedUser);
+                telegramName = user.first_name || user.username || 'Анонимный';
+            } catch (e) {
+                console.error('Ошибка парсинга:', e);
+            }
+        }
+    }
+    
+    nicknameInput.value = telegramName;
+    localStorage.setItem('user_nickname', telegramName);
+    console.log('✅ Установлено имя из Telegram:', telegramName);
+    
+    // Показываем уведомление
+    if (tg.showPopup) {
+        tg.showPopup({
+            title: '✅ Готово',
+            message: `Установлен никнейм: ${telegramName}`,
+            buttons: [{type: 'ok'}]
+        });
+    }
 }
 
 // Показать модальное окно авторизации
@@ -1086,6 +1182,15 @@ async function submitAd() {
             tg.showAlert('Пожалуйста, введите текст объявления');
             return;
         }
+        
+        // Получаем никнейм
+        const nicknameInput = document.getElementById('nicknameInput');
+        const nickname = nicknameInput ? nicknameInput.value.trim() : 'Анонимный';
+        
+        if (!nickname) {
+            tg.showAlert('Пожалуйста, укажите ваш псевдоним');
+            return;
+        }
 
         // Подготавливаем данные для отправки в Supabase
         const adData = {
@@ -1097,6 +1202,7 @@ async function submitAd() {
             myAge: formData.myAge,
             body: formData.body,
             text: adText,
+            nickname: nickname, // Добавляем никнейм
             country: formData.country || 'Россия',
             region: formData.region || '',
             city: formData.city,
@@ -1106,6 +1212,7 @@ async function submitAd() {
 
         console.log('Отправка объявления в Supabase:', adData);
         console.log('Telegram User ID:', getCurrentUserId());
+        console.log('Никнейм:', nickname);
 
 
         // Показываем индикатор загрузки

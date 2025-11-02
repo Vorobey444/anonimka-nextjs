@@ -351,6 +351,23 @@
             
             <form id="adForm" class="form-container">
                 <div class="form-step active" id="step1">
+                    <h3>✨ Ваш псевдоним</h3>
+                    <div class="nickname-container">
+                        <p class="nickname-hint">Представьтесь как хотите - это анонимное объявление</p>
+                        <div class="nickname-input-wrapper">
+                            <input type="text" id="nicknameInput" class="neon-input" placeholder="Введите ваш псевдоним" maxlength="30">
+                            <span class="input-icon">🎭</span>
+                        </div>
+                        <div class="nickname-suggestions">
+                            <p class="suggestion-label">Или используйте:</p>
+                            <button type="button" class="suggestion-btn" onclick="useDefaultNickname()">
+                                <span id="defaultNicknameText">Загрузка...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-step" id="step2">
                     <h3>👤 Ваш пол</h3>
                     <div class="current-location">
                         <p>📍 Ваш город: <span id="formLocationDisplay"></span></p>
@@ -370,7 +387,7 @@
                     </div>
                 </div>
 
-                <div class="form-step" id="step2">
+                <div class="form-step" id="step3">
                     <h3>🔍 Кого ищете</h3>
                     <div class="target-select">
                         <button type="button" class="target-btn" data-target="Мужчину">👨 Мужчину</button>
@@ -379,7 +396,7 @@
                     </div>
                 </div>
 
-                <div class="form-step" id="step3">
+                <div class="form-step" id="step4">
                     <h3>🎯 Цель знакомства</h3>
                     <div class="goal-select">
                         <button type="button" class="goal-btn" data-goal="Дружба">🤝 Дружба</button>
@@ -390,7 +407,7 @@
                     </div>
                 </div>
 
-                <div class="form-step" id="step4">
+                <div class="form-step" id="step5">
                     <h3>📅 Возраст партнера</h3>
                     <div class="age-range">
                         <div class="input-group">
