@@ -2375,6 +2375,9 @@ function displayUserLocation() {
     }
 }
 
+// Алиас для обратной совместимости
+const updateUserLocationDisplay = displayUserLocation;
+
 // Сохранение локации пользователя
 function saveUserLocation(country, region, city) {
     userLocation = {
@@ -2418,6 +2421,13 @@ function showAutoLocationDetection() {
 function showManualLocationSetup() {
     showScreen('locationSetup');
     resetSetupLocation();
+    
+    // Показываем кнопку "Назад" если локация уже была установлена
+    const locationBackBtn = document.getElementById('locationBackBtn');
+    if (locationBackBtn) {
+        const hasLocation = localStorage.getItem('userLocation') || (tg.CloudStorage && userLocation);
+        locationBackBtn.style.display = hasLocation ? 'block' : 'none';
+    }
 }
 
 // Показать экран настройки локации (старая функция для совместимости)
@@ -3495,14 +3505,21 @@ function resetSetupLocation() {
         btn.classList.remove('active');
     });
     
-    // Очищаем поля ввода
-    document.querySelector('.setup-region-input').value = '';
-    document.querySelector('.setup-city-input').value = '';
+    // Очищаем поля ввода (с проверкой на существование)
+    const regionInput = document.querySelector('.setup-region-input');
+    const cityInput = document.querySelector('.setup-city-input');
     
-    // Скрываем все секции кроме выбора страны
-    document.querySelector('.setup-region-selection').style.display = 'none';
-    document.querySelector('.setup-city-selection').style.display = 'none';
-    document.querySelector('.setup-selected-location').style.display = 'none';
+    if (regionInput) regionInput.value = '';
+    if (cityInput) cityInput.value = '';
+    
+    // Скрываем все секции кроме выбора страны (с проверкой на существование)
+    const regionSelection = document.querySelector('.setup-region-selection');
+    const citySelection = document.querySelector('.setup-city-selection');
+    const selectedLocation = document.querySelector('.setup-selected-location');
+    
+    if (regionSelection) regionSelection.style.display = 'none';
+    if (citySelection) citySelection.style.display = 'none';
+    if (selectedLocation) selectedLocation.style.display = 'none';
     
     hideAllSuggestions();
     
