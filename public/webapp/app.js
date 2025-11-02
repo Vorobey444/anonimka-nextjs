@@ -2200,7 +2200,26 @@ function selectPopularLocation(country, region, city) {
 function processIPLocation(data) {
     const countryCode = (data.country_code || data.country || '').toLowerCase();
     const regionName = data.region;
-    const cityName = data.city;
+    let cityName = data.city;
+    
+    // Нормализация названий городов (приводим к единому формату)
+    const cityNormalization = {
+        'Alma-Ata': 'Алматы',
+        'Almaty': 'Алматы',
+        'Astana': 'Астана',
+        'Nur-Sultan': 'Астана',
+        'Moscow': 'Москва',
+        'Sankt-Peterburg': 'Санкт-Петербург',
+        'Saint Petersburg': 'Санкт-Петербург',
+        'Yekaterinburg': 'Екатеринбург',
+        'Ekaterinburg': 'Екатеринбург'
+    };
+    
+    // Нормализуем название города если оно в английском формате
+    if (cityName && cityNormalization[cityName]) {
+        console.log(`🔄 Нормализация города: "${cityName}" → "${cityNormalization[cityName]}"`);
+        cityName = cityNormalization[cityName];
+    }
     
     console.log('Обработка локации:', {countryCode, regionName, cityName});
     
@@ -2418,6 +2437,12 @@ function showAutoLocationDetection() {
         console.log('Запускаем определение локации по IP');
         detectLocationByIP();
     }, 1000);
+}
+
+// Показать экран выбора способа определения локации
+function showLocationChoiceScreen() {
+    console.log('Показываем экран выбора способа определения локации');
+    showScreen('locationChoice');
 }
 
 // Показать экран ручной настройки локации
