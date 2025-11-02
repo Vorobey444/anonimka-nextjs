@@ -55,11 +55,16 @@ tg.showPopup = function(params, callback) {
 };
 
 // Проверка, запущено ли приложение в Telegram
-// Проверяем наличие объекта Telegram.WebApp (а не initData, который может быть пустым)
-const isTelegramWebApp = !!(window.Telegram?.WebApp && typeof window.Telegram.WebApp === 'object');
+// Проверяем не только наличие объекта Telegram.WebApp, но и что есть платформа или initData
+const isTelegramWebApp = !!(
+    window.Telegram?.WebApp && 
+    typeof window.Telegram.WebApp === 'object' &&
+    (window.Telegram.WebApp.platform !== 'unknown' || window.Telegram.WebApp.initData)
+);
 console.log('🔍 Проверка Telegram WebApp:');
 console.log('  - window.Telegram:', !!window.Telegram);
 console.log('  - window.Telegram.WebApp:', !!window.Telegram?.WebApp);
+console.log('  - platform:', window.Telegram?.WebApp?.platform);
 console.log('  - initData:', window.Telegram?.WebApp?.initData);
 console.log('  - initDataUnsafe:', window.Telegram?.WebApp?.initDataUnsafe);
 console.log('  - isTelegramWebApp:', isTelegramWebApp);
@@ -137,6 +142,7 @@ function updateDebugInfo() {
         'isTelegramWebApp': isTelegramWebApp,
         'window.Telegram': !!window.Telegram,
         'tg exists': !!tg,
+        'platform': tg?.platform || '❌ НЕТ',
         'initData length': tg?.initData?.length || 0,
         'user.id (initData)': tg?.initDataUnsafe?.user?.id || '❌ НЕТ',
         'getCurrentUserId()': currentUserId,
@@ -234,10 +240,8 @@ const totalSteps = 7; // Убрали шаг с никнеймом - тепер�
 document.addEventListener('DOMContentLoaded', function() {
     initializeTelegramWebApp();
     
-    // Создаем кнопку Debug (только в Telegram WebApp)
-    if (isTelegramWebApp) {
-        createDebugButton();
-    }
+    // Создаем кнопку Debug (всегда, для отладки)
+    createDebugButton();
     
     // Задержка перед проверкой авторизации, чтобы Telegram успел передать initDataUnsafe
     setTimeout(() => {
