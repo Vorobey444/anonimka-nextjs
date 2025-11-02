@@ -3337,10 +3337,39 @@ h3 {
 .chat-button {
     background: linear-gradient(135deg, rgba(131, 56, 236, 0.2), rgba(255, 0, 110, 0.2));
     border-color: var(--neon-purple);
+    position: relative;
 }
 
 .chat-button:hover {
     box-shadow: 0 0 20px rgba(131, 56, 236, 0.5);
+}
+
+/* Счетчик новых запросов */
+.chat-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: linear-gradient(135deg, #ff006e, #8338ec);
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(255, 0, 110, 0.5);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(255, 0, 110, 0.5);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(255, 0, 110, 0.8);
+    }
 }
 
 /* Плейсхолдер загрузки */

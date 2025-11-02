@@ -243,11 +243,17 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         checkTelegramAuth(); // Проверка авторизации
         initializeNickname(); // Инициализация никнейма
+        updateChatBadge(); // Первое обновление счетчика
     }, 300);
     
     checkUserLocation();
     setupEventListeners();
     setupContactsEventListeners();
+    
+    // Периодическое обновление счетчика новых запросов (каждые 30 секунд)
+    setInterval(() => {
+        updateChatBadge();
+    }, 30000);
     
     // Добавляем обработчик видимости страницы
     // Если пользователь вернулся после сканирования QR
@@ -257,6 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Проверяем авторизацию еще раз
             setTimeout(() => {
                 checkTelegramAuth();
+                updateChatBadge(); // Обновляем счетчик при возврате
             }, 500);
         }
     });
@@ -952,6 +959,7 @@ function handleBackButton() {
 function showMainMenu() {
     showScreen('mainMenu');
     resetForm();
+    updateChatBadge(); // Обновляем счетчик запросов
 }
 
 function showCreateAd() {
@@ -4431,6 +4439,7 @@ async function acceptChatRequest(chatId) {
 
         tg.showAlert('✅ Чат создан!');
         await loadMyChats(); // Перезагружаем список
+        updateChatBadge(); // Обновляем счетчик
         
     } catch (error) {
         console.error('Критическая ошибка acceptChatRequest:', error);
@@ -4456,10 +4465,54 @@ async function rejectChatRequest(chatId) {
 
         tg.showAlert('Запрос отклонён');
         await loadMyChats(); // Перезагружаем список
+        updateChatBadge(); // Обновляем счетчик
         
     } catch (error) {
         console.error('Критическая ошибка rejectChatRequest:', error);
         tg.showAlert('Произошла ошибка');
+    }
+}
+
+// Обновить счетчик новых запросов на кнопке "Мои чаты"
+async function updateChatBadge() {
+    try {
+        const userId = getCurrentUserId();
+        
+        if (!userId || userId.startsWith('web_')) {
+            return; // Не показываем счетчик для неавторизованных
+        }
+
+        // Получаем количество непринятых запросов для текущего пользователя
+        const { data: pendingChats, error } = await supabase
+            .from('private_chats')
+            .select('id', { count: 'exact' })
+            .eq('user2', userId)
+            .eq('accepted', false)
+            .is('blocked_by', null);
+
+        const badge = document.getElementById('chatBadge');
+        
+        if (error) {
+            console.error('Ошибка получения количества запросов:', error);
+            if (badge) badge.style.display = 'none';
+            return;
+        }
+
+        const count = pendingChats?.length || 0;
+        
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        console.log('📊 Обновлен счетчик запросов:', count);
+        
+    } catch (error) {
+        console.error('Ошибка updateChatBadge:', error);
     }
 }
 

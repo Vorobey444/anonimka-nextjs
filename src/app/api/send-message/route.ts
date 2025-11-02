@@ -24,7 +24,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Сохраняем в базу данных
+    // Проверяем, существует ли уже чат по этому объявлению
+    const checkChatResponse = await fetch(
+      `${supabaseUrl}/rest/v1/private_chats?ad_id=eq.${adId}&or=(and(user1.eq.${senderTgId},user2.eq.${receiverTgId}),and(user1.eq.${receiverTgId},user2.eq.${senderTgId}))`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`
+        }
+      }
+    );
+
+    const existingChats = await checkChatResponse.json();
+    
+    if (existingChats && existingChats.length > 0) {
+      console.log('Chat already exists for this ad:', existingChats[0]);
+      return NextResponse.json(
+        { error: 'Вы уже отправили запрос на это объявление' },
+        { status: 400 }
+      );
+    }
+
+    // Создаем запись в таблице private_chats (статус: pending)
+    const createChatResponse = await fetch(`${supabaseUrl}/rest/v1/private_chats`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        ad_id: adId,
+        user1: senderTgId,
+        user2: receiverTgId,
+        accepted: false,
+        initial_message: messageText,
+        blocked_by: null
+      })
+    });
+
+    if (!createChatResponse.ok) {
+      const error = await createChatResponse.text();
+      console.error('Error creating chat in Supabase:', error);
+      return NextResponse.json(
+        { error: 'Failed to create chat request' },
+        { status: 500 }
+      );
+    }
+
+    const createdChat = await createChatResponse.json();
+    console.log('Chat request created:', createdChat);
+
+    // Сохраняем сообщение в базу данных
     const saveResponse = await fetch(`${supabaseUrl}/rest/v1/messages`, {
       method: 'POST',
       headers: {
@@ -68,38 +120,52 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Получаем nickname отправителя из базы
+    let senderNickname = senderName || 'Пользователь';
+    
+    const nicknameResponse = await fetch(
+      `${supabaseUrl}/rest/v1/ads?tg_id=eq.${senderTgId}&select=nickname&limit=1`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`
+        }
+      }
+    );
+    
+    if (nicknameResponse.ok) {
+      const nicknameData = await nicknameResponse.json();
+      if (nicknameData && nicknameData.length > 0 && nicknameData[0].nickname) {
+        senderNickname = nicknameData[0].nickname;
+        console.log('Using nickname from database:', senderNickname);
+      }
+    }
+
     // Формируем текст уведомления
     const notificationText = photoUrl 
       ? `
-🔔 <b>Новое сообщение на ваше объявление!</b>
+🔔 <b>Новый запрос на чат по вашему объявлению!</b>
 
-От: ${senderName || 'Пользователь'}
+От: ${senderNickname}
 
 📷 <i>Фотография</i>
 ${messageText ? `\n💬 <i>"${messageText}"</i>` : ''}
 
-Нажмите кнопку ниже, чтобы ответить и начать приватный чат.
+Откройте приложение чтобы принять или отклонить запрос.
     `.trim()
       : `
-🔔 <b>Новое сообщение на ваше объявление!</b>
+🔔 <b>Новый запрос на чат по вашему объявлению!</b>
 
-От: ${senderName || 'Пользователь'}
+От: ${senderNickname}
 
 💬 <i>"${messageText}"</i>
 
-Нажмите кнопку ниже, чтобы ответить и начать приватный чат.
+Откройте приложение чтобы принять или отклонить запрос.
     `.trim();
 
-    // Inline клавиатура с кнопкой "Создать чат"
-    // Используем callback_data для обработки ботом
+    // Inline клавиатура - ТОЛЬКО кнопка открытия приложения
     const keyboard = {
       inline_keyboard: [
-        [
-          {
-            text: '💬 Написать в личку',
-            callback_data: `create_chat_${adId}_${senderTgId}_${receiverTgId}`
-          }
-        ],
         [
           {
             text: '📱 Открыть приложение',
