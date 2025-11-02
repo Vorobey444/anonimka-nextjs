@@ -4335,7 +4335,12 @@ async function loadMyChats() {
 
         // Разделяем чаты на принятые и запросы
         const acceptedChats = chats?.filter(chat => chat.accepted) || [];
-        const pendingRequests = chats?.filter(chat => !chat.accepted) || [];
+        // Запросы показываем только получателю (user2 = текущий пользователь)
+        const pendingRequests = chats?.filter(chat => !chat.accepted && chat.user2 == userId) || [];
+
+        console.log('📊 Принятые чаты:', acceptedChats.length);
+        console.log('📊 Входящие запросы:', pendingRequests.length);
+        console.log('📋 Детали запросов:', pendingRequests);
 
         // Обновляем счетчики
         document.getElementById('activeChatsCount').textContent = acceptedChats.length;

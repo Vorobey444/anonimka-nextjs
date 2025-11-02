@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS private_chats (
     accepted BOOLEAN DEFAULT false, -- Принят ли запрос
     initial_message TEXT, -- Первое сообщение в запросе
     blocked_by BIGINT DEFAULT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Asia/Almaty'),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Asia/Almaty')
 );
 
 -- Индексы для быстрого поиска
@@ -33,11 +33,11 @@ COMMENT ON COLUMN private_chats.accepted IS 'Принят ли запрос на
 COMMENT ON COLUMN private_chats.initial_message IS 'Текст первого сообщения';
 COMMENT ON COLUMN private_chats.blocked_by IS 'ID пользователя, который заблокировал чат';
 
--- Триггер для обновления updated_at
+-- Триггер для обновления updated_at с часовым поясом Алматы
 CREATE OR REPLACE FUNCTION update_private_chats_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = NOW();
+    NEW.updated_at = NOW() AT TIME ZONE 'Asia/Almaty';
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -48,7 +48,14 @@ CREATE TRIGGER trigger_update_private_chats_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_private_chats_updated_at();
 
--- RLS политики (отключаем для начала, так как используем Service Role)
+-- RLS политики - сначала удаляем старые, потом создаем новые
+DROP POLICY IF EXISTS "Service role has full access" ON private_chats;
+DROP POLICY IF EXISTS "Allow read access" ON private_chats;
+DROP POLICY IF EXISTS "Allow update through service" ON private_chats;
+DROP POLICY IF EXISTS "Allow insert through service" ON private_chats;
+DROP POLICY IF EXISTS "Allow delete through service" ON private_chats;
+
+-- Включаем RLS
 ALTER TABLE private_chats ENABLE ROW LEVEL SECURITY;
 
 -- Разрешаем все операции для service_role (используется в API)
