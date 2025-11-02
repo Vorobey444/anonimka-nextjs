@@ -55,11 +55,21 @@ tg.showPopup = function(params, callback) {
 };
 
 // Проверка, запущено ли приложение в Telegram
-const isTelegramWebApp = !!window.Telegram?.WebApp?.initData;
-console.log('Запущено в Telegram WebApp:', isTelegramWebApp);
+// Проверяем наличие объекта Telegram.WebApp (а не initData, который может быть пустым)
+const isTelegramWebApp = !!(window.Telegram?.WebApp && typeof window.Telegram.WebApp === 'object');
+console.log('🔍 Проверка Telegram WebApp:');
+console.log('  - window.Telegram:', !!window.Telegram);
+console.log('  - window.Telegram.WebApp:', !!window.Telegram?.WebApp);
+console.log('  - initData:', window.Telegram?.WebApp?.initData);
+console.log('  - initDataUnsafe:', window.Telegram?.WebApp?.initDataUnsafe);
+console.log('  - isTelegramWebApp:', isTelegramWebApp);
 
 if (isTelegramWebApp) {
+    console.log('✅ Запущено в Telegram WebApp, расширяем окно');
     tg.expand();
+    tg.ready();
+} else {
+    console.log('⚠️ НЕ запущено в Telegram WebApp');
 }
 
 // Данные формы
@@ -165,8 +175,12 @@ function initializeTelegramWebApp() {
 // Проверка авторизации через Telegram
 function checkTelegramAuth() {
     console.log('🔐 Проверка авторизации...');
-    console.log('isTelegramWebApp:', isTelegramWebApp);
-    console.log('tg.initDataUnsafe:', tg.initDataUnsafe);
+    console.log('  📊 Детальная диагностика:');
+    console.log('    - isTelegramWebApp:', isTelegramWebApp);
+    console.log('    - tg:', tg);
+    console.log('    - tg.initDataUnsafe:', tg.initDataUnsafe);
+    console.log('    - tg.initDataUnsafe?.user:', tg.initDataUnsafe?.user);
+    console.log('    - tg.initDataUnsafe?.user?.id:', tg.initDataUnsafe?.user?.id);
     
     // Если запущено через Telegram WebApp, авторизация автоматическая
     if (isTelegramWebApp && tg.initDataUnsafe?.user?.id) {
@@ -177,6 +191,8 @@ function checkTelegramAuth() {
             username: tg.initDataUnsafe.user.username,
             photo_url: tg.initDataUnsafe.user.photo_url
         };
+        
+        console.log('✅ Данные пользователя получены:', userData);
         
         // Проверяем, была ли уже авторизация
         const savedUser = localStorage.getItem('telegram_user');
@@ -204,6 +220,9 @@ function checkTelegramAuth() {
         
         return true;
     }
+    
+    console.log('⚠️ Telegram авторизация недоступна');
+    console.log('  - Причина: isTelegramWebApp=' + isTelegramWebApp + ', user.id=' + (tg.initDataUnsafe?.user?.id || 'null'));
     
     // Проверяем сохранённые данные из предыдущей сессии
     const savedUser = localStorage.getItem('telegram_user');
