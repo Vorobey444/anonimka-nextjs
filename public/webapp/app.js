@@ -128,6 +128,8 @@ function hideDebugPanel() {
 function updateDebugInfo() {
     if (!debugPanel) return;
     
+    const currentUserId = getCurrentUserId();
+    
     const info = {
         'isTelegramWebApp': isTelegramWebApp,
         'window.Telegram': !!window.Telegram,
@@ -135,6 +137,8 @@ function updateDebugInfo() {
         'initData length': tg?.initData?.length || 0,
         'initDataUnsafe': JSON.stringify(tg?.initDataUnsafe || {}, null, 2),
         'user.id': tg?.initDataUnsafe?.user?.id || '❌ НЕТ',
+        'getCurrentUserId()': currentUserId,
+        'isAuthorized': !currentUserId.startsWith('web_') ? '✅ ДА' : '❌ НЕТ (веб ID)',
         'nickname': document.getElementById('nicknameInput')?.value || '❌ НЕТ',
         'localStorage user': localStorage.getItem('telegram_user') ? '✅ ЕСТЬ' : '❌ НЕТ',
         'localStorage nickname': localStorage.getItem('user_nickname') || '❌ НЕТ',
