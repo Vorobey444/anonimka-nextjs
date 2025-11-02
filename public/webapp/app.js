@@ -3747,8 +3747,23 @@ async function loadMyChats() {
     const chatsList = document.getElementById('chatsList');
     
     try {
-        const userId = tg.initDataUnsafe?.user?.id;
+        // Пытаемся получить userId из Telegram или localStorage
+        let userId = tg.initDataUnsafe?.user?.id;
+        
         if (!userId) {
+            // Пробуем получить из сохраненных данных
+            const savedUser = localStorage.getItem('telegram_user');
+            if (savedUser) {
+                const userData = JSON.parse(savedUser);
+                userId = userData.id;
+                console.log('✅ User ID получен из localStorage:', userId);
+            }
+        } else {
+            console.log('✅ User ID получен из Telegram:', userId);
+        }
+        
+        if (!userId) {
+            console.error('❌ User ID не найден ни в Telegram, ни в localStorage');
             chatsList.innerHTML = `
                 <div class="empty-chats">
                     <div class="neon-icon">🔒</div>
