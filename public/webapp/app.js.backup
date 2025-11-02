@@ -1132,39 +1132,34 @@ async function loadMyAds() {
             const ageFrom = ad.age_from || ad.ageFrom || '?';
             const ageTo = ad.age_to || ad.ageTo || '?';
             
-            const authorGender = ad.gender === 'male' ? 'Мужчина' : 'Женщина';
-            const authorIcon = ad.gender === 'male' ? '👨' : '👩';
-            const targetText = ad.target === 'male' || ad.target === 'мужчину' ? 'мужчину' : 'женщину';
-            const targetIcon = ad.target === 'male' || ad.target === 'мужчину' ? '👨' : '👩';
-            
             return `
             <div class="ad-card" data-ad-id="${ad.id}">
                 ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
-                <div class="ad-header">
-                    <h3>${authorIcon} ${authorGender}, ${ad.my_age || '?'} лет</h3>
-                    <span class="ad-date">📅 ${new Date(ad.created_at).toLocaleDateString('ru-RU')}</span>
-                </div>
                 <div class="ad-info">
                     <div class="ad-field">
-                        <span class="icon">💪</span>
-                        <span><strong>Телосложение:</strong> ${ad.body_type || 'не указано'}</span>
+                        <span class="icon">${ad.gender === 'male' ? '👨' : '👩'}</span>
+                        <span>${ad.my_age || '?'} лет, ${ad.body_type || 'не указано'}</span>
                     </div>
                     <div class="ad-field">
                         <span class="icon">🎯</span>
-                        <span><strong>Цель:</strong> ${ad.goal || 'не указано'}</span>
+                        <span>${ad.goal || 'не указано'}</span>
                     </div>
                     <div class="ad-field">
-                        <span class="icon">${targetIcon}</span>
-                        <span><strong>Ищу:</strong> ${targetText}, ${ageFrom}-${ageTo} лет</span>
+                        <span class="icon">${ad.target === 'male' || ad.target === 'мужчину' ? '�' : ad.target === 'female' || ad.target === 'женщину' ? '👩' : '�🔍'}</span>
+                        <span>Ищу \${targetText || '?'}, ${ageFrom}-${ageTo} лет</span>
                     </div>
                     <div class="ad-field">
-                        <span class="icon">�</span>
+                        <span class="icon">📍</span>
                         <span>${locationData[ad.country]?.flag || '🌍'} ${ad.region}, ${ad.city}</span>
                     </div>
-                    ${ad.text ? `<div class="ad-field full-width">
-                        <span class="icon">�</span>
-                        <span><strong>О себе:</strong> ${ad.text}</span>
-                    </div>` : ''}
+                    <div class="ad-field">
+                        <span class="icon">📝</span>
+                        <span>${ad.text ? (ad.text.substring(0, 100) + (ad.text.length > 100 ? '...' : '')) : 'Без описания'}</span>
+                    </div>
+                    <div class="ad-field">
+                        <span class="icon">📅</span>
+                        <span>${new Date(ad.created_at).toLocaleDateString('ru-RU')}</span>
+                    </div>
                 </div>
                 <div class="ad-actions">
                     <button class="delete-ad-btn" onclick="deleteMyAd(${ad.id})">
@@ -4373,25 +4368,41 @@ async function loadMyChats() {
 
         console.log('📡 Загружаем чаты для пользователя:', userId);
 
-        // Получаем все чаты через API
-        const activeResponse = await fetch(`/api/chats?userId=${userId}&action=get-active`);
-        const activeData = await activeResponse.json();
-        
-        const requestsResponse = await fetch(`/api/chats?userId=${userId}&action=get-requests`);
-        const requestsData = await requestsResponse.json();
+        // Получаем все чаты из Supabase
+        const { data: chats, error } = await supabase
+            .from('private_chats')
+            .select('*')
+            .or(`user1.eq.${userId},user2.eq.${userId}`)
+            .is('blocked_by', null)
+            .order('updated_at', { ascending: false });
 
-        console.log('📊 Результат запроса активных чатов:', activeData);
-        console.log('📊 Результат запроса входящих запросов:', requestsData);
+        console.log('📊 Результат запроса чатов:', { chats, error });
+        console.log('📊 Всего чатов получено:', chats?.length || 0);
         
-        if (!activeData.success || !requestsData.success) {
-            const error = activeData.error || requestsData.error;
+        if (chats && chats.length > 0) {
+            console.log('📋 Первый чат для примера:', chats[0]);
+            chats.forEach((chat, index) => {
+                console.log(`Chat ${index + 1}:`, {
+                    id: chat.id,
+                    ad_id: chat.ad_id,
+                    user1: chat.user1,
+                    user2: chat.user2,
+                    accepted: chat.accepted,
+                    blocked_by: chat.blocked_by,
+                    isCurrentUserReceiver: chat.user2 == userId
+                });
+            });
+        }
+
+        if (error) {
             console.error('❌ Ошибка загрузки чатов:', error);
+            console.error('Детали ошибки:', JSON.stringify(error, null, 2));
             const errorHTML = `
                 <div class="empty-chats">
                     <div class="neon-icon">⚠️</div>
                     <h3>Ошибка загрузки</h3>
                     <p>Не удалось загрузить чаты. Попробуйте позже.</p>
-                    <p style="font-size: 12px; color: #888;">${error || 'Неизвестная ошибка'}</p>
+                    <p style="font-size: 12px; color: #888;">${error.message || 'Неизвестная ошибка'}</p>
                 </div>
             `;
             activeChats.innerHTML = errorHTML;
@@ -4399,8 +4410,10 @@ async function loadMyChats() {
             return;
         }
 
-        const acceptedChats = activeData.chats || [];
-        const pendingRequests = requestsData.requests || [];
+        // Разделяем чаты на принятые и запросы
+        const acceptedChats = chats?.filter(chat => chat.accepted) || [];
+        // Запросы показываем только получателю (user2 = текущий пользователь)
+        const pendingRequests = chats?.filter(chat => !chat.accepted && chat.user2 == userId) || [];
 
         console.log('📊 Принятые чаты:', acceptedChats.length);
         console.log('📊 Входящие запросы:', pendingRequests.length);
@@ -4495,17 +4508,13 @@ async function acceptChatRequest(chatId) {
     try {
         console.log('✅ Принимаем запрос на чат:', chatId);
         
-        const userId = getCurrentUserId();
-        const response = await fetch('/api/chats', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chatId, userId, action: 'accept' })
-        });
-        
-        const data = await response.json();
+        const { data, error } = await supabase
+            .from('private_chats')
+            .update({ accepted: true })
+            .eq('id', chatId);
 
-        if (!data.success) {
-            console.error('Ошибка принятия запроса:', data.error);
+        if (error) {
+            console.error('Ошибка принятия запроса:', error);
             tg.showAlert('Ошибка при принятии запроса');
             return;
         }
@@ -4525,17 +4534,13 @@ async function rejectChatRequest(chatId) {
     try {
         console.log('❌ Отклоняем запрос на чат:', chatId);
         
-        const userId = getCurrentUserId();
-        const response = await fetch('/api/chats', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chatId, userId, action: 'reject' })
-        });
-        
-        const data = await response.json();
+        const { data, error } = await supabase
+            .from('private_chats')
+            .delete()
+            .eq('id', chatId);
 
-        if (!data.success) {
-            console.error('Ошибка отклонения запроса:', data.error);
+        if (error) {
+            console.error('Ошибка отклонения запроса:', error);
             tg.showAlert('Ошибка при отклонении запроса');
             return;
         }
@@ -4559,19 +4564,23 @@ async function updateChatBadge() {
             return; // Не показываем счетчик для неавторизованных
         }
 
-        // Получаем количество непринятых запросов через API
-        const response = await fetch(`/api/chats?userId=${userId}&action=count-requests`);
-        const data = await response.json();
+        // Получаем количество непринятых запросов для текущего пользователя
+        const { data: pendingChats, error } = await supabase
+            .from('private_chats')
+            .select('id', { count: 'exact' })
+            .eq('user2', userId)
+            .eq('accepted', false)
+            .is('blocked_by', null);
 
         const badge = document.getElementById('chatBadge');
         
-        if (!data.success) {
-            console.error('Ошибка получения количества запросов:', data.error);
+        if (error) {
+            console.error('Ошибка получения количества запросов:', error);
             if (badge) badge.style.display = 'none';
             return;
         }
 
-        const count = data.count || 0;
+        const count = pendingChats?.length || 0;
         
         if (badge) {
             if (count > 0) {
@@ -4594,17 +4603,18 @@ async function openChat(chatId) {
     currentChatId = chatId;
     showScreen('chatView');
     
-    // Загружаем информацию о чате через API
-    const response = await fetch(`/api/chats?userId=${getCurrentUserId()}&action=get-chat&chatId=${chatId}`);
-    const data = await response.json();
+    // Загружаем информацию о чате
+    const { data: chat, error } = await supabase
+        .from('private_chats')
+        .select('*')
+        .eq('id', chatId)
+        .single();
 
-    if (!data.success || !data.chat) {
+    if (error || !chat) {
         tg.showAlert('Ошибка загрузки чата');
         showMyChats();
         return;
     }
-
-    const chat = data.chat;
 
     // Обновляем заголовок
     document.getElementById('chatTitle').textContent = 'Анонимный чат';
