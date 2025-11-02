@@ -1780,8 +1780,25 @@ async function contactAuthor(adIndex) {
     }
     
     try {
-        // Используем локальное хранилище вместо Supabase (провайдер блокирует)
-        const existingChat = window.LocalChatStorage.checkExisting(currentUserId, ad.tg_id, ad.id);
+        // Проверяем, существует ли уже чат (используем Neon PostgreSQL)
+        const checkResponse = await fetch('/api/neon-chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'check-existing',
+                params: { user1: currentUserId, user2: ad.tg_id, adId: ad.id }
+            })
+        });
+
+        const checkResult = await checkResponse.json();
+
+        if (checkResult.error) {
+            console.error('Error checking existing chat:', checkResult.error);
+            alert('❌ Ошибка при проверке чата. Попробуйте позже.');
+            return;
+        }
+
+        const existingChat = checkResult.data;
 
         if (existingChat) {
             if (existingChat.blocked_by) {
@@ -1798,9 +1815,24 @@ async function contactAuthor(adIndex) {
         }
 
         // Создаем новый запрос на чат
-        const newChat = window.LocalChatStorage.createChat(currentUserId, ad.tg_id, ad.id);
+        const createResponse = await fetch('/api/neon-chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'create',
+                params: { user1: currentUserId, user2: ad.tg_id, adId: ad.id }
+            })
+        });
 
-        if (newChat) {
+        const createResult = await createResponse.json();
+
+        if (createResult.error) {
+            console.error('Error creating chat request:', createResult.error);
+            alert('❌ Ошибка при создании запроса на чат: ' + createResult.error.message);
+            return;
+        }
+
+        if (createResult.data) {
             // Отправляем уведомление в Telegram через бота
             try {
                 await fetch('/api/send-notification', {
@@ -1818,7 +1850,7 @@ async function contactAuthor(adIndex) {
                 // Не прерываем выполнение, чат уже создан
             }
 
-            alert('✅ Запрос на чат отправлен!\n\nАвтор объявления получит уведомление и сможет принять ваш запрос.\n\n(Чаты сохраняются локально)');
+            alert('✅ Запрос на чат отправлен!\n\nАвтор объявления получит уведомление и сможет принять ваш запрос.');
         }
         
     } catch (error) {
