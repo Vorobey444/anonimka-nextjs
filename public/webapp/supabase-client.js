@@ -1,6 +1,26 @@
-// Клиент Supabase для работы с объявлениями через Next.js API
+// Клиент Supabase для работы с объявлениями и чатами через Next.js API
 
 (function() {
+  // Настройки Supabase (публичные ключи)
+  const SUPABASE_URL = 'https://vcxknlntcvcdowdohblr.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjeGtubG50Y3ZjZG93ZG9oYmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA1NDk3NjMsImV4cCI6MjA0NjEyNTc2M30.TcBhgBh9DQ5PzbcSl2eWxHxJBwBVnlv_JmR9Bfin-P8';
+  
+  // Создаём Supabase клиент
+  const supabase = window.supabase?.createClient ? 
+    window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) :
+    {
+      from: (table) => ({
+        select: () => ({ data: null, error: new Error('Supabase SDK не загружен') }),
+        insert: () => ({ data: null, error: new Error('Supabase SDK не загружен') }),
+        update: () => ({ data: null, error: new Error('Supabase SDK не загружен') }),
+        delete: () => ({ data: null, error: new Error('Supabase SDK не загружен') })
+      })
+    };
+  
+  // Экспортируем supabase в глобальную область для использования в app.js
+  window.supabase = supabase;
+  console.log('✅ Supabase client доступен:', !!window.supabase);
+  
   // Функция для получения объявлений
   async function getAds(filters = {}) {
     console.log('getAds(): загрузка объявлений', filters);
