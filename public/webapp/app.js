@@ -3648,3 +3648,272 @@ ${emailData.message}
         };
     }
 }
+
+// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С ЧАТАМИ =====
+
+let currentChatId = null;
+let chatPollingInterval = null;
+
+// Показать список чатов
+async function showMyChats() {
+    showScreen('myChats');
+    await loadMyChats();
+}
+
+// Загрузить список чатов пользователя
+async function loadMyChats() {
+    const chatsList = document.getElementById('chatsList');
+    
+    try {
+        const userId = tg.initDataUnsafe?.user?.id;
+        if (!userId) {
+            chatsList.innerHTML = `
+                <div class="empty-chats">
+                    <div class="neon-icon">🔒</div>
+                    <h3>Необходима авторизация</h3>
+                    <p>Для доступа к чатам откройте приложение через Telegram бота</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Получаем чаты из Supabase
+        const { data: chats, error } = await supabase
+            .from('private_chats')
+            .select('*')
+            .or(`user1.eq.${userId},user2.eq.${userId}`)
+            .eq('blocked_by', null)
+            .order('updated_at', { ascending: false });
+
+        if (error) {
+            console.error('Ошибка загрузки чатов:', error);
+            chatsList.innerHTML = `
+                <div class="empty-chats">
+                    <div class="neon-icon">⚠️</div>
+                    <h3>Ошибка загрузки</h3>
+                    <p>Не удалось загрузить чаты. Попробуйте позже.</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (!chats || chats.length === 0) {
+            chatsList.innerHTML = `
+                <div class="empty-chats">
+                    <div class="neon-icon">💬</div>
+                    <h3>У вас пока нет чатов</h3>
+                    <p>Начните диалог, написав в личку по объявлению!</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Отображаем чаты
+        chatsList.innerHTML = chats.map(chat => {
+            const lastMessageTime = chat.updated_at ? formatChatTime(chat.updated_at) : '';
+            return `
+                <div class="chat-card" onclick="openChat('${chat.id}')">
+                    <div class="chat-card-header">
+                        <span class="chat-ad-id">💬 Объявление #${chat.ad_id || 'N/A'}</span>
+                        <span class="chat-time">${lastMessageTime}</span>
+                    </div>
+                    <div class="chat-preview">
+                        Нажмите для открытия чата
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Ошибка:', error);
+        chatsList.innerHTML = `
+            <div class="empty-chats">
+                <div class="neon-icon">⚠️</div>
+                <h3>Ошибка</h3>
+                <p>Не удалось загрузить чаты</p>
+            </div>
+        `;
+    }
+}
+
+// Открыть чат
+async function openChat(chatId) {
+    currentChatId = chatId;
+    showScreen('chatView');
+    
+    // Загружаем информацию о чате
+    const { data: chat, error } = await supabase
+        .from('private_chats')
+        .select('*')
+        .eq('id', chatId)
+        .single();
+
+    if (error || !chat) {
+        tg.showAlert('Ошибка загрузки чата');
+        showMyChats();
+        return;
+    }
+
+    // Обновляем заголовок
+    document.getElementById('chatTitle').textContent = 'Анонимный чат';
+    document.getElementById('chatAdId').textContent = `Объявление #${chat.ad_id || 'N/A'}`;
+
+    // Загружаем сообщения
+    await loadChatMessages(chatId);
+
+    // Запускаем периодическое обновление сообщений
+    startChatPolling(chatId);
+}
+
+// Загрузить сообщения чата
+async function loadChatMessages(chatId) {
+    const messagesContainer = document.getElementById('chatMessages');
+    
+    try {
+        const { data: messages, error } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('chat_id', chatId)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('Ошибка загрузки сообщений:', error);
+            messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Ошибка загрузки сообщений</p>';
+            return;
+        }
+
+        if (!messages || messages.length === 0) {
+            messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Нет сообщений. Начните диалог!</p>';
+            return;
+        }
+
+        const userId = tg.initDataUnsafe?.user?.id;
+        messagesContainer.innerHTML = messages.map(msg => {
+            const isMine = msg.sender_id === userId;
+            const messageClass = isMine ? 'sent' : 'received';
+            const time = formatMessageTime(msg.created_at);
+            
+            return `
+                <div class="message ${messageClass}">
+                    <div class="message-text">${escapeHtml(msg.message_text)}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Прокручиваем вниз
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    } catch (error) {
+        console.error('Ошибка:', error);
+        messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Ошибка загрузки</p>';
+    }
+}
+
+// Отправить сообщение
+async function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const messageText = input.value.trim();
+
+    if (!messageText || !currentChatId) return;
+
+    const userId = tg.initDataUnsafe?.user?.id;
+    if (!userId) {
+        tg.showAlert('Ошибка: пользователь не авторизован');
+        return;
+    }
+
+    try {
+        // Вставляем сообщение в базу
+        const { error } = await supabase
+            .from('messages')
+            .insert({
+                chat_id: currentChatId,
+                sender_id: userId,
+                message_text: messageText
+            });
+
+        if (error) {
+            console.error('Ошибка отправки:', error);
+            tg.showAlert('Ошибка отправки сообщения');
+            return;
+        }
+
+        // Обновляем время последнего сообщения в чате
+        await supabase
+            .from('private_chats')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', currentChatId);
+
+        // Очищаем поле ввода
+        input.value = '';
+
+        // Перезагружаем сообщения
+        await loadChatMessages(currentChatId);
+
+    } catch (error) {
+        console.error('Ошибка:', error);
+        tg.showAlert('Ошибка отправки');
+    }
+}
+
+// Запустить автообновление чата
+function startChatPolling(chatId) {
+    // Останавливаем предыдущий интервал
+    if (chatPollingInterval) {
+        clearInterval(chatPollingInterval);
+    }
+
+    // Обновляем каждые 3 секунды
+    chatPollingInterval = setInterval(async () => {
+        if (currentChatId === chatId) {
+            await loadChatMessages(chatId);
+        } else {
+            clearInterval(chatPollingInterval);
+        }
+    }, 3000);
+}
+
+// Форматирование времени для списка чатов
+function formatChatTime(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'только что';
+    if (diffMins < 60) return `${diffMins} мин назад`;
+    if (diffHours < 24) return `${diffHours} ч назад`;
+    if (diffDays < 7) return `${diffDays} д назад`;
+    
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
+// Форматирование времени для сообщений
+function formatMessageTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Экранирование HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Обработчик нажатия Enter в поле ввода
+document.addEventListener('DOMContentLoaded', () => {
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+});
+

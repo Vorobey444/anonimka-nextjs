@@ -139,6 +139,10 @@
                     <span class="icon">📋</span>
                     Мои объявления
                 </button>
+                <button class="neon-button chat-button" onclick="showMyChats()">
+                    <span class="icon">💬</span>
+                    Мои чаты
+                </button>
                 <button class="neon-button quaternary" onclick="showLocationSetup()">
                     <span class="icon">📍</span>
                     Сменить город
@@ -494,6 +498,48 @@
 
             <div id="myAdsList" class="ads-list">
                 <!-- Объявления пользователя будут загружены через JS -->
+            </div>
+        </div>
+
+        <!-- Мои чаты -->
+        <div id="myChats" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>💬 Мои чаты</h2>
+            </div>
+
+            <div class="chats-container">
+                <div id="chatsList" class="chats-list">
+                    <!-- Чаты будут загружены через JS -->
+                    <div class="loading-placeholder">
+                        <div class="neon-icon pulse">💬</div>
+                        <p>Загрузка чатов...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Экран открытого чата -->
+        <div id="chatView" class="screen">
+            <div class="header chat-header">
+                <button class="back-btn" onclick="showMyChats()">← Назад</button>
+                <div class="chat-info">
+                    <h2 id="chatTitle">Анонимный чат</h2>
+                    <p id="chatAdId" class="chat-subtitle"></p>
+                </div>
+            </div>
+
+            <div class="chat-messages-container">
+                <div id="chatMessages" class="chat-messages">
+                    <!-- Сообщения будут загружены через JS -->
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <input type="text" id="messageInput" class="chat-input" placeholder="Введите сообщение..." />
+                <button class="send-button" onclick="sendMessage()">
+                    <span>📤</span>
+                </button>
             </div>
         </div>
 
