@@ -5,23 +5,42 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vcxknlntcv
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjeGtubG50Y3ZjZG93ZG9oYmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA1NDk3NjMsImV4cCI6MjA0NjEyNTc2M30.TcBhgBh9DQ5PzbcSl2eWxHxJBwBVnlv_JmR9Bfin-P8';
 
 async function supabaseRequest(url: string, options: RequestInit = {}) {
-  const response = await fetch(`${SUPABASE_URL}${url}`, {
-    ...options,
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-      ...options.headers
+  try {
+    const fullUrl = `${SUPABASE_URL}${url}`;
+    console.log('Supabase request:', fullUrl);
+    
+    const response = await fetch(fullUrl, {
+      ...options,
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+
+    const data = await response.json();
+    console.log('Supabase response:', { status: response.status, data });
+    
+    if (!response.ok) {
+      return { error: data };
     }
-  });
-  return response.json();
+    
+    return data;
+  } catch (error: any) {
+    console.error('Supabase request failed:', error);
+    return { error: { message: error.message || 'Request failed' } };
+  }
 }
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('=== /api/chats GET request ===');
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    const action = searchParams.get('action'); // 'count-requests' | 'get-active' | 'get-requests'
+    const action = searchParams.get('action');
+    
+    console.log('Parameters:', { userId, action });
 
     if (!userId) {
       return NextResponse.json(
@@ -32,27 +51,31 @@ export async function GET(request: NextRequest) {
 
     // Подсчет непринятых запросов
     if (action === 'count-requests') {
+      console.log('Counting requests for user:', userId);
       const response = await supabaseRequest(
-        `/rest/v1/private_chats?select=id&user2=eq.${userId}&accepted=eq.false&blocked_by=is.null`,
-        { method: 'GET', headers: { 'Prefer': 'count=exact' } }
+        `/rest/v1/private_chats?select=id&user2=eq.${userId}&accepted=eq.false&blocked_by=is.null`
       );
 
       if (response.error) {
         console.error('Ошибка подсчета запросов:', response.error);
         return NextResponse.json(
-          { success: false, error: response.error.message },
+          { success: false, error: response.error.message || 'Unknown error' },
           { status: 500 }
         );
       }
 
+      const count = Array.isArray(response) ? response.length : 0;
+      console.log('Requests count:', count);
+      
       return NextResponse.json({
         success: true,
-        count: Array.isArray(response) ? response.length : 0
+        count
       });
     }
 
     // Получение активных чатов
     if (action === 'get-active') {
+      console.log('Getting active chats for user:', userId);
       const response = await supabaseRequest(
         `/rest/v1/private_chats?select=*&or=(user1.eq.${userId},user2.eq.${userId})&accepted=eq.true&blocked_by=is.null&order=last_message_at.desc`
       );
@@ -60,7 +83,7 @@ export async function GET(request: NextRequest) {
       if (response.error) {
         console.error('Ошибка получения активных чатов:', response.error);
         return NextResponse.json(
-          { success: false, error: response.error.message },
+          { success: false, error: response.error.message || 'Unknown error' },
           { status: 500 }
         );
       }
