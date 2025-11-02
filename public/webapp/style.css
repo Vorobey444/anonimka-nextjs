@@ -2334,11 +2334,11 @@ h3 {
 .rules-section,
 .privacy-section,
 .about-section {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
     background: linear-gradient(135deg, var(--bg-card), #2a2a3e);
     border: 2px solid var(--neon-purple);
-    border-radius: 20px;
+    border-radius: 15px;
     box-shadow: 0 0 20px rgba(131, 56, 236, 0.3);
 }
 
@@ -2346,8 +2346,8 @@ h3 {
 .privacy-section h3,
 .about-section h3 {
     color: var(--neon-purple);
-    font-size: 1.3rem;
-    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
     text-shadow: 0 0 10px rgba(131, 56, 236, 0.6);
 }
 
@@ -2359,10 +2359,11 @@ h3 {
 
 .rules-section li,
 .about-section li {
-    padding: 0.5rem 0;
+    padding: 0.4rem 0;
     color: var(--text-light);
     position: relative;
-    padding-left: 2rem;
+    padding-left: 1.5rem;
+    font-size: 0.95rem;
 }
 
 .rules-section li::before,
@@ -2377,24 +2378,33 @@ h3 {
 .privacy-section p,
 .about-section p {
     color: var(--text-light);
-    line-height: 1.6;
-    margin-bottom: 1rem;
+    line-height: 1.5;
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
 }
 
 /* О приложении */
 .app-logo {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.app-logo .logo-image {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 0.8rem;
+    filter: drop-shadow(0 0 10px rgba(131, 56, 236, 0.5));
 }
 
 .app-logo .neon-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
+    font-size: 3rem;
+    margin-bottom: 0.8rem;
 }
 
 .app-logo h3 {
-    font-size: 1.8rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+    margin-bottom: 0.3rem;
 }
 
 /* Модальное окно авторизации через Telegram */
@@ -2894,14 +2904,14 @@ h3 {
 
 .version {
     color: var(--text-gray);
-    font-size: 0.9rem;
-    opacity: 0.8;
+    font-size: 0.85rem;
+    opacity: 0.7;
 }
 
 .copyright {
     text-align: center;
     color: var(--text-gray);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     opacity: 0.6;
     margin-top: 2rem;
 }
