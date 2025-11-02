@@ -4567,12 +4567,11 @@ async function updateChatBadge() {
             .eq('accepted', false)
             .is('blocked_by', null);
         
-        console.log('📡 Supabase response:', { data, error });
-        
         const badge = document.getElementById('chatBadge');
         
         if (error) {
-            console.error('❌ Supabase error:', error);
+            // Тихо скрываем счетчик если Supabase недоступен (блокировка провайдера/VPN)
+            console.warn('⚠️ Supabase недоступен, счетчик чатов отключен:', error.message);
             if (badge) badge.style.display = 'none';
             return;
         }
@@ -4583,15 +4582,16 @@ async function updateChatBadge() {
             if (count > 0) {
                 badge.textContent = count;
                 badge.style.display = 'inline-block';
+                console.log('📊 Обновлен счетчик запросов:', count);
             } else {
                 badge.style.display = 'none';
             }
         }
-
-        console.log('📊 Обновлен счетчик запросов:', count);
         
     } catch (error) {
-        console.error('Ошибка updateChatBadge:', error);
+        // Тихо обрабатываем ошибку без вывода в консоль
+        const badge = document.getElementById('chatBadge');
+        if (badge) badge.style.display = 'none';
     }
 }
 
