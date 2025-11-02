@@ -73,23 +73,60 @@ if (isTelegramWebApp) {
 }
 
 // Debug панель для отладки (показываем первые 5 секунд)
-function showDebugInfo() {
-    const debugPanel = document.createElement('div');
+// Debug панель
+let debugPanelVisible = false;
+let debugPanel = null;
+
+function toggleDebugPanel() {
+    if (debugPanelVisible) {
+        hideDebugPanel();
+    } else {
+        showDebugPanel();
+    }
+}
+
+function showDebugPanel() {
+    if (debugPanel && debugPanel.parentNode) {
+        debugPanel.style.display = 'block';
+        debugPanelVisible = true;
+        return;
+    }
+    
+    debugPanel = document.createElement('div');
+    debugPanel.id = 'debugPanel';
     debugPanel.style.cssText = `
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
+        bottom: 70px;
+        right: 10px;
+        width: 90%;
+        max-width: 400px;
         background: rgba(0,0,0,0.95);
         color: #00ff00;
-        padding: 10px;
+        padding: 15px;
         font-family: monospace;
         font-size: 11px;
         z-index: 100000;
-        max-height: 300px;
+        max-height: 400px;
         overflow-y: auto;
-        border-bottom: 2px solid #00ff00;
+        border: 2px solid #00ff00;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
     `;
+    
+    updateDebugInfo();
+    document.body.appendChild(debugPanel);
+    debugPanelVisible = true;
+}
+
+function hideDebugPanel() {
+    if (debugPanel) {
+        debugPanel.style.display = 'none';
+    }
+    debugPanelVisible = false;
+}
+
+function updateDebugInfo() {
+    if (!debugPanel) return;
     
     const info = {
         'isTelegramWebApp': isTelegramWebApp,
@@ -98,25 +135,61 @@ function showDebugInfo() {
         'initData length': tg?.initData?.length || 0,
         'initDataUnsafe': JSON.stringify(tg?.initDataUnsafe || {}, null, 2),
         'user.id': tg?.initDataUnsafe?.user?.id || '❌ НЕТ',
-        'localStorage user': localStorage.getItem('telegram_user') ? '✅ ЕСТЬ' : '❌ НЕТ'
+        'nickname': document.getElementById('nicknameInput')?.value || '❌ НЕТ',
+        'localStorage user': localStorage.getItem('telegram_user') ? '✅ ЕСТЬ' : '❌ НЕТ',
+        'localStorage nickname': localStorage.getItem('user_nickname') || '❌ НЕТ',
+        'currentScreen': document.querySelector('.screen.active')?.id || 'unknown',
+        'currentStep': currentStep + '/' + totalSteps
     };
     
-    debugPanel.innerHTML = '<b>🔍 DEBUG INFO (закроется через 5 сек):</b><br>' + 
-        Object.entries(info).map(([k, v]) => `<span style="color:#00aaff">${k}:</span> ${v}`).join('<br>');
-    
-    document.body.appendChild(debugPanel);
-    
-    // Убираем через 5 секунд
-    setTimeout(() => {
-        debugPanel.style.opacity = '0';
-        debugPanel.style.transition = 'opacity 1s';
-        setTimeout(() => debugPanel.remove(), 1000);
-    }, 5000);
+    debugPanel.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <b style="color: #00ff00;">🔍 DEBUG INFO</b>
+            <button onclick="updateDebugInfo()" style="background: #00ff00; color: #000; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 10px;">🔄 Обновить</button>
+        </div>
+        ${Object.entries(info).map(([k, v]) => `<div style="margin-bottom: 5px;"><span style="color:#00aaff">${k}:</span> <span style="color: #fff;">${v}</span></div>`).join('')}
+    `;
 }
 
-// Показываем debug при загрузке в Telegram
-if (isTelegramWebApp) {
-    setTimeout(showDebugInfo, 100);
+// Создаем кнопку Debug
+function createDebugButton() {
+    const debugBtn = document.createElement('button');
+    debugBtn.id = 'debugButton';
+    debugBtn.innerHTML = '🐛';
+    debugBtn.style.cssText = `
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #00ff00, #00aa00);
+        border: 2px solid #00ff00;
+        color: #000;
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 99999;
+        box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    debugBtn.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.1)';
+        this.style.boxShadow = '0 0 30px rgba(0, 255, 0, 0.8)';
+    });
+    
+    debugBtn.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+        this.style.boxShadow = '0 0 20px rgba(0, 255, 0, 0.6)';
+    });
+    
+    debugBtn.onclick = toggleDebugPanel;
+    
+    document.body.appendChild(debugBtn);
+    console.log('✅ Debug кнопка создана');
 }
 
 // Данные формы
@@ -127,6 +200,11 @@ const totalSteps = 8; // Добавили шаг с никнеймом
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
     initializeTelegramWebApp();
+    
+    // Создаем кнопку Debug (только в Telegram WebApp)
+    if (isTelegramWebApp) {
+        createDebugButton();
+    }
     
     // Задержка перед проверкой авторизации, чтобы Telegram успел передать initDataUnsafe
     setTimeout(() => {
