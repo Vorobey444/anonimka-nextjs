@@ -127,7 +127,12 @@ const totalSteps = 7;
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
     initializeTelegramWebApp();
-    checkTelegramAuth(); // Проверка авторизации
+    
+    // Задержка перед проверкой авторизации, чтобы Telegram успел передать initDataUnsafe
+    setTimeout(() => {
+        checkTelegramAuth(); // Проверка авторизации
+    }, 300);
+    
     checkUserLocation();
     setupEventListeners();
     setupContactsEventListeners();
