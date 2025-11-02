@@ -4373,25 +4373,31 @@ async function loadMyChats() {
 
         console.log('📡 Загружаем чаты для пользователя:', userId);
 
-        // Получаем все чаты через API
-        const activeResponse = await fetch(`/api/chats?userId=${userId}&action=get-active`);
-        const activeData = await activeResponse.json();
+        // Используем Supabase клиент напрямую
+        // Получаем принятые чаты (где пользователь - user1 или user2)
+        const { data: acceptedChatsData, error: acceptedError } = await supabase
+            .from('private_chats')
+            .select('*')
+            .eq('accepted', true)
+            .is('blocked_by', null)
+            .or(`user1.eq.${userId},user2.eq.${userId}`);
         
-        const requestsResponse = await fetch(`/api/chats?userId=${userId}&action=get-requests`);
-        const requestsData = await requestsResponse.json();
+        // Получаем входящие запросы (где пользователь - user2 и accepted=false)
+        const { data: pendingRequestsData, error: requestsError } = await supabase
+            .from('private_chats')
+            .select('*')
+            .eq('user2', userId)
+            .eq('accepted', false)
+            .is('blocked_by', null);
 
-        console.log('📊 Результат запроса активных чатов:', activeData);
-        console.log('📊 Результат запроса входящих запросов:', requestsData);
-        
-        if (!activeData.success || !requestsData.success) {
-            const error = activeData.error || requestsData.error;
-            console.error('❌ Ошибка загрузки чатов:', error);
+        if (acceptedError || requestsError) {
+            const error = acceptedError || requestsError;
+            console.warn('⚠️ Supabase недоступен, чаты не загружены:', error.message);
             const errorHTML = `
                 <div class="empty-chats">
                     <div class="neon-icon">⚠️</div>
-                    <h3>Ошибка загрузки</h3>
-                    <p>Не удалось загрузить чаты. Попробуйте позже.</p>
-                    <p style="font-size: 12px; color: #888;">${error || 'Неизвестная ошибка'}</p>
+                    <h3>Чаты недоступны</h3>
+                    <p>Supabase временно недоступен (VPN/провайдер)</p>
                 </div>
             `;
             activeChats.innerHTML = errorHTML;
@@ -4399,8 +4405,8 @@ async function loadMyChats() {
             return;
         }
 
-        const acceptedChats = activeData.chats || [];
-        const pendingRequests = requestsData.requests || [];
+        const acceptedChats = acceptedChatsData || [];
+        const pendingRequests = pendingRequestsData || [];
 
         console.log('📊 Принятые чаты:', acceptedChats.length);
         console.log('📊 Входящие запросы:', pendingRequests.length);
@@ -4496,17 +4502,18 @@ async function acceptChatRequest(chatId) {
         console.log('✅ Принимаем запрос на чат:', chatId);
         
         const userId = getCurrentUserId();
-        const response = await fetch('/api/chats', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chatId, userId, action: 'accept' })
-        });
         
-        const data = await response.json();
+        // Используем Supabase клиент напрямую
+        const { data, error } = await supabase
+            .from('private_chats')
+            .update({ accepted: true })
+            .eq('id', chatId)
+            .eq('user2', userId)
+            .select();
 
-        if (!data.success) {
-            console.error('Ошибка принятия запроса:', data.error);
-            tg.showAlert('Ошибка при принятии запроса');
+        if (error) {
+            console.warn('⚠️ Supabase недоступен:', error.message);
+            tg.showAlert('Ошибка: Supabase недоступен (VPN/провайдер)');
             return;
         }
 
@@ -4526,17 +4533,17 @@ async function rejectChatRequest(chatId) {
         console.log('❌ Отклоняем запрос на чат:', chatId);
         
         const userId = getCurrentUserId();
-        const response = await fetch('/api/chats', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chatId, userId, action: 'reject' })
-        });
         
-        const data = await response.json();
+        // Используем Supabase клиент напрямую
+        const { data, error } = await supabase
+            .from('private_chats')
+            .delete()
+            .eq('id', chatId)
+            .eq('user2', userId);
 
-        if (!data.success) {
-            console.error('Ошибка отклонения запроса:', data.error);
-            tg.showAlert('Ошибка при отклонении запроса');
+        if (error) {
+            console.warn('⚠️ Supabase недоступен:', error.message);
+            tg.showAlert('Ошибка: Supabase недоступен (VPN/провайдер)');
             return;
         }
 
