@@ -4559,25 +4559,32 @@ async function updateChatBadge() {
             return; // Не показываем счетчик для неавторизованных
         }
 
-        // Получаем количество непринятых запросов через API
-        const response = await fetch(`/api/chats?userId=${userId}&action=count-requests`);
+        // ВРЕМЕННО: прямой запрос к Supabase с клиента (обходим проблему с Vercel)
+        const SUPABASE_URL = 'https://vcxknlntcvcdowdohblr.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjeGtubG50Y3ZjZG93ZG9oYmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA1NDk3NjMsImV4cCI6MjA0NjEyNTc2M30.TcBhgBh9DQ5PzbcSl2eWxHxJBwBVnlv_JmR9Bfin-P8';
         
-        console.log('📡 Response status:', response.status);
-        console.log('📡 Response ok:', response.ok);
+        const response = await fetch(
+            `${SUPABASE_URL}/rest/v1/private_chats?select=id&user2=eq.${userId}&accepted=eq.false&blocked_by=is.null`,
+            {
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
+            }
+        );
         
-        const data = await response.json();
-        console.log('📡 Response data:', data);
-
+        console.log('📡 Direct Supabase response status:', response.status);
+        
         const badge = document.getElementById('chatBadge');
         
-        if (!data.success) {
-            console.error('❌ Ошибка получения количества запросов:', data.error);
-            console.error('❌ Full response:', data);
+        if (!response.ok) {
+            console.error('❌ Supabase error:', response.status);
             if (badge) badge.style.display = 'none';
             return;
         }
-
-        const count = data.count || 0;
+        
+        const data = await response.json();
+        const count = Array.isArray(data) ? data.length : 0;
         
         if (badge) {
             if (count > 0) {

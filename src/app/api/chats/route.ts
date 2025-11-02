@@ -7,29 +7,52 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGci
 async function supabaseRequest(url: string, options: RequestInit = {}) {
   try {
     const fullUrl = `${SUPABASE_URL}${url}`;
-    console.log('Supabase request:', fullUrl);
+    console.log('📡 Supabase request URL:', fullUrl);
+    console.log('📡 Headers:', {
+      apikey: SUPABASE_ANON_KEY ? 'SET' : 'MISSING',
+      url: SUPABASE_URL
+    });
+    
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
     
     const response = await fetch(fullUrl, {
       ...options,
+      signal: controller.signal,
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
         ...options.headers
       }
     });
 
+    clearTimeout(timeout);
+
+    console.log('📡 Supabase response status:', response.status);
+    
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('❌ Non-JSON response:', text);
+      return { error: { message: 'Invalid response format', details: text } };
+    }
+
     const data = await response.json();
-    console.log('Supabase response:', { status: response.status, data });
+    console.log('📡 Supabase response data:', data);
     
     if (!response.ok) {
+      console.error('❌ Supabase error:', data);
       return { error: data };
     }
     
     return data;
   } catch (error: any) {
-    console.error('Supabase request failed:', error);
-    return { error: { message: error.message || 'Request failed' } };
+    console.error('❌ Supabase request exception:', error);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error message:', error.message);
+    return { error: { message: error.message || 'Request failed', name: error.name } };
   }
 }
 
