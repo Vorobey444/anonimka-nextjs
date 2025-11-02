@@ -4561,12 +4561,18 @@ async function updateChatBadge() {
 
         // Получаем количество непринятых запросов через API
         const response = await fetch(`/api/chats?userId=${userId}&action=count-requests`);
+        
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response ok:', response.ok);
+        
         const data = await response.json();
+        console.log('📡 Response data:', data);
 
         const badge = document.getElementById('chatBadge');
         
         if (!data.success) {
-            console.error('Ошибка получения количества запросов:', data.error);
+            console.error('❌ Ошибка получения количества запросов:', data.error);
+            console.error('❌ Full response:', data);
             if (badge) badge.style.display = 'none';
             return;
         }
