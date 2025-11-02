@@ -129,29 +129,58 @@ function updateDebugInfo() {
     if (!debugPanel) return;
     
     const currentUserId = getCurrentUserId();
+    const userLocation = localStorage.getItem('userLocation');
+    const parsedLocation = userLocation ? JSON.parse(userLocation) : null;
     
     const info = {
+        '🔐 АВТОРИЗАЦИЯ': '━━━━━━━━━━━━━━━━',
         'isTelegramWebApp': isTelegramWebApp,
         'window.Telegram': !!window.Telegram,
         'tg exists': !!tg,
         'initData length': tg?.initData?.length || 0,
-        'initDataUnsafe': JSON.stringify(tg?.initDataUnsafe || {}, null, 2),
-        'user.id': tg?.initDataUnsafe?.user?.id || '❌ НЕТ',
+        'user.id (initData)': tg?.initDataUnsafe?.user?.id || '❌ НЕТ',
         'getCurrentUserId()': currentUserId,
         'isAuthorized': !currentUserId.startsWith('web_') ? '✅ ДА' : '❌ НЕТ (веб ID)',
-        'nickname': document.getElementById('nicknameInput')?.value || '❌ НЕТ',
+        
+        '👤 ПРОФИЛЬ': '━━━━━━━━━━━━━━━━',
+        'first_name': tg?.initDataUnsafe?.user?.first_name || '❌',
+        'username': tg?.initDataUnsafe?.user?.username || '❌',
+        'is_premium': tg?.initDataUnsafe?.user?.is_premium ? '⭐ ДА' : '❌',
+        'nickname': document.getElementById('nicknameInput')?.value || localStorage.getItem('user_nickname') || '❌ НЕТ',
+        
+        '📍 ЛОКАЦИЯ': '━━━━━━━━━━━━━━━━',
+        'country': parsedLocation?.country || '❌ НЕТ',
+        'region': parsedLocation?.region || '❌ НЕТ',
+        'city': parsedLocation?.city || '❌ НЕТ',
+        'location saved': userLocation ? '✅ ЕСТЬ' : '❌ НЕТ',
+        
+        '💾 STORAGE': '━━━━━━━━━━━━━━━━',
         'localStorage user': localStorage.getItem('telegram_user') ? '✅ ЕСТЬ' : '❌ НЕТ',
         'localStorage nickname': localStorage.getItem('user_nickname') || '❌ НЕТ',
+        'CloudStorage available': tg.CloudStorage ? '✅ ДА' : '❌ НЕТ',
+        
+        '🖥️ СОСТОЯНИЕ': '━━━━━━━━━━━━━━━━',
         'currentScreen': document.querySelector('.screen.active')?.id || 'unknown',
-        'currentStep': currentStep + '/' + totalSteps
+        'currentStep': currentStep + '/' + totalSteps,
+        'window.currentAds': window.currentAds?.length || 0,
+        
+        '🔑 ДЕТАЛИ initDataUnsafe': '━━━━━━━━━━━━━━━━',
+        'Full initDataUnsafe': JSON.stringify(tg?.initDataUnsafe || {}, null, 2)
     };
     
     debugPanel.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <b style="color: #00ff00;">🔍 DEBUG INFO</b>
-            <button onclick="updateDebugInfo()" style="background: #00ff00; color: #000; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 10px;">🔄 Обновить</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 2px solid #00ff00; padding-bottom: 10px;">
+            <b style="color: #00ff00; font-size: 14px;">� DEBUG PANEL</b>
+            <button onclick="updateDebugInfo()" style="background: #00ff00; color: #000; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 10px; font-weight: bold;">🔄 Обновить</button>
         </div>
-        ${Object.entries(info).map(([k, v]) => `<div style="margin-bottom: 5px;"><span style="color:#00aaff">${k}:</span> <span style="color: #fff;">${v}</span></div>`).join('')}
+        ${Object.entries(info).map(([k, v]) => {
+            const isSection = v === '━━━━━━━━━━━━━━━━';
+            if (isSection) {
+                return `<div style="margin: 15px 0 8px 0; padding-top: 8px; border-top: 1px solid #00ff00;"><b style="color:#00ff00; font-size: 12px;">${k}</b></div>`;
+            }
+            const valueColor = v.toString().includes('✅') ? '#0f0' : v.toString().includes('❌') ? '#f80' : v.toString().includes('⭐') ? '#ff0' : '#fff';
+            return `<div style="margin-bottom: 5px; padding-left: 8px;"><span style="color:#00aaff; font-size: 10px;">${k}:</span> <span style="color: ${valueColor}; font-size: 11px;">${v}</span></div>`;
+        }).join('')}
     `;
 }
 
