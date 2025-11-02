@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'select': {
-        let query = supabase.from(table).select(params.select || '*');
+        let query: any = supabase.from(table).select(params.select || '*');
         
         // Применяем фильтры
         if (params.filters) {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'update': {
-        let query = supabase.from(table).update(params.values);
+        let query: any = supabase.from(table).update(params.values);
         
         if (params.filters) {
           params.filters.forEach((filter: any) => {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'delete': {
-        let query = supabase.from(table).delete();
+        let query: any = supabase.from(table).delete();
         
         if (params.filters) {
           params.filters.forEach((filter: any) => {
