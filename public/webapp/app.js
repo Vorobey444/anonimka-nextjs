@@ -3774,21 +3774,27 @@ async function loadMyChats() {
             return;
         }
 
+        console.log('📡 Загружаем чаты для пользователя:', userId);
+
         // Получаем чаты из Supabase
         const { data: chats, error } = await supabase
             .from('private_chats')
             .select('*')
             .or(`user1.eq.${userId},user2.eq.${userId}`)
-            .eq('blocked_by', null)
+            .is('blocked_by', null)
             .order('updated_at', { ascending: false });
 
+        console.log('📊 Результат запроса чатов:', { chats, error });
+
         if (error) {
-            console.error('Ошибка загрузки чатов:', error);
+            console.error('❌ Ошибка загрузки чатов:', error);
+            console.error('Детали ошибки:', JSON.stringify(error, null, 2));
             chatsList.innerHTML = `
                 <div class="empty-chats">
                     <div class="neon-icon">⚠️</div>
                     <h3>Ошибка загрузки</h3>
                     <p>Не удалось загрузить чаты. Попробуйте позже.</p>
+                    <p style="font-size: 12px; color: #888;">${error.message || 'Неизвестная ошибка'}</p>
                 </div>
             `;
             return;
@@ -3822,12 +3828,14 @@ async function loadMyChats() {
         }).join('');
 
     } catch (error) {
-        console.error('Ошибка:', error);
+        console.error('❌ Критическая ошибка в loadMyChats:', error);
+        console.error('Stack trace:', error.stack);
         chatsList.innerHTML = `
             <div class="empty-chats">
                 <div class="neon-icon">⚠️</div>
                 <h3>Ошибка</h3>
                 <p>Не удалось загрузить чаты</p>
+                <p style="font-size: 12px; color: #888;">${error.message}</p>
             </div>
         `;
     }
