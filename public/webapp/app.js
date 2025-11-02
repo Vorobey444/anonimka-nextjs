@@ -675,8 +675,8 @@ function showTelegramAuthModal() {
     // Генерируем QR-код
     generateTelegramQR(authToken);
     
-    // Инициализируем Telegram Login Widget как запасной вариант
-    initTelegramLoginWidget();
+    // Login Widget отключен - требует настройки домена в BotFather
+    // initTelegramLoginWidget();
     
     // Проверяем авторизацию каждые 2 секунды через API сервера
     const checkInterval = setInterval(async () => {
