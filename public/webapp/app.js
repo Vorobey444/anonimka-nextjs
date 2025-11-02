@@ -1091,7 +1091,7 @@ async function loadMyAds() {
                         <span>${ad.goal || 'не указано'}</span>
                     </div>
                     <div class="ad-field">
-                        <span class="icon">🔍</span>
+                        <span class="icon">${ad.target === 'male' || ad.target === 'мужчину' ? '�' : ad.target === 'female' || ad.target === 'женщину' ? '👩' : '�🔍'}</span>
                         <span>Ищет ${ad.target || '?'}, ${ageFrom}-${ageTo} лет</span>
                     </div>
                     <div class="ad-field">
@@ -1754,8 +1754,15 @@ async function contactAuthor(adIndex) {
         
         const result = await response.json();
         
+        // Проверяем статус ответа
+        if (!response.ok) {
+            // Ошибка от сервера (например, уже существует чат)
+            alert('❌ ' + (result.error || 'Ошибка при отправке сообщения'));
+            return;
+        }
+        
         if (result.success) {
-            alert('✅ Сообщение отправлено!\n\nАвтор объявления получит уведомление в Telegram боте и сможет начать с вами приватный чат.');
+            alert('✅ Запрос на чат отправлен!\n\nАвтор объявления получит уведомление и сможет принять ваш запрос.');
         } else {
             alert('❌ Ошибка при отправке сообщения: ' + (result.error || 'Unknown error'));
         }
@@ -4316,6 +4323,22 @@ async function loadMyChats() {
             .order('updated_at', { ascending: false });
 
         console.log('📊 Результат запроса чатов:', { chats, error });
+        console.log('📊 Всего чатов получено:', chats?.length || 0);
+        
+        if (chats && chats.length > 0) {
+            console.log('📋 Первый чат для примера:', chats[0]);
+            chats.forEach((chat, index) => {
+                console.log(`Chat ${index + 1}:`, {
+                    id: chat.id,
+                    ad_id: chat.ad_id,
+                    user1: chat.user1,
+                    user2: chat.user2,
+                    accepted: chat.accepted,
+                    blocked_by: chat.blocked_by,
+                    isCurrentUserReceiver: chat.user2 == userId
+                });
+            });
+        }
 
         if (error) {
             console.error('❌ Ошибка загрузки чатов:', error);

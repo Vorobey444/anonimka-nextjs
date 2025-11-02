@@ -25,6 +25,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверяем, существует ли уже чат по этому объявлению
+    console.log(`🔍 Проверяем существующий чат: ad_id=${adId}, sender=${senderTgId}, receiver=${receiverTgId}`);
+    
     const checkChatResponse = await fetch(
       `${supabaseUrl}/rest/v1/private_chats?ad_id=eq.${adId}&or=(and(user1.eq.${senderTgId},user2.eq.${receiverTgId}),and(user1.eq.${receiverTgId},user2.eq.${senderTgId}))`,
       {
@@ -36,11 +38,12 @@ export async function POST(request: NextRequest) {
     );
 
     const existingChats = await checkChatResponse.json();
+    console.log('🔍 Найдено существующих чатов:', existingChats?.length || 0, existingChats);
     
     if (existingChats && existingChats.length > 0) {
-      console.log('Chat already exists for this ad:', existingChats[0]);
+      console.log('⚠️ Chat already exists for this ad:', existingChats[0]);
       return NextResponse.json(
-        { error: 'Вы уже отправили запрос на это объявление' },
+        { error: 'Вы уже отправили запрос на это объявление. Дождитесь принятия или отклонения запроса.' },
         { status: 400 }
       );
     }
