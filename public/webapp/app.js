@@ -72,6 +72,53 @@ if (isTelegramWebApp) {
     console.log('⚠️ НЕ запущено в Telegram WebApp');
 }
 
+// Debug панель для отладки (показываем первые 5 секунд)
+function showDebugInfo() {
+    const debugPanel = document.createElement('div');
+    debugPanel.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.95);
+        color: #00ff00;
+        padding: 10px;
+        font-family: monospace;
+        font-size: 11px;
+        z-index: 100000;
+        max-height: 300px;
+        overflow-y: auto;
+        border-bottom: 2px solid #00ff00;
+    `;
+    
+    const info = {
+        'isTelegramWebApp': isTelegramWebApp,
+        'window.Telegram': !!window.Telegram,
+        'tg exists': !!tg,
+        'initData length': tg?.initData?.length || 0,
+        'initDataUnsafe': JSON.stringify(tg?.initDataUnsafe || {}, null, 2),
+        'user.id': tg?.initDataUnsafe?.user?.id || '❌ НЕТ',
+        'localStorage user': localStorage.getItem('telegram_user') ? '✅ ЕСТЬ' : '❌ НЕТ'
+    };
+    
+    debugPanel.innerHTML = '<b>🔍 DEBUG INFO (закроется через 5 сек):</b><br>' + 
+        Object.entries(info).map(([k, v]) => `<span style="color:#00aaff">${k}:</span> ${v}`).join('<br>');
+    
+    document.body.appendChild(debugPanel);
+    
+    // Убираем через 5 секунд
+    setTimeout(() => {
+        debugPanel.style.opacity = '0';
+        debugPanel.style.transition = 'opacity 1s';
+        setTimeout(() => debugPanel.remove(), 1000);
+    }, 5000);
+}
+
+// Показываем debug при загрузке в Telegram
+if (isTelegramWebApp) {
+    setTimeout(showDebugInfo, 100);
+}
+
 // Данные формы
 let formData = {};
 let currentStep = 1;
