@@ -1597,29 +1597,46 @@ function showAdDetails(index) {
     const ageFrom = ad.age_from || ad.ageFrom || '?';
     const ageTo = ad.age_to || ad.ageTo || '?';
     const bodyType = ad.body_type || ad.body || '?';
+    const nickname = ad.nickname || 'Аноним';
     
     adContent.innerHTML = `
-        <div class="ad-full">
-            <div class="ad-header">
-                <h3>${ad.city}</h3>
-                <span class="ad-date">${new Date(ad.created_at).toLocaleDateString('ru-RU')}</span>
+        <div class="ad-details-card">
+            <div class="ad-details-header">
+                <div class="ad-location">
+                    <span class="location-icon">📍</span>
+                    <span class="location-text">${ad.city}</span>
+                </div>
+                <div class="ad-date-badge">${new Date(ad.created_at).toLocaleDateString('ru-RU')}</div>
             </div>
             
-            <div class="ad-info-compact">
-                <div class="info-row">
-                    <span class="info-label">${ad.gender}, ${myAge} лет, ${bodyType}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Ищет ${ad.target}, ${ageFrom}-${ageTo} лет</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Цель: ${ad.goal}</span>
+            <div class="ad-author-info">
+                <div class="author-avatar">👤</div>
+                <div class="author-details">
+                    <div class="author-name">${nickname}</div>
+                    <div class="author-params">${ad.gender}, ${myAge} лет, ${bodyType}</div>
                 </div>
             </div>
             
-            <div class="ad-description">
-                <p>${ad.text}</p>
+            <div class="ad-search-info">
+                <div class="search-title">🔍 Ищет:</div>
+                <div class="search-params">
+                    <div class="param-item">
+                        <span class="param-icon">👥</span>
+                        <span>${ad.target}, ${ageFrom}-${ageTo} лет</span>
+                    </div>
+                    <div class="param-item">
+                        <span class="param-icon">🎯</span>
+                        <span>${ad.goal}</span>
+                    </div>
+                </div>
             </div>
+            
+            ${ad.text ? `
+            <div class="ad-description-box">
+                <div class="description-title">💬 О себе:</div>
+                <div class="description-text">${ad.text}</div>
+            </div>
+            ` : ''}
         </div>
     `;
     
