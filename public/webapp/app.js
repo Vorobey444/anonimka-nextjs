@@ -1781,19 +1781,24 @@ async function contactAuthor(adIndex) {
     
     try {
         // Проверяем, существует ли уже чат между этими пользователями для данного объявления
-        const { data: existingChat, error: checkError } = await supabase
-            .from('private_chats')
-            .select('id, accepted, blocked_by')
-            .eq('user1', currentUserId)
-            .eq('user2', ad.tg_id)
-            .eq('ad_id', ad.id)
-            .maybeSingle();
+        // Используем прокси вместо прямого Supabase (обход блокировки провайдера)
+        const checkResult = await window.SupabaseProxy.select('private_chats', {
+            select: 'id,accepted,blocked_by',
+            filters: [
+                { type: 'eq', column: 'user1', value: currentUserId },
+                { type: 'eq', column: 'user2', value: ad.tg_id },
+                { type: 'eq', column: 'ad_id', value: ad.id }
+            ],
+            maybeSingle: true
+        });
 
-        if (checkError) {
-            console.error('Error checking existing chat:', checkError);
+        if (checkResult.error) {
+            console.error('Error checking existing chat:', checkResult.error);
             alert('❌ Ошибка при проверке чата. Попробуйте позже.');
             return;
         }
+
+        const existingChat = checkResult.data;
 
         if (existingChat) {
             if (existingChat.blocked_by) {
@@ -1810,24 +1815,20 @@ async function contactAuthor(adIndex) {
         }
 
         // Создаем новый запрос на чат
-        const { data: newChat, error: insertError } = await supabase
-            .from('private_chats')
-            .insert({
-                user1: currentUserId,
-                user2: ad.tg_id,
-                ad_id: ad.id,
-                accepted: false
-            })
-            .select()
-            .single();
+        const insertResult = await window.SupabaseProxy.insert('private_chats', {
+            user1: currentUserId,
+            user2: ad.tg_id,
+            ad_id: ad.id,
+            accepted: false
+        });
 
-        if (insertError) {
-            console.error('Error creating chat request:', insertError);
-            alert('❌ Ошибка при создании запроса на чат: ' + insertError.message);
+        if (insertResult.error) {
+            console.error('Error creating chat request:', insertResult.error);
+            alert('❌ Ошибка при создании запроса на чат: ' + insertResult.error.message);
             return;
         }
 
-        if (newChat) {
+        if (insertResult.data) {
             // Отправляем уведомление в Telegram через бота
             try {
                 await fetch('/api/send-notification', {
