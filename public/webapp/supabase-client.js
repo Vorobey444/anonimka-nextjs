@@ -182,7 +182,7 @@
         id: adId,
         tgId: tgId,
         is_pinned: shouldPin,
-        pinned_until: shouldPin ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null
+        pinned_until: shouldPin ? new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString() : null // 1 час для тестирования
       };
       
       console.log('togglePinAd(): request body =', requestBody);
