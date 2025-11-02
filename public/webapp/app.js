@@ -235,7 +235,18 @@ function checkTelegramAuth() {
             const now = Date.now();
             // Авторизация действительна 30 дней
             if (authTime && (now - parseInt(authTime)) < 30 * 24 * 60 * 60 * 1000) {
+                console.log('✅ Авторизация действительна');
+                
+                // Закрываем модальное окно если оно было открыто
+                const modal = document.getElementById('telegramAuthModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    console.log('✅ Модальное окно авторизации закрыто (сохранённая сессия)');
+                }
+                
                 return true;
+            } else {
+                console.log('⚠️ Авторизация истекла');
             }
         } catch (e) {
             console.error('Ошибка парсинга данных пользователя:', e);
