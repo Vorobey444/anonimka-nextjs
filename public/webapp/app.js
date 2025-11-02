@@ -1780,25 +1780,8 @@ async function contactAuthor(adIndex) {
     }
     
     try {
-        // Проверяем, существует ли уже чат между этими пользователями для данного объявления
-        // Используем прокси вместо прямого Supabase (обход блокировки провайдера)
-        const checkResult = await window.SupabaseProxy.select('private_chats', {
-            select: 'id,accepted,blocked_by',
-            filters: [
-                { type: 'eq', column: 'user1', value: currentUserId },
-                { type: 'eq', column: 'user2', value: ad.tg_id },
-                { type: 'eq', column: 'ad_id', value: ad.id }
-            ],
-            maybeSingle: true
-        });
-
-        if (checkResult.error) {
-            console.error('Error checking existing chat:', checkResult.error);
-            alert('❌ Ошибка при проверке чата. Попробуйте позже.');
-            return;
-        }
-
-        const existingChat = checkResult.data;
+        // Используем локальное хранилище вместо Supabase (провайдер блокирует)
+        const existingChat = window.LocalChatStorage.checkExisting(currentUserId, ad.tg_id, ad.id);
 
         if (existingChat) {
             if (existingChat.blocked_by) {
@@ -1815,20 +1798,9 @@ async function contactAuthor(adIndex) {
         }
 
         // Создаем новый запрос на чат
-        const insertResult = await window.SupabaseProxy.insert('private_chats', {
-            user1: currentUserId,
-            user2: ad.tg_id,
-            ad_id: ad.id,
-            accepted: false
-        });
+        const newChat = window.LocalChatStorage.createChat(currentUserId, ad.tg_id, ad.id);
 
-        if (insertResult.error) {
-            console.error('Error creating chat request:', insertResult.error);
-            alert('❌ Ошибка при создании запроса на чат: ' + insertResult.error.message);
-            return;
-        }
-
-        if (insertResult.data) {
+        if (newChat) {
             // Отправляем уведомление в Telegram через бота
             try {
                 await fetch('/api/send-notification', {
@@ -1846,7 +1818,7 @@ async function contactAuthor(adIndex) {
                 // Не прерываем выполнение, чат уже создан
             }
 
-            alert('✅ Запрос на чат отправлен!\n\nАвтор объявления получит уведомление и сможет принять ваш запрос.');
+            alert('✅ Запрос на чат отправлен!\n\nАвтор объявления получит уведомление и сможет принять ваш запрос.\n\n(Чаты сохраняются локально)');
         }
         
     } catch (error) {
