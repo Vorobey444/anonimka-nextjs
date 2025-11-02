@@ -2051,34 +2051,62 @@ async function detectLocationByIP() {
         
         // Вариант 1: ipinfo.io (часто работает без CORS)
         try {
+            console.log('🌐 Пробуем ipinfo.io...');
             const response1 = await fetch('https://ipinfo.io/json');
             const data1 = await response1.json();
+            console.log('📍 Ответ от ipinfo.io:', data1);
+            
             if (data1 && data1.country) {
                 locationData = {
                     country_code: data1.country,
                     country_name: data1.country,
                     region: data1.region,
-                    city: data1.city
+                    city: data1.city,
+                    source: 'ipinfo.io'
                 };
+                console.log('✅ Данные получены от ipinfo.io:', locationData);
             }
         } catch (e) {
-            console.log('ipinfo.io недоступен:', e);
+            console.log('❌ ipinfo.io недоступен:', e);
         }
         
-        // Вариант 2: Если первый не сработал, пробуем другой
+        // Вариант 2: ip-api.com (более точное определение города)
         if (!locationData) {
             try {
-                const response2 = await fetch('https://api.ipify.org?format=json');
-                const ipData = await response2.json();
-                console.log('IP адрес:', ipData.ip);
+                console.log('🌐 Пробуем ip-api.com...');
+                const response2 = await fetch('http://ip-api.com/json/?fields=status,country,countryCode,region,regionName,city,timezone');
+                const data2 = await response2.json();
+                console.log('📍 Ответ от ip-api.com:', data2);
                 
-                // Простое определение по часовому поясу
+                if (data2 && data2.status === 'success') {
+                    locationData = {
+                        country_code: data2.countryCode,
+                        country_name: data2.country,
+                        region: data2.regionName,
+                        city: data2.city,
+                        source: 'ip-api.com'
+                    };
+                    console.log('✅ Данные получены от ip-api.com:', locationData);
+                }
+            } catch (e) {
+                console.log('❌ ip-api.com недоступен:', e);
+            }
+        }
+        
+        // Вариант 3: Определение по часовому поясу (резервный вариант)
+        if (!locationData) {
+            try {
+                console.log('🌐 Используем часовой пояс как резервный вариант...');
                 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                console.log('Часовой пояс:', timezone);
+                console.log('⏰ Часовой пояс:', timezone);
                 
                 locationData = guessLocationByTimezone(timezone);
+                if (locationData) {
+                    locationData.source = 'timezone';
+                    console.log('✅ Данные получены по часовому поясу:', locationData);
+                }
             } catch (e) {
-                console.log('Второй вариант не сработал:', e);
+                console.log('❌ Определение по часовому поясу не сработало:', e);
             }
         }
         
@@ -2299,22 +2327,24 @@ function showDetectedLocationResult(detectedLocation) {
     // Скрываем анимацию
     animationDiv.style.display = 'none';
     
-    // Показываем результат
+    // Показываем результат с предупреждением о точности
+    const sourceText = detectedLocation.source || 'IP-адрес';
     resultDiv.innerHTML = `
         <div class="detected-location">
             <div class="success-icon">✨</div>
-            <h3>Мы правильно определили ваше местоположение?</h3>
+            <h3>Проверьте определённое местоположение</h3>
             <div class="location-info">
                 <span class="location-flag">${countryFlag}</span>
                 <span class="location-text">${detectedLocation.region}, ${detectedLocation.city}</span>
             </div>
-            <p class="detection-note">Определено по IP-адресу: ${detectedLocation.detected.country}${detectedLocation.detected.region ? ', ' + detectedLocation.detected.region : ''}${detectedLocation.detected.city ? ', ' + detectedLocation.detected.city : ''}</p>
+            <p class="detection-note">⚠️ Автоопределение может быть неточным</p>
+            <p class="detection-source">Источник: ${detectedLocation.detected.country}${detectedLocation.detected.region ? ', ' + detectedLocation.detected.region : ''}${detectedLocation.detected.city ? ', ' + detectedLocation.detected.city : ''}</p>
             <div class="location-actions">
                 <button class="confirm-btn" onclick="confirmDetectedLocation('${detectedLocation.country}', '${detectedLocation.region}', '${detectedLocation.city}')">
                     ✅ Да, всё верно
                 </button>
                 <button class="manual-btn" onclick="showManualLocationSetup()">
-                    🎯 Нет, выбрать другую
+                    🎯 Нет, выбрать вручную
                 </button>
             </div>
         </div>

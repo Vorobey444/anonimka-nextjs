@@ -1642,6 +1642,15 @@ h3 {
 }
 
 .detection-note {
+    font-size: 0.9rem;
+    color: #ffa500;
+    margin: 0.5rem 0;
+    font-weight: 600;
+    text-align: center;
+    width: 100%;
+}
+
+.detection-source {
     font-size: 0.75rem;
     color: var(--text-gray);
     margin-bottom: 1rem;
