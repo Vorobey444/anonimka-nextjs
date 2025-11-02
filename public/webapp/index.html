@@ -127,7 +127,7 @@
                 </div>
             </div>
 
-            <!-- Блок выбора никнейма -->
+            <!-- Блок отображения никнейма (только показ) -->
             <div class="nickname-section">
                 <div class="nickname-header">
                     <span class="nickname-icon">🎭</span>
@@ -135,28 +135,9 @@
                 </div>
                 <div class="nickname-card">
                     <div class="nickname-display" id="nicknameDisplay">Аноним</div>
-                    <button class="nickname-edit-btn" onclick="showNicknameEditor()">
+                    <button class="nickname-edit-btn" onclick="showNicknameEditorScreen()">
                         <span class="edit-icon">✏️</span>
                         Изменить
-                    </button>
-                </div>
-                <div class="nickname-editor" id="nicknameEditor" style="display: none;">
-                    <input type="text" 
-                           id="nicknameInputMain" 
-                           class="neon-input" 
-                           placeholder="Введите псевдоним" 
-                           maxlength="30"
-                           value="Аноним">
-                    <div class="nickname-actions">
-                        <button class="nickname-save-btn" onclick="saveNickname()">
-                            ✅ Сохранить
-                        </button>
-                        <button class="nickname-cancel-btn" onclick="cancelNicknameEdit()">
-                            ❌ Отмена
-                        </button>
-                    </div>
-                    <button type="button" class="suggestion-btn-main" onclick="useDefaultNicknameMain()">
-                        <span id="defaultNicknameTextMain">Использовать имя из Telegram</span>
                     </button>
                 </div>
             </div>
@@ -196,6 +177,10 @@
                     <a href="#" class="hamburger-item active" onclick="goToHome()">
                         <span class="hamburger-icon">🏠</span>
                         Главная
+                    </a>
+                    <a href="#" class="hamburger-item" onclick="showNicknameEditor()">
+                        <span class="hamburger-icon">✏️</span>
+                        Изменить никнейм
                     </a>
                     <a href="#" class="hamburger-item" onclick="showContacts()">
                         <span class="hamburger-icon">📞</span>
@@ -372,6 +357,52 @@
                 </div>
                 <div class="about-section">
                     <p class="copyright">© 2025 AnonBoard. Все права защищены.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Редактирование никнейма -->
+        <div id="nicknameEditScreen" class="screen info-screen">
+            <div class="header">
+                <button class="back-btn" onclick="closeHamburgerAndGoHome()">← Назад</button>
+                <h2>✏️ Изменить никнейм</h2>
+            </div>
+            <div class="info-content">
+                <div class="nickname-edit-section">
+                    <div class="nickname-current">
+                        <h3>Текущий никнейм</h3>
+                        <div class="current-nickname-display">
+                            <span class="nickname-icon-large">🎭</span>
+                            <span class="nickname-text" id="currentNicknameDisplay">Аноним</span>
+                        </div>
+                    </div>
+                    
+                    <div class="nickname-edit-form">
+                        <h3>Новый никнейм</h3>
+                        <p class="nickname-hint-page">Выберите, как вас будут видеть в объявлениях</p>
+                        <div class="nickname-input-wrapper-page">
+                            <input type="text" 
+                                   id="nicknameInputPage" 
+                                   class="neon-input" 
+                                   placeholder="Введите новый никнейм" 
+                                   maxlength="30">
+                            <span class="input-icon">🎭</span>
+                        </div>
+                        
+                        <div class="nickname-suggestions-page">
+                            <p class="suggestion-label">Или используйте:</p>
+                            <button type="button" class="suggestion-btn-page" onclick="useDefaultNicknamePage()">
+                                <span id="defaultNicknameTextPage">Использовать имя из Telegram</span>
+                            </button>
+                            <button type="button" class="suggestion-btn-page reset-btn" onclick="resetToAnonym()">
+                                <span>🎭 Вернуть "Аноним"</span>
+                            </button>
+                        </div>
+                        
+                        <button class="neon-button primary full-width" onclick="saveNicknamePage()">
+                            ✅ Сохранить никнейм
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

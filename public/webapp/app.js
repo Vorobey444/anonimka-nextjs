@@ -437,83 +437,33 @@ function initializeNickname() {
     }
 }
 
-// Показать редактор никнейма
-function showNicknameEditor() {
-    const editor = document.getElementById('nicknameEditor');
-    const card = document.querySelector('.nickname-card');
-    if (editor && card) {
-        card.style.display = 'none';
-        editor.style.display = 'flex';
-        
-        // Фокусируемся на поле ввода
-        const nicknameInputMain = document.getElementById('nicknameInputMain');
-        if (nicknameInputMain) {
-            setTimeout(() => nicknameInputMain.focus(), 100);
-        }
-    }
-}
+// ===== СТРАНИЦА РЕДАКТИРОВАНИЯ НИКНЕЙМА =====
 
-// Сохранить никнейм
-function saveNickname() {
-    const nicknameInputMain = document.getElementById('nicknameInputMain');
-    const nicknameDisplay = document.getElementById('nicknameDisplay');
-    const editor = document.getElementById('nicknameEditor');
-    const card = document.querySelector('.nickname-card');
+// Показать страницу редактирования никнейма (из гамбургер-меню)
+function showNicknameEditorScreen() {
+    closeHamburgerMenu();
+    showScreen('nicknameEditScreen');
     
-    if (nicknameInputMain) {
-        let nickname = nicknameInputMain.value.trim();
-        
-        if (!nickname) {
-            nickname = 'Аноним';
-            nicknameInputMain.value = nickname;
-        }
-        
-        // Сохраняем в localStorage
-        localStorage.setItem('user_nickname', nickname);
-        
-        // Обновляем отображение
-        if (nicknameDisplay) {
-            nicknameDisplay.textContent = nickname;
-        }
-        
-        // Скрываем редактор
-        if (editor && card) {
-            editor.style.display = 'none';
-            card.style.display = 'flex';
-        }
-        
-        // Показываем уведомление
-        if (isTelegramWebApp) {
-            tg.showPopup({
-                title: '✅ Сохранено',
-                message: `Ваш псевдоним: "${nickname}"`,
-                buttons: [{ type: 'ok' }]
-            });
-        }
-    }
-}
-
-// Отменить редактирование никнейма
-function cancelNicknameEdit() {
-    const editor = document.getElementById('nicknameEditor');
-    const card = document.querySelector('.nickname-card');
-    const nicknameInputMain = document.getElementById('nicknameInputMain');
-    
-    // Восстанавливаем сохранённое значение
+    // Обновляем отображение текущего никнейма
+    const currentNicknameDisplay = document.getElementById('currentNicknameDisplay');
+    const nicknameInputPage = document.getElementById('nicknameInputPage');
     const savedNickname = localStorage.getItem('user_nickname') || 'Аноним';
-    if (nicknameInputMain) {
-        nicknameInputMain.value = savedNickname;
+    
+    if (currentNicknameDisplay) {
+        currentNicknameDisplay.textContent = savedNickname;
     }
     
-    // Скрываем редактор
-    if (editor && card) {
-        editor.style.display = 'none';
-        card.style.display = 'flex';
+    if (nicknameInputPage) {
+        nicknameInputPage.value = savedNickname;
+        setTimeout(() => nicknameInputPage.focus(), 300);
     }
+    
+    // Обновляем текст кнопки использования имени из Telegram
+    updateTelegramNameButton();
 }
 
-// Использовать имя из Telegram на главной странице
-function useDefaultNicknameMain() {
+// Обновить текст кнопки с именем из Telegram
+function updateTelegramNameButton() {
     let telegramName = 'Аноним';
     
     if (isTelegramWebApp && tg.initDataUnsafe?.user) {
@@ -531,10 +481,107 @@ function useDefaultNicknameMain() {
         }
     }
     
-    const nicknameInputMain = document.getElementById('nicknameInputMain');
-    if (nicknameInputMain) {
-        nicknameInputMain.value = telegramName;
+    const defaultNicknameTextPage = document.getElementById('defaultNicknameTextPage');
+    if (defaultNicknameTextPage) {
+        defaultNicknameTextPage.textContent = `Использовать: "${telegramName}"`;
     }
+}
+
+// Использовать имя из Telegram на странице редактирования
+function useDefaultNicknamePage() {
+    let telegramName = 'Аноним';
+    
+    if (isTelegramWebApp && tg.initDataUnsafe?.user) {
+        const user = tg.initDataUnsafe.user;
+        telegramName = user.first_name || user.username || 'Аноним';
+    } else {
+        const savedUser = localStorage.getItem('telegram_user');
+        if (savedUser) {
+            try {
+                const user = JSON.parse(savedUser);
+                telegramName = user.first_name || user.username || 'Аноним';
+            } catch (e) {
+                console.error('Ошибка парсинга данных пользователя:', e);
+            }
+        }
+    }
+    
+    const nicknameInputPage = document.getElementById('nicknameInputPage');
+    if (nicknameInputPage) {
+        nicknameInputPage.value = telegramName;
+    }
+}
+
+// Сбросить никнейм на "Аноним"
+function resetToAnonym() {
+    const nicknameInputPage = document.getElementById('nicknameInputPage');
+    if (nicknameInputPage) {
+        nicknameInputPage.value = 'Аноним';
+    }
+}
+
+// Сохранить никнейм со страницы редактирования
+function saveNicknamePage() {
+    const nicknameInputPage = document.getElementById('nicknameInputPage');
+    
+    if (nicknameInputPage) {
+        let nickname = nicknameInputPage.value.trim();
+        
+        if (!nickname) {
+            nickname = 'Аноним';
+        }
+        
+        // Сохраняем в localStorage
+        localStorage.setItem('user_nickname', nickname);
+        
+        // Обновляем отображение на главной странице
+        const nicknameDisplay = document.getElementById('nicknameDisplay');
+        if (nicknameDisplay) {
+            nicknameDisplay.textContent = nickname;
+        }
+        
+        // Показываем уведомление и возвращаемся на главную
+        if (isTelegramWebApp) {
+            tg.showPopup({
+                title: '✅ Сохранено',
+                message: `Ваш новый псевдоним: "${nickname}"`,
+                buttons: [{ type: 'ok' }]
+            });
+        }
+        
+        // Возвращаемся на главную страницу
+        setTimeout(() => {
+            showMainMenu();
+        }, 300);
+    }
+}
+
+// Закрыть гамбургер-меню и вернуться на главную
+function closeHamburgerAndGoHome() {
+    closeHamburgerMenu();
+    showMainMenu();
+}
+
+// УСТАРЕВШИЕ ФУНКЦИИ (удалим позже)
+// Показать редактор никнейма (старая версия - не используется)
+function showNicknameEditor() {
+    // Теперь открываем страницу редактирования вместо inline редактора
+    showNicknameEditorScreen();
+}
+
+// Сохранить никнейм (старая версия - не используется)
+function saveNickname() {
+    saveNicknamePage();
+}
+
+// Отменить редактирование никнейма (старая версия - не используется)
+function cancelNicknameEdit() {
+    showMainMenu();
+}
+
+// Использовать имя из Telegram на главной странице (старая версия - не используется)
+function useDefaultNicknameMain() {
+    useDefaultNicknamePage();
 }
 
 // СТАРАЯ функция для формы (оставляем для совместимости, если где-то используется)

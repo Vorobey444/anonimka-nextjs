@@ -310,6 +310,130 @@ h3 {
     box-shadow: var(--shadow-cyan);
 }
 
+/* Страница редактирования никнейма */
+.nickname-edit-section {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.nickname-current {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.nickname-current h3 {
+    color: var(--neon-cyan);
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.current-nickname-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.8), rgba(16, 16, 32, 0.8));
+    border: 2px solid var(--neon-cyan);
+    border-radius: 15px;
+    box-shadow: var(--shadow-cyan);
+}
+
+.nickname-icon-large {
+    font-size: 3rem;
+}
+
+.nickname-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-light);
+}
+
+.nickname-edit-form {
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.6), rgba(16, 16, 32, 0.6));
+    border: 2px solid rgba(0, 217, 255, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+}
+
+.nickname-edit-form h3 {
+    color: var(--neon-pink);
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+.nickname-hint-page {
+    color: var(--text-gray);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.nickname-input-wrapper-page {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.nickname-input-wrapper-page .neon-input {
+    width: 100%;
+    padding-right: 45px;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+.nickname-input-wrapper-page .input-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    pointer-events: none;
+}
+
+.nickname-suggestions-page {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.nickname-suggestions-page .suggestion-label {
+    color: var(--text-gray);
+    font-size: 0.85rem;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.suggestion-btn-page {
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.8), rgba(16, 16, 32, 0.8));
+    border: 2px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.suggestion-btn-page:hover {
+    background: var(--neon-cyan);
+    color: var(--bg-dark);
+    box-shadow: var(--shadow-cyan);
+    transform: translateY(-2px);
+}
+
+.suggestion-btn-page.reset-btn {
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+}
+
+.suggestion-btn-page.reset-btn:hover {
+    background: var(--neon-pink);
+    color: var(--bg-dark);
+    box-shadow: var(--shadow-pink);
+}
+
 /* Меню кнопки */
 .menu-buttons {
     display: flex;
