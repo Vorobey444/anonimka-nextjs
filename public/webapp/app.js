@@ -1780,50 +1780,72 @@ async function contactAuthor(adIndex) {
     }
     
     try {
-        // Получаем имя пользователя
-        const savedUser = localStorage.getItem('telegram_user');
-        let senderName = 'Пользователь';
-        
-        if (savedUser) {
-            try {
-                const userData = JSON.parse(savedUser);
-                senderName = userData.first_name || 'Пользователь';
-                if (userData.last_name) {
-                    senderName += ' ' + userData.last_name;
-                }
-            } catch (e) {
-                console.error('Error parsing user data:', e);
-            }
-        }
-        
-        // Отправляем сообщение через API
-        const response = await fetch('/api/send-message', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                adId: ad.id,
-                senderTgId: currentUserId,
-                receiverTgId: ad.tg_id,
-                messageText: message.trim(),
-                senderName: senderName
-            })
-        });
-        
-        const result = await response.json();
-        
-        // Проверяем статус ответа
-        if (!response.ok) {
-            // Ошибка от сервера (например, уже существует чат)
-            alert('❌ ' + (result.error || 'Ошибка при отправке сообщения'));
+        // Проверяем, существует ли уже чат между этими пользователями для данного объявления
+        const { data: existingChat, error: checkError } = await supabase
+            .from('private_chats')
+            .select('id, accepted, blocked_by')
+            .eq('user1', currentUserId)
+            .eq('user2', ad.tg_id)
+            .eq('ad_id', ad.id)
+            .maybeSingle();
+
+        if (checkError) {
+            console.error('Error checking existing chat:', checkError);
+            alert('❌ Ошибка при проверке чата. Попробуйте позже.');
             return;
         }
-        
-        if (result.success) {
+
+        if (existingChat) {
+            if (existingChat.blocked_by) {
+                alert('❌ Чат заблокирован');
+                return;
+            }
+            if (existingChat.accepted) {
+                alert('✅ Чат уже существует! Откройте раздел "Мои чаты"');
+                return;
+            } else {
+                alert('✅ Запрос уже отправлен! Ожидайте ответа от автора.');
+                return;
+            }
+        }
+
+        // Создаем новый запрос на чат
+        const { data: newChat, error: insertError } = await supabase
+            .from('private_chats')
+            .insert({
+                user1: currentUserId,
+                user2: ad.tg_id,
+                ad_id: ad.id,
+                accepted: false
+            })
+            .select()
+            .single();
+
+        if (insertError) {
+            console.error('Error creating chat request:', insertError);
+            alert('❌ Ошибка при создании запроса на чат: ' + insertError.message);
+            return;
+        }
+
+        if (newChat) {
+            // Отправляем уведомление в Telegram через бота
+            try {
+                await fetch('/api/send-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        receiverTgId: ad.tg_id,
+                        senderTgId: currentUserId,
+                        adId: ad.id,
+                        messageText: message.trim()
+                    })
+                });
+            } catch (notifyError) {
+                console.warn('Notification failed:', notifyError);
+                // Не прерываем выполнение, чат уже создан
+            }
+
             alert('✅ Запрос на чат отправлен!\n\nАвтор объявления получит уведомление и сможет принять ваш запрос.');
-        } else {
-            alert('❌ Ошибка при отправке сообщения: ' + (result.error || 'Unknown error'));
         }
         
     } catch (error) {
