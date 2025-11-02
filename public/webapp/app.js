@@ -393,47 +393,18 @@ function checkTelegramAuth() {
 
 // ===== ФУНКЦИИ ДЛЯ РАБОТЫ С НИКНЕЙМОМ =====
 
-// Инициализация никнейма на главной странице
+// Инициализация никнейма при загрузке приложения
 function initializeNickname() {
     console.log('🎭 Инициализация никнейма...');
     
-    // Получаем имя пользователя из Telegram
-    let telegramName = 'Аноним';
-    
-    if (isTelegramWebApp && tg.initDataUnsafe?.user) {
-        const user = tg.initDataUnsafe.user;
-        telegramName = user.first_name || user.username || 'Аноним';
-    } else {
-        const savedUser = localStorage.getItem('telegram_user');
-        if (savedUser) {
-            try {
-                const user = JSON.parse(savedUser);
-                telegramName = user.first_name || user.username || 'Аноним';
-            } catch (e) {
-                console.error('Ошибка парсинга данных пользователя:', e);
-            }
-        }
-    }
-    
-    // Обновляем текст кнопки использования имени из Telegram
-    const defaultNicknameTextMain = document.getElementById('defaultNicknameTextMain');
-    if (defaultNicknameTextMain) {
-        defaultNicknameTextMain.textContent = `Использовать: "${telegramName}"`;
-    }
-    
-    // Проверяем сохранённый никнейм
+    // Проверяем сохранённый никнейм, если нет - устанавливаем "Аноним"
     const savedNickname = localStorage.getItem('user_nickname');
-    const nicknameDisplay = document.getElementById('nicknameDisplay');
-    const nicknameInputMain = document.getElementById('nicknameInputMain');
     
-    if (savedNickname) {
-        if (nicknameDisplay) nicknameDisplay.textContent = savedNickname;
-        if (nicknameInputMain) nicknameInputMain.value = savedNickname;
-    } else {
-        // Устанавливаем "Аноним" по умолчанию
-        if (nicknameDisplay) nicknameDisplay.textContent = 'Аноним';
-        if (nicknameInputMain) nicknameInputMain.value = 'Аноним';
+    if (!savedNickname) {
         localStorage.setItem('user_nickname', 'Аноним');
+        console.log('✅ Установлен никнейм по умолчанию: Аноним');
+    } else {
+        console.log('✅ Загружен сохранённый никнейм:', savedNickname);
     }
 }
 
@@ -533,12 +504,7 @@ function saveNicknamePage() {
         
         // Сохраняем в localStorage
         localStorage.setItem('user_nickname', nickname);
-        
-        // Обновляем отображение на главной странице
-        const nicknameDisplay = document.getElementById('nicknameDisplay');
-        if (nicknameDisplay) {
-            nicknameDisplay.textContent = nickname;
-        }
+        console.log('✅ Никнейм сохранён:', nickname);
         
         // Показываем уведомление и возвращаемся на главную
         if (isTelegramWebApp) {
