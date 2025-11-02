@@ -809,6 +809,47 @@ h3 {
     font-weight: 500;
 }
 
+/* Заголовок карточки объявления */
+.ad-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid rgba(255, 0, 110, 0.2);
+}
+
+.ad-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--neon-pink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ad-date {
+    font-size: 0.85rem;
+    color: var(--text-gray);
+}
+
+/* Поле на всю ширину (для описания) */
+.ad-field.full-width {
+    grid-column: 1 / -1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    border-left: 3px solid var(--neon-cyan);
+}
+
+.ad-field.full-width span:last-child {
+    width: 100%;
+    word-wrap: break-word;
+}
+
 .ad-text {
     margin-top: 15px;
     padding: 15px;

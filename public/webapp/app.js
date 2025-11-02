@@ -1,4 +1,4 @@
-// Инициализация Telegram Web App с безопасными fallback методами
+﻿// Инициализация Telegram Web App с безопасными fallback методами
 let tg = window.Telegram?.WebApp || {
     expand: () => {},
     setHeaderColor: () => {},
@@ -1132,34 +1132,39 @@ async function loadMyAds() {
             const ageFrom = ad.age_from || ad.ageFrom || '?';
             const ageTo = ad.age_to || ad.ageTo || '?';
             
+            const authorGender = ad.gender === 'male' ? 'Мужчина' : 'Женщина';
+            const authorIcon = ad.gender === 'male' ? '👨' : '👩';
+            const targetText = ad.target === 'male' || ad.target === 'мужчину' ? 'мужчину' : 'женщину';
+            const targetIcon = ad.target === 'male' || ad.target === 'мужчину' ? '👨' : '👩';
+            
             return `
             <div class="ad-card" data-ad-id="${ad.id}">
                 ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
+                <div class="ad-header">
+                    <h3>${authorIcon} ${authorGender}, ${ad.my_age || '?'} лет</h3>
+                    <span class="ad-date">📅 ${new Date(ad.created_at).toLocaleDateString('ru-RU')}</span>
+                </div>
                 <div class="ad-info">
                     <div class="ad-field">
-                        <span class="icon">${ad.gender === 'male' ? '👨' : '👩'}</span>
-                        <span>${ad.my_age || '?'} лет, ${ad.body_type || 'не указано'}</span>
+                        <span class="icon">💪</span>
+                        <span><strong>Телосложение:</strong> ${ad.body_type || 'не указано'}</span>
                     </div>
                     <div class="ad-field">
                         <span class="icon">🎯</span>
-                        <span>${ad.goal || 'не указано'}</span>
+                        <span><strong>Цель:</strong> ${ad.goal || 'не указано'}</span>
                     </div>
                     <div class="ad-field">
-                        <span class="icon">${ad.target === 'male' || ad.target === 'мужчину' ? '�' : ad.target === 'female' || ad.target === 'женщину' ? '👩' : '�🔍'}</span>
-                        <span>Ищет ${ad.target || '?'}, ${ageFrom}-${ageTo} лет</span>
+                        <span class="icon">${targetIcon}</span>
+                        <span><strong>Ищу:</strong> ${targetText}, ${ageFrom}-${ageTo} лет</span>
                     </div>
                     <div class="ad-field">
-                        <span class="icon">📍</span>
+                        <span class="icon">�</span>
                         <span>${locationData[ad.country]?.flag || '🌍'} ${ad.region}, ${ad.city}</span>
                     </div>
-                    <div class="ad-field">
-                        <span class="icon">📝</span>
-                        <span>${ad.text ? (ad.text.substring(0, 100) + (ad.text.length > 100 ? '...' : '')) : 'Без описания'}</span>
-                    </div>
-                    <div class="ad-field">
-                        <span class="icon">📅</span>
-                        <span>${new Date(ad.created_at).toLocaleDateString('ru-RU')}</span>
-                    </div>
+                    ${ad.text ? `<div class="ad-field full-width">
+                        <span class="icon">�</span>
+                        <span><strong>О себе:</strong> ${ad.text}</span>
+                    </div>` : ''}
                 </div>
                 <div class="ad-actions">
                     <button class="delete-ad-btn" onclick="deleteMyAd(${ad.id})">
