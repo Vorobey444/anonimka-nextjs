@@ -3384,6 +3384,20 @@ h3 {
     word-wrap: break-word;
 }
 
+.message-photo {
+    max-width: 250px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.message-photo:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 217, 255, 0.4);
+}
+
 .message-time {
     font-size: 0.7rem;
     opacity: 0.7;
@@ -3455,6 +3469,71 @@ h3 {
     display: flex;
     gap: 10px;
     z-index: 100;
+    flex-wrap: wrap;
+}
+
+.attach-photo-button {
+    background: rgba(0, 217, 255, 0.2);
+    border: 2px solid var(--neon-cyan);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.5rem;
+}
+
+.attach-photo-button:hover {
+    background: rgba(0, 217, 255, 0.4);
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+    transform: scale(1.05);
+}
+
+.attach-photo-button:active {
+    transform: scale(0.95);
+}
+
+.photo-preview {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+}
+
+.photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.remove-photo-button {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: rgba(255, 0, 110, 0.9);
+    border: 2px solid var(--neon-pink);
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.remove-photo-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(255, 0, 110, 0.5);
 }
 
 .chat-input {

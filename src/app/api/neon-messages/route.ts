@@ -27,7 +27,30 @@ export async function POST(request: NextRequest) {
 
       // Отправить сообщение
       case 'send-message': {
-        const { chatId, senderId, messageText, senderNickname, skipNotification } = params;
+        const { chatId, senderId, messageText, senderNickname, skipNotification, photoUrl, telegramFileId } = params;
+        
+        // Проверяем лимит фото (если отправляется фото)
+        if (photoUrl || telegramFileId) {
+          const userResult = await sql`SELECT is_premium FROM users WHERE id = ${senderId}`;
+          const limitsResult = await sql`SELECT photos_sent_today FROM user_limits WHERE user_id = ${senderId}`;
+          
+          const isPremium = userResult.rows[0]?.is_premium || false;
+          const photosToday = limitsResult.rows[0]?.photos_sent_today || 0;
+          const maxPhotos = isPremium ? 999999 : 5;
+          
+          if (photosToday >= maxPhotos) {
+            return NextResponse.json({ 
+              data: null, 
+              error: { 
+                message: isPremium 
+                  ? 'Технический лимит превышен' 
+                  : 'Вы уже отправили 5 фото сегодня. Оформите PRO для безлимита!',
+                limit: true,
+                isPremium
+              } 
+            }, { status: 429 });
+          }
+        }
         
         // Проверяем что чат принят и не заблокирован
         const chatCheck = await sql`
@@ -52,12 +75,33 @@ export async function POST(request: NextRequest) {
         // Используем переданный nickname или дефолтный
         const nickname = senderNickname || 'Анонимный';
         
-        // Сохраняем сообщение с nickname
+        // Сохраняем сообщение с nickname и фото
         const result = await sql`
-          INSERT INTO messages (chat_id, sender_id, receiver_id, message, sender_nickname, created_at)
-          VALUES (${chatId}, ${senderId}, ${receiverId}, ${messageText}, ${nickname}, NOW())
+          INSERT INTO messages (
+            chat_id, sender_id, receiver_id, message, sender_nickname, 
+            photo_url, telegram_file_id, created_at
+          )
+          VALUES (
+            ${chatId}, ${senderId}, ${receiverId}, ${messageText || ''}, ${nickname},
+            ${photoUrl || null}, ${telegramFileId || null}, NOW()
+          )
           RETURNING *
         `;
+        
+        // Увеличиваем счётчик фото (если отправлено фото)
+        if (photoUrl || telegramFileId) {
+          await sql`
+            INSERT INTO user_limits (user_id, photos_sent_today, photos_last_reset)
+            VALUES (${senderId}, 1, CURRENT_DATE)
+            ON CONFLICT (user_id) DO UPDATE
+            SET photos_sent_today = CASE
+                WHEN user_limits.photos_last_reset < CURRENT_DATE THEN 1
+                ELSE user_limits.photos_sent_today + 1
+              END,
+              photos_last_reset = CURRENT_DATE,
+              updated_at = NOW()
+          `;
+        }
         
         // Обновляем время последнего сообщения в чате
         await sql`

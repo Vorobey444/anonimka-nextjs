@@ -5029,6 +5029,18 @@ async function loadChatMessages(chatId, silent = false) {
                 nicknameHtml = `<div class="message-nickname">${escapeHtml(nickname)}</div>`;
             }
             
+            // Фото если есть
+            let photoHtml = '';
+            if (msg.photo_url) {
+                photoHtml = `<img src="${escapeHtml(msg.photo_url)}" class="message-photo" alt="Фото" onclick="window.open('${escapeHtml(msg.photo_url)}', '_blank')" />`;
+            }
+            
+            // Текст сообщения (если есть)
+            let messageTextHtml = '';
+            if (msg.message) {
+                messageTextHtml = `<div class="message-text">${escapeHtml(msg.message)}</div>`;
+            }
+            
             // Статусы доставки (только для отправленных сообщений)
             let statusIcon = '';
             if (isMine) {
@@ -5047,7 +5059,8 @@ async function loadChatMessages(chatId, silent = false) {
             return `
                 <div class="message ${messageClass}">
                     ${nicknameHtml}
-                    <div class="message-text">${escapeHtml(msg.message)}</div>
+                    ${photoHtml}
+                    ${messageTextHtml}
                     <div class="message-time">${time} ${statusIcon}</div>
                 </div>
             `;
@@ -5083,11 +5096,81 @@ async function loadChatMessages(chatId, silent = false) {
 }
 
 // Отправить сообщение
+// Глобальная переменная для выбранного фото
+let selectedPhoto = null;
+
+// Обработка выбора фото
+function handlePhotoSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Проверка размера (макс 5 МБ)
+    if (file.size > 5 * 1024 * 1024) {
+        tg.showAlert('Файл слишком большой! Максимум 5 МБ');
+        event.target.value = '';
+        return;
+    }
+    
+    // Проверка типа
+    if (!file.type.startsWith('image/')) {
+        tg.showAlert('Можно прикрепить только изображения!');
+        event.target.value = '';
+        return;
+    }
+    
+    selectedPhoto = file;
+    
+    // Показываем превью
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const preview = document.getElementById('photoPreview');
+        const img = document.getElementById('photoPreviewImage');
+        img.src = e.target.result;
+        preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+// Удалить выбранное фото
+function removePhoto() {
+    selectedPhoto = null;
+    document.getElementById('photoInput').value = '';
+    document.getElementById('photoPreview').style.display = 'none';
+}
+
+// Загрузить фото в Telegram и получить file_id
+async function uploadPhotoToTelegram(file, userId) {
+    try {
+        const formData = new FormData();
+        formData.append('photo', file);
+        formData.append('userId', userId);
+        
+        const response = await fetch('/api/upload-photo', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            throw new Error(result.error.message);
+        }
+        
+        return result.data;
+    } catch (error) {
+        console.error('Ошибка загрузки фото:', error);
+        throw error;
+    }
+}
+
 async function sendMessage() {
     const input = document.getElementById('messageInput');
     const messageText = input.value.trim();
 
-    if (!messageText || !currentChatId) return;
+    // Проверяем что есть либо текст либо фото
+    if (!messageText && !selectedPhoto) return;
+    
+    if (!currentChatId) return;
 
     const userId = getCurrentUserId();
     if (!userId || userId.startsWith('web_')) {
@@ -5096,11 +5179,50 @@ async function sendMessage() {
     }
 
     try {
+        let photoData = null;
+        
+        // Загружаем фото если выбрано
+        if (selectedPhoto) {
+            // Проверяем лимит
+            const limitsCheck = await fetch('/api/premium', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'check-photo-limit',
+                    params: { userId }
+                })
+            });
+            const limitsResult = await limitsCheck.json();
+            
+            if (limitsResult.data && !limitsResult.data.canSend) {
+                const isPremium = limitsResult.data.isPremium;
+                if (isPremium) {
+                    tg.showAlert('Технический лимит превышен');
+                } else {
+                    tg.showConfirm(
+                        `У вас осталось ${limitsResult.data.remaining} фото сегодня.\nОформите PRO для безлимита!`,
+                        (confirmed) => {
+                            if (confirmed) showPremiumModal();
+                        }
+                    );
+                }
+                return;
+            }
+            
+            // Показываем индикатор загрузки
+            input.disabled = true;
+            input.placeholder = '📤 Загрузка фото...';
+            
+            // Загружаем фото
+            photoData = await uploadPhotoToTelegram(selectedPhoto, userId);
+            
+            console.log('✅ Фото загружено:', photoData);
+        }
+        
         // Получаем nickname отправителя
         const senderNickname = getUserNickname();
         
         // Отправляем сообщение через Neon API
-        // skipNotification = false - уведомление нужно отправить получателю
         const response = await fetch('/api/neon-messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -5109,9 +5231,11 @@ async function sendMessage() {
                 params: { 
                     chatId: currentChatId, 
                     senderId: userId,
-                    messageText,
-                    senderNickname, // Передаём nickname для уведомлений
-                    skipNotification: false // Всегда отправляем уведомление получателю
+                    messageText: messageText || '📸 Фото',
+                    senderNickname,
+                    skipNotification: false,
+                    photoUrl: photoData?.photo_url || null,
+                    telegramFileId: photoData?.file_id || null
                 }
             })
         });
@@ -5119,19 +5243,44 @@ async function sendMessage() {
 
         if (result.error) {
             console.error('Ошибка отправки:', result.error);
-            tg.showAlert('Ошибка отправки сообщения');
+            
+            // Проверяем ошибку лимита
+            if (result.error.limit) {
+                if (result.error.isPremium === false) {
+                    tg.showConfirm(
+                        result.error.message,
+                        (confirmed) => {
+                            if (confirmed) showPremiumModal();
+                        }
+                    );
+                } else {
+                    tg.showAlert(result.error.message);
+                }
+            } else {
+                tg.showAlert('Ошибка отправки сообщения');
+            }
             return;
         }
 
-        // Очищаем поле ввода
+        // Обновляем статус Premium (лимиты изменились)
+        if (photoData) {
+            await loadPremiumStatus();
+        }
+
+        // Очищаем поле ввода и фото
         input.value = '';
+        removePhoto();
 
         // Перезагружаем сообщения
         await loadChatMessages(currentChatId);
 
     } catch (error) {
         console.error('Ошибка:', error);
-        tg.showAlert('Ошибка отправки сообщения');
+        tg.showAlert('Ошибка отправки сообщения: ' + error.message);
+    } finally {
+        // Восстанавливаем input
+        input.disabled = false;
+        input.placeholder = 'Введите сообщение...';
     }
 }
 
