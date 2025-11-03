@@ -280,6 +280,12 @@ function initializeApp() {
         }
         
         try {
+            markMessagesAsDelivered(); // Помечаем сообщения как доставленные
+        } catch (e) {
+            console.error('❌ Ошибка markMessagesAsDelivered:', e);
+        }
+        
+        try {
             updateLogoutButtonVisibility(); // Обновление кнопки выхода
         } catch (e) {
             console.error('❌ Ошибка updateLogoutButtonVisibility:', e);
@@ -4888,10 +4894,25 @@ async function loadChatMessages(chatId, silent = false) {
             const messageClass = isMine ? 'sent' : 'received';
             const time = formatMessageTime(msg.created_at);
             
+            // Статусы доставки (только для отправленных сообщений)
+            let statusIcon = '';
+            if (isMine) {
+                if (msg.read) {
+                    // Прочитано - 2 неоновые галочки
+                    statusIcon = '<span class="message-status read">✓✓</span>';
+                } else if (msg.delivered) {
+                    // Доставлено - 2 серые галочки
+                    statusIcon = '<span class="message-status delivered">✓✓</span>';
+                } else {
+                    // Отправлено - 1 серая галочка
+                    statusIcon = '<span class="message-status sent">✓</span>';
+                }
+            }
+            
             return `
                 <div class="message ${messageClass}">
                     <div class="message-text">${escapeHtml(msg.message)}</div>
-                    <div class="message-time">${time}</div>
+                    <div class="message-time">${time} ${statusIcon}</div>
                 </div>
             `;
         }).join('');
@@ -4980,6 +5001,34 @@ async function markMessagesAsRead(chatId) {
         }
     } catch (error) {
         console.error('Ошибка markMessagesAsRead:', error);
+    }
+}
+
+// Пометить сообщения как доставленные (при открытии приложения)
+async function markMessagesAsDelivered() {
+    try {
+        const userId = getCurrentUserId();
+        if (!userId || userId.startsWith('web_')) {
+            return; // Не помечаем для неавторизованных
+        }
+        
+        const response = await fetch('/api/neon-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'mark-delivered',
+                params: { userId }
+            })
+        });
+        const result = await response.json();
+        
+        if (result.error) {
+            console.warn('⚠️ Ошибка пометки сообщений как доставленных:', result.error);
+        } else {
+            console.log('✅ Сообщения помечены как доставленные');
+        }
+    } catch (error) {
+        console.error('Ошибка markMessagesAsDelivered:', error);
     }
 }
 

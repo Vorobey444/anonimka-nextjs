@@ -3345,6 +3345,49 @@ h3 {
     font-size: 0.7rem;
     opacity: 0.7;
     text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+/* Статусы сообщений (галочки) */
+.message-status {
+    font-size: 0.75rem;
+    line-height: 1;
+    display: inline-block;
+    margin-left: 3px;
+}
+
+.message-status.sent {
+    /* Одна серая галочка - отправлено */
+    color: #888;
+    opacity: 0.7;
+}
+
+.message-status.delivered {
+    /* Две серые галочки - доставлено */
+    color: #888;
+    opacity: 0.8;
+}
+
+.message-status.read {
+    /* Две неоновые галочки - прочитано */
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px var(--neon-cyan);
+    opacity: 1;
+    animation: neon-pulse 2s ease-in-out infinite;
+}
+
+@keyframes neon-pulse {
+    0%, 100% {
+        text-shadow: 0 0 8px var(--neon-cyan);
+        opacity: 1;
+    }
+    50% {
+        text-shadow: 0 0 12px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+        opacity: 0.9;
+    }
 }
 
 /* Контейнер ввода */

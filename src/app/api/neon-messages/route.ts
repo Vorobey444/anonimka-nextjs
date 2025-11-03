@@ -146,10 +146,22 @@ export async function POST(request: NextRequest) {
         const { chatId, userId } = params;
         await sql`
           UPDATE messages 
-          SET read = true 
+          SET read = true, delivered = true
           WHERE chat_id = ${chatId} 
             AND receiver_id = ${userId}
             AND read = false
+        `;
+        return NextResponse.json({ data: { success: true }, error: null });
+      }
+
+      // Пометить сообщения как доставленные (но не прочитанные)
+      case 'mark-delivered': {
+        const { userId } = params;
+        await sql`
+          UPDATE messages 
+          SET delivered = true 
+          WHERE receiver_id = ${userId}
+            AND delivered = false
         `;
         return NextResponse.json({ data: { success: true }, error: null });
       }
