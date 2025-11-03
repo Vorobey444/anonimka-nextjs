@@ -727,6 +727,22 @@
         </div>
     </div>
 
+    <!-- Модальное окно для просмотра объявления -->
+    <div id="adModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔍 Просмотр объявления</h2>
+                <button class="modal-close" onclick="closeAdModal()">×</button>
+            </div>
+            <div class="modal-body" id="adModalBody">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Загрузка объявления...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="/webapp/email-service.js?v=1.0"></script>
     <script>
         // Принудительная очистка кеша

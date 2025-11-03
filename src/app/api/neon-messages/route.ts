@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
       // Отправить сообщение
       case 'send-message': {
-        const { chatId, senderId, messageText, skipNotification } = params;
+        const { chatId, senderId, messageText, senderNickname, skipNotification } = params;
         
         // Проверяем что чат принят и не заблокирован
         const chatCheck = await sql`
@@ -88,20 +88,25 @@ export async function POST(request: NextRequest) {
           
           // Отправляем уведомление только если получатель НЕ активен в этом чате
           if (!receiverIsActive) {
-            console.log('�🔔 Попытка отправить уведомление:', {
+            console.log(' Попытка отправить уведомление:', {
               receiverId,
               hasToken: !!botToken,
-              skipNotification
+              skipNotification,
+              senderNickname
             });
             
             if (botToken) {
               try {
+                // Формируем текст уведомления с nickname
+                const notificationFrom = senderNickname ? `от ${senderNickname}` : '';
+                const notificationText = `💬 Новое сообщение ${notificationFrom}!\n\n📝 "${messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText}"\n\n🔗 Объявление #${chat.ad_id}`;
+                
                 const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     chat_id: receiverId,
-                    text: `💬 Новое сообщение в чате!\n\n📝 "${messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText}"\n\n🔗 Объявление #${chat.ad_id}`,
+                    text: notificationText,
                     parse_mode: 'HTML',
                     reply_markup: {
                       inline_keyboard: [

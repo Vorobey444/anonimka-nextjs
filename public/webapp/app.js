@@ -992,6 +992,48 @@ function getCurrentUserId() {
     return 'web_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
+// Получить nickname текущего пользователя
+function getUserNickname() {
+    // Если в Telegram WebApp
+    if (isTelegramWebApp && tg.initDataUnsafe?.user) {
+        const user = tg.initDataUnsafe.user;
+        // Приоритет: username > first_name > "Анонимный"
+        return user.username || user.first_name || 'Анонимный';
+    }
+    
+    // Если авторизован через Login Widget
+    const savedUser = localStorage.getItem('telegram_user');
+    if (savedUser) {
+        try {
+            const userData = JSON.parse(savedUser);
+            return userData.username || userData.first_name || 'Анонимный';
+        } catch (e) {
+            console.error('Ошибка получения nickname:', e);
+        }
+    }
+    
+    return 'Анонимный';
+}
+
+// Получить данные пользователя по ID (для отображения ников собеседников)
+function getUserData(userId) {
+    // Кешируем данные пользователей в памяти
+    if (!window.userDataCache) {
+        window.userDataCache = {};
+    }
+    
+    // Возвращаем из кеша если есть
+    if (window.userDataCache[userId]) {
+        return window.userDataCache[userId];
+    }
+    
+    // Пока возвращаем заглушку
+    return {
+        id: userId,
+        nickname: 'Собеседник'
+    };
+}
+
 // Функция выхода из аккаунта
 function handleLogout() {
     if (!confirm('Вы уверены, что хотите выйти из аккаунта?\n\nВам потребуется заново авторизоваться через Telegram.')) {
@@ -4580,15 +4622,18 @@ async function loadMyChats() {
             `;
         } else {
             activeChats.innerHTML = acceptedChats.map(chat => {
-                const lastMessageTime = chat.updated_at ? formatChatTime(chat.updated_at) : '';
+                const lastMessageTime = chat.last_message_time ? formatChatTime(chat.last_message_time) : (chat.updated_at ? formatChatTime(chat.updated_at) : '');
+                const lastMessage = chat.last_message || 'Нажмите для открытия чата';
+                const lastMessagePreview = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
+                
                 return `
                     <div class="chat-card" onclick="openChat('${chat.id}')">
                         <div class="chat-card-header">
-                            <span class="chat-ad-id">💬 Объявление #${chat.ad_id || 'N/A'}</span>
+                            <span class="chat-ad-id" onclick="event.stopPropagation(); showAdModal('${chat.ad_id}');">💬 Объявление #${chat.ad_id || 'N/A'}</span>
                             <span class="chat-time">${lastMessageTime}</span>
                         </div>
                         <div class="chat-preview">
-                            Нажмите для открытия чата
+                            ${lastMessagePreview}
                         </div>
                     </div>
                 `;
@@ -4902,6 +4947,13 @@ async function loadChatMessages(chatId, silent = false) {
             const messageClass = isMine ? 'sent' : 'received';
             const time = formatMessageTime(msg.created_at);
             
+            // Ник для входящих сообщений
+            let nicknameHtml = '';
+            if (!isMine) {
+                const senderData = getUserData(msg.sender_id);
+                nicknameHtml = `<div class="message-nickname">${escapeHtml(senderData.nickname)}</div>`;
+            }
+            
             // Статусы доставки (только для отправленных сообщений)
             let statusIcon = '';
             if (isMine) {
@@ -4919,6 +4971,7 @@ async function loadChatMessages(chatId, silent = false) {
             
             return `
                 <div class="message ${messageClass}">
+                    ${nicknameHtml}
                     <div class="message-text">${escapeHtml(msg.message)}</div>
                     <div class="message-time">${time} ${statusIcon}</div>
                 </div>
@@ -4968,6 +5021,9 @@ async function sendMessage() {
     }
 
     try {
+        // Получаем nickname отправителя
+        const senderNickname = getUserNickname();
+        
         // Отправляем сообщение через Neon API
         // skipNotification = false - уведомление нужно отправить получателю
         const response = await fetch('/api/neon-messages', {
@@ -4979,6 +5035,7 @@ async function sendMessage() {
                     chatId: currentChatId, 
                     senderId: userId,
                     messageText,
+                    senderNickname, // Передаём nickname для уведомлений
                     skipNotification: false // Всегда отправляем уведомление получателю
                 }
             })
@@ -5164,5 +5221,104 @@ window.addEventListener('beforeunload', () => {
             action: 'mark-inactive',
             params: { userId }
         }));
+    }
+});
+
+// ============= МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА ОБЪЯВЛЕНИЯ =============
+
+// Показать объявление в модальном окне
+async function showAdModal(adId) {
+    const modal = document.getElementById('adModal');
+    const modalBody = document.getElementById('adModalBody');
+    
+    if (!adId || adId === 'N/A') {
+        modalBody.innerHTML = `
+            <div class="empty-state">
+                <div class="neon-icon">⚠️</div>
+                <h3>Объявление не найдено</h3>
+                <p>ID объявления недоступен</p>
+            </div>
+        `;
+        modal.style.display = 'flex';
+        return;
+    }
+    
+    // Показать модалку с загрузкой
+    modal.style.display = 'flex';
+    modalBody.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Загрузка объявления...</p>
+        </div>
+    `;
+    
+    try {
+        // Получаем объявление из базы
+        const response = await fetch(`/api/ads?id=${adId}`);
+        const result = await response.json();
+        
+        if (result.error || !result.data) {
+            throw new Error(result.error?.message || 'Объявление не найдено');
+        }
+        
+        const ad = result.data;
+        
+        // Отображаем объявление
+        modalBody.innerHTML = `
+            <div class="ad-detail-view">
+                <div class="ad-detail-header">
+                    <h3>${escapeHtml(ad.title)}</h3>
+                    <span class="ad-price">${ad.price ? ad.price + ' ₽' : 'Договорная'}</span>
+                </div>
+                
+                ${ad.photo_url ? `
+                    <div class="ad-photo">
+                        <img src="${ad.photo_url}" alt="Фото объявления" />
+                    </div>
+                ` : ''}
+                
+                <div class="ad-detail-info">
+                    <p class="ad-description">${escapeHtml(ad.description || 'Без описания')}</p>
+                    
+                    <div class="ad-meta">
+                        <div class="ad-meta-item">
+                            <span class="meta-label">📍 Локация:</span>
+                            <span class="meta-value">${ad.city || 'Не указано'}</span>
+                        </div>
+                        <div class="ad-meta-item">
+                            <span class="meta-label">📅 Создано:</span>
+                            <span class="meta-value">${formatChatTime(ad.created_at)}</span>
+                        </div>
+                        <div class="ad-meta-item">
+                            <span class="meta-label">🆔 ID:</span>
+                            <span class="meta-value">#${ad.id}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Ошибка загрузки объявления:', error);
+        modalBody.innerHTML = `
+            <div class="empty-state">
+                <div class="neon-icon">⚠️</div>
+                <h3>Ошибка загрузки</h3>
+                <p>${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+// Закрыть модальное окно
+function closeAdModal() {
+    const modal = document.getElementById('adModal');
+    modal.style.display = 'none';
+}
+
+// Закрытие модалки по клику вне её
+window.addEventListener('click', (event) => {
+    const modal = document.getElementById('adModal');
+    if (event.target === modal) {
+        closeAdModal();
     }
 });

@@ -45,11 +45,27 @@ export async function POST(request: NextRequest) {
       case 'get-active': {
         const { userId } = params;
         const result = await sql`
-          SELECT * FROM private_chats 
+          SELECT 
+            pc.*,
+            (
+              SELECT message 
+              FROM messages 
+              WHERE chat_id = pc.id 
+              ORDER BY created_at DESC 
+              LIMIT 1
+            ) as last_message,
+            (
+              SELECT created_at 
+              FROM messages 
+              WHERE chat_id = pc.id 
+              ORDER BY created_at DESC 
+              LIMIT 1
+            ) as last_message_time
+          FROM private_chats pc
           WHERE (user1 = ${userId} OR user2 = ${userId})
             AND accepted = true 
             AND blocked_by IS NULL
-          ORDER BY created_at DESC
+          ORDER BY last_message_time DESC NULLS LAST, pc.created_at DESC
         `;
         return NextResponse.json({ data: result.rows, error: null });
       }
