@@ -728,6 +728,12 @@
     </div>
 
     <script src="/webapp/email-service.js?v=1.0"></script>
-    <script src="/webapp/app.js?v=20251103-061000"></script>
+    <script>
+        // Принудительная очистка кеша
+        const timestamp = Date.now();
+        const script = document.createElement('script');
+        script.src = `/webapp/app.js?v=${timestamp}`;
+        document.body.appendChild(script);
+    </script>
 </body>
 </html>
