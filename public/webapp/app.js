@@ -4878,8 +4878,10 @@ async function loadChatMessages(chatId, silent = false) {
             return;
         }
         
-        // Сохраняем позицию скролла
-        const wasAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 50;
+        // Сохраняем позицию скролла только для silent режима
+        const wasAtBottom = silent ? 
+            (messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 50) : 
+            true; // При первой загрузке всегда скроллим вниз
         
         messagesContainer.innerHTML = messages.map(msg => {
             const isMine = msg.sender_id == userId;
@@ -4894,9 +4896,12 @@ async function loadChatMessages(chatId, silent = false) {
             `;
         }).join('');
 
-        // Прокручиваем вниз только если были внизу или это не silent обновление
+        // Прокручиваем вниз если это первая загрузка или были внизу
         if (!silent || wasAtBottom) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            // Используем setTimeout чтобы дать браузеру время отрендерить сообщения
+            setTimeout(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 0);
         }
 
     } catch (error) {
