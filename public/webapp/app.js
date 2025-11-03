@@ -1820,7 +1820,12 @@ async function contactAuthor(adIndex) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'create',
-                params: { user1: currentUserId, user2: ad.tg_id, adId: ad.id }
+                params: { 
+                    user1: currentUserId, 
+                    user2: ad.tg_id, 
+                    adId: ad.id,
+                    message: message.trim()
+                }
             })
         });
 
@@ -4489,6 +4494,7 @@ async function loadMyChats() {
                 // Определяем, кто отправитель (не текущий пользователь)
                 const isUser1 = chat.user1 === userId;
                 const senderName = isUser1 ? 'Анонимный пользователь' : 'Анонимный пользователь';
+                const messageText = chat.message || 'Хочет начать диалог';
                 
                 return `
                     <div class="chat-request-card">
@@ -4497,7 +4503,8 @@ async function loadMyChats() {
                             <span class="request-time">${requestTime}</span>
                         </div>
                         <div class="request-message">
-                            ${senderName} хочет начать диалог по вашему объявлению
+                            <strong>${senderName}:</strong><br>
+                            "${messageText}"
                         </div>
                         <div class="request-actions">
                             <button class="request-btn request-btn-accept" onclick="acceptChatRequest('${chat.id}')">

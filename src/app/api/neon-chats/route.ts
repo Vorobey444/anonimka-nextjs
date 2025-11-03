@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
       }
 
       case 'create': {
-        const { user1, user2, adId } = params;
+        const { user1, user2, adId, message } = params;
         const result = await sql`
-          INSERT INTO private_chats (user1, user2, ad_id, accepted)
-          VALUES (${user1}, ${user2}, ${adId}, false)
+          INSERT INTO private_chats (user1, user2, ad_id, message, accepted)
+          VALUES (${user1}, ${user2}, ${adId}, ${message || ''}, false)
           RETURNING *
         `;
         return NextResponse.json({ data: result.rows[0], error: null });
