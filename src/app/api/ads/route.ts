@@ -13,41 +13,40 @@ export async function GET(req: NextRequest) {
     console.log("[ADS API] Получение объявлений:", { city, country });
 
     // Формируем SQL запрос с фильтрами
-    let query = sql`
-      SELECT * FROM ads
-      WHERE 1=1
-    `;
-
-    if (city) {
-      query = sql`
+    let result;
+    
+    if (city && country) {
+      result = await sql`
+        SELECT * FROM ads
+        WHERE city = ${city} AND country = ${country}
+        ORDER BY 
+          CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
+          created_at DESC
+      `;
+    } else if (city) {
+      result = await sql`
         SELECT * FROM ads
         WHERE city = ${city}
+        ORDER BY 
+          CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
+          created_at DESC
       `;
-      
-      if (country) {
-        query = sql`
-          SELECT * FROM ads
-          WHERE city = ${city} AND country = ${country}
-        `;
-      }
     } else if (country) {
-      query = sql`
+      result = await sql`
         SELECT * FROM ads
         WHERE country = ${country}
+        ORDER BY 
+          CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
+          created_at DESC
       `;
     } else {
-      query = sql`SELECT * FROM ads`;
+      result = await sql`
+        SELECT * FROM ads
+        ORDER BY 
+          CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
+          created_at DESC
+      `;
     }
-
-    // Добавляем сортировку: закрепленные первыми, потом по дате
-    const result = await sql`
-      SELECT * FROM ads
-      ${city ? sql`WHERE city = ${city}` : sql``}
-      ${city && country ? sql`AND country = ${country}` : !city && country ? sql`WHERE country = ${country}` : sql``}
-      ORDER BY 
-        CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
-        created_at DESC
-    `;
     
     const ads = result.rows;
     
