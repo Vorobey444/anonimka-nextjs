@@ -66,48 +66,73 @@ export async function POST(request: NextRequest) {
         // Отправляем уведомление в Telegram (если не skipNotification)
         if (!skipNotification) {
           const botToken = process.env.TELEGRAM_BOT_TOKEN;
-          console.log('🔔 Попытка отправить уведомление:', {
-            receiverId,
-            hasToken: !!botToken,
-            skipNotification
-          });
           
-          if (botToken) {
-            try {
-              const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: receiverId,
-                  text: `💬 Новое сообщение в чате!\n\n📝 "${messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText}"\n\n🔗 Объявление #${chat.ad_id}`,
-                  parse_mode: 'HTML',
-                  reply_markup: {
-                    inline_keyboard: [
-                      [
-                        {
-                          text: '💬 Открыть чат',
-                          web_app: {
-                            url: `https://anonimka.kz/webapp`
+          // Проверяем активность получателя
+          let receiverIsActive = false;
+          try {
+            const activityCheck = await fetch(`${request.nextUrl.origin}/api/user-activity`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'is-active',
+                params: { userId: receiverId, chatId }
+              })
+            });
+            const activityResult = await activityCheck.json();
+            receiverIsActive = activityResult.data?.active || false;
+            console.log('� Активность получателя:', { receiverId, chatId, active: receiverIsActive });
+          } catch (error) {
+            console.error('Ошибка проверки активности:', error);
+            // Если ошибка - отправляем уведомление на всякий случай
+          }
+          
+          // Отправляем уведомление только если получатель НЕ активен в этом чате
+          if (!receiverIsActive) {
+            console.log('�🔔 Попытка отправить уведомление:', {
+              receiverId,
+              hasToken: !!botToken,
+              skipNotification
+            });
+            
+            if (botToken) {
+              try {
+                const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chat_id: receiverId,
+                    text: `💬 Новое сообщение в чате!\n\n📝 "${messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText}"\n\n🔗 Объявление #${chat.ad_id}`,
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                      inline_keyboard: [
+                        [
+                          {
+                            text: '💬 Открыть чат',
+                            web_app: {
+                              url: `https://anonimka.kz/webapp`
+                            }
                           }
-                        }
+                        ]
                       ]
-                    ]
-                  }
-                })
-              });
-              
-              const result = await response.json();
-              console.log('📤 Ответ Telegram API:', result);
-              
-              if (!result.ok) {
-                console.error('❌ Telegram API ошибка:', result);
+                    }
+                  })
+                });
+                
+                const result = await response.json();
+                console.log('📤 Ответ Telegram API:', result);
+                
+                if (!result.ok) {
+                  console.error('❌ Telegram API ошибка:', result);
+                }
+              } catch (error) {
+                console.error('❌ Ошибка отправки уведомления:', error);
+                // Не прерываем выполнение, уведомление не критично
               }
-            } catch (error) {
-              console.error('❌ Ошибка отправки уведомления:', error);
-              // Не прерываем выполнение, уведомление не критично
+            } else {
+              console.warn('⚠️ TELEGRAM_BOT_TOKEN не установлен в переменных окружения!');
             }
           } else {
-            console.warn('⚠️ TELEGRAM_BOT_TOKEN не установлен в переменных окружения!');
+            console.log('🔕 Уведомление пропущено - получатель активен в чате');
           }
         } else {
           console.log('🔕 Уведомление пропущено (skipNotification=true)');

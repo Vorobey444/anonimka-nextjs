@@ -4785,6 +4785,9 @@ async function openChat(chatId) {
     try {
         const userId = getCurrentUserId();
         
+        // Отмечаем пользователя как активного в этом чате
+        await markUserActive(userId, chatId);
+        
         const response = await fetch('/api/neon-chats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4982,11 +4985,17 @@ function startChatPolling(chatId) {
         clearInterval(chatPollingInterval);
     }
 
+    const userId = getCurrentUserId();
+
     // Обновляем каждые 3 секунды в silent режиме (без мигания)
     chatPollingInterval = setInterval(async () => {
         if (currentChatId === chatId) {
             await loadChatMessages(chatId, true); // true = silent режим
+            // Обновляем активность пользователя
+            await markUserActive(userId, chatId);
         } else {
+            // Отмечаем как неактивного при выходе из чата
+            await markUserInactive(userId);
             clearInterval(chatPollingInterval);
         }
     }, 3000);
@@ -5035,3 +5044,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// ============= ОТСЛЕЖИВАНИЕ АКТИВНОСТИ ПОЛЬЗОВАТЕЛЕЙ =============
+
+// Отметить пользователя как активного в чате
+async function markUserActive(userId, chatId) {
+    try {
+        await fetch('/api/user-activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'mark-active',
+                params: { userId, chatId }
+            })
+        });
+        console.log('👤 Активность отмечена:', { userId, chatId });
+    } catch (error) {
+        console.error('Ошибка отметки активности:', error);
+    }
+}
+
+// Отметить пользователя как неактивного
+async function markUserInactive(userId) {
+    try {
+        await fetch('/api/user-activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'mark-inactive',
+                params: { userId }
+            })
+        });
+        console.log('👋 Пользователь неактивен:', { userId });
+    } catch (error) {
+        console.error('Ошибка отметки неактивности:', error);
+    }
+}
+
+// При закрытии приложения отмечаем пользователя как неактивного
+window.addEventListener('beforeunload', () => {
+    const userId = getCurrentUserId();
+    if (userId) {
+        // Используем sendBeacon для гарантированной отправки при закрытии
+        navigator.sendBeacon('/api/user-activity', JSON.stringify({
+            action: 'mark-inactive',
+            params: { userId }
+        }));
+    }
+});
