@@ -847,6 +847,14 @@
         </div>
     </div>
 
+    <!-- Модальное окно для просмотра фото -->
+    <div id="photoModal" class="photo-modal" style="display: none;" onclick="closePhotoModal()">
+        <div class="photo-modal-content">
+            <button class="photo-modal-close" onclick="closePhotoModal()">×</button>
+            <img id="photoModalImage" src="" alt="Фото" />
+        </div>
+    </div>
+
     <script src="/webapp/email-service.js?v=1.0"></script>
     <script>
         // Принудительная очистка кеша

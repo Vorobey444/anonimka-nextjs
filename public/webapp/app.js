@@ -5032,7 +5032,7 @@ async function loadChatMessages(chatId, silent = false) {
             // Фото если есть
             let photoHtml = '';
             if (msg.photo_url) {
-                photoHtml = `<img src="${escapeHtml(msg.photo_url)}" class="message-photo" alt="Фото" onclick="window.open('${escapeHtml(msg.photo_url)}', '_blank')" />`;
+                photoHtml = `<img src="${escapeHtml(msg.photo_url)}" class="message-photo" alt="Фото" onclick="showPhotoModal('${escapeHtml(msg.photo_url)}')" />`;
             }
             
             // Текст сообщения (если есть)
@@ -5138,6 +5138,26 @@ function removePhoto() {
     document.getElementById('photoPreview').style.display = 'none';
 }
 
+// Показать фото в модальном окне
+function showPhotoModal(photoUrl) {
+    const modal = document.getElementById('photoModal');
+    const modalImage = document.getElementById('photoModalImage');
+    
+    modalImage.src = photoUrl;
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+}
+
+// Закрыть модальное окно фото
+function closePhotoModal() {
+    const modal = document.getElementById('photoModal');
+    const modalImage = document.getElementById('photoModalImage');
+    
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+    modalImage.src = '';
+}
+
 // Загрузить фото в Telegram и получить file_id
 async function uploadPhotoToTelegram(file, userId) {
     try {
@@ -5233,7 +5253,9 @@ async function sendMessage() {
                     senderId: userId,
                     messageText: messageText || '📸 Фото',
                     senderNickname,
-                    skipNotification: false,
+                    // Пропускаем уведомление в Telegram если есть фото
+                    // Фото доступны только в WebApp
+                    skipNotification: photoData ? true : false,
                     photoUrl: photoData?.photo_url || null,
                     telegramFileId: photoData?.file_id || null
                 }
