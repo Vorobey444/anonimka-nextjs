@@ -238,17 +238,51 @@ const totalSteps = 7; // Убрали шаг с никнеймом - тепер�
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
-    initializeTelegramWebApp();
+    console.log('🚀 DOMContentLoaded - начало инициализации');
+    
+    try {
+        initializeTelegramWebApp();
+        console.log('✅ Telegram WebApp инициализирован');
+    } catch (e) {
+        console.error('❌ Ошибка инициализации Telegram WebApp:', e);
+    }
     
     // Создаем кнопку Debug (всегда, для отладки)
-    createDebugButton();
+    try {
+        createDebugButton();
+        console.log('✅ Debug кнопка создана');
+    } catch (e) {
+        console.error('❌ Ошибка создания Debug кнопки:', e);
+    }
     
     // Задержка перед проверкой авторизации, чтобы Telegram успел передать initDataUnsafe
     setTimeout(() => {
-        checkTelegramAuth(); // Проверка авторизации
-        initializeNickname(); // Инициализация никнейма
-        updateChatBadge(); // Первое обновление счетчика
-        updateLogoutButtonVisibility(); // Обновление кнопки выхода
+        console.log('⏰ Начинаем проверку авторизации через 300ms');
+        
+        try {
+            checkTelegramAuth(); // Проверка авторизации
+            console.log('✅ checkTelegramAuth выполнен');
+        } catch (e) {
+            console.error('❌ Ошибка checkTelegramAuth:', e);
+        }
+        
+        try {
+            initializeNickname(); // Инициализация никнейма
+        } catch (e) {
+            console.error('❌ Ошибка initializeNickname:', e);
+        }
+        
+        try {
+            updateChatBadge(); // Первое обновление счетчика
+        } catch (e) {
+            console.error('❌ Ошибка updateChatBadge:', e);
+        }
+        
+        try {
+            updateLogoutButtonVisibility(); // Обновление кнопки выхода
+        } catch (e) {
+            console.error('❌ Ошибка updateLogoutButtonVisibility:', e);
+        }
     }, 300);
     
     checkUserLocation();
