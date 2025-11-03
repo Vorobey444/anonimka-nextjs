@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sql } from '@vercel/postgres';
 
-export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 // GET - получение объявлений
 export async function GET(req: NextRequest) {
@@ -11,39 +12,44 @@ export async function GET(req: NextRequest) {
 
     console.log("[ADS API] Получение объявлений:", { city, country });
 
-    // Проверяем наличие Supabase переменных
-    const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
-    
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-      console.error("[ADS API] Supabase переменные не настроены");
-      return NextResponse.json(
-        { success: false, error: "База данных не настроена" },
-        { status: 500 }
-      );
-    }
+    // Формируем SQL запрос с фильтрами
+    let query = sql`
+      SELECT * FROM ads
+      WHERE 1=1
+    `;
 
-    // Формируем URL для запроса к Supabase REST API
-    let supabaseQuery = `${SUPABASE_URL}/rest/v1/ads?select=*&order=created_at.desc`;
-    
     if (city) {
-      supabaseQuery += `&city=eq.${encodeURIComponent(city)}`;
-    }
-    if (country) {
-      supabaseQuery += `&country=eq.${encodeURIComponent(country)}`;
+      query = sql`
+        SELECT * FROM ads
+        WHERE city = ${city}
+      `;
+      
+      if (country) {
+        query = sql`
+          SELECT * FROM ads
+          WHERE city = ${city} AND country = ${country}
+        `;
+      }
+    } else if (country) {
+      query = sql`
+        SELECT * FROM ads
+        WHERE country = ${country}
+      `;
+    } else {
+      query = sql`SELECT * FROM ads`;
     }
 
-    const response = await fetch(supabaseQuery, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Supabase error: ${response.statusText}`);
-    }
-
-    const ads = await response.json();
+    // Добавляем сортировку: закрепленные первыми, потом по дате
+    const result = await sql`
+      SELECT * FROM ads
+      ${city ? sql`WHERE city = ${city}` : sql``}
+      ${city && country ? sql`AND country = ${country}` : !city && country ? sql`WHERE country = ${country}` : sql``}
+      ORDER BY 
+        CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
+        created_at DESC
+    `;
+    
+    const ads = result.rows;
     
     console.log("[ADS API] Получено объявлений:", ads.length);
     
@@ -104,61 +110,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Проверяем наличие Supabase переменных
-    const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
+    // Вставляем в Neon PostgreSQL
+    const result = await sql`
+      INSERT INTO ads (
+        gender, target, goal, age_from, age_to, my_age, 
+        body_type, text, country, region, city, tg_id, created_at
+      )
+      VALUES (
+        ${gender}, ${target}, ${goal}, 
+        ${ageFrom ? parseInt(ageFrom) : null}, 
+        ${ageTo ? parseInt(ageTo) : null}, 
+        ${myAge ? parseInt(myAge) : null},
+        ${bodyType || null}, ${text}, 
+        ${country || 'Россия'}, ${region || ''}, ${city}, 
+        ${tgId || 'anonymous'}, NOW()
+      )
+      RETURNING *
+    `;
+
+    const newAd = result.rows[0];
     
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-      console.error("[ADS API] Supabase переменные не настроены");
-      return NextResponse.json(
-        { success: false, error: "База данных не настроена" },
-        { status: 500 }
-      );
-    }
-
-    // Подготавливаем данные для вставки
-    const adData = {
-      gender,
-      target,
-      goal,
-      age_from: parseInt(ageFrom) || null,
-      age_to: parseInt(ageTo) || null,
-      my_age: parseInt(myAge) || null,
-      body_type: bodyType,
-      text,
-      country: country || 'Россия',
-      region: region || '',
-      city,
-      tg_id: tgId || 'anonymous',
-      created_at: new Date().toISOString()
-    };
-
-    console.log("[ADS API] Сохраняем в Supabase:", adData);
-
-    // Отправляем в Supabase REST API
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/ads`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(adData)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Supabase error: ${response.statusText} - ${errorText}`);
-    }
-
-    const result = await response.json();
-    
-    console.log("[ADS API] Объявление создано:", result);
+    console.log("[ADS API] Объявление создано:", newAd);
     
     return NextResponse.json({
       success: true,
       message: "Объявление успешно опубликовано!",
-      ad: result[0]
+      ad: newAd
     });
 
   } catch (error: any) {
@@ -209,50 +186,26 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Проверяем наличие Supabase переменных
-    const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
-    
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-      console.error("[ADS API] Supabase переменные не настроены");
-      return NextResponse.json(
-        { success: false, error: "База данных не настроена" },
-        { status: 500 }
-      );
-    }
+    // Проверяем, что объявление принадлежит пользователю
+    const checkResult = await sql`
+      SELECT tg_id FROM ads WHERE id = ${id}
+    `;
 
-    // Сначала проверяем, что объявление принадлежит пользователю
-    const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/ads?id=eq.${id}&select=tg_id`, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    });
-
-    if (!checkResponse.ok) {
-      throw new Error(`Supabase error: ${checkResponse.statusText}`);
-    }
-
-    const ads = await checkResponse.json();
-    
-    if (!ads || ads.length === 0) {
+    if (checkResult.rows.length === 0) {
       return NextResponse.json(
         { success: false, error: "Объявление не найдено" },
         { status: 404 }
       );
     }
 
-    // Сравниваем с приведением к числу (т.к. из body может прийти строка)
-    const adOwnerId = Number(ads[0].tg_id);
+    // Сравниваем с приведением к числу
+    const adOwnerId = Number(checkResult.rows[0].tg_id);
     const requesterId = Number(tgId);
     
     if (adOwnerId !== requesterId) {
       console.log("[ADS API] Попытка удалить чужое объявление:", { 
-        adOwner: ads[0].tg_id, 
-        adOwnerType: typeof ads[0].tg_id,
-        requester: tgId,
-        requesterType: typeof tgId,
-        adOwnerNum: adOwnerId,
-        requesterNum: requesterId
+        adOwner: checkResult.rows[0].tg_id, 
+        requester: tgId
       });
       return NextResponse.json(
         { success: false, error: "Вы можете удалять только свои объявления" },
@@ -260,18 +213,8 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Удаляем из Supabase REST API
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/ads?id=eq.${id}`, {
-      method: 'DELETE',
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Supabase error: ${response.statusText}`);
-    }
+    // Удаляем из Neon PostgreSQL
+    await sql`DELETE FROM ads WHERE id = ${id}`;
 
     console.log("[ADS API] Объявление успешно удалено:", id);
     
@@ -317,50 +260,26 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // Проверяем наличие Supabase переменных
-    const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
-    
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-      console.error("[ADS API] Supabase переменные не настроены");
-      return NextResponse.json(
-        { success: false, error: "База данных не настроена" },
-        { status: 500 }
-      );
-    }
+    // Проверяем, что объявление принадлежит пользователю
+    const checkResult = await sql`
+      SELECT tg_id FROM ads WHERE id = ${id}
+    `;
 
-    // Сначала проверяем, что объявление принадлежит пользователю
-    const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/ads?id=eq.${id}&select=tg_id`, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    });
-
-    if (!checkResponse.ok) {
-      throw new Error(`Supabase error: ${checkResponse.statusText}`);
-    }
-
-    const ads = await checkResponse.json();
-    
-    if (!ads || ads.length === 0) {
+    if (checkResult.rows.length === 0) {
       return NextResponse.json(
         { success: false, error: "Объявление не найдено" },
         { status: 404 }
       );
     }
 
-    // Сравниваем с приведением к числу (т.к. из body может прийти строка)
-    const adOwnerId = Number(ads[0].tg_id);
+    // Сравниваем с приведением к числу
+    const adOwnerId = Number(checkResult.rows[0].tg_id);
     const requesterId = Number(tgId);
     
     if (adOwnerId !== requesterId) {
       console.log("[ADS API] Попытка обновить чужое объявление:", { 
-        adOwner: ads[0].tg_id, 
-        adOwnerType: typeof ads[0].tg_id,
-        requester: tgId,
-        requesterType: typeof tgId,
-        adOwnerNum: adOwnerId,
-        requesterNum: requesterId
+        adOwner: checkResult.rows[0].tg_id, 
+        requester: tgId
       });
       return NextResponse.json(
         { success: false, error: "Вы можете обновлять только свои объявления" },
@@ -368,37 +287,22 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const updateData: any = {};
-    if (is_pinned !== undefined) updateData.is_pinned = is_pinned;
-    if (pinned_until !== undefined) updateData.pinned_until = pinned_until;
-
-    console.log("[ADS API] Обновляем объявление:", updateData);
-
-    // Обновляем в Supabase REST API
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/ads?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(updateData)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Supabase error: ${response.statusText} - ${errorText}`);
-    }
-
-    const result = await response.json();
+    // Обновляем в Neon PostgreSQL
+    const result = await sql`
+      UPDATE ads 
+      SET 
+        is_pinned = ${is_pinned !== undefined ? is_pinned : false},
+        pinned_until = ${pinned_until || null}
+      WHERE id = ${id}
+      RETURNING *
+    `;
     
-    console.log("[ADS API] Объявление успешно обновлено:", result);
+    console.log("[ADS API] Объявление успешно обновлено:", result.rows[0]);
     
     return NextResponse.json({
       success: true,
       message: "Объявление обновлено",
-      ad: result[0]
+      ad: result.rows[0]
     });
 
   } catch (error: any) {
