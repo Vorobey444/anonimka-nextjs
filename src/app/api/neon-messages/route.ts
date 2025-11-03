@@ -49,10 +49,13 @@ export async function POST(request: NextRequest) {
         // Определяем получателя
         const receiverId = chat.user1 == senderId ? chat.user2 : chat.user1;
         
-        // Сохраняем сообщение
+        // Используем переданный nickname или дефолтный
+        const nickname = senderNickname || 'Анонимный';
+        
+        // Сохраняем сообщение с nickname
         const result = await sql`
-          INSERT INTO messages (chat_id, sender_id, receiver_id, message, created_at)
-          VALUES (${chatId}, ${senderId}, ${receiverId}, ${messageText}, NOW())
+          INSERT INTO messages (chat_id, sender_id, receiver_id, message, sender_nickname, created_at)
+          VALUES (${chatId}, ${senderId}, ${receiverId}, ${messageText}, ${nickname}, NOW())
           RETURNING *
         `;
         

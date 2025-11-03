@@ -4947,11 +4947,12 @@ async function loadChatMessages(chatId, silent = false) {
             const messageClass = isMine ? 'sent' : 'received';
             const time = formatMessageTime(msg.created_at);
             
-            // Ник для входящих сообщений
+            // Ник для входящих сообщений из базы данных
             let nicknameHtml = '';
             if (!isMine) {
-                const senderData = getUserData(msg.sender_id);
-                nicknameHtml = `<div class="message-nickname">${escapeHtml(senderData.nickname)}</div>`;
+                // Используем sender_nickname из сообщения или fallback
+                const nickname = msg.sender_nickname || 'Собеседник';
+                nicknameHtml = `<div class="message-nickname">${escapeHtml(nickname)}</div>`;
             }
             
             // Статусы доставки (только для отправленных сообщений)
