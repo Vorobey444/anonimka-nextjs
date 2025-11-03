@@ -4763,67 +4763,99 @@ async function updateChatBadge() {
 
 // Открыть чат
 async function openChat(chatId) {
-    // TODO: Реализовать просмотр чата после миграции на Neon
-    tg.showAlert('⚠️ Функция чатов в разработке. Скоро будет доступна!');
-    return;
+    console.log('💬 Открываем чат:', chatId);
     
     currentChatId = chatId;
     showScreen('chatView');
     
-    // Загружаем информацию о чате через API
-    const response = await fetch(`/api/chats?userId=${getCurrentUserId()}&action=get-chat&chatId=${chatId}`);
-    const data = await response.json();
+    // Загружаем информацию о чате через Neon API
+    try {
+        const userId = getCurrentUserId();
+        
+        const response = await fetch('/api/neon-chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get-active',
+                params: { userId }
+            })
+        });
+        const result = await response.json();
+        
+        if (result.error || !result.data) {
+            tg.showAlert('Ошибка загрузки чата');
+            showMyChats();
+            return;
+        }
+        
+        // Находим нужный чат
+        const chat = result.data.find(c => c.id == chatId);
+        
+        if (!chat) {
+            tg.showAlert('Чат не найден');
+            showMyChats();
+            return;
+        }
 
-    if (!data.success || !data.chat) {
+        // Обновляем заголовок
+        document.getElementById('chatTitle').textContent = 'Анонимный чат';
+        document.getElementById('chatAdId').textContent = `Объявление #${chat.ad_id || 'N/A'}`;
+
+        // Загружаем сообщения
+        await loadChatMessages(chatId);
+        
+        // Помечаем сообщения как прочитанные
+        await markMessagesAsRead(chatId);
+        
+        // Запускаем периодическое обновление сообщений
+        startChatPolling(chatId);
+        
+    } catch (error) {
+        console.error('Ошибка открытия чата:', error);
         tg.showAlert('Ошибка загрузки чата');
         showMyChats();
-        return;
     }
-
-    const chat = data.chat;
-
-    // Обновляем заголовок
-    document.getElementById('chatTitle').textContent = 'Анонимный чат';
-    document.getElementById('chatAdId').textContent = `Объявление #${chat.ad_id || 'N/A'}`;
-
-    // Загружаем сообщения
-    await loadChatMessages(chatId);
-
-    // Запускаем периодическое обновление сообщений
-    startChatPolling(chatId);
 }
 
 // Загрузить сообщения чата
 async function loadChatMessages(chatId) {
     const messagesContainer = document.getElementById('chatMessages');
+    messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 20px;">Загрузка сообщений...</p>';
     
     try {
-        const { data: messages, error } = await supabase
-            .from('messages')
-            .select('*')
-            .eq('chat_id', chatId)
-            .order('created_at', { ascending: true });
+        // Получаем сообщения через Neon API
+        const response = await fetch('/api/neon-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get-messages',
+                params: { chatId }
+            })
+        });
+        const result = await response.json();
 
-        if (error) {
-            console.error('Ошибка загрузки сообщений:', error);
+        if (result.error) {
+            console.error('Ошибка загрузки сообщений:', result.error);
             messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Ошибка загрузки сообщений</p>';
             return;
         }
 
-        if (!messages || messages.length === 0) {
+        const messages = result.data || [];
+
+        if (messages.length === 0) {
             messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Нет сообщений. Начните диалог!</p>';
             return;
         }
 
-        const userId = tg.initDataUnsafe?.user?.id;
+        const userId = getCurrentUserId();
         messagesContainer.innerHTML = messages.map(msg => {
-            const isMine = msg.sender_id === userId;
+            const isMine = msg.sender_id == userId;
             const messageClass = isMine ? 'sent' : 'received';
             const time = formatMessageTime(msg.created_at);
             
             return `
                 <div class="message ${messageClass}">
-                    <div class="message-text">${escapeHtml(msg.message_text)}</div>
+                    <div class="message-text">${escapeHtml(msg.message)}</div>
                     <div class="message-time">${time}</div>
                 </div>
             `;
@@ -4845,33 +4877,33 @@ async function sendMessage() {
 
     if (!messageText || !currentChatId) return;
 
-    const userId = tg.initDataUnsafe?.user?.id;
-    if (!userId) {
-        tg.showAlert('Ошибка: пользователь не авторизован');
+    const userId = getCurrentUserId();
+    if (!userId || userId.startsWith('web_')) {
+        tg.showAlert('Ошибка: необходима авторизация');
         return;
     }
 
     try {
-        // Вставляем сообщение в базу
-        const { error } = await supabase
-            .from('messages')
-            .insert({
-                chat_id: currentChatId,
-                sender_id: userId,
-                message_text: messageText
-            });
+        // Отправляем сообщение через Neon API
+        const response = await fetch('/api/neon-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'send-message',
+                params: { 
+                    chatId: currentChatId, 
+                    senderId: userId,
+                    messageText
+                }
+            })
+        });
+        const result = await response.json();
 
-        if (error) {
-            console.error('Ошибка отправки:', error);
+        if (result.error) {
+            console.error('Ошибка отправки:', result.error);
             tg.showAlert('Ошибка отправки сообщения');
             return;
         }
-
-        // Обновляем время последнего сообщения в чате
-        await supabase
-            .from('private_chats')
-            .update({ updated_at: new Date().toISOString() })
-            .eq('id', currentChatId);
 
         // Очищаем поле ввода
         input.value = '';
@@ -4881,7 +4913,29 @@ async function sendMessage() {
 
     } catch (error) {
         console.error('Ошибка:', error);
-        tg.showAlert('Ошибка отправки');
+        tg.showAlert('Ошибка отправки сообщения');
+    }
+}
+
+// Пометить сообщения как прочитанные
+async function markMessagesAsRead(chatId) {
+    try {
+        const userId = getCurrentUserId();
+        const response = await fetch('/api/neon-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'mark-read',
+                params: { chatId, userId }
+            })
+        });
+        const result = await response.json();
+        
+        if (result.error) {
+            console.warn('⚠️ Ошибка пометки сообщений как прочитанных:', result.error);
+        }
+    } catch (error) {
+        console.error('Ошибка markMessagesAsRead:', error);
     }
 }
 
