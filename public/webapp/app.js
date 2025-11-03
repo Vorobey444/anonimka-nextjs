@@ -237,8 +237,9 @@ let currentStep = 1;
 const totalSteps = 7; // Убрали шаг с никнеймом - теперь он на главной странице
 
 // Инициализация приложения
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 DOMContentLoaded - начало инициализации');
+// Функция инициализации, которая вызывается когда DOM готов
+function initializeApp() {
+    console.log('🚀 Начало инициализации приложения');
     
     try {
         initializeTelegramWebApp();
@@ -285,13 +286,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 300);
     
-    checkUserLocation();
-    setupEventListeners();
-    setupContactsEventListeners();
+    try {
+        checkUserLocation();
+    } catch (e) {
+        console.error('❌ Ошибка checkUserLocation:', e);
+    }
+    
+    try {
+        setupEventListeners();
+    } catch (e) {
+        console.error('❌ Ошибка setupEventListeners:', e);
+    }
+    
+    try {
+        setupContactsEventListeners();
+    } catch (e) {
+        console.error('❌ Ошибка setupContactsEventListeners:', e);
+    }
     
     // Периодическое обновление счетчика новых запросов (каждые 30 секунд)
     setInterval(() => {
-        updateChatBadge();
+        try {
+            updateChatBadge();
+        } catch (e) {
+            console.error('❌ Ошибка updateChatBadge в интервале:', e);
+        }
     }, 30000);
     
     // Добавляем обработчик видимости страницы
@@ -301,8 +320,12 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('📱 Страница стала видимой, повторная проверка авторизации');
             // Проверяем авторизацию еще раз
             setTimeout(() => {
-                checkTelegramAuth();
-                updateChatBadge(); // Обновляем счетчик при возврате
+                try {
+                    checkTelegramAuth();
+                    updateChatBadge(); // Обновляем счетчик при возврате
+                } catch (e) {
+                    console.error('❌ Ошибка при повторной проверке:', e);
+                }
             }, 500);
         }
     });
@@ -338,7 +361,16 @@ document.addEventListener('DOMContentLoaded', function() {
             location.reload();
         }
     });
-});
+}
+
+// Проверяем готовность DOM и запускаем инициализацию
+if (document.readyState === 'loading') {
+    console.log('📄 DOM загружается, ждем DOMContentLoaded');
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    console.log('📄 DOM уже загружен, запускаем инициализацию немедленно');
+    initializeApp();
+}
 
 function initializeTelegramWebApp() {
     // Настройка темы
