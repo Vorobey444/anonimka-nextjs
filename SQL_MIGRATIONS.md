@@ -62,6 +62,29 @@ CREATE INDEX IF NOT EXISTS idx_private_chats_last_message ON private_chats(last_
 
 ---
 
+## 3️⃣ Миграция 3: Поле delivered (статусы прочтения)
+
+Скопируйте и выполните содержимое файла:
+**`neon_add_delivered.sql`**
+
+```sql
+-- Добавляем поле delivered для статусов доставки
+ALTER TABLE messages 
+ADD COLUMN IF NOT EXISTS delivered BOOLEAN DEFAULT FALSE;
+
+-- Обновляем существующие сообщения
+UPDATE messages 
+SET delivered = TRUE 
+WHERE delivered IS NULL;
+
+-- Индекс
+CREATE INDEX IF NOT EXISTS idx_messages_delivered ON messages(delivered) WHERE delivered = false;
+```
+
+Нажмите **Run** ✅
+
+---
+
 ## ✅ Проверка
 
 После выполнения миграций выполните:
