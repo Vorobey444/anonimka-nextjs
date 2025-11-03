@@ -16,6 +16,31 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    /* Отключаем зум на iOS */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Разрешаем выделение только для текста в инпутах */
+input,
+textarea {
+    -webkit-user-select: text;
+    user-select: text;
+    /* Минимальный размер шрифта 16px для предотвращения зума на iOS */
+    font-size: 16px !important;
+}
+
+html {
+    /* Фиксированный размер, запрет зума */
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    /* Высота 100% для полноэкранного режима */
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
 }
 
 body {
@@ -23,12 +48,30 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--text-light);
     min-height: 100vh;
-    overflow-x: hidden;
+    /* Высота 100% viewport */
+    height: 100%;
+    width: 100%;
+    /* Запрет скролла body */
+    overflow: hidden;
+    /* Запрет увеличения на двойной тап */
+    touch-action: manipulation;
+    /* Фиксированная позиция для iOS */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 .app-container {
     min-height: 100vh;
+    height: 100%;
+    width: 100%;
     position: relative;
+    /* Разрешаем скролл внутри контейнера */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Экраны */
