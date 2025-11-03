@@ -248,13 +248,8 @@ function initializeApp() {
         console.error('❌ Ошибка инициализации Telegram WebApp:', e);
     }
     
-    // Создаем кнопку Debug (всегда, для отладки)
-    try {
-        createDebugButton();
-        console.log('✅ Debug кнопка создана');
-    } catch (e) {
-        console.error('❌ Ошибка создания Debug кнопки:', e);
-    }
+    // Debug кнопка отключена в продакшене
+    // createDebugButton();
     
     // Задержка перед проверкой авторизации, чтобы Telegram успел передать initDataUnsafe
     setTimeout(() => {
@@ -4654,8 +4649,12 @@ async function loadMyChats() {
                 const requestTime = chat.created_at ? formatChatTime(chat.created_at) : '';
                 // Определяем, кто отправитель (не текущий пользователь)
                 const isUser1 = chat.user1 === userId;
-                const senderName = isUser1 ? 'Анонимный пользователь' : 'Анонимный пользователь';
+                const senderId = isUser1 ? chat.user2 : chat.user1;
+                const senderName = 'Анонимный пользователь';
                 const messageText = chat.message || 'Хочет начать диалог';
+                
+                // Pro значок (будет добавлено после получения статуса)
+                const proBadge = chat.sender_is_premium ? '<span class="pro-badge">⭐ PRO</span>' : '';
                 
                 return `
                     <div class="chat-request-card">
@@ -4664,7 +4663,7 @@ async function loadMyChats() {
                             <span class="request-time">${requestTime}</span>
                         </div>
                         <div class="request-message">
-                            <strong>${senderName}:</strong><br>
+                            <strong>${senderName} ${proBadge}</strong><br>
                             "${messageText}"
                         </div>
                         <div class="request-actions">
@@ -5322,4 +5321,277 @@ window.addEventListener('click', (event) => {
     if (event.target === modal) {
         closeAdModal();
     }
+    
+    const premiumModal = document.getElementById('premiumModal');
+    if (event.target === premiumModal) {
+        closePremiumModal();
+    }
+});
+
+// ============= PREMIUM СИСТЕМА =============
+
+// Глобальная переменная для хранения статуса Premium
+let userPremiumStatus = {
+    isPremium: false,
+    country: 'KZ',
+    limits: null
+};
+
+// Загрузить статус Premium при запуске приложения
+async function loadPremiumStatus() {
+    try {
+        const userId = getCurrentUserId();
+        if (!userId || userId.startsWith('web_')) {
+            console.log('⚠️ Пользователь не авторизован, Premium статус недоступен');
+            return;
+        }
+        
+        const response = await fetch('/api/premium', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get-user-status',
+                params: { userId }
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            console.error('Ошибка загрузки Premium статуса:', result.error);
+            return;
+        }
+        
+        userPremiumStatus = result.data;
+        updatePremiumUI();
+        
+        console.log('✅ Premium статус загружен:', userPremiumStatus);
+    } catch (error) {
+        console.error('Ошибка loadPremiumStatus:', error);
+    }
+}
+
+// Обновить UI переключателя Premium
+function updatePremiumUI() {
+    const freeBtn = document.getElementById('freeBtn');
+    const proBtn = document.getElementById('proBtn');
+    
+    if (!freeBtn || !proBtn) return;
+    
+    // Убираем активные классы
+    freeBtn.classList.remove('active', 'free');
+    proBtn.classList.remove('active', 'pro');
+    
+    if (userPremiumStatus.isPremium) {
+        // PRO активен
+        proBtn.classList.add('active', 'pro');
+    } else {
+        // FREE активен
+        freeBtn.classList.add('active', 'free');
+    }
+}
+
+// Показать модальное окно тарифов
+async function showPremiumModal() {
+    const modal = document.getElementById('premiumModal');
+    modal.style.display = 'flex';
+    
+    // Загружаем цены для страны пользователя
+    try {
+        const response = await fetch('/api/premium', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get-pricing',
+                params: { country: userPremiumStatus.country }
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.data && result.data.pro) {
+            // Обновляем цену PRO
+            document.getElementById('proPriceAmount').textContent = result.data.pro.price;
+            document.getElementById('proPriceCurrency').textContent = result.data.pro.currency;
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки цен:', error);
+    }
+    
+    // Обновляем кнопки в зависимости от текущего статуса
+    updatePremiumModalButtons();
+}
+
+// Закрыть модальное окно тарифов
+function closePremiumModal() {
+    const modal = document.getElementById('premiumModal');
+    modal.style.display = 'none';
+}
+
+// Обновить кнопки в модальном окне
+function updatePremiumModalButtons() {
+    const freeBtn = document.querySelector('.pricing-card:not(.featured) .pricing-btn');
+    const proBtn = document.getElementById('activatePremiumBtn');
+    
+    if (userPremiumStatus.isPremium) {
+        // Пользователь PRO
+        if (freeBtn) {
+            freeBtn.textContent = 'Понизить до FREE';
+            freeBtn.disabled = false;
+            freeBtn.onclick = () => selectPlan('free');
+        }
+        if (proBtn) {
+            proBtn.textContent = '✅ Активен';
+            proBtn.disabled = true;
+        }
+    } else {
+        // Пользователь FREE
+        if (freeBtn) {
+            freeBtn.textContent = 'Текущий план';
+            freeBtn.disabled = true;
+        }
+        if (proBtn) {
+            proBtn.textContent = 'Оформить PRO';
+            proBtn.disabled = false;
+        }
+    }
+}
+
+// Выбор тарифа FREE (для теста - переключение обратно)
+async function selectPlan(plan) {
+    if (plan === 'free' && userPremiumStatus.isPremium) {
+        // Отключаем Premium (только для теста)
+        await activatePremium(); // Переключает статус
+    }
+}
+
+// Активировать Premium (для теста - переключение)
+async function activatePremium() {
+    try {
+        const userId = getCurrentUserId();
+        if (!userId || userId.startsWith('web_')) {
+            tg.showAlert('Необходима авторизация через Telegram');
+            return;
+        }
+        
+        // Показываем загрузку
+        const btn = document.getElementById('activatePremiumBtn');
+        const originalText = btn.textContent;
+        btn.textContent = '⏳ Обработка...';
+        btn.disabled = true;
+        
+        // Переключаем статус (для теста)
+        const response = await fetch('/api/premium', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'toggle-premium',
+                params: { userId }
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            throw new Error(result.error.message);
+        }
+        
+        // Обновляем локальный статус
+        userPremiumStatus.isPremium = result.data.isPremium;
+        
+        // Обновляем UI
+        updatePremiumUI();
+        updatePremiumModalButtons();
+        
+        // Показываем уведомление
+        if (result.data.isPremium) {
+            tg.showAlert('🎉 Поздравляем! PRO активирован на 30 дней!\n\nТеперь доступны:\n✅ Безлимит фото\n✅ До 3 объявлений в день\n✅ Закрепление 3 раза в день');
+        } else {
+            tg.showAlert('Вы вернулись на FREE тариф\n\nДоступны базовые функции');
+        }
+        
+        // Закрываем модалку через 1 секунду
+        setTimeout(() => {
+            closePremiumModal();
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Ошибка активации Premium:', error);
+        tg.showAlert('Ошибка: ' + error.message);
+        
+        // Возвращаем кнопку
+        const btn = document.getElementById('activatePremiumBtn');
+        if (btn) {
+            btn.textContent = 'Оформить PRO';
+            btn.disabled = false;
+        }
+    }
+}
+
+// Проверить лимит фото перед отправкой
+async function checkPhotoLimit() {
+    try {
+        const userId = getCurrentUserId();
+        if (!userId || userId.startsWith('web_')) {
+            return { canSend: false, reason: 'Необходима авторизация' };
+        }
+        
+        const response = await fetch('/api/premium', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'check-photo-limit',
+                params: { userId }
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            return { canSend: false, reason: result.error.message };
+        }
+        
+        if (!result.data.canSend) {
+            const remaining = result.data.remaining || 0;
+            return {
+                canSend: false,
+                reason: `Достигнут лимит фото на сегодня!\n\nFREE: 5 фото в день\nОсталось: ${remaining}\n\nОформите PRO для безлимита фото!`
+            };
+        }
+        
+        return { canSend: true };
+    } catch (error) {
+        console.error('Ошибка проверки лимита фото:', error);
+        return { canSend: true }; // В случае ошибки разрешаем
+    }
+}
+
+// Увеличить счётчик фото после успешной отправки
+async function incrementPhotoCount() {
+    try {
+        const userId = getCurrentUserId();
+        if (!userId || userId.startsWith('web_')) return;
+        
+        await fetch('/api/premium', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'increment-photo-count',
+                params: { userId }
+            })
+        });
+        
+        // Обновляем статус
+        await loadPremiumStatus();
+    } catch (error) {
+        console.error('Ошибка увеличения счётчика фото:', error);
+    }
+}
+
+// Вызываем загрузку Premium статуса при инициализации
+document.addEventListener('DOMContentLoaded', () => {
+    // Загружаем статус с задержкой, чтобы userId успел инициализироваться
+    setTimeout(() => {
+        loadPremiumStatus();
+    }, 1000);
 });

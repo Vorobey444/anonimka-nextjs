@@ -33,7 +33,16 @@ export async function POST(request: NextRequest) {
       case 'get-pending': {
         const { userId } = params;
         const result = await sql`
-          SELECT * FROM private_chats 
+          SELECT 
+            pc.*,
+            u.is_premium as sender_is_premium
+          FROM private_chats pc
+          LEFT JOIN users u ON (
+            CASE 
+              WHEN pc.user1 = ${userId} THEN pc.user2 = u.id
+              ELSE pc.user1 = u.id
+            END
+          )
           WHERE user2 = ${userId} 
             AND accepted = false 
             AND blocked_by IS NULL
