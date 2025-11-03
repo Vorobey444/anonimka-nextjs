@@ -4826,6 +4826,13 @@ async function openChat(chatId) {
         // Загружаем сообщения
         await loadChatMessages(chatId);
         
+        // Принудительно скроллим вниз после загрузки
+        const scrollContainer = document.querySelector('.chat-messages-container');
+        setTimeout(() => {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            console.log('🔽 Принудительный скролл после открытия чата');
+        }, 200);
+        
         // Помечаем сообщения как прочитанные
         await markMessagesAsRead(chatId);
         
@@ -4842,6 +4849,7 @@ async function openChat(chatId) {
 // Загрузить сообщения чата
 async function loadChatMessages(chatId, silent = false) {
     const messagesContainer = document.getElementById('chatMessages');
+    const scrollContainer = document.querySelector('.chat-messages-container');
     
     // Показываем загрузку только при первом открытии
     if (!silent) {
@@ -4886,7 +4894,7 @@ async function loadChatMessages(chatId, silent = false) {
         
         // Сохраняем позицию скролла только для silent режима
         const wasAtBottom = silent ? 
-            (messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 50) : 
+            (scrollContainer.scrollHeight - scrollContainer.scrollTop <= scrollContainer.clientHeight + 50) : 
             true; // При первой загрузке всегда скроллим вниз
         
         messagesContainer.innerHTML = messages.map(msg => {
@@ -4919,10 +4927,23 @@ async function loadChatMessages(chatId, silent = false) {
 
         // Прокручиваем вниз если это первая загрузка или были внизу
         if (!silent || wasAtBottom) {
-            // Используем setTimeout чтобы дать браузеру время отрендерить сообщения
+            // Сначала пробуем немедленно
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            
+            // Затем с небольшой задержкой для гарантии (браузер может не успеть отрендерить)
             setTimeout(() => {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, 0);
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                console.log('📜 Скролл выполнен:', {
+                    scrollTop: scrollContainer.scrollTop,
+                    scrollHeight: scrollContainer.scrollHeight,
+                    clientHeight: scrollContainer.clientHeight
+                });
+            }, 100);
+            
+            // И ещё раз с бОльшей задержкой на случай медленного рендеринга
+            setTimeout(() => {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            }, 300);
         }
 
     } catch (error) {
