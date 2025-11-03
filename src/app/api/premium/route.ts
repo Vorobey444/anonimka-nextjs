@@ -15,7 +15,7 @@ const LIMITS = {
     photos_per_day: 999999, // Безлимит
     ads_per_day: 3,
     pin_per_day: 3,
-    pin_duration_hours: 24
+    pin_duration_hours: 1 // 3 раза в день по 1 часу
   }
 };
 

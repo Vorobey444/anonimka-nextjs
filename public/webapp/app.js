@@ -1176,6 +1176,24 @@ function showCreateAd() {
         return;
     }
     
+    // Проверка лимита объявлений
+    if (userPremiumStatus.limits && userPremiumStatus.limits.ads) {
+        const adsLimit = userPremiumStatus.limits.ads;
+        if (adsLimit.remaining === 0) {
+            if (userPremiumStatus.isPremium) {
+                tg.showAlert('Вы уже создали 3 объявления сегодня (лимит PRO). Попробуйте завтра!');
+            } else {
+                tg.showConfirm(
+                    'Вы уже создали объявление сегодня. Оформите PRO для 3 объявлений в день!',
+                    (confirmed) => {
+                        if (confirmed) showPremiumModal();
+                    }
+                );
+            }
+            return;
+        }
+    }
+    
     showScreen('createAd');
     currentStep = 1;
     showStep(1);
@@ -1653,6 +1671,9 @@ async function submitAd() {
         
         console.log('Объявление опубликовано:', result);
 
+        // Обновляем статус Premium (лимиты изменились)
+        await loadPremiumStatus();
+
         // Показываем успех
         tg.showAlert('✅ Объявление успешно опубликовано!', () => {
             // Очищаем форму
@@ -1663,7 +1684,22 @@ async function submitAd() {
 
     } catch (error) {
         console.error('Ошибка создания объявления:', error);
-        tg.showAlert('❌ Ошибка при публикации объявления: ' + error.message);
+        
+        // Проверяем ошибку лимита
+        if (error.message && error.message.includes('лимит')) {
+            if (error.message.includes('PRO')) {
+                tg.showConfirm(
+                    error.message,
+                    (confirmed) => {
+                        if (confirmed) showPremiumModal();
+                    }
+                );
+            } else {
+                tg.showAlert('❌ ' + error.message);
+            }
+        } else {
+            tg.showAlert('❌ Ошибка при публикации объявления: ' + error.message);
+        }
     } finally {
         // Восстанавливаем кнопку
         const submitBtn = document.getElementById('submitBtn');
@@ -2042,10 +2078,34 @@ async function deleteMyAd(adId) {
 // Закрепить/открепить мое объявление
 async function pinMyAd(adId, shouldPin) {
     try {
+        // Если закрепляем - проверяем лимит
+        if (shouldPin) {
+            // Проверяем лимит закрепления
+            if (userPremiumStatus.limits && userPremiumStatus.limits.pin) {
+                const pinLimit = userPremiumStatus.limits.pin;
+                if (!pinLimit.canUse) {
+                    if (userPremiumStatus.isPremium) {
+                        tg.showAlert('Вы уже использовали 3 закрепления сегодня (лимит PRO). Попробуйте завтра!');
+                    } else {
+                        tg.showConfirm(
+                            'Закрепление доступно раз в 3 дня для FREE.\nОформите PRO для 3 закреплений в день по 1 часу!',
+                            (confirmed) => {
+                                if (confirmed) showPremiumModal();
+                            }
+                        );
+                    }
+                    return;
+                }
+            }
+        }
+        
         const pinned = await window.SupabaseClient.togglePinAd(adId, shouldPin);
         
         if (pinned) {
             if (shouldPin) {
+                // Обновляем статус Premium (лимиты изменились)
+                await loadPremiumStatus();
+                
                 tg.showAlert('✅ Функция успешно оплачена и включена!\n\nВаше объявление будет закреплено поверх других на 1 час.');
             } else {
                 tg.showAlert('✅ Объявление откреплено');
@@ -2057,7 +2117,22 @@ async function pinMyAd(adId, shouldPin) {
         }
     } catch (error) {
         console.error('Error pinning ad:', error);
-        tg.showAlert('❌ Ошибка при изменении статуса закрепления');
+        
+        // Проверяем ошибку лимита
+        if (error.message && error.message.includes('лимит')) {
+            if (error.message.includes('PRO')) {
+                tg.showConfirm(
+                    error.message,
+                    (confirmed) => {
+                        if (confirmed) showPremiumModal();
+                    }
+                );
+            } else {
+                tg.showAlert('❌ ' + error.message);
+            }
+        } else {
+            tg.showAlert('❌ Ошибка при изменении статуса закрепления');
+        }
     }
 }
 
@@ -5364,10 +5439,42 @@ async function loadPremiumStatus() {
         
         userPremiumStatus = result.data;
         updatePremiumUI();
+        updateAdLimitBadge();
         
         console.log('✅ Premium статус загружен:', userPremiumStatus);
     } catch (error) {
         console.error('Ошибка loadPremiumStatus:', error);
+    }
+}
+
+// Обновить индикатор лимита объявлений
+function updateAdLimitBadge() {
+    const badge = document.getElementById('adLimitBadge');
+    if (!badge || !userPremiumStatus.limits) return;
+    
+    const adsLimit = userPremiumStatus.limits.ads;
+    const used = adsLimit.used || 0;
+    const max = adsLimit.max || 1;
+    const remaining = adsLimit.remaining || 0;
+    
+    if (remaining === 0) {
+        // Лимит исчерпан
+        badge.textContent = `${used}/${max} 🚫`;
+        badge.className = 'limit-badge danger';
+        badge.style.display = 'block';
+    } else if (remaining === 1 && !userPremiumStatus.isPremium) {
+        // Осталось 1 (для FREE это последнее)
+        badge.textContent = `${used}/${max}`;
+        badge.className = 'limit-badge warning';
+        badge.style.display = 'block';
+    } else if (used > 0) {
+        // Показываем прогресс
+        badge.textContent = `${used}/${max}`;
+        badge.className = 'limit-badge';
+        badge.style.display = 'block';
+    } else {
+        // Ещё не создано объявлений
+        badge.style.display = 'none';
     }
 }
 

@@ -109,6 +109,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Проверка лимита объявлений
+    if (tgId && tgId !== 'anonymous') {
+      const userId = Number(tgId);
+      
+      // Получаем статус Premium и лимиты
+      const userResult = await sql`
+        SELECT is_premium FROM users WHERE id = ${userId}
+      `;
+      
+      const limitsResult = await sql`
+        SELECT ads_created_today, ads_last_reset FROM user_limits WHERE user_id = ${userId}
+      `;
+      
+      const isPremium = userResult.rows[0]?.is_premium || false;
+      const adsToday = limitsResult.rows[0]?.ads_created_today || 0;
+      const maxAds = isPremium ? 3 : 1;
+      
+      // Проверяем лимит
+      if (adsToday >= maxAds) {
+        console.log("[ADS API] Превышен лимит объявлений:", { adsToday, maxAds, isPremium });
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: isPremium 
+              ? "Вы уже создали 3 объявления сегодня (лимит PRO)" 
+              : "Вы уже создали объявление сегодня. Оформите PRO для 3 объявлений в день!",
+            limit: true,
+            isPremium
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     // Вставляем в Neon PostgreSQL
     const result = await sql`
       INSERT INTO ads (
@@ -128,6 +162,22 @@ export async function POST(req: NextRequest) {
     `;
 
     const newAd = result.rows[0];
+    
+    // Увеличиваем счётчик объявлений
+    if (tgId && tgId !== 'anonymous') {
+      const userId = Number(tgId);
+      await sql`
+        INSERT INTO user_limits (user_id, ads_created_today, ads_last_reset)
+        VALUES (${userId}, 1, CURRENT_DATE)
+        ON CONFLICT (user_id) DO UPDATE
+        SET ads_created_today = CASE
+            WHEN user_limits.ads_last_reset < CURRENT_DATE THEN 1
+            ELSE user_limits.ads_created_today + 1
+          END,
+          ads_last_reset = CURRENT_DATE,
+          updated_at = NOW()
+      `;
+    }
     
     console.log("[ADS API] Объявление создано:", newAd);
     
@@ -284,6 +334,74 @@ export async function PATCH(req: NextRequest) {
         { success: false, error: "Вы можете обновлять только свои объявления" },
         { status: 403 }
       );
+    }
+
+    // Проверка лимита закрепления (если включаем закрепление)
+    if (is_pinned) {
+      const userId = Number(tgId);
+      
+      // Получаем статус Premium и лимиты
+      const userResult = await sql`
+        SELECT is_premium FROM users WHERE id = ${userId}
+      `;
+      
+      const limitsResult = await sql`
+        SELECT pin_uses_today, pin_last_reset, last_pin_time FROM user_limits WHERE user_id = ${userId}
+      `;
+      
+      const isPremium = userResult.rows[0]?.is_premium || false;
+      const pinUsesToday = limitsResult.rows[0]?.pin_uses_today || 0;
+      const lastPinTime = limitsResult.rows[0]?.last_pin_time;
+      
+      // Проверяем лимит
+      if (isPremium) {
+        // PRO: 3 раза в день
+        if (pinUsesToday >= 3) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: "Вы уже использовали 3 закрепления сегодня (лимит PRO)",
+              limit: true
+            },
+            { status: 429 }
+          );
+        }
+      } else {
+        // FREE: 1 раз в 3 дня
+        if (lastPinTime) {
+          const lastPin = new Date(lastPinTime);
+          const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+          
+          if (lastPin > threeDaysAgo) {
+            const nextAvailable = new Date(lastPin.getTime() + 3 * 24 * 60 * 60 * 1000);
+            const hoursLeft = Math.ceil((nextAvailable.getTime() - Date.now()) / (1000 * 60 * 60));
+            
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: `Закрепление доступно через ${hoursLeft}ч. Оформите PRO для 3 закреплений в день!`,
+                limit: true,
+                isPremium: false
+              },
+              { status: 429 }
+            );
+          }
+        }
+      }
+      
+      // Увеличиваем счётчик закрепления
+      await sql`
+        INSERT INTO user_limits (user_id, pin_uses_today, pin_last_reset, last_pin_time)
+        VALUES (${userId}, 1, CURRENT_DATE, NOW())
+        ON CONFLICT (user_id) DO UPDATE
+        SET pin_uses_today = CASE
+            WHEN user_limits.pin_last_reset < CURRENT_DATE THEN 1
+            ELSE user_limits.pin_uses_today + 1
+          END,
+          pin_last_reset = CURRENT_DATE,
+          last_pin_time = NOW(),
+          updated_at = NOW()
+      `;
     }
 
     // Обновляем в Neon PostgreSQL

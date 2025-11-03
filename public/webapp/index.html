@@ -166,10 +166,13 @@
             </div>
             
             <div class="menu-buttons">
-                <button class="neon-button primary" onclick="showCreateAd()">
-                    <span class="icon">📝</span>
-                    Подать объявление
-                </button>
+                <div style="position: relative; display: inline-block; width: 100%;">
+                    <button class="neon-button primary" onclick="showCreateAd()" id="createAdBtn" style="width: 100%;">
+                        <span class="icon">📝</span>
+                        Подать объявление
+                    </button>
+                    <span id="adLimitBadge" class="limit-badge" style="display: none;"></span>
+                </div>
                 <button class="neon-button secondary" onclick="showBrowseAds()">
                     <span class="icon">👀</span>
                     Смотреть объявления
@@ -800,7 +803,7 @@
                             </div>
                             <div class="feature-item">
                                 <span class="feature-icon">📌</span>
-                                <span class="feature-text">Закрепление: 3 раза в день по 24 часа</span>
+                                <span class="feature-text">Закрепление: 3 раза в день по 1 часу</span>
                             </div>
                             <div class="feature-item">
                                 <span class="feature-icon">⭐</span>

@@ -3525,6 +3525,35 @@ h3 {
     animation: pulse 2s infinite;
 }
 
+.limit-badge {
+    position: absolute;
+    bottom: -8px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #00ffff;
+    border: 1px solid #00ffff;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    white-space: nowrap;
+}
+
+.limit-badge.warning {
+    color: #ffd700;
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.limit-badge.danger {
+    color: #ff006e;
+    border-color: #ff006e;
+    box-shadow: 0 0 10px rgba(255, 0, 110, 0.5);
+    animation: pulse 2s infinite;
+}
+
 @keyframes pulse {
     0%, 100% {
         transform: scale(1);
