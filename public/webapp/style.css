@@ -3923,24 +3923,24 @@ h3 {
 
 .premium-toggle {
     position: fixed;
-    top: 15px;
-    right: 15px;
+    top: 12px;
+    right: 12px;
     z-index: 999;
     display: flex;
-    gap: 5px;
+    gap: 3px;
     background: rgba(26, 26, 46, 0.95);
     border: 2px solid var(--border-glow);
-    border-radius: 25px;
-    padding: 5px;
+    border-radius: 20px;
+    padding: 4px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
 }
 
 .premium-btn {
-    padding: 8px 20px;
+    padding: 6px 16px;
     border: none;
-    border-radius: 20px;
-    font-size: 0.85rem;
+    border-radius: 16px;
+    font-size: 0.75rem;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s ease;
