@@ -3931,24 +3931,24 @@ h3 {
 
 .premium-toggle {
     position: fixed;
-    top: 12px;
-    right: 12px;
+    top: 8px;
+    right: 8px;
     z-index: 999;
     display: flex;
-    gap: 3px;
+    gap: 2px;
     background: rgba(26, 26, 46, 0.95);
-    border: 2px solid var(--border-glow);
-    border-radius: 20px;
-    padding: 4px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-glow);
+    border-radius: 12px;
+    padding: 3px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
 }
 
 .premium-btn {
-    padding: 6px 16px;
+    padding: 4px 12px;
     border: none;
-    border-radius: 16px;
-    font-size: 0.75rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -3960,24 +3960,24 @@ h3 {
 .premium-btn.active.free {
     background: linear-gradient(135deg, rgba(131, 56, 236, 0.3), rgba(255, 0, 110, 0.3));
     color: var(--text-light);
-    box-shadow: 0 0 20px rgba(131, 56, 236, 0.5);
-    text-shadow: 0 0 10px var(--neon-purple);
+    box-shadow: 0 0 15px rgba(131, 56, 236, 0.5);
+    text-shadow: 0 0 8px var(--neon-purple);
 }
 
 .premium-btn.active.pro {
     background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
     color: white;
-    box-shadow: 0 0 20px rgba(255, 0, 110, 0.8), 0 0 40px rgba(131, 56, 236, 0.6);
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 15px rgba(255, 0, 110, 0.8), 0 0 30px rgba(131, 56, 236, 0.6);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
     animation: premium-glow 2s ease-in-out infinite;
 }
 
 @keyframes premium-glow {
     0%, 100% {
-        box-shadow: 0 0 20px rgba(255, 0, 110, 0.8), 0 0 40px rgba(131, 56, 236, 0.6);
+        box-shadow: 0 0 15px rgba(255, 0, 110, 0.8), 0 0 30px rgba(131, 56, 236, 0.6);
     }
     50% {
-        box-shadow: 0 0 30px rgba(255, 0, 110, 1), 0 0 60px rgba(131, 56, 236, 0.8);
+        box-shadow: 0 0 25px rgba(255, 0, 110, 1), 0 0 50px rgba(131, 56, 236, 0.8);
     }
 }
 
