@@ -3981,72 +3981,74 @@ h3 {
 /* ============= PREMIUM МОДАЛЬНОЕ ОКНО ============= */
 
 .premium-modal {
-    max-width: 900px;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .pricing-table {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 30px;
-    padding: 20px 10px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 15px 10px;
 }
 
 .pricing-card {
     background: linear-gradient(135deg, rgba(26, 26, 46, 0.8), rgba(16, 16, 32, 0.8));
     border: 2px solid var(--border-glow);
-    border-radius: 15px;
-    padding: 30px;
+    border-radius: 12px;
+    padding: 20px;
     position: relative;
     transition: all 0.3s ease;
 }
 
 .pricing-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 40px rgba(131, 56, 236, 0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(131, 56, 236, 0.4);
 }
 
 .pricing-card.featured {
     border-color: var(--neon-pink);
     background: linear-gradient(135deg, rgba(131, 56, 236, 0.1), rgba(255, 0, 110, 0.1));
-    box-shadow: 0 0 30px rgba(255, 0, 110, 0.3);
+    box-shadow: 0 0 25px rgba(255, 0, 110, 0.3);
 }
 
 .premium-badge {
     position: absolute;
-    top: -15px;
-    right: 20px;
+    top: -12px;
+    right: 15px;
     background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
     color: white;
-    padding: 5px 15px;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.7rem;
     font-weight: bold;
-    box-shadow: 0 5px 15px rgba(255, 0, 110, 0.5);
+    box-shadow: 0 4px 12px rgba(255, 0, 110, 0.5);
     animation: pulse 2s infinite;
 }
 
 .pricing-header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .pricing-header h3 {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
     color: var(--neon-cyan);
     text-shadow: 0 0 10px var(--neon-cyan);
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .pricing-price {
     display: flex;
     align-items: baseline;
     justify-content: center;
-    gap: 5px;
-    margin: 15px 0;
+    gap: 4px;
+    margin: 10px 0;
 }
 
 .price-amount {
-    font-size: 3rem;
+    font-size: 2.2rem;
     font-weight: bold;
     background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
     -webkit-background-clip: text;
@@ -4055,24 +4057,24 @@ h3 {
 }
 
 .price-currency {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     color: var(--neon-pink);
 }
 
 .price-period {
     color: var(--text-gray);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
 }
 
 .pricing-features {
-    margin: 25px 0;
+    margin: 20px 0;
 }
 
 .feature-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 0;
+    gap: 10px;
+    padding: 10px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -4081,45 +4083,45 @@ h3 {
 }
 
 .feature-icon {
-    font-size: 1.3rem;
-    min-width: 25px;
+    font-size: 1.1rem;
+    min-width: 22px;
 }
 
 .feature-text {
     color: var(--text-light);
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     line-height: 1.4;
 }
 
 .pricing-btn {
     width: 100%;
-    padding: 15px;
+    padding: 12px;
     border: none;
-    border-radius: 10px;
-    font-size: 1.1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s ease;
-    margin-top: 20px;
+    margin-top: 15px;
     background: linear-gradient(135deg, rgba(131, 56, 236, 0.3), rgba(255, 0, 110, 0.3));
     color: var(--text-light);
     border: 2px solid var(--border-glow);
 }
 
 .pricing-btn:hover:not(:disabled) {
-    transform: scale(1.05);
-    box-shadow: 0 10px 30px rgba(131, 56, 236, 0.5);
+    transform: scale(1.03);
+    box-shadow: 0 8px 25px rgba(131, 56, 236, 0.5);
 }
 
 .pricing-btn.premium {
     background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
     color: white;
-    box-shadow: 0 5px 20px rgba(255, 0, 110, 0.5);
+    box-shadow: 0 4px 18px rgba(255, 0, 110, 0.5);
 }
 
 .pricing-btn.premium:hover {
-    box-shadow: 0 10px 40px rgba(255, 0, 110, 0.8);
-    transform: scale(1.08);
+    box-shadow: 0 8px 35px rgba(255, 0, 110, 0.8);
+    transform: scale(1.05);
 }
 
 .pricing-btn:disabled {
