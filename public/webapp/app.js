@@ -435,7 +435,33 @@ function checkTelegramAuth() {
     
     // Если нет авторизации - показываем модальное окно
     console.log('❌ Пользователь не авторизован, показываем модальное окно');
-    showTelegramAuthModal();
+    
+    // Задержка для уверенности что DOM загружен
+    setTimeout(() => {
+        showTelegramAuthModal();
+        
+        // Дополнительная проверка через 1 секунду
+        setTimeout(() => {
+            const modal = document.getElementById('telegramAuthModal');
+            if (modal) {
+                const computedStyle = window.getComputedStyle(modal);
+                console.log('🔍 Проверка видимости модального окна:');
+                console.log('  - display:', computedStyle.display);
+                console.log('  - visibility:', computedStyle.visibility);
+                console.log('  - opacity:', computedStyle.opacity);
+                console.log('  - zIndex:', computedStyle.zIndex);
+                
+                // Если модальное окно скрыто - принудительно показываем
+                if (computedStyle.display === 'none') {
+                    console.warn('⚠️ Модальное окно скрыто! Принудительно показываем...');
+                    modal.style.display = 'flex';
+                }
+            } else {
+                console.error('❌ Модальное окно не найдено в DOM!');
+            }
+        }, 1000);
+    }, 100);
+    
     return false;
 }
 
@@ -640,12 +666,30 @@ function showTelegramAuthModal() {
     const modal = document.getElementById('telegramAuthModal');
     if (!modal) {
         console.error('❌ Модальное окно авторизации не найдено!');
+        
+        // Создаем временное уведомление если модалка не найдена
+        alert('⚠️ Ошибка: Модальное окно авторизации не найдено в DOM!\n\nПопробуйте перезагрузить страницу.');
         return;
     }
+    
+    console.log('✅ Модальное окно найдено:', modal);
     
     // Блокируем весь интерфейс (делаем модальное окно обязательным)
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    
+    console.log('✅ Стили модального окна применены. display:', modal.style.display);
+    
+    // Принудительно делаем видимым
+    modal.classList.remove('hidden');
+    modal.removeAttribute('hidden');
     
     // Блокируем закрытие по клику вне модального окна
     const overlay = modal.querySelector('.modal-overlay');
