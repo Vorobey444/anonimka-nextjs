@@ -5,9 +5,9 @@
 ALTER TABLE private_chats 
 ADD COLUMN IF NOT EXISTS last_message_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
--- Обновляем существующие записи
+-- Обновляем существующие записи (используем created_at как базу)
 UPDATE private_chats 
-SET last_message_at = updated_at 
+SET last_message_at = created_at 
 WHERE last_message_at IS NULL;
 
 -- Создаём индекс для сортировки по последнему сообщению
