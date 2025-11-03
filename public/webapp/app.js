@@ -4653,6 +4653,10 @@ async function updateChatBadge() {
 
 // Открыть чат
 async function openChat(chatId) {
+    // TODO: Реализовать просмотр чата после миграции на Neon
+    tg.showAlert('⚠️ Функция чатов в разработке. Скоро будет доступна!');
+    return;
+    
     currentChatId = chatId;
     showScreen('chatView');
     
