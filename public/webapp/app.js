@@ -4713,7 +4713,7 @@ async function rejectChatRequest(chatId) {
     }
 }
 
-// Обновить счетчик новых запросов на кнопке "Мои чаты"
+// Обновить счетчик новых запросов и непрочитанных сообщений на кнопке "Мои чаты"
 async function updateChatBadge() {
     try {
         const userId = getCurrentUserId();
@@ -4722,8 +4722,8 @@ async function updateChatBadge() {
             return; // Не показываем счетчик для неавторизованных
         }
 
-        // Используем Neon API для подсчета запросов
-        const response = await fetch('/api/neon-chats', {
+        // Получаем количество запросов
+        const requestsResponse = await fetch('/api/neon-chats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -4731,24 +4731,37 @@ async function updateChatBadge() {
                 params: { userId }
             })
         });
-        const result = await response.json();
+        const requestsResult = await requestsResponse.json();
+        
+        // Получаем количество непрочитанных сообщений
+        const unreadResponse = await fetch('/api/neon-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'total-unread',
+                params: { userId }
+            })
+        });
+        const unreadResult = await unreadResponse.json();
         
         const badge = document.getElementById('chatBadge');
         
-        if (result.error) {
+        if (requestsResult.error || unreadResult.error) {
             // Тихо скрываем счетчик если есть ошибка
-            console.warn('⚠️ Ошибка обновления счетчика чатов:', result.error.message);
+            console.warn('⚠️ Ошибка обновления счетчика чатов');
             if (badge) badge.style.display = 'none';
             return;
         }
         
-        const count = result.data?.count || 0;
+        const requestsCount = requestsResult.data?.count || 0;
+        const unreadCount = unreadResult.data?.count || 0;
+        const totalCount = requestsCount + unreadCount;
         
         if (badge) {
-            if (count > 0) {
-                badge.textContent = count;
+            if (totalCount > 0) {
+                badge.textContent = totalCount;
                 badge.style.display = 'inline-block';
-                console.log('📊 Обновлен счетчик запросов:', count);
+                console.log(`📊 Счётчик чатов: ${requestsCount} запросов + ${unreadCount} непрочитанных = ${totalCount}`);
             } else {
                 badge.style.display = 'none';
             }
@@ -4906,6 +4919,7 @@ async function sendMessage() {
 
     try {
         // Отправляем сообщение через Neon API
+        // skipNotification = true, т.к. чат открыт в WebApp
         const response = await fetch('/api/neon-messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4914,7 +4928,8 @@ async function sendMessage() {
                 params: { 
                     chatId: currentChatId, 
                     senderId: userId,
-                    messageText
+                    messageText,
+                    skipNotification: true // Чат открыт, уведомление не нужно
                 }
             })
         });

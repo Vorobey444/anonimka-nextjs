@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
       // Отправить сообщение
       case 'send-message': {
-        const { chatId, senderId, messageText } = params;
+        const { chatId, senderId, messageText, skipNotification } = params;
         
         // Проверяем что чат принят и не заблокирован
         const chatCheck = await sql`
@@ -63,6 +63,39 @@ export async function POST(request: NextRequest) {
           WHERE id = ${chatId}
         `;
         
+        // Отправляем уведомление в Telegram (если не skipNotification)
+        if (!skipNotification) {
+          const botToken = process.env.TELEGRAM_BOT_TOKEN;
+          if (botToken) {
+            try {
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: receiverId,
+                  text: `💬 Новое сообщение в чате!\n\n📝 "${messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText}"\n\n🔗 Объявление #${chat.ad_id}`,
+                  parse_mode: 'HTML',
+                  reply_markup: {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: '💬 Открыть чат',
+                          web_app: {
+                            url: `https://anonimka.kz/webapp`
+                          }
+                        }
+                      ]
+                    ]
+                  }
+                })
+              });
+            } catch (error) {
+              console.error('Ошибка отправки уведомления:', error);
+              // Не прерываем выполнение, уведомление не критично
+            }
+          }
+        }
+        
         return NextResponse.json({ data: result.rows[0], error: null });
       }
 
@@ -88,6 +121,24 @@ export async function POST(request: NextRequest) {
           WHERE chat_id = ${chatId} 
             AND receiver_id = ${userId}
             AND read = false
+        `;
+        return NextResponse.json({ 
+          data: { count: parseInt(result.rows[0].count) }, 
+          error: null 
+        });
+      }
+
+      // Получить общее количество непрочитанных сообщений пользователя
+      case 'total-unread': {
+        const { userId } = params;
+        const result = await sql`
+          SELECT COUNT(*) as count 
+          FROM messages m
+          JOIN private_chats pc ON m.chat_id = pc.id
+          WHERE m.receiver_id = ${userId}
+            AND m.read = false
+            AND pc.accepted = true
+            AND pc.blocked_by IS NULL
         `;
         return NextResponse.json({ 
           data: { count: parseInt(result.rows[0].count) }, 
