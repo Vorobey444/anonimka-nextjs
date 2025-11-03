@@ -4818,9 +4818,13 @@ async function openChat(chatId) {
 }
 
 // Загрузить сообщения чата
-async function loadChatMessages(chatId) {
+async function loadChatMessages(chatId, silent = false) {
     const messagesContainer = document.getElementById('chatMessages');
-    messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 20px;">Загрузка сообщений...</p>';
+    
+    // Показываем загрузку только при первом открытии
+    if (!silent) {
+        messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 20px;">Загрузка сообщений...</p>';
+    }
     
     try {
         // Получаем сообщения через Neon API
@@ -4836,7 +4840,9 @@ async function loadChatMessages(chatId) {
 
         if (result.error) {
             console.error('Ошибка загрузки сообщений:', result.error);
-            messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Ошибка загрузки сообщений</p>';
+            if (!silent) {
+                messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Ошибка загрузки сообщений</p>';
+            }
             return;
         }
 
@@ -4848,6 +4854,17 @@ async function loadChatMessages(chatId) {
         }
 
         const userId = getCurrentUserId();
+        
+        // Проверяем, нужно ли обновлять (есть ли новые сообщения)
+        const currentMessagesCount = messagesContainer.querySelectorAll('.message').length;
+        if (silent && currentMessagesCount === messages.length) {
+            // Нет новых сообщений, не обновляем
+            return;
+        }
+        
+        // Сохраняем позицию скролла
+        const wasAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 50;
+        
         messagesContainer.innerHTML = messages.map(msg => {
             const isMine = msg.sender_id == userId;
             const messageClass = isMine ? 'sent' : 'received';
@@ -4861,12 +4878,16 @@ async function loadChatMessages(chatId) {
             `;
         }).join('');
 
-        // Прокручиваем вниз
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        // Прокручиваем вниз только если были внизу или это не silent обновление
+        if (!silent || wasAtBottom) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
 
     } catch (error) {
         console.error('Ошибка:', error);
-        messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Ошибка загрузки</p>';
+        if (!silent) {
+            messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Ошибка загрузки</p>';
+        }
     }
 }
 
@@ -4946,10 +4967,10 @@ function startChatPolling(chatId) {
         clearInterval(chatPollingInterval);
     }
 
-    // Обновляем каждые 3 секунды
+    // Обновляем каждые 3 секунды в silent режиме (без мигания)
     chatPollingInterval = setInterval(async () => {
         if (currentChatId === chatId) {
-            await loadChatMessages(chatId);
+            await loadChatMessages(chatId, true); // true = silent режим
         } else {
             clearInterval(chatPollingInterval);
         }
