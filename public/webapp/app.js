@@ -4919,7 +4919,7 @@ async function sendMessage() {
 
     try {
         // Отправляем сообщение через Neon API
-        // skipNotification = true, т.к. чат открыт в WebApp
+        // skipNotification = false - уведомление нужно отправить получателю
         const response = await fetch('/api/neon-messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4929,7 +4929,7 @@ async function sendMessage() {
                     chatId: currentChatId, 
                     senderId: userId,
                     messageText,
-                    skipNotification: true // Чат открыт, уведомление не нужно
+                    skipNotification: false // Всегда отправляем уведомление получателю
                 }
             })
         });

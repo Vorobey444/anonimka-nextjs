@@ -66,9 +66,15 @@ export async function POST(request: NextRequest) {
         // Отправляем уведомление в Telegram (если не skipNotification)
         if (!skipNotification) {
           const botToken = process.env.TELEGRAM_BOT_TOKEN;
+          console.log('🔔 Попытка отправить уведомление:', {
+            receiverId,
+            hasToken: !!botToken,
+            skipNotification
+          });
+          
           if (botToken) {
             try {
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -89,11 +95,22 @@ export async function POST(request: NextRequest) {
                   }
                 })
               });
+              
+              const result = await response.json();
+              console.log('📤 Ответ Telegram API:', result);
+              
+              if (!result.ok) {
+                console.error('❌ Telegram API ошибка:', result);
+              }
             } catch (error) {
-              console.error('Ошибка отправки уведомления:', error);
+              console.error('❌ Ошибка отправки уведомления:', error);
               // Не прерываем выполнение, уведомление не критично
             }
+          } else {
+            console.warn('⚠️ TELEGRAM_BOT_TOKEN не установлен в переменных окружения!');
           }
+        } else {
+          console.log('🔕 Уведомление пропущено (skipNotification=true)');
         }
         
         return NextResponse.json({ data: result.rows[0], error: null });
