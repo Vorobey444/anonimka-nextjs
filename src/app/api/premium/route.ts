@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         const currentStatus = user.rows[0]?.is_premium || false;
         
         const premiumUntil = !currentStatus ? 
-          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : // +30 дней
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : // +30 дней
           null;
         
         await sql`
