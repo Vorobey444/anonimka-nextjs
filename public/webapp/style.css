@@ -102,12 +102,16 @@ body {
     background: none;
     border: 2px solid var(--neon-cyan);
     color: var(--neon-cyan);
-    padding: 8px 12px;
+    padding: 6px 12px;
     border-radius: 20px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
     margin-right: 12px;
     transition: all 0.3s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .back-btn:hover {
@@ -1499,18 +1503,18 @@ h3 {
 /* Экран выбора способа определения локации */
 .location-choice-container {
     max-width: 500px;
-    margin: 2rem auto;
-    padding: 1rem;
+    margin: 1rem auto;
+    padding: 0.5rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .location-choice-btn {
     background: linear-gradient(135deg, rgba(26, 26, 46, 0.8), rgba(16, 16, 32, 0.8));
     border: 2px solid var(--neon-cyan);
-    border-radius: 15px;
-    padding: 2rem;
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
@@ -1518,8 +1522,8 @@ h3 {
 }
 
 .location-choice-btn:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px var(--shadow-cyan);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px var(--shadow-cyan);
     border-color: var(--neon-pink);
 }
 
@@ -1528,25 +1532,25 @@ h3 {
 }
 
 .location-choice-btn.manual:hover {
-    box-shadow: 0 10px 30px var(--shadow-pink);
+    box-shadow: 0 8px 20px var(--shadow-pink);
 }
 
 .choice-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
 }
 
 .location-choice-btn h3 {
-    font-size: 1.3rem;
-    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    margin: 0 0 0.3rem 0;
     color: var(--text-light);
 }
 
 .location-choice-btn p {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-gray);
     margin: 0;
-    line-height: 1.5;
+    line-height: 1.4;
 }
 
 /* Автоматическое определение локации */
