@@ -304,6 +304,12 @@ function initializeApp() {
         } catch (e) {
             console.error('❌ Ошибка updateLogoutButtonVisibility:', e);
         }
+        
+        try {
+            loadPremiumStatus(); // Загружаем Premium статус при старте
+        } catch (e) {
+            console.error('❌ Ошибка loadPremiumStatus:', e);
+        }
     }, 300);
     
     try {
@@ -343,6 +349,7 @@ function initializeApp() {
                 try {
                     checkTelegramAuth();
                     updateChatBadge(); // Обновляем счетчик при возврате
+                    loadPremiumStatus(); // Обновляем Premium статус
                 } catch (e) {
                     console.error('❌ Ошибка при повторной проверке:', e);
                 }
