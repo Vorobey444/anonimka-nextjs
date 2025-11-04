@@ -1071,25 +1071,14 @@ function getCurrentUserId() {
 
 // Получить nickname текущего пользователя
 function getUserNickname() {
-    // Если в Telegram WebApp
-    if (isTelegramWebApp && tg.initDataUnsafe?.user) {
-        const user = tg.initDataUnsafe.user;
-        // Приоритет: username > first_name > "Анонимный"
-        return user.username || user.first_name || 'Анонимный';
+    // Сначала пытаемся получить никнейм из localStorage (установленный в приложении)
+    const savedNickname = localStorage.getItem('userNickname');
+    if (savedNickname && savedNickname !== 'null' && savedNickname !== 'undefined') {
+        return savedNickname;
     }
     
-    // Если авторизован через Login Widget
-    const savedUser = localStorage.getItem('telegram_user');
-    if (savedUser) {
-        try {
-            const userData = JSON.parse(savedUser);
-            return userData.username || userData.first_name || 'Анонимный';
-        } catch (e) {
-            console.error('Ошибка получения nickname:', e);
-        }
-    }
-    
-    return 'Анонимный';
+    // Если никнейм не установлен, возвращаем "Аноним" (не используем Telegram username)
+    return 'Аноним';
 }
 
 // Получить данные пользователя по ID (для отображения ников собеседников)
