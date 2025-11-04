@@ -2525,14 +2525,19 @@ h3 {
 
 .loading-spinner {
     display: inline-block;
-    width: 40px;
-    height: 40px;
+    width: 60px;
+    height: 60px;
     background-image: url('images/loading.gif');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
     margin-right: 0.5rem;
     vertical-align: middle;
+}
+
+/* Убираем вращение для loading-spinner */
+.loading-spinner * {
+    animation: none !important;
 }
 
 @keyframes spin {

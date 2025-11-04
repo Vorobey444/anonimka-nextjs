@@ -6199,13 +6199,26 @@ async function showPremiumModal() {
     
     // Определяем валюту по локации пользователя
     const userLocation = getUserLocation();
+    console.log('🌍 getUserLocation():', userLocation);
+    
     let currency = '₸'; // По умолчанию тенге (Казахстан)
     let proPrice = 499;
     
     // Если Россия - рубли
-    if (userLocation && userLocation.country && userLocation.country.includes('Россия')) {
-        currency = '₽';
-        proPrice = 99;
+    if (userLocation && userLocation.country) {
+        console.log('Страна пользователя:', userLocation.country);
+        
+        // Проверяем разные варианты названия России
+        const countryLower = userLocation.country.toLowerCase();
+        if (countryLower.includes('россия') || countryLower.includes('russia') || countryLower.includes('russian')) {
+            currency = '₽';
+            proPrice = 99;
+            console.log('✅ Установлена валюта: рубли');
+        } else {
+            console.log('✅ Установлена валюта: тенге (Казахстан)');
+        }
+    } else {
+        console.log('⚠️ Локация не определена, используем тенге по умолчанию');
     }
     
     // Обновляем валюту в FREE тарифе
