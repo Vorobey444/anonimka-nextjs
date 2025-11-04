@@ -1081,6 +1081,20 @@ function getUserNickname() {
     return 'Аноним';
 }
 
+// Получить локацию пользователя
+function getUserLocation() {
+    const locationStr = localStorage.getItem('userLocation');
+    if (locationStr) {
+        try {
+            return JSON.parse(locationStr);
+        } catch (e) {
+            console.error('Ошибка парсинга userLocation:', e);
+            return null;
+        }
+    }
+    return null;
+}
+
 // Получить данные пользователя по ID (для отображения ников собеседников)
 function getUserData(userId) {
     // Кешируем данные пользователей в памяти
@@ -4793,7 +4807,7 @@ function showEmailStatus(type, message) {
     statusDiv.className = `email-status ${type}`;
     
     if (type === 'loading') {
-        statusDiv.innerHTML = `<div class="loading-spinner"><div class="spinner"></div></div>${message}`;
+        statusDiv.innerHTML = `<div class="loading-spinner"></div>${message}`;
     } else {
         statusDiv.innerHTML = message;
     }
