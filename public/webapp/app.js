@@ -92,6 +92,10 @@ if (isTelegramWebApp) {
     console.log('✅ Запущено в Telegram WebApp, расширяем окно');
     tg.expand();
     tg.ready();
+    
+    // Блокировка вертикальных свайпов для предотвращения скриншотов
+    tg.disableVerticalSwipes();
+    console.log('🔒 Вертикальные свайпы отключены');
 } else {
     console.log('⚠️ НЕ запущено в Telegram WebApp');
 }
@@ -1636,9 +1640,20 @@ function validateAgeRange() {
             fromValue = 18;
             ageFrom.value = 18;
         }
+        // Проверяем максимальный возраст 99
+        if (fromValue && fromValue > 99) {
+            fromValue = 99;
+            ageFrom.value = 99;
+        }
+        
         if (toValue && toValue < 18) {
             toValue = 18;
             ageTo.value = 18;
+        }
+        // Проверяем максимальный возраст 99
+        if (toValue && toValue > 99) {
+            toValue = 99;
+            ageTo.value = 99;
         }
         
         // Если не заполнено, устанавливаем 18 по умолчанию
@@ -1646,7 +1661,7 @@ function validateAgeRange() {
             fromValue = 18;
         }
         if (!toValue || isNaN(toValue)) {
-            toValue = 18;
+            toValue = 99;
         }
         
         // Если "от" больше "до", корректируем "до"
@@ -1654,6 +1669,35 @@ function validateAgeRange() {
             ageTo.value = fromValue;
         }
     }
+}
+
+// Валидация возраста с сообщением об ошибке
+function validateAgeRangeWithMessage() {
+    const ageFrom = document.getElementById('ageFrom');
+    const ageTo = document.getElementById('ageTo');
+    
+    const fromValue = parseInt(ageFrom.value);
+    const toValue = parseInt(ageTo.value);
+    
+    // Проверяем что значения введены
+    if (!fromValue || isNaN(fromValue) || !toValue || isNaN(toValue)) {
+        tg.showAlert('❌ Пожалуйста, укажите возраст партнера');
+        return false;
+    }
+    
+    // Проверяем диапазон
+    if (fromValue < 18 || fromValue > 99 || toValue < 18 || toValue > 99) {
+        tg.showAlert('❌ Пожалуйста, исправьте опечатку.\n\nВозраст должен быть от 18 до 99 лет.');
+        return false;
+    }
+    
+    // Проверяем что "от" не больше "до"
+    if (fromValue > toValue) {
+        tg.showAlert('❌ Возраст "От" не может быть больше "До"');
+        return false;
+    }
+    
+    return true;
 }
 
 function validateCurrentStep() {
@@ -1679,25 +1723,30 @@ function validateCurrentStep() {
             formData.goal = formData.goals.join(', ');
             return true;
         case 4: // Возраст партнера
+            // Используем новую валидацию с сообщением
+            if (!validateAgeRangeWithMessage()) {
+                return false;
+            }
             const ageFrom = document.getElementById('ageFrom').value;
             const ageTo = document.getElementById('ageTo').value;
-            if (ageFrom && ageTo) {
-                formData.ageFrom = ageFrom;
-                formData.ageTo = ageTo;
-                console.log(`Шаг 4 (Возраст партнера): ✅ ${ageFrom}-${ageTo}`);
-                return true;
-            }
-            console.log(`Шаг 4 (Возраст партнера): ❌`);
-            return false;
+            formData.ageFrom = ageFrom;
+            formData.ageTo = ageTo;
+            console.log(`Шаг 4 (Возраст партнера): ✅ ${ageFrom}-${ageTo}`);
+            return true;
         case 5: // Мой возраст
             const myAge = document.getElementById('myAge').value;
-            if (myAge) {
-                formData.myAge = myAge;
-                console.log(`Шаг 5 (Мой возраст): ✅ ${myAge}`);
-                return true;
+            const myAgeNum = parseInt(myAge);
+            if (!myAge || isNaN(myAgeNum)) {
+                tg.showAlert('❌ Пожалуйста, укажите ваш возраст');
+                return false;
             }
-            console.log(`Шаг 5 (Мой возраст): ❌`);
-            return false;
+            if (myAgeNum < 18 || myAgeNum > 99) {
+                tg.showAlert('❌ Пожалуйста, исправьте опечатку.\n\nВозраст должен быть от 18 до 99 лет.');
+                return false;
+            }
+            formData.myAge = myAge;
+            console.log(`Шаг 5 (Мой возраст): ✅ ${myAge}`);
+            return true;
         case 6: // Телосложение
             const hasBody = !!formData.body;
             console.log(`Шаг 6 (Телосложение): ${hasBody ? '✅' : '❌'}`, formData.body);
@@ -3259,6 +3308,7 @@ function showAutoLocationDetection() {
 // Показать экран выбора способа определения локации
 function showLocationChoiceScreen() {
     console.log('Показываем экран выбора способа определения локации');
+    closeHamburgerMenu(); // Закрываем бургер-меню
     showScreen('locationChoice');
 }
 
@@ -5231,6 +5281,12 @@ async function openChat(chatId) {
     currentChatId = chatId;
     showScreen('chatView');
     
+    // Очищаем поле ввода при переключении чата
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.value = '';
+    }
+    
     // Загружаем информацию о чате через Neon API
     try {
         const userId = getCurrentUserId();
@@ -6488,6 +6544,11 @@ function showBlockWarning(show) {
     }
 }
 
+// Обновить UI блокировки
+function updateBlockUI() {
+    showBlockWarning(isUserBlocked);
+}
+
 // Заблокировать/разблокировать пользователя
 async function toggleBlockUser() {
     const menu = document.getElementById('chatMenu');
@@ -6533,6 +6594,9 @@ async function toggleBlockUser() {
             if (blockMenuText) {
                 blockMenuText.textContent = isUserBlocked ? '✅ Разблокировать собеседника' : '🚫 Заблокировать собеседника';
             }
+            
+            // Обновляем UI в зависимости от статуса блокировки
+            updateBlockUI();
             
             tg.showAlert(isUserBlocked ? 'Пользователь заблокирован' : 'Пользователь разблокирован');
             
