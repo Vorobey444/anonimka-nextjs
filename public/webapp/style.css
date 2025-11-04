@@ -2535,19 +2535,62 @@ h3 {
     box-shadow: 0 0 20px rgba(131, 56, 236, 0.3);
 }
 
+/* Интро для правил */
+.rules-intro {
+    color: var(--text-light);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: rgba(131, 56, 236, 0.1);
+    border-left: 3px solid var(--neon-purple);
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
 .rules-section h3,
 .privacy-section h3,
 .about-section h3 {
     color: var(--neon-purple);
-    font-size: 1.1rem;
-    margin-bottom: 0.8rem;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    margin-top: 1.5rem;
     text-shadow: 0 0 10px rgba(131, 56, 236, 0.6);
+}
+
+.rules-section h3:first-of-type {
+    margin-top: 0;
+}
+
+/* Подзаголовки в правилах */
+.rules-section h4 {
+    color: var(--neon-cyan);
+    font-size: 1rem;
+    margin-top: 1.2rem;
+    margin-bottom: 0.6rem;
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+.rules-section p {
+    color: var(--text-light);
+    line-height: 1.6;
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+}
+
+/* Примечания */
+.rules-note {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+    margin-top: 0.5rem;
+    padding-left: 1rem;
 }
 
 .rules-section ul,
 .about-section ul {
     list-style: none;
     padding-left: 0;
+    margin-bottom: 1rem;
 }
 
 .rules-section li,
@@ -2557,6 +2600,7 @@ h3 {
     position: relative;
     padding-left: 1.5rem;
     font-size: 0.95rem;
+    line-height: 1.5;
 }
 
 .rules-section li::before,
