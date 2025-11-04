@@ -5958,20 +5958,9 @@ async function loadPremiumStatus() {
             return;
         }
         
-        // Загружаем из localStorage для мгновенного отображения
-        const cachedStatus = localStorage.getItem(`premium_status_${userId}`);
-        if (cachedStatus) {
-            try {
-                userPremiumStatus = JSON.parse(cachedStatus);
-                updatePremiumUI();
-                updateAdLimitBadge();
-                console.log('📦 Premium статус загружен из кэша');
-            } catch (e) {
-                console.error('Ошибка парсинга кэша Premium:', e);
-            }
-        }
+        console.log('� Загружаем Premium статус для userId:', userId);
         
-        // Затем обновляем с сервера (источник истины)
+        // Сначала загружаем с сервера (источник истины)
         const response = await fetch('/api/premium', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -5990,13 +5979,18 @@ async function loadPremiumStatus() {
         
         userPremiumStatus = result.data;
         
+        console.log('✅ Premium статус загружен с сервера:', {
+            isPremium: userPremiumStatus.isPremium,
+            premiumUntil: userPremiumStatus.premiumUntil,
+            limits: userPremiumStatus.limits
+        });
+        
         // Сохраняем в localStorage для следующей загрузки
         localStorage.setItem(`premium_status_${userId}`, JSON.stringify(userPremiumStatus));
         
         updatePremiumUI();
         updateAdLimitBadge();
         
-        console.log('✅ Premium статус загружен и сохранен:', userPremiumStatus);
     } catch (error) {
         console.error('Ошибка loadPremiumStatus:', error);
     }
@@ -6136,9 +6130,13 @@ async function activatePremium() {
             return;
         }
         
+        console.log('🔄 Активация/деактивация Premium, текущий статус:', userPremiumStatus.isPremium);
+        
         // Проверяем текущий статус
         if (userPremiumStatus.isPremium) {
             // Уже на PRO - понижаем до FREE сразу
+            console.log('⬇️ Понижение до FREE...');
+            
             const response = await fetch('/api/premium', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -6150,17 +6148,18 @@ async function activatePremium() {
             
             const result = await response.json();
             
+            console.log('📥 Ответ сервера (понижение):', result);
+            
             if (result.error) {
                 throw new Error(result.error.message);
             }
             
             // Обновляем локальный статус
             userPremiumStatus.isPremium = false;
-            localStorage.setItem(`premium_status_${userId}`, JSON.stringify(userPremiumStatus));
+            userPremiumStatus.premiumUntil = null;
             
-            // Обновляем UI
-            updatePremiumUI();
-            updatePremiumModalButtons();
+            // Перезагружаем лимиты с сервера
+            await loadPremiumStatus();
             
             tg.showAlert('Вы вернулись на FREE тариф');
             
@@ -6174,6 +6173,8 @@ async function activatePremium() {
         btn.textContent = '⏳ Обработка...';
         btn.disabled = true;
         
+        console.log('⬆️ Повышение до PRO...');
+        
         // Переключаем статус (для теста)
         const response = await fetch('/api/premium', {
             method: 'POST',
@@ -6186,22 +6187,17 @@ async function activatePremium() {
         
         const result = await response.json();
         
+        console.log('📥 Ответ сервера (повышение):', result);
+        
         if (result.error) {
             throw new Error(result.error.message);
         }
         
-        // Обновляем локальный статус
-        userPremiumStatus.isPremium = result.data.isPremium;
-        
-        // Сохраняем в localStorage
-        localStorage.setItem(`premium_status_${userId}`, JSON.stringify(userPremiumStatus));
-        
-        // Обновляем UI
-        updatePremiumUI();
-        updatePremiumModalButtons();
+        // Перезагружаем полный статус с сервера
+        await loadPremiumStatus();
         
         // Показываем уведомление
-        if (result.data.isPremium) {
+        if (userPremiumStatus.isPremium) {
             tg.showAlert('🎉 Поздравляем! PRO активирован на 30 дней!\n\nТеперь доступны:\n✅ Безлимит фото\n✅ До 3 анкет в день\n✅ Закрепление 3 раза в день');
         } else {
             tg.showAlert('Вы вернулись на FREE тариф\n\nДоступны базовые функции');
