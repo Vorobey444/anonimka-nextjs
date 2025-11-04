@@ -2620,6 +2620,71 @@ h3 {
     font-size: 0.95rem;
 }
 
+/* Интро для политики конфиденциальности */
+.privacy-intro {
+    color: var(--text-light);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: rgba(0, 255, 255, 0.1);
+    border-left: 3px solid var(--neon-cyan);
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+/* Списки в политике */
+.privacy-section ul {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 1rem;
+}
+
+.privacy-section li {
+    padding: 0.4rem 0;
+    color: var(--text-light);
+    position: relative;
+    padding-left: 1.5rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.privacy-section li::before {
+    content: '▶';
+    position: absolute;
+    left: 0;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.8);
+}
+
+.privacy-section strong {
+    color: var(--neon-cyan);
+    font-weight: 600;
+}
+
+/* Примечание в политике */
+.privacy-note {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+    margin-top: 0.8rem;
+    padding-left: 1rem;
+    border-left: 2px solid rgba(0, 255, 255, 0.3);
+}
+
+/* Ссылка на email */
+.email-link {
+    color: var(--neon-cyan);
+    text-decoration: none;
+    font-weight: 600;
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+    transition: all 0.3s ease;
+}
+
+.email-link:hover {
+    color: var(--neon-purple);
+    text-shadow: 0 0 10px rgba(131, 56, 236, 0.8);
+}
+
 /* О приложении */
 .app-logo {
     text-align: center;
