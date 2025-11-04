@@ -578,11 +578,53 @@
             </div>
             
             <div class="current-location-display">
-                <p class="location-label"> Ваша локация:</p>
+                <p class="location-label">📍 Ваша локация:</p>
                 <p class="location-value" id="browseLocationDisplay">Загрузка...</p>
                 <button class="neon-button small" onclick="showLocationSetup()">
-                     Сменить локацию
+                    🔄 Сменить локацию
                 </button>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="filters-container">
+                <button class="filter-toggle-btn" onclick="toggleFilters()">
+                    🔍 Фильтры <span id="filterBadge"></span>
+                </button>
+                
+                <div id="filtersPanel" class="filters-panel" style="display: none;">
+                    <div class="filter-group">
+                        <label>Пол:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn" data-filter-type="gender" data-value="all" onclick="setFilter('gender', 'all')">Все</button>
+                            <button class="filter-btn" data-filter-type="gender" data-value="male" onclick="setFilter('gender', 'male')">♂️ Мужчины</button>
+                            <button class="filter-btn" data-filter-type="gender" data-value="female" onclick="setFilter('gender', 'female')">♀️ Женщины</button>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Ищет:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn" data-filter-type="target" data-value="all" onclick="setFilter('target', 'all')">Все</button>
+                            <button class="filter-btn" data-filter-type="target" data-value="male" onclick="setFilter('target', 'male')">♂️ Мужчину</button>
+                            <button class="filter-btn" data-filter-type="target" data-value="female" onclick="setFilter('target', 'female')">♀️ Женщину</button>
+                            <button class="filter-btn" data-filter-type="target" data-value="couple" onclick="setFilter('target', 'couple')">♂️♀️ Пару</button>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Возраст:</label>
+                        <div class="age-filter">
+                            <input type="number" id="ageFrom" placeholder="От" min="18" max="99" value="18">
+                            <span>—</span>
+                            <input type="number" id="ageTo" placeholder="До" min="18" max="99" value="99">
+                        </div>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button class="neon-button small" onclick="applyFilters()">✅ Применить</button>
+                        <button class="neon-button small secondary" onclick="resetFilters()">🔄 Сбросить</button>
+                    </div>
+                </div>
             </div>
 
             <div id="adsList" class="ads-list">

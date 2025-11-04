@@ -1392,9 +1392,16 @@ async function loadMyAds() {
             // Проверяем и на русском, и на английском
             const authorIcon = (ad.gender?.toLowerCase() === 'male' || ad.gender?.toLowerCase() === 'мужчина') ? '♂️' : '♀️';
             const targetText = formatTarget(ad.target);
-            // Проверяем на английском и русском
-            const targetIcon = (ad.target?.toLowerCase() === 'male' || ad.target?.toLowerCase() === 'мужчину') ? '♂️' : 
-                              (ad.target?.toLowerCase() === 'female' || ad.target?.toLowerCase() === 'женщину') ? '♀️' : '👤';
+            // Проверяем на английском и русском, поддержка "Пары"
+            let targetIcon = '👤';
+            const targetLower = ad.target?.toLowerCase();
+            if (targetLower === 'male' || targetLower === 'мужчину') {
+                targetIcon = '♂️';
+            } else if (targetLower === 'female' || targetLower === 'женщину') {
+                targetIcon = '♀️';
+            } else if (targetLower === 'couple' || targetLower === 'пару') {
+                targetIcon = '♂️♀️'; // Два смайла для пары
+            }
             
             return `
             <div class="ad-card" data-ad-id="${ad.id}">
@@ -1417,11 +1424,11 @@ async function loadMyAds() {
                         <span><strong>Ищу:</strong> ${targetText}, ${ageFrom}-${ageTo} лет</span>
                     </div>
                     <div class="ad-field">
-                        <span class="icon">�</span>
+                        <span class="icon">📍</span>
                         <span>${locationData[ad.country]?.flag || '🌍'} ${ad.region}, ${ad.city}</span>
                     </div>
                     ${ad.text ? `<div class="ad-field full-width">
-                        <span class="icon">�</span>
+                        <span class="icon">💬</span>
                         <span><strong>О себе:</strong> ${ad.text}</span>
                     </div>` : ''}
                 </div>
@@ -1913,6 +1920,57 @@ function displayAds(ads, city = null) {
 
     // Фильтруем по городу если задан
     let filteredAds = city ? ads.filter(ad => ad.city === city) : ads;
+    
+    // Применяем фильтры
+    filteredAds = filteredAds.filter(ad => {
+        // Фильтр по полу
+        if (adsFilters.gender !== 'all') {
+            const genderLower = ad.gender?.toLowerCase();
+            if (adsFilters.gender === 'male' && genderLower !== 'male' && genderLower !== 'мужчина') {
+                return false;
+            }
+            if (adsFilters.gender === 'female' && genderLower !== 'female' && genderLower !== 'женщина') {
+                return false;
+            }
+        }
+        
+        // Фильтр по цели поиска
+        if (adsFilters.target !== 'all') {
+            const targetLower = ad.target?.toLowerCase();
+            if (adsFilters.target === 'male' && targetLower !== 'male' && targetLower !== 'мужчину') {
+                return false;
+            }
+            if (adsFilters.target === 'female' && targetLower !== 'female' && targetLower !== 'женщину') {
+                return false;
+            }
+            if (adsFilters.target === 'couple' && targetLower !== 'couple' && targetLower !== 'пару') {
+                return false;
+            }
+        }
+        
+        // Фильтр по возрасту
+        const age = parseInt(ad.my_age || ad.myAge);
+        if (!isNaN(age)) {
+            if (age < adsFilters.ageFrom || age > adsFilters.ageTo) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    // Если после фильтрации ничего не осталось
+    if (filteredAds.length === 0) {
+        adsList.innerHTML = `
+            <div class="no-ads">
+                <div class="neon-icon">🔍</div>
+                <h3>Ничего не найдено</h3>
+                <p>Попробуйте изменить фильтры</p>
+                <button class="neon-button" onclick="resetFilters()">Сбросить фильтры</button>
+            </div>
+        `;
+        return;
+    }
     
     // Сортируем: закрепленные вверху
     const now = new Date();
@@ -6514,6 +6572,107 @@ async function deleteChat() {
         console.error('Ошибка удаления чата:', error);
         tg.showAlert('Ошибка при удалении чата');
     }
+}
+
+// ============= ФИЛЬТРЫ АНКЕТ =============
+
+// Состояние фильтров
+let adsFilters = {
+    gender: 'all',
+    target: 'all',
+    ageFrom: 18,
+    ageTo: 99
+};
+
+// Открыть/закрыть панель фильтров
+function toggleFilters() {
+    const panel = document.getElementById('filtersPanel');
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        // Инициализируем активные кнопки
+        updateFilterButtons();
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+// Установить фильтр
+function setFilter(type, value) {
+    adsFilters[type] = value;
+    updateFilterButtons();
+}
+
+// Обновить активные кнопки фильтров
+function updateFilterButtons() {
+    // Обновляем кнопки пола
+    document.querySelectorAll('[data-filter-type="gender"]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === adsFilters.gender);
+    });
+    
+    // Обновляем кнопки цели
+    document.querySelectorAll('[data-filter-type="target"]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === adsFilters.target);
+    });
+}
+
+// Применить фильтры
+function applyFilters() {
+    // Получаем значения возраста
+    const ageFromInput = document.getElementById('ageFrom');
+    const ageToInput = document.getElementById('ageTo');
+    
+    if (ageFromInput && ageToInput) {
+        adsFilters.ageFrom = parseInt(ageFromInput.value) || 18;
+        adsFilters.ageTo = parseInt(ageToInput.value) || 99;
+    }
+    
+    // Считаем активные фильтры
+    let activeCount = 0;
+    if (adsFilters.gender !== 'all') activeCount++;
+    if (adsFilters.target !== 'all') activeCount++;
+    if (adsFilters.ageFrom !== 18 || adsFilters.ageTo !== 99) activeCount++;
+    
+    // Обновляем badge
+    const badge = document.getElementById('filterBadge');
+    if (badge) {
+        badge.textContent = activeCount > 0 ? activeCount : '';
+        badge.style.display = activeCount > 0 ? 'inline' : 'none';
+    }
+    
+    // Закрываем панель
+    document.getElementById('filtersPanel').style.display = 'none';
+    
+    // Перезагружаем анкеты с фильтрами
+    showBrowseAds();
+}
+
+// Сбросить фильтры
+function resetFilters() {
+    adsFilters = {
+        gender: 'all',
+        target: 'all',
+        ageFrom: 18,
+        ageTo: 99
+    };
+    
+    // Сбрасываем поля ввода
+    const ageFromInput = document.getElementById('ageFrom');
+    const ageToInput = document.getElementById('ageTo');
+    if (ageFromInput) ageFromInput.value = 18;
+    if (ageToInput) ageToInput.value = 99;
+    
+    // Обновляем UI
+    updateFilterButtons();
+    
+    const badge = document.getElementById('filterBadge');
+    if (badge) {
+        badge.textContent = '';
+        badge.style.display = 'none';
+    }
+    
+    // Закрываем панель и перезагружаем
+    document.getElementById('filtersPanel').style.display = 'none';
+    showBrowseAds();
 }
 
 
