@@ -1853,8 +1853,8 @@ async function loadAds(filters = {}) {
         const adsList = document.getElementById('adsList');
         if (adsList) {
             adsList.innerHTML = `
-                <div class="loading-container">
-                    <div class="loading-spinner"></div>
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
                     <p>Загружаем анкеты...</p>
                 </div>
             `;
@@ -4734,7 +4734,7 @@ function showEmailStatus(type, message) {
     statusDiv.className = `email-status ${type}`;
     
     if (type === 'loading') {
-        statusDiv.innerHTML = `<div class="loading-spinner"></div>${message}`;
+        statusDiv.innerHTML = `<div class="loading-spinner"><div class="spinner"></div></div>${message}`;
     } else {
         statusDiv.innerHTML = message;
     }
