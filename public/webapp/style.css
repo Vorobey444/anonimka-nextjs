@@ -1,4 +1,4 @@
-/* Неоновый киберпанк стиль */
+﻿/* Неоновый киберпанк стиль */
 :root {
     --bg-dark: #0a0a0f;
     --bg-card: #1a1a2e;
@@ -785,7 +785,7 @@ h3 {
     50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
 }
 
-/* Список объявлений */
+/* Список анкет */
 .ads-list {
     display: grid;
     gap: 20px;
@@ -852,7 +852,7 @@ h3 {
     font-weight: 500;
 }
 
-/* Заголовок карточки объявления */
+/* Заголовок карточки анкеты */
 .ad-header {
     display: flex;
     justify-content: space-between;
@@ -903,7 +903,7 @@ h3 {
     color: var(--text-gray);
 }
 
-/* Детали объявления */
+/* Детали анкеты */
 .ad-details {
     padding: 0;
     margin-bottom: 0;
@@ -2697,7 +2697,7 @@ h3 {
     margin-top: 15px;
 }
 
-/* Детали объявления */
+/* Детали анкеты */
 .ad-full {
     padding: 20px 0;
 }
@@ -2809,7 +2809,7 @@ h3 {
     font-weight: 500;
 }
 
-/* Новый компактный дизайн карточки объявления */
+/* Новый компактный дизайн карточки анкеты */
 .ad-details-card {
     max-width: 600px;
     margin: 0 auto;
@@ -2959,7 +2959,7 @@ h3 {
     margin-top: 2rem;
 }
 
-/* Текущая локация на экране просмотра объявлений */
+/* Текущая локация на экране просмотра анкет */
 .current-location-display {
     background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(131, 56, 236, 0.15));
     border: 2px solid rgba(0, 217, 255, 0.4);
@@ -3001,7 +3001,7 @@ h3 {
     font-size: 0.9rem;
 }
 
-/* Кнопка удаления объявления в списке "Мои объявления" */
+/* Кнопка удаления анкеты в списке "Мои анкеты" */
 .delete-ad-btn {
     background: linear-gradient(135deg, rgba(255, 0, 0, 0.2), rgba(255, 100, 100, 0.2));
     border: 2px solid rgba(255, 0, 0, 0.5);
@@ -3021,7 +3021,7 @@ h3 {
     transform: scale(1.05);
 }
 
-/* Кнопка закрепления объявления */
+/* Кнопка закрепления анкеты */
 .pin-ad-btn {
     background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2));
     border: 2px solid rgba(255, 215, 0, 0.5);
@@ -3042,7 +3042,7 @@ h3 {
     transform: scale(1.05);
 }
 
-/* Индикатор закрепленного объявления */
+/* Индикатор закрепленного анкеты */
 .pinned-badge {
     position: absolute;
     top: 10px;
@@ -3687,7 +3687,7 @@ h3 {
     line-height: 1.6;
 }
 
-/* ============= МОДАЛЬНОЕ ОКНО ДЛЯ ОБЪЯВЛЕНИЙ ============= */
+/* ============= МОДАЛЬНОЕ ОКНО ДЛЯ анкет ============= */
 
 .modal {
     display: none;
@@ -3795,7 +3795,7 @@ h3 {
     box-shadow: 0 0 10px var(--neon-cyan);
 }
 
-/* Детальный просмотр объявления */
+/* Детальный просмотр анкеты */
 .ad-detail-view {
     color: var(--text-light);
 }
@@ -4231,3 +4231,5 @@ h3 {
 .photo-modal-close:active {
     transform: scale(0.95) rotate(90deg);
 }
+
+

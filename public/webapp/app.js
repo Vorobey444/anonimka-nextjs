@@ -956,7 +956,7 @@ window.onTelegramAuth = function(user) {
     }
     
     // Показываем уведомление
-    alert(`✅ Вы успешно авторизованы!\n\nДобро пожаловать, ${user.first_name}!\n\nТеперь вы можете создавать объявления и получать уведомления.`);
+    alert(`✅ Вы успешно авторизованы!\n\nДобро пожаловать, ${user.first_name}!\n\nТеперь вы можете создавать анкеты и получать уведомления.`);
     
     // Обновляем кнопку выхода
     updateLogoutButtonVisibility();
@@ -1176,15 +1176,15 @@ function showCreateAd() {
         return;
     }
     
-    // Проверка лимита объявлений
+    // Проверка лимита анкет
     if (userPremiumStatus.limits && userPremiumStatus.limits.ads) {
         const adsLimit = userPremiumStatus.limits.ads;
         if (adsLimit.remaining === 0) {
             if (userPremiumStatus.isPremium) {
-                tg.showAlert('Вы уже создали 3 объявления сегодня (лимит PRO). Попробуйте завтра!');
+                tg.showAlert('Вы уже создали 3 анкеты сегодня (лимит PRO). Попробуйте завтра!');
             } else {
                 tg.showConfirm(
-                    'Вы уже создали объявление сегодня. Оформите PRO для 3 объявлений в день!',
+                    'Вы уже создали анкету сегодня. Оформите PRO для 3 анкет в день!',
                     (confirmed) => {
                         if (confirmed) showPremiumModal();
                     }
@@ -1230,26 +1230,26 @@ function showBrowseAds() {
         browseLocationDisplay.textContent = 'Локация не установлена';
     }
     
-    // Загружаем объявления по локации пользователя
+    // Загружаем анкеты по локации пользователя
     setTimeout(() => {
         if (userLocation) {
-            console.log('Загружаем объявления по локации:', userLocation);
+            console.log('Загружаем анкеты по локации:', userLocation);
             loadAdsByLocation(userLocation.country, userLocation.region, userLocation.city);
         } else {
-            console.log('Локация не установлена, показываем все объявления');
+            console.log('Локация не установлена, показываем все анкеты');
             loadAds();
         }
     }, 100);
 }
 
-// Показать мои объявления
-// Показать мои объявления
+// Показать мои анкеты
+// Показать мои анкеты
 function showMyAds() {
     showScreen('myAds');
     loadMyAds();
 }
 
-// Загрузить мои объявления
+// Загрузить мои анкеты
 async function loadMyAds() {
     const myAdsList = document.getElementById('myAdsList');
     if (!myAdsList) {
@@ -1257,18 +1257,18 @@ async function loadMyAds() {
         return;
     }
     
-    myAdsList.innerHTML = '<div class="loading">Загрузка ваших объявлений...</div>';
+    myAdsList.innerHTML = '<div class="loading">Загрузка ваших анкет...</div>';
     
     try {
         const userId = getCurrentUserId();
-        console.log('📋 Загрузка объявлений для пользователя:', userId);
+        console.log('📋 Загрузка анкет для пользователя:', userId);
         
         if (userId.startsWith('web_')) {
             myAdsList.innerHTML = `
                 <div class="no-ads">
                     <div class="neon-icon">🔐</div>
                     <h3>Требуется авторизация</h3>
-                    <p>Авторизуйтесь через Telegram чтобы видеть свои объявления</p>
+                    <p>Авторизуйтесь через Telegram чтобы видеть свои анкеты</p>
                     <button class="neon-button primary" onclick="showTelegramAuthModal()">
                         Авторизоваться
                     </button>
@@ -1278,26 +1278,26 @@ async function loadMyAds() {
         }
         
         const ads = await getAllAds();
-        console.log('📋 Всего объявлений:', ads.length);
+        console.log('📋 Всего анкет:', ads.length);
         
         const myAds = ads.filter(ad => ad.tg_id === userId);
-        console.log('📋 Мои объявления:', myAds.length);
+        console.log('📋 Мои анкеты:', myAds.length);
         
         if (myAds.length === 0) {
             myAdsList.innerHTML = `
                 <div class="no-ads">
                     <div class="neon-icon">📭</div>
-                    <h3>У вас пока нет объявлений</h3>
-                    <p>Создайте первое объявление и оно появится здесь</p>
+                    <h3>У вас пока нет анкет</h3>
+                    <p>Создайте первое анкете и оно появится здесь</p>
                     <button class="neon-button primary" onclick="showCreateAd()">
-                        ✏️ Создать объявление
+                        ✏️ Создать анкете
                     </button>
                 </div>
             `;
             return;
         }
         
-        // Отображаем объявления с кнопками действий
+        // Отображаем анкеты с кнопками действий
         myAdsList.innerHTML = myAds.map((ad, index) => {
             const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > new Date());
             const ageFrom = ad.age_from || ad.ageFrom || '?';
@@ -1349,10 +1349,10 @@ async function loadMyAds() {
         `;
         }).join('');
         
-        console.log('✅ Мои объявления отображены');
+        console.log('✅ Мои анкеты отображены');
         
     } catch (error) {
-        console.error('❌ Ошибка загрузки моих объявлений:', error);
+        console.error('❌ Ошибка загрузки моих анкет:', error);
         myAdsList.innerHTML = `
             <div class="no-ads">
                 <div class="neon-icon">⚠️</div>
@@ -1572,7 +1572,7 @@ function validateCurrentStep() {
             const hasBody = !!formData.body;
             console.log(`Шаг 6 (Телосложение): ${hasBody ? '✅' : '❌'}`, formData.body);
             return hasBody;
-        case 7: // Текст объявления
+        case 7: // Текст анкеты
             const adText = document.getElementById('adText')?.value.trim();
             console.log(`Шаг 7 (Текст): textarea элемент:`, document.getElementById('adText'));
             console.log(`Шаг 7 (Текст): значение:`, adText);
@@ -1582,7 +1582,7 @@ function validateCurrentStep() {
                 return true;
             }
             console.log(`Шаг 7 (Текст): ❌ слишком короткий текст`);
-            tg.showAlert('Пожалуйста, введите текст объявления (минимум 10 символов)');
+            tg.showAlert('Пожалуйста, введите текст анкеты (минимум 10 символов)');
             return false;
     }
     return false;
@@ -1614,7 +1614,7 @@ function selectBody(body) {
     formData.body = body;
 }
 
-// Отправка объявления
+// Отправка анкеты
 async function submitAd() {
     if (!validateCurrentStep()) {
         tg.showAlert('Заполните все поля');
@@ -1622,12 +1622,12 @@ async function submitAd() {
     }
 
     try {
-        // Получаем текст объявления
+        // Получаем текст анкеты
         const adTextElement = document.getElementById('adText');
         const adText = adTextElement ? adTextElement.value.trim() : '';
         
         if (!adText) {
-            tg.showAlert('Пожалуйста, введите текст объявления');
+            tg.showAlert('Пожалуйста, введите текст анкеты');
             return;
         }
         
@@ -1654,7 +1654,7 @@ async function submitAd() {
             tgId: getCurrentUserId()
         };
 
-        console.log('Отправка объявления в Supabase:', adData);
+        console.log('Отправка анкеты в Supabase:', adData);
         console.log('Telegram User ID:', getCurrentUserId());
         console.log('Никнейм:', nickname);
 
@@ -1669,13 +1669,13 @@ async function submitAd() {
         // Отправляем в Supabase через наш API
         const result = await window.SupabaseClient.createAd(adData);
         
-        console.log('Объявление опубликовано:', result);
+        console.log('анкете опубликовано:', result);
 
         // Обновляем статус Premium (лимиты изменились)
         await loadPremiumStatus();
 
         // Показываем успех
-        tg.showAlert('✅ Объявление успешно опубликовано!', () => {
+        tg.showAlert('✅ анкете успешно опубликовано!', () => {
             // Очищаем форму
             formData = {};
             currentStep = 1;
@@ -1683,7 +1683,7 @@ async function submitAd() {
         });
 
     } catch (error) {
-        console.error('Ошибка создания объявления:', error);
+        console.error('Ошибка создания анкеты:', error);
         
         // Проверяем ошибку лимита
         if (error.message && error.message.includes('лимит')) {
@@ -1698,7 +1698,7 @@ async function submitAd() {
                 tg.showAlert('❌ ' + error.message);
             }
         } else {
-            tg.showAlert('❌ Ошибка при публикации объявления: ' + error.message);
+            tg.showAlert('❌ Ошибка при публикации анкеты: ' + error.message);
         }
     } finally {
         // Восстанавливаем кнопку
@@ -1710,10 +1710,10 @@ async function submitAd() {
     }
 }
 
-// Загрузка и отображение объявлений
+// Загрузка и отображение анкет
 async function loadAds(filters = {}) {
     try {
-        console.log('🔄 Загрузка объявлений с фильтрами:', filters);
+        console.log('🔄 Загрузка анкет с фильтрами:', filters);
         
         // Показываем индикатор загрузки
         const adsList = document.getElementById('adsList');
@@ -1721,23 +1721,23 @@ async function loadAds(filters = {}) {
             adsList.innerHTML = `
                 <div class="loading-container">
                     <div class="loading-spinner"></div>
-                    <p>Загружаем объявления...</p>
+                    <p>Загружаем анкеты...</p>
                 </div>
             `;
         }
 
-        // Запрашиваем объявления из Supabase через API
+        // Запрашиваем анкеты из Supabase через API
         console.log('📡 Вызов window.SupabaseClient.getAds...');
         const ads = await window.SupabaseClient.getAds(filters);
         
-        console.log('✅ Получено объявлений:', ads.length);
-        console.log('📋 Первое объявление:', ads[0]);
+        console.log('✅ Получено анкет:', ads.length);
+        console.log('📋 Первое анкете:', ads[0]);
         
-        // Отображаем объявления
+        // Отображаем анкеты
         displayAds(ads, filters.city);
 
     } catch (error) {
-        console.error('❌ Ошибка загрузки объявлений:', error);
+        console.error('❌ Ошибка загрузки анкет:', error);
         const adsList = document.getElementById('adsList');
         if (adsList) {
             adsList.innerHTML = `
@@ -1752,7 +1752,7 @@ async function loadAds(filters = {}) {
     }
 }
 
-// Вспомогательная функция для получения всех объявлений
+// Вспомогательная функция для получения всех анкет
 async function getAllAds() {
     const ads = await window.SupabaseClient.getAds();
     
@@ -1777,8 +1777,8 @@ function displayAds(ads, city = null) {
         adsList.innerHTML = `
             <div class="no-ads">
                 <div class="neon-icon">😔</div>
-                <h3>Пока нет объявлений</h3>
-                <p>Будьте первым, кто разместит объявление!</p>
+                <h3>Пока нет анкет</h3>
+                <p>Будьте первым, кто разместит анкете!</p>
             </div>
         `;
         return;
@@ -1848,7 +1848,7 @@ function displayAds(ads, city = null) {
     `;
     }).join('');
     
-    // Сохраняем объявления для showAdDetails
+    // Сохраняем анкеты для showAdDetails
     window.currentAds = filteredAds;
 }
 
@@ -1861,7 +1861,7 @@ function handleCityFilter(city) {
     // Выбор нового города
     document.querySelector(`[data-city="${city}"].filter`).classList.add('selected');
 
-    // Запрос объявлений по городу
+    // Запрос анкет по городу
     tg.sendData(JSON.stringify({
         action: 'getAdsByCity',
         city: city
@@ -1872,7 +1872,7 @@ function showAdDetails(index) {
     const ad = window.currentAds?.[index];
     
     if (!ad) {
-        alert('Объявление не найдено');
+        alert('анкете не найдено');
         return;
     }
     
@@ -1938,12 +1938,12 @@ function showAdDetails(index) {
     showScreen('adDetails');
 }
 
-// Написать автору объявления
+// Написать автору анкеты
 async function contactAuthor(adIndex) {
     const ad = window.currentAds?.[adIndex];
     
     if (!ad) {
-        alert('Объявление не найдено');
+        alert('анкете не найдено');
         return;
     }
     
@@ -1957,12 +1957,12 @@ async function contactAuthor(adIndex) {
     
     // Проверяем, не пытается ли пользователь написать самому себе
     if (ad.tg_id === currentUserId) {
-        alert('Вы не можете отправить сообщение на своё объявление');
+        alert('Вы не можете отправить сообщение на своё анкете');
         return;
     }
     
     // Запрашиваем текст сообщения
-    const message = prompt('Введите сообщение автору объявления:');
+    const message = prompt('Введите сообщение автору анкеты:');
     
     if (!message || message.trim() === '') {
         return;
@@ -2044,7 +2044,7 @@ async function contactAuthor(adIndex) {
                 // Не прерываем выполнение, чат уже создан
             }
 
-            alert('✅ Запрос на чат отправлен!\n\nАвтор объявления получит уведомление и сможет принять ваш запрос.');
+            alert('✅ Запрос на чат отправлен!\n\nАвтор анкеты получит уведомление и сможет принять ваш запрос.');
         }
         
     } catch (error) {
@@ -2053,9 +2053,9 @@ async function contactAuthor(adIndex) {
     }
 }
 
-// Удалить мое объявление
+// Удалить мое анкете
 async function deleteMyAd(adId) {
-    if (!confirm('Вы уверены, что хотите удалить это объявление?')) {
+    if (!confirm('Вы уверены, что хотите удалить это анкете?')) {
         return;
     }
     
@@ -2063,19 +2063,19 @@ async function deleteMyAd(adId) {
         const deleted = await window.SupabaseClient.deleteAd(adId);
         
         if (deleted) {
-            tg.showAlert('✅ Объявление успешно удалено');
+            tg.showAlert('✅ анкете успешно удалено');
             // Перезагружаем список
             loadMyAds();
         } else {
-            tg.showAlert('❌ Не удалось удалить объявление');
+            tg.showAlert('❌ Не удалось удалить анкете');
         }
     } catch (error) {
         console.error('Error deleting ad:', error);
-        tg.showAlert('❌ Ошибка при удалении объявления');
+        tg.showAlert('❌ Ошибка при удалении анкеты');
     }
 }
 
-// Закрепить/открепить мое объявление
+// Закрепить/открепить мое анкете
 async function pinMyAd(adId, shouldPin) {
     try {
         // Если закрепляем - проверяем лимит
@@ -2106,9 +2106,9 @@ async function pinMyAd(adId, shouldPin) {
                 // Обновляем статус Premium (лимиты изменились)
                 await loadPremiumStatus();
                 
-                tg.showAlert('✅ Функция успешно оплачена и включена!\n\nВаше объявление будет закреплено поверх других на 1 час.');
+                tg.showAlert('✅ Функция успешно оплачена и включена!\n\nВаше анкете будет закреплено поверх других на 1 час.');
             } else {
-                tg.showAlert('✅ Объявление откреплено');
+                tg.showAlert('✅ анкете откреплено');
             }
             // Перезагружаем список
             loadMyAds();
@@ -2192,7 +2192,7 @@ tg.onEvent('web_app_data_received', function(data) {
                 displayAds(response.ads, response.city);
                 break;
             case 'adCreated':
-                tg.showAlert('Объявление создано!');
+                tg.showAlert('анкете создано!');
                 showMainMenu();
                 break;
             default:
@@ -2338,7 +2338,7 @@ let setupSelectedCity = null;
 // Сохраненная локация пользователя
 let userLocation = null;
 
-// Переменные для фильтра в просмотре объявлений
+// Переменные для фильтра в просмотре анкет
 let filterSelectedCountry = null;
 let filterSelectedRegion = null;
 let filterSelectedCity = null;
@@ -3559,7 +3559,7 @@ function setupEventListeners() {
         btn.addEventListener('click', () => selectBody(btn.dataset.body));
     });
 
-    // Фильтры в просмотре объявлений
+    // Фильтры в просмотре анкет
     document.querySelectorAll('.city-btn.filter').forEach(btn => {
         btn.addEventListener('click', function() {
             handleCityFilter(this.dataset.city);
@@ -3628,7 +3628,7 @@ function resetForm() {
     showStep(1);
 }
 
-// === ФУНКЦИИ ДЛЯ ФИЛЬТРА В ПРОСМОТРЕ ОБЪЯВЛЕНИЙ ===
+// === ФУНКЦИИ ДЛЯ ФИЛЬТРА В ПРОСМОТРЕ анкет ===
 
 // Выбор страны для фильтра
 function selectFilterCountry(countryCode) {
@@ -3780,7 +3780,7 @@ function selectFilterCity(cityName) {
     // Показываем выбранную локацию
     showFilterSelectedLocation();
     
-    // Загружаем объявления по выбранной локации
+    // Загружаем анкеты по выбранной локации
     loadAdsByLocation(filterSelectedCountry, filterSelectedRegion, cityName);
     
     console.log('Выбран город для фильтра:', cityName);
@@ -3893,16 +3893,16 @@ function resetFilterLocationSelection() {
     
     hideAllSuggestions();
     
-    // Загружаем все объявления
+    // Загружаем все анкеты
     loadAds();
     
     console.log('Выбор локации фильтра сброшен');
 }
 
-// Загрузка объявлений по локации
+// Загрузка анкет по локации
 function loadAdsByLocation(country, region, city) {
     try {
-        console.log('🌍 Запрос объявлений по локации:', {country, region, city});
+        console.log('🌍 Запрос анкет по локации:', {country, region, city});
         
         // Формируем фильтры для загрузки
         const filters = {};
@@ -3915,7 +3915,7 @@ function loadAdsByLocation(country, region, city) {
         loadAds(filters);
         
     } catch (error) {
-        console.error('❌ Ошибка загрузки объявлений по локации:', error);
+        console.error('❌ Ошибка загрузки анкет по локации:', error);
     }
 }
 
@@ -4313,7 +4313,7 @@ function openEmailComposer() {
     console.log('openEmailComposer вызвана');
     const recipient = 'aleksey@vorobey444.ru';
     const subject = encodeURIComponent('Обращение через anonimka.online');
-    const body = encodeURIComponent(`Здравствуйте!\n\nПишу вам через анонимную доску объявлений anonimka.online\n\n[Опишите вашу проблему или вопрос]\n\nС уважением,\n[Ваше имя]`);
+    const body = encodeURIComponent(`Здравствуйте!\n\nПишу вам через анонимную доску анкет anonimka.online\n\n[Опишите вашу проблему или вопрос]\n\nС уважением,\n[Ваше имя]`);
     const mailtoLink = `mailto:${recipient}?subject=${subject}&body=${body}`;
     window.open(mailtoLink, '_blank');
 }
@@ -4805,7 +4805,7 @@ async function loadMyChats() {
                 return `
                     <div class="chat-card" onclick="openChat('${chat.id}')">
                         <div class="chat-card-header">
-                            <span class="chat-ad-id" onclick="event.stopPropagation(); showAdModal('${chat.ad_id}');">💬 Объявление #${chat.ad_id || 'N/A'}</span>
+                            <span class="chat-ad-id" onclick="event.stopPropagation(); showAdModal('${chat.ad_id}');">💬 анкете #${chat.ad_id || 'N/A'}</span>
                             <span class="chat-time">${lastMessageTime}</span>
                         </div>
                         <div class="chat-preview">
@@ -4840,7 +4840,7 @@ async function loadMyChats() {
                 return `
                     <div class="chat-request-card">
                         <div class="request-header">
-                            <span class="request-ad-id">📨 Объявление #${chat.ad_id || 'N/A'}</span>
+                            <span class="request-ad-id">📨 анкете #${chat.ad_id || 'N/A'}</span>
                             <span class="request-time">${requestTime}</span>
                         </div>
                         <div class="request-message">
@@ -5046,7 +5046,7 @@ async function openChat(chatId) {
 
         // Обновляем заголовок
         document.getElementById('chatTitle').textContent = 'Анонимный чат';
-        document.getElementById('chatAdId').textContent = `Объявление #${chat.ad_id || 'N/A'}`;
+        document.getElementById('chatAdId').textContent = `анкете #${chat.ad_id || 'N/A'}`;
 
         // Загружаем сообщения
         await loadChatMessages(chatId);
@@ -5576,9 +5576,9 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// ============= МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА ОБЪЯВЛЕНИЯ =============
+// ============= МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА анкеты =============
 
-// Показать объявление в модальном окне
+// Показать анкете в модальном окне
 async function showAdModal(adId) {
     const modal = document.getElementById('adModal');
     const modalBody = document.getElementById('adModalBody');
@@ -5587,8 +5587,8 @@ async function showAdModal(adId) {
         modalBody.innerHTML = `
             <div class="empty-state">
                 <div class="neon-icon">⚠️</div>
-                <h3>Объявление не найдено</h3>
-                <p>ID объявления недоступен</p>
+                <h3>анкете не найдено</h3>
+                <p>ID анкеты недоступен</p>
             </div>
         `;
         modal.style.display = 'flex';
@@ -5600,22 +5600,22 @@ async function showAdModal(adId) {
     modalBody.innerHTML = `
         <div class="loading-spinner">
             <div class="spinner"></div>
-            <p>Загрузка объявления...</p>
+            <p>Загрузка анкеты...</p>
         </div>
     `;
     
     try {
-        // Получаем объявление из базы
+        // Получаем анкете из базы
         const response = await fetch(`/api/ads?id=${adId}`);
         const result = await response.json();
         
         if (result.error || !result.data) {
-            throw new Error(result.error?.message || 'Объявление не найдено');
+            throw new Error(result.error?.message || 'анкете не найдено');
         }
         
         const ad = result.data;
         
-        // Отображаем объявление
+        // Отображаем анкете
         modalBody.innerHTML = `
             <div class="ad-detail-view">
                 <div class="ad-detail-header">
@@ -5625,7 +5625,7 @@ async function showAdModal(adId) {
                 
                 ${ad.photo_url ? `
                     <div class="ad-photo">
-                        <img src="${ad.photo_url}" alt="Фото объявления" />
+                        <img src="${ad.photo_url}" alt="Фото анкеты" />
                     </div>
                 ` : ''}
                 
@@ -5650,7 +5650,7 @@ async function showAdModal(adId) {
             </div>
         `;
     } catch (error) {
-        console.error('Ошибка загрузки объявления:', error);
+        console.error('Ошибка загрузки анкеты:', error);
         modalBody.innerHTML = `
             <div class="empty-state">
                 <div class="neon-icon">⚠️</div>
@@ -5724,7 +5724,7 @@ async function loadPremiumStatus() {
     }
 }
 
-// Обновить индикатор лимита объявлений
+// Обновить индикатор лимита анкет
 function updateAdLimitBadge() {
     const badge = document.getElementById('adLimitBadge');
     if (!badge || !userPremiumStatus.limits) return;
@@ -5750,7 +5750,7 @@ function updateAdLimitBadge() {
         badge.className = 'limit-badge';
         badge.style.display = 'block';
     } else {
-        // Ещё не создано объявлений
+        // Ещё не создано анкет
         badge.style.display = 'none';
     }
 }
@@ -5889,7 +5889,7 @@ async function activatePremium() {
         
         // Показываем уведомление
         if (result.data.isPremium) {
-            tg.showAlert('🎉 Поздравляем! PRO активирован на 30 дней!\n\nТеперь доступны:\n✅ Безлимит фото\n✅ До 3 объявлений в день\n✅ Закрепление 3 раза в день');
+            tg.showAlert('🎉 Поздравляем! PRO активирован на 30 дней!\n\nТеперь доступны:\n✅ Безлимит фото\n✅ До 3 анкет в день\n✅ Закрепление 3 раза в день');
         } else {
             tg.showAlert('Вы вернулись на FREE тариф\n\nДоступны базовые функции');
         }
@@ -5979,3 +5979,5 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPremiumStatus();
     }, 1000);
 });
+
+

@@ -1,4 +1,4 @@
-// Клиент Supabase для работы с объявлениями и чатами через Next.js API
+﻿// Клиент Supabase для работы с анкетыми и чатами через Next.js API
 
 (function() {
   // Настройки Supabase (публичные ключи)
@@ -21,9 +21,9 @@
   window.supabase = supabase;
   console.log('✅ Supabase client доступен:', !!window.supabase);
   
-  // Функция для получения объявлений
+  // Функция для получения анкет
   async function getAds(filters = {}) {
-    console.log('getAds(): загрузка объявлений', filters);
+    console.log('getAds(): загрузка анкет', filters);
     
     try {
       // Формируем query параметры
@@ -38,10 +38,10 @@
       const data = await response.json();
       
       if (data.success) {
-        console.log('Получено объявлений:', data.ads.length);
+        console.log('Получено анкет:', data.ads.length);
         return data.ads;
       } else {
-        throw new Error(data.error || 'Ошибка загрузки объявлений');
+        throw new Error(data.error || 'Ошибка загрузки анкет');
       }
     } catch (error) {
       console.error('Ошибка getAds:', error);
@@ -49,9 +49,9 @@
     }
   }
 
-  // Функция для создания объявления
+  // Функция для создания анкеты
   async function createAd(adData) {
-    console.log('createAd(): создание объявления', adData);
+    console.log('createAd(): создание анкеты', adData);
     
     try {
       const response = await fetch('/api/ads', {
@@ -65,10 +65,10 @@
       const data = await response.json();
       
       if (data.success) {
-        console.log('Объявление создано:', data.ad);
+        console.log('анкету создано:', data.ad);
         return data.ad;
       } else {
-        throw new Error(data.error || 'Ошибка создания объявления');
+        throw new Error(data.error || 'Ошибка создания анкеты');
       }
     } catch (error) {
       console.error('Ошибка createAd:', error);
@@ -82,9 +82,9 @@
     return { success: true };
   }
 
-  // Функция для удаления объявления
+  // Функция для удаления анкеты
   async function deleteAd(adId) {
-    console.log('deleteAd(): удаление объявления', adId);
+    console.log('deleteAd(): удаление анкеты', adId);
     
     try {
       // Получаем Telegram ID пользователя из WebApp или localStorage
@@ -135,10 +135,10 @@
       console.log('deleteAd(): response data =', data);
       
       if (data.success) {
-        console.log('deleteAd(): объявление успешно удалено:', adId);
+        console.log('deleteAd(): анкету успешно удалено:', adId);
         return true;
       } else {
-        const errorMsg = data.error || 'Ошибка удаления объявления';
+        const errorMsg = data.error || 'Ошибка удаления анкеты';
         console.error('deleteAd(): ошибка от сервера:', errorMsg);
         throw new Error(errorMsg);
       }
@@ -148,7 +148,7 @@
     }
   }
 
-  // Функция для закрепления/откrepления объявления
+  // Функция для закрепления/откrepления анкеты
   async function togglePinAd(adId, shouldPin) {
     console.log('togglePinAd(): изменение статуса закрепления', adId, shouldPin);
     
@@ -219,3 +219,5 @@
   
   console.log('✅ Supabase Client инициализирован');
 })();
+
+
