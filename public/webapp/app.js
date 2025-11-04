@@ -1242,6 +1242,7 @@ function showMainMenu() {
     showScreen('mainMenu');
     resetForm();
     updateChatBadge(); // Обновляем счетчик запросов
+    updateAdLimitBadge(); // Обновляем лимиты анкет
 }
 
 function showCreateAd() {
@@ -1383,7 +1384,9 @@ async function loadMyAds() {
             const authorGender = formatGender(ad.gender);
             const authorIcon = ad.gender === 'male' ? '♂️' : '♀️';
             const targetText = formatTarget(ad.target);
-            const targetIcon = ad.target === 'male' || ad.target === 'мужчину' ? '♂️' : '♀️';
+            // Проверяем на английском, так как в БД хранится 'male', 'female'
+            const targetIcon = (ad.target?.toLowerCase() === 'male') ? '♂️' : 
+                              (ad.target?.toLowerCase() === 'female') ? '♀️' : '👤';
             
             return `
             <div class="ad-card" data-ad-id="${ad.id}">
@@ -1718,10 +1721,10 @@ function selectGoal(goal) {
         formData.goals.push(goal);
     }
     
-    // Для обратной совместимости - сохраняем первую цель в formData.goal
-    formData.goal = (formData.goals || [])[0] || '';
+    // Сохраняем все цели через запятую для отправки
+    formData.goal = (formData.goals || []).join(', ');
     
-    console.log('Выбранные цели:', formData.goals);
+    console.log('Выбранные цели:', formData.goals, '| goal string:', formData.goal);
 }
 
 function selectBody(body) {
