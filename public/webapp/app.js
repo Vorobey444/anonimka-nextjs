@@ -1380,7 +1380,8 @@ async function loadMyAds() {
                     </div>
                     <div class="ad-field">
                         <span class="icon">🎯</span>
-                        <span class="label">Цель:</span>`n                        <span class="value">${formatGoals(ad.goal)}</span>
+                        <span class="label">Цель:</span>
+                        <span class="value">${formatGoals(ad.goal)}</span>
                     </div>
                     <div class="ad-field">
                         <span class="icon">${targetIcon}</span>
