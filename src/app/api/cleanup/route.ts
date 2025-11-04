@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         `;
 
         const deletedCount = deleteResult.rowCount || 0;
-        const deletedIds = deleteResult.rows.map(row => row.id);
+        const deletedIds = deleteResult.rows.map((row: any) => row.id);
 
         console.log(`[CLEANUP] Удалено анкет: ${deletedCount}`);
         if (deletedIds.length > 0) {
@@ -39,20 +39,23 @@ export async function POST(request: NextRequest) {
         }
 
         // Также очищаем связанные чаты для удаленных анкет
+        let deletedChatsCount = 0;
         if (deletedIds.length > 0) {
-            const deleteChatsResult = await sql`
-                DELETE FROM chats
-                WHERE ad_id = ANY(${deletedIds})
-                RETURNING id
-            `;
+            // Используем IN вместо ANY для совместимости
+            const placeholders = deletedIds.map((_: any, i: number) => `$${i + 1}`).join(',');
+            const deleteChatsResult = await sql.query(
+                `DELETE FROM chats WHERE ad_id IN (${placeholders}) RETURNING id`,
+                deletedIds
+            );
             
-            const deletedChatsCount = deleteChatsResult.rowCount || 0;
+            deletedChatsCount = deleteChatsResult.rowCount || 0;
             console.log(`[CLEANUP] Удалено чатов: ${deletedChatsCount}`);
         }
 
         return NextResponse.json({
             success: true,
             deletedAds: deletedCount,
+            deletedChats: deletedChatsCount,
             message: `Удалено ${deletedCount} анкет старше 7 дней`
         });
 
