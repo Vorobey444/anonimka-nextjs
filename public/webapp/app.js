@@ -934,8 +934,14 @@ function generateTelegramQR(authToken) {
     // Очищаем контейнер
     qrcodeContainer.innerHTML = '';
     
-    // Показываем загрузку
+    // Показываем загрузку с собакой
     if (qrLoading) {
+        qrLoading.innerHTML = `
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Генерируем QR-код...</p>
+            </div>
+        `;
         qrLoading.classList.remove('hidden');
     }
     
@@ -1340,7 +1346,12 @@ async function loadMyAds() {
         return;
     }
     
-    myAdsList.innerHTML = '<div class="loading">Загрузка ваших анкет...</div>';
+    myAdsList.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Загрузка ваших анкет...</p>
+        </div>
+    `;
     
     try {
         const userId = getCurrentUserId();
@@ -4597,8 +4608,17 @@ window.handleEmailSubmit = async function(event) {
         message: (message?.value || '').trim()
     };
 
-    // Показываем загрузку
-    showEmailStatus('loading', '📤 Отправляем письмо...');
+    // Показываем загрузку с собакой
+    const statusContainer = document.getElementById('email-status');
+    if (statusContainer) {
+        statusContainer.innerHTML = `
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>📤 Отправляем письмо...</p>
+            </div>
+        `;
+        statusContainer.className = 'status loading';
+    }
     if (sendBtn) sendBtn.disabled = true;
     
     try {
