@@ -113,6 +113,13 @@ export async function POST(req: NextRequest) {
     if (tgId && tgId !== 'anonymous') {
       const userId = Number(tgId);
       
+      // Создаём пользователя если его нет
+      await sql`
+        INSERT INTO users (id, created_at, updated_at)
+        VALUES (${userId}, NOW(), NOW())
+        ON CONFLICT (id) DO NOTHING
+      `;
+      
       // Получаем статус Premium и лимиты
       const userResult = await sql`
         SELECT is_premium FROM users WHERE id = ${userId}
