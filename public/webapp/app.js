@@ -54,6 +54,25 @@ tg.showPopup = function(params, callback) {
     }
 };
 
+// Безопасная обертка для showConfirm с fallback на confirm()
+tg.showConfirm = tg.showConfirm || function(message, callback) {
+    // Если есть нативный метод - используем его
+    if (window.Telegram?.WebApp?.showConfirm) {
+        try {
+            window.Telegram.WebApp.showConfirm(message, callback);
+            return;
+        } catch (e) {
+            console.warn('showConfirm failed:', e.message);
+        }
+    }
+    
+    // Fallback на обычный confirm()
+    const result = confirm(message);
+    if (callback) {
+        setTimeout(() => callback(result), 0);
+    }
+};
+
 // Проверка, запущено ли приложение в Telegram
 // Проверяем не только наличие объекта Telegram.WebApp, но и что есть платформа или initData
 const isTelegramWebApp = !!(
