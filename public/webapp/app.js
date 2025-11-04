@@ -786,12 +786,21 @@ function showTelegramAuthModal() {
     // Генерируем QR-код
     generateTelegramQR(authToken);
     
-    // Показываем Login Widget только если НЕ в Telegram WebApp
+    // Показываем кнопку Deep Link только если НЕ в Telegram WebApp
     const isInTelegramWebApp = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
     if (!isInTelegramWebApp) {
-        console.log('🌐 Пользователь в обычном браузере - показываем Login Widget');
+        console.log('🌐 Пользователь в обычном браузере - показываем кнопку Deep Link');
         const loginWidgetContainer = document.getElementById('loginWidgetContainer');
         const loginWidgetDivider = document.getElementById('loginWidgetDivider');
+        const deepLinkButton = document.getElementById('telegramDeepLink');
+        
+        // Устанавливаем Deep Link для открытия бота
+        const botUsername = 'anonimka_kz_bot';
+        const telegramDeepLink = `https://t.me/${botUsername}?start=${authToken}`;
+        
+        if (deepLinkButton) {
+            deepLinkButton.href = telegramDeepLink;
+        }
         
         if (loginWidgetContainer) {
             loginWidgetContainer.style.display = 'block';
@@ -800,7 +809,7 @@ function showTelegramAuthModal() {
             loginWidgetDivider.style.display = 'flex';
         }
     } else {
-        console.log('📱 Пользователь в Telegram WebApp - скрываем Login Widget');
+        console.log('📱 Пользователь в Telegram WebApp - скрываем кнопку Deep Link');
     }
     
     // Проверяем авторизацию каждые 2 секунды через API сервера
@@ -914,36 +923,6 @@ function generateTelegramQR(authToken) {
         }
     }, 100);
 }
-
-// Обработчик Telegram Login Widget
-window.onTelegramAuth = function(user) {
-    console.log('🔐 Авторизация через Telegram Login Widget:', user);
-    
-    // Сохраняем данные пользователя
-    const userData = {
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name || '',
-        username: user.username || '',
-        photo_url: user.photo_url || '',
-        auth_date: user.auth_date,
-        hash: user.hash
-    };
-    
-    // Сохраняем в localStorage
-    localStorage.setItem('telegram_user', JSON.stringify(userData));
-    localStorage.setItem('user_id', user.id);
-    
-    // Показываем успешную авторизацию
-    console.log('✅ Авторизация успешна! User ID:', user.id);
-    
-    // Обновляем интерфейс
-    currentUserId = user.id;
-    checkAuthStatus();
-    
-    // Показываем список анкет
-    showAdsList();
-};
 
 // Закрыть модальное окно (только если пользователь авторизован)
 function closeTelegramAuthModal() {

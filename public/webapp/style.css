@@ -2691,6 +2691,32 @@ h3 {
     margin: 20px 0;
 }
 
+.telegram-login-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #0088cc 0%, #00a0e9 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+}
+
+.telegram-login-button:hover {
+    background: linear-gradient(135deg, #0077b3 0%, #0090d0 100%);
+    box-shadow: 0 6px 16px rgba(0, 136, 204, 0.4);
+    transform: translateY(-2px);
+}
+
+.telegram-login-button svg {
+    width: 20px;
+    height: 20px;
+}
+
 .login-hint {
     color: var(--text-gray);
     font-size: 0.9rem;
