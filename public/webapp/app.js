@@ -6183,27 +6183,26 @@ async function showPremiumModal() {
     const modal = document.getElementById('premiumModal');
     modal.style.display = 'flex';
     
-    // Загружаем цены для страны пользователя
-    try {
-        const response = await fetch('/api/premium', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'get-pricing',
-                params: { country: userPremiumStatus.country }
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.data && result.data.pro) {
-            // Обновляем цену PRO
-            document.getElementById('proPriceAmount').textContent = result.data.pro.price;
-            document.getElementById('proPriceCurrency').textContent = result.data.pro.currency;
-        }
-    } catch (error) {
-        console.error('Ошибка загрузки цен:', error);
+    // Определяем валюту по локации пользователя
+    const userLocation = getUserLocation();
+    let currency = '₸'; // По умолчанию тенге (Казахстан)
+    let proPrice = 499;
+    
+    // Если Россия - рубли
+    if (userLocation && userLocation.country && userLocation.country.includes('Россия')) {
+        currency = '₽';
+        proPrice = 99;
     }
+    
+    // Обновляем валюту в FREE тарифе
+    const freeCurrencyElement = document.querySelector('.pricing-card:not(.featured) .price-currency');
+    if (freeCurrencyElement) {
+        freeCurrencyElement.textContent = currency;
+    }
+    
+    // Обновляем цену и валюту в PRO тарифе
+    document.getElementById('proPriceAmount').textContent = proPrice;
+    document.getElementById('proPriceCurrency').textContent = currency;
     
     // Обновляем кнопки в зависимости от текущего статуса
     updatePremiumModalButtons();

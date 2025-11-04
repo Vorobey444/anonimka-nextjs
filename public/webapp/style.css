@@ -94,6 +94,7 @@ body {
 .header {
     display: flex;
     align-items: center;
+    justify-content: center;
     margin-bottom: 20px;
     position: relative;
 }
@@ -106,12 +107,14 @@ body {
     border-radius: 20px;
     cursor: pointer;
     font-size: 14px;
-    margin-right: 12px;
     transition: all 0.3s ease;
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    position: absolute;
+    left: 0;
+    top: 0;
 }
 
 .back-btn:hover {
