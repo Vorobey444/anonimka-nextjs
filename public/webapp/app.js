@@ -1,4 +1,4 @@
-﻿// Инициализация Telegram Web App с безопасными fallback методами
+// Инициализация Telegram Web App с безопасными fallback методами
 let tg = window.Telegram?.WebApp || {
     expand: () => {},
     setHeaderColor: () => {},
@@ -5792,7 +5792,7 @@ async function showAdModal(adId) {
     `;
     
     try {
-        // Получаем анкете из базы
+        // Получаем анкету из базы
         const response = await fetch(`/api/ads?id=${adId}`);
         const result = await response.json();
         
@@ -5802,7 +5802,7 @@ async function showAdModal(adId) {
         
         const ad = result.data;
         
-        // Отображаем анкете
+        // Отображаем анкету
         modalBody.innerHTML = `
             <div class="ad-detail-view">
                 <div class="ad-detail-header">
