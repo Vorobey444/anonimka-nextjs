@@ -4162,13 +4162,17 @@ h3 {
 .loading-spinner {
     text-align: center;
     padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .loading-spinner .spinner {
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 20px;
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="%2300d9ff" stroke-width="4" opacity="0.3"/><circle cx="50" cy="50" r="45" fill="none" stroke="%2300d9ff" stroke-width="4" stroke-dasharray="70 200" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="1.5s" repeatCount="indefinite"/></circle><circle cx="50" cy="50" r="30" fill="none" stroke="%238338ec" stroke-width="3" stroke-dasharray="50 150" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="360 50 50" to="0 50 50" dur="2s" repeatCount="indefinite"/></circle></svg>');
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 15px;
+    background-image: url('/webapp/images/loading.gif');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
