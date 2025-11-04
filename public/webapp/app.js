@@ -786,8 +786,22 @@ function showTelegramAuthModal() {
     // Генерируем QR-код
     generateTelegramQR(authToken);
     
-    // Login Widget отключен - требует настройки домена в BotFather
-    // initTelegramLoginWidget();
+    // Показываем Login Widget только если НЕ в Telegram WebApp
+    const isInTelegramWebApp = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
+    if (!isInTelegramWebApp) {
+        console.log('🌐 Пользователь в обычном браузере - показываем Login Widget');
+        const loginWidgetContainer = document.getElementById('loginWidgetContainer');
+        const loginWidgetDivider = document.getElementById('loginWidgetDivider');
+        
+        if (loginWidgetContainer) {
+            loginWidgetContainer.style.display = 'block';
+        }
+        if (loginWidgetDivider) {
+            loginWidgetDivider.style.display = 'flex';
+        }
+    } else {
+        console.log('📱 Пользователь в Telegram WebApp - скрываем Login Widget');
+    }
     
     // Проверяем авторизацию каждые 2 секунды через API сервера
     const checkInterval = setInterval(async () => {
