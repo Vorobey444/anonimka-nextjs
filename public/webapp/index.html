@@ -656,6 +656,17 @@
                     <h2 id="chatTitle">Анонимный чат</h2>
                     <p id="chatAdId" class="chat-subtitle"></p>
                 </div>
+                <button class="chat-menu-btn" onclick="toggleChatMenu()">⋮</button>
+            </div>
+            
+            <!-- Меню чата (троеточие) -->
+            <div id="chatMenu" class="chat-menu-dropdown" style="display: none;">
+                <button class="chat-menu-item" onclick="toggleBlockUser()">
+                    <span id="blockMenuText">🚫 Заблокировать собеседника</span>
+                </button>
+                <button class="chat-menu-item danger" onclick="confirmDeleteChat()">
+                    🗑️ Удалить чат
+                </button>
             </div>
 
             <div class="chat-messages-container">
@@ -677,6 +688,11 @@
                 <button class="send-button" onclick="sendMessage()">
                     <span>📤</span>
                 </button>
+            </div>
+            
+            <!-- Предупреждение о блокировке -->
+            <div id="blockWarning" class="block-warning" style="display: none;">
+                ⚠️ Собеседник внес вас в черный список
             </div>
         </div>
 

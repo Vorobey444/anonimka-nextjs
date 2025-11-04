@@ -9,13 +9,21 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const city = searchParams.get('city');
     const country = searchParams.get('country');
+    const id = searchParams.get('id');
 
-    console.log("[ADS API] Получение объявлений:", { city, country });
+    console.log("[ADS API] Получение объявлений:", { city, country, id });
 
     // Формируем SQL запрос с фильтрами
     let result;
     
-    if (city && country) {
+    if (id) {
+      // Получение конкретной анкеты по ID
+      result = await sql`
+        SELECT * FROM ads
+        WHERE id = ${parseInt(id)}
+        LIMIT 1
+      `;
+    } else if (city && country) {
       result = await sql`
         SELECT * FROM ads
         WHERE city = ${city} AND country = ${country}
@@ -86,6 +94,7 @@ export async function POST(req: NextRequest) {
       myAge, 
       body: bodyType, 
       text,
+      nickname,
       country,
       region,
       city,
@@ -154,14 +163,14 @@ export async function POST(req: NextRequest) {
     const result = await sql`
       INSERT INTO ads (
         gender, target, goal, age_from, age_to, my_age, 
-        body_type, text, country, region, city, tg_id, created_at
+        body_type, text, nickname, country, region, city, tg_id, created_at
       )
       VALUES (
         ${gender}, ${target}, ${goal}, 
         ${ageFrom ? parseInt(ageFrom) : null}, 
         ${ageTo ? parseInt(ageTo) : null}, 
         ${myAge ? parseInt(myAge) : null},
-        ${bodyType || null}, ${text}, 
+        ${bodyType || null}, ${text}, ${nickname || 'Аноним'},
         ${country || 'Россия'}, ${region || ''}, ${city}, 
         ${tgId || 'anonymous'}, NOW()
       )
@@ -292,16 +301,50 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// PATCH - обновление объявления (закрепление)
+// PATCH - обновление объявления (закрепление или массовое обновление никнейма)
 export async function PATCH(req: NextRequest) {
   try {
     console.log("[ADS API] Обновление объявления");
     
     const body = await req.json();
-    const { id, tgId, is_pinned, pinned_until } = body;
+    const { id, tgId, is_pinned, pinned_until, action, nickname } = body;
 
-    console.log("[ADS API] Данные для обновления:", { id, tgId, is_pinned, pinned_until });
+    console.log("[ADS API] Данные для обновления:", { id, tgId, is_pinned, pinned_until, action, nickname });
 
+    // Обработка массового обновления никнейма
+    if (action === 'update-all-nicknames') {
+      if (!tgId) {
+        return NextResponse.json(
+          { success: false, error: "Требуется авторизация" },
+          { status: 401 }
+        );
+      }
+
+      if (!nickname) {
+        return NextResponse.json(
+          { success: false, error: "Никнейм не указан" },
+          { status: 400 }
+        );
+      }
+
+      // Обновляем nickname во всех анкетах пользователя
+      const result = await sql`
+        UPDATE ads 
+        SET nickname = ${nickname}
+        WHERE tg_id = ${tgId}
+        RETURNING id
+      `;
+
+      console.log("[ADS API] Обновлено анкет:", result.rows.length);
+
+      return NextResponse.json({
+        success: true,
+        message: `Никнейм обновлен в ${result.rows.length} анкет(е/ах)`,
+        count: result.rows.length
+      });
+    }
+
+    // Обычное обновление (закрепление)
     if (!id) {
       return NextResponse.json(
         { success: false, error: "ID объявления не указан" },

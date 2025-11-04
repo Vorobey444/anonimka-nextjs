@@ -633,7 +633,7 @@ function resetToAnonym() {
 }
 
 // Сохранить никнейм со страницы редактирования
-function saveNicknamePage() {
+async function saveNicknamePage() {
     const nicknameInputPage = document.getElementById('nicknameInputPage');
     
     if (nicknameInputPage) {
@@ -646,6 +646,29 @@ function saveNicknamePage() {
         // Сохраняем в localStorage
         localStorage.setItem('user_nickname', nickname);
         console.log('✅ Никнейм сохранён:', nickname);
+        
+        // Обновляем nickname во всех анкетах пользователя
+        const userId = getCurrentUserId();
+        if (userId && !userId.startsWith('web_')) {
+            try {
+                const response = await fetch('/api/ads', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'update-all-nicknames',
+                        tgId: userId,
+                        nickname: nickname
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    console.log('✅ Никнейм обновлен в анкетах:', result.count);
+                }
+            } catch (error) {
+                console.error('Ошибка обновления никнейма в анкетах:', error);
+            }
+        }
         
         // Показываем уведомление и возвращаемся на главную
         if (isTelegramWebApp) {
@@ -4754,6 +4777,7 @@ ${emailData.message}
 // ===== ФУНКЦИИ ДЛЯ РАБОТЫ С ЧАТАМИ =====
 
 let currentChatId = null;
+let currentAdId = null;
 let chatPollingInterval = null;
 
 // Показать список чатов
@@ -4907,8 +4931,17 @@ async function loadMyChats() {
                 // Определяем, кто отправитель (не текущий пользователь)
                 const isUser1 = chat.user1 === userId;
                 const senderId = isUser1 ? chat.user2 : chat.user1;
-                const senderName = 'Анонимный пользователь';
-                const messageText = chat.message || 'Хочет начать диалог';
+                
+                // Используем sender_nickname из последнего сообщения или fallback
+                const senderName = chat.sender_nickname || 'Собеседник';
+                
+                // Используем last_message_text из запроса или дефолтное сообщение
+                let messageText = chat.last_message_text || chat.message || 'Хочет начать диалог';
+                
+                // Обрезаем сообщение до 80 символов
+                if (messageText.length > 80) {
+                    messageText = messageText.substring(0, 77) + '...';
+                }
                 
                 // Pro значок (будет добавлено после получения статуса)
                 const proBadge = chat.sender_is_premium ? '<span class="pro-badge">⭐ PRO</span>' : '';
@@ -4920,8 +4953,8 @@ async function loadMyChats() {
                             <span class="request-time">${requestTime}</span>
                         </div>
                         <div class="request-message">
-                            <strong>${senderName} ${proBadge}</strong><br>
-                            "${messageText}"
+                            <strong>${escapeHtml(senderName)} ${proBadge}</strong><br>
+                            "${escapeHtml(messageText)}"
                         </div>
                         <div class="request-actions">
                             <button class="request-btn request-btn-accept" onclick="acceptChatRequest('${chat.id}')">
@@ -5122,10 +5155,17 @@ async function openChat(chatId) {
 
         // Обновляем заголовок
         document.getElementById('chatTitle').textContent = 'Анонимный чат';
-        document.getElementById('chatAdId').textContent = `Анкета #${chat.ad_id || 'N/A'}`;
+        const chatAdIdElement = document.getElementById('chatAdId');
+        chatAdIdElement.innerHTML = `Анкета #${chat.ad_id || 'N/A'} - <span class="view-ad-link" onclick="showAdModal(${chat.ad_id})">Смотреть</span>`;
+        
+        // Сохраняем ad_id для использования в других функциях
+        currentAdId = chat.ad_id;
 
         // Загружаем сообщения
         await loadChatMessages(chatId);
+        
+        // Проверяем статус блокировки
+        await checkBlockStatus(chatId);
         
         // Принудительно скроллим вниз после загрузки
         const scrollContainer = document.querySelector('.chat-messages-container');
@@ -5338,6 +5378,77 @@ function closePhotoModal() {
     modal.classList.remove('active');
     modal.style.display = 'none';
     modalImage.src = '';
+}
+
+// Показать модальное окно с информацией об анкете
+async function showAdModal(adId) {
+    if (!adId) {
+        tg.showAlert('ID анкеты не найден');
+        return;
+    }
+    
+    try {
+        // Получаем данные анкеты
+        const response = await fetch(`/api/ads?id=${adId}`);
+        const result = await response.json();
+        
+        if (!result.success || !result.ads || result.ads.length === 0) {
+            tg.showAlert('Анкета не найдена');
+            return;
+        }
+        
+        const ad = result.ads[0];
+        
+        // Формируем HTML для модального окна
+        const genderLabels = { male: 'Мужчина', female: 'Женщина' };
+        const targetLabels = { male: 'Мужчину', female: 'Женщину', any: 'Не важно' };
+        const goalLabels = {
+            friendship: 'Дружба',
+            relationship: 'Отношения',
+            chat: 'Общение',
+            other: 'Другое'
+        };
+        
+        const bodyLabels = {
+            slim: 'Худощавое',
+            athletic: 'Спортивное',
+            average: 'Среднее',
+            curvy: 'Полное'
+        };
+        
+        const modalHTML = `
+            <div style="padding: 20px; max-width: 400px;">
+                <h3 style="margin-top: 0; color: var(--neon-cyan);">📋 Анкета #${ad.id}</h3>
+                <div style="margin-bottom: 15px;">
+                    <strong>👤 Пол:</strong> ${genderLabels[ad.gender] || ad.gender}<br>
+                    <strong>🎯 Ищет:</strong> ${targetLabels[ad.target] || ad.target}<br>
+                    <strong>💫 Цель:</strong> ${goalLabels[ad.goal] || ad.goal}<br>
+                    <strong>🎂 Возраст:</strong> ${ad.my_age || 'Не указан'} лет<br>
+                    <strong>📏 Ищет возраст:</strong> ${ad.age_from || '18'} - ${ad.age_to || '99'} лет<br>
+                    ${ad.body_type ? `<strong>💪 Телосложение:</strong> ${bodyLabels[ad.body_type] || ad.body_type}<br>` : ''}
+                    <strong>📍 Город:</strong> ${ad.city || 'Не указан'}<br>
+                </div>
+                <div style="background: rgba(0,255,255,0.05); padding: 10px; border-radius: 8px; border-left: 3px solid var(--neon-cyan);">
+                    <strong>💬 О себе:</strong><br>
+                    <p style="margin: 5px 0 0 0; white-space: pre-wrap;">${escapeHtml(ad.text)}</p>
+                </div>
+            </div>
+        `;
+        
+        if (isTelegramWebApp) {
+            tg.showPopup({
+                title: 'Информация об анкете',
+                message: modalHTML,
+                buttons: [{ type: 'close', text: 'Закрыть' }]
+            });
+        } else {
+            alert(`Анкета #${ad.id}\n\n${ad.text}`);
+        }
+        
+    } catch (error) {
+        console.error('Ошибка загрузки анкеты:', error);
+        tg.showAlert('Ошибка загрузки анкеты');
+    }
 }
 
 // Загрузить фото в Telegram и получить file_id
@@ -6083,5 +6194,224 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPremiumStatus();
     }, 1000);
 });
+
+// ===== ФУНКЦИИ ДЛЯ РАБОТЫ С МЕНЮ ЧАТА (БЛОКИРОВКА/УДАЛЕНИЕ) =====
+
+let currentOpponentId = null;
+let isUserBlocked = false;
+
+// Переключить видимость меню чата
+function toggleChatMenu() {
+    const menu = document.getElementById('chatMenu');
+    if (menu.style.display === 'none' || !menu.style.display) {
+        menu.style.display = 'block';
+    } else {
+        menu.style.display = 'none';
+    }
+}
+
+// Скрыть меню при клике вне его
+document.addEventListener('click', function(e) {
+    const menu = document.getElementById('chatMenu');
+    const menuBtn = document.querySelector('.chat-menu-btn');
+    if (menu && menuBtn && !menu.contains(e.target) && !menuBtn.contains(e.target)) {
+        menu.style.display = 'none';
+    }
+});
+
+// Проверить статус блокировки для чата
+async function checkBlockStatus(chatId) {
+    try {
+        const userId = getCurrentUserId();
+        
+        // Получаем информацию о чате
+        const chatResponse = await fetch('/api/neon-chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get-active',
+                params: { userId }
+            })
+        });
+        
+        const chatResult = await chatResponse.json();
+        const chat = chatResult.data?.find(c => c.id == chatId);
+        
+        if (!chat) return;
+        
+        // Определяем ID собеседника
+        const isUser1 = chat.user1 == userId;
+        currentOpponentId = isUser1 ? chat.user2 : chat.user1;
+        
+        // Проверяем блокировку
+        const blockResponse = await fetch('/api/blocks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'check-block-status',
+                params: { user1: userId, user2: currentOpponentId }
+            })
+        });
+        
+        const blockResult = await blockResponse.json();
+        
+        if (blockResult.data && blockResult.data.isBlocked) {
+            isUserBlocked = blockResult.data.blockedByCurrentUser;
+            const blockedByOther = blockResult.data.blockedByOther;
+            
+            // Обновляем текст кнопки
+            const blockMenuText = document.getElementById('blockMenuText');
+            if (blockMenuText) {
+                blockMenuText.textContent = isUserBlocked ? '✅ Разблокировать собеседника' : '🚫 Заблокировать собеседника';
+            }
+            
+            // Если заблокировал собеседник - показываем предупреждение
+            if (blockedByOther) {
+                showBlockWarning(true);
+            } else {
+                showBlockWarning(false);
+            }
+        } else {
+            isUserBlocked = false;
+            showBlockWarning(false);
+            const blockMenuText = document.getElementById('blockMenuText');
+            if (blockMenuText) {
+                blockMenuText.textContent = '🚫 Заблокировать собеседника';
+            }
+        }
+        
+    } catch (error) {
+        console.error('Ошибка проверки блокировки:', error);
+    }
+}
+
+// Показать/скрыть предупреждение о блокировке
+function showBlockWarning(show) {
+    const warning = document.getElementById('blockWarning');
+    const messageInput = document.getElementById('messageInput');
+    const photoInput = document.getElementById('photoInput');
+    const sendBtn = document.querySelector('.send-button');
+    const attachBtn = document.querySelector('.attach-photo-button');
+    
+    if (show) {
+        warning.style.display = 'block';
+        messageInput.disabled = true;
+        messageInput.placeholder = 'Сообщения заблокированы';
+        if (sendBtn) sendBtn.disabled = true;
+        if (attachBtn) attachBtn.disabled = true;
+    } else {
+        warning.style.display = 'none';
+        messageInput.disabled = false;
+        messageInput.placeholder = 'Введите сообщение...';
+        if (sendBtn) sendBtn.disabled = false;
+        if (attachBtn) attachBtn.disabled = false;
+    }
+}
+
+// Заблокировать/разблокировать пользователя
+async function toggleBlockUser() {
+    const menu = document.getElementById('chatMenu');
+    menu.style.display = 'none';
+    
+    if (!currentOpponentId) {
+        tg.showAlert('Ошибка: ID собеседника не найден');
+        return;
+    }
+    
+    const userId = getCurrentUserId();
+    const action = isUserBlocked ? 'unblock-user' : 'block-user';
+    const confirmText = isUserBlocked 
+        ? 'Разблокировать собеседника?' 
+        : 'Заблокировать собеседника? Он не сможет отправлять вам сообщения.';
+    
+    tg.showConfirm(confirmText, async (confirmed) => {
+        if (!confirmed) return;
+        
+        try {
+            const response = await fetch('/api/blocks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: action,
+                    params: { 
+                        blockerId: userId, 
+                        blockedId: currentOpponentId 
+                    }
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.error) {
+                tg.showAlert('Ошибка: ' + result.error.message);
+                return;
+            }
+            
+            // Обновляем статус
+            isUserBlocked = !isUserBlocked;
+            const blockMenuText = document.getElementById('blockMenuText');
+            if (blockMenuText) {
+                blockMenuText.textContent = isUserBlocked ? '✅ Разблокировать собеседника' : '🚫 Заблокировать собеседника';
+            }
+            
+            tg.showAlert(isUserBlocked ? 'Пользователь заблокирован' : 'Пользователь разблокирован');
+            
+        } catch (error) {
+            console.error('Ошибка блокировки:', error);
+            tg.showAlert('Ошибка при выполнении действия');
+        }
+    });
+}
+
+// Подтвердить удаление чата
+function confirmDeleteChat() {
+    const menu = document.getElementById('chatMenu');
+    menu.style.display = 'none';
+    
+    tg.showConfirm(
+        '⚠️ Чат будет удален у обеих сторон.\n\nВсе сообщения будут потеряны.\n\nПродолжить?',
+        async (confirmed) => {
+            if (confirmed) {
+                await deleteChat();
+            }
+        }
+    );
+}
+
+// Удалить чат для обеих сторон
+async function deleteChat() {
+    if (!currentChatId) {
+        tg.showAlert('Ошибка: ID чата не найден');
+        return;
+    }
+    
+    try {
+        const userId = getCurrentUserId();
+        
+        const response = await fetch('/api/neon-chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'delete-chat',
+                params: { chatId: currentChatId, userId }
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            tg.showAlert('Ошибка: ' + result.error.message);
+            return;
+        }
+        
+        tg.showAlert('✅ Чат удален', () => {
+            showMyChats();
+        });
+        
+    } catch (error) {
+        console.error('Ошибка удаления чата:', error);
+        tg.showAlert('Ошибка при удалении чата');
+    }
+}
 
 

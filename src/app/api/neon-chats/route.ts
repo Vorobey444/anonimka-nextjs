@@ -35,7 +35,21 @@ export async function POST(request: NextRequest) {
         const result = await sql`
           SELECT 
             pc.*,
-            u.is_premium as sender_is_premium
+            u.is_premium as sender_is_premium,
+            (
+              SELECT sender_nickname
+              FROM messages
+              WHERE chat_id = pc.id
+              ORDER BY created_at DESC
+              LIMIT 1
+            ) as sender_nickname,
+            (
+              SELECT message
+              FROM messages
+              WHERE chat_id = pc.id
+              ORDER BY created_at DESC
+              LIMIT 1
+            ) as last_message_text
           FROM private_chats pc
           LEFT JOIN users u ON (
             CASE 
@@ -110,6 +124,45 @@ export async function POST(request: NextRequest) {
             AND blocked_by IS NULL
         `;
         return NextResponse.json({ data: { count: parseInt(result.rows[0].count) }, error: null });
+      }
+
+      case 'delete-chat': {
+        const { chatId, userId } = params;
+        
+        if (!chatId || !userId) {
+          return NextResponse.json(
+            { error: { message: 'Параметры не указаны' } },
+            { status: 400 }
+          );
+        }
+        
+        // Проверяем, что пользователь является участником чата
+        const chatCheck = await sql`
+          SELECT id FROM private_chats
+          WHERE id = ${chatId}
+            AND (user1 = ${userId} OR user2 = ${userId})
+        `;
+        
+        if (chatCheck.rows.length === 0) {
+          return NextResponse.json(
+            { error: { message: 'Чат не найден или доступ запрещен' } },
+            { status: 404 }
+          );
+        }
+        
+        // Удаляем все сообщения чата
+        await sql`
+          DELETE FROM messages WHERE chat_id = ${chatId}
+        `;
+        
+        // Удаляем сам чат
+        const result = await sql`
+          DELETE FROM private_chats WHERE id = ${chatId}
+          RETURNING *
+        `;
+        
+        console.log('[NEON-CHATS] Чат удален:', chatId);
+        return NextResponse.json({ data: result.rows[0], error: null });
       }
 
       default:
