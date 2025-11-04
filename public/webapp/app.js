@@ -1381,16 +1381,15 @@ async function loadMyAds() {
             const nickname = ad.nickname || 'Аноним';
             
             const authorGender = formatGender(ad.gender);
-            const authorIcon = ad.gender === 'male' ? '👨' : '👩';
+            const authorIcon = ad.gender === 'male' ? '♂️' : '♀️';
             const targetText = formatTarget(ad.target);
-            const targetIcon = ad.target === 'male' || ad.target === 'мужчину' ? '👨' : '👩';
+            const targetIcon = ad.target === 'male' || ad.target === 'мужчину' ? '♂️' : '♀️';
             
             return `
             <div class="ad-card" data-ad-id="${ad.id}">
                 ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
                 <div class="ad-header">
                     <h3>${authorIcon} ${authorGender}, ${ad.my_age || '?'} лет</h3>
-                    <span class="ad-date">📅 ${new Date(ad.created_at).toLocaleDateString('ru-RU')}</span>
                 </div>
                 <div class="ad-info">
                     <div class="ad-field">
@@ -5433,21 +5432,20 @@ async function showAdModal(adId) {
             curvy: 'Полное'
         };
         
+        const genderIcon = ad.gender === 'male' ? '♂️' : '♀️';
+        
         const modalHTML = `
-            <div style="padding: 20px; max-width: 400px;">
-                <h3 style="margin-top: 0; color: var(--neon-cyan);">📋 Анкета #${ad.id}</h3>
-                <div style="margin-bottom: 15px;">
-                    <strong>👤 Пол:</strong> ${genderFormatted}<br>
-                    <strong>🎯 Ищет:</strong> ${targetFormatted}<br>
-                    <strong>💫 Цель:</strong> ${goalsFormatted}<br>
-                    <strong>🎂 Возраст:</strong> ${ad.my_age || 'Не указан'} лет<br>
-                    <strong>📏 Ищет возраст:</strong> ${ad.age_from || '18'} - ${ad.age_to || '99'} лет<br>
-                    ${ad.body_type ? `<strong>💪 Телосложение:</strong> ${bodyLabels[ad.body_type] || ad.body_type}<br>` : ''}
-                    <strong>📍 Город:</strong> ${ad.city || 'Не указан'}<br>
+            <div style="padding: 12px; max-width: 380px; font-size: 13px;">
+                <h3 style="margin-top: 0; margin-bottom: 10px; color: var(--neon-cyan); font-size: 16px;">${genderIcon} ${genderFormatted}, ${ad.my_age || '?'} лет</h3>
+                <div style="margin-bottom: 10px; line-height: 1.6;">
+                    <div style="margin-bottom: 4px;">� <strong>Телосложение:</strong> ${bodyLabels[ad.body_type] || 'Не указано'}</div>
+                    <div style="margin-bottom: 4px;">🎯 <strong>Цель:</strong> ${goalsFormatted}</div>
+                    <div style="margin-bottom: 4px;">🔍 <strong>Ищу:</strong> ${targetFormatted}, ${ad.age_from || '18'}-${ad.age_to || '99'} лет</div>
+                    <div style="margin-bottom: 4px;">📍 <strong>Город:</strong> ${ad.city || 'Не указан'}</div>
                 </div>
-                <div style="background: rgba(0,255,255,0.05); padding: 10px; border-radius: 8px; border-left: 3px solid var(--neon-cyan);">
-                    <strong>💬 О себе:</strong><br>
-                    <p style="margin: 5px 0 0 0; white-space: pre-wrap;">${escapeHtml(ad.text)}</p>
+                <div style="background: rgba(0,255,255,0.05); padding: 8px; border-radius: 6px; border-left: 3px solid var(--neon-cyan);">
+                    <strong style="font-size: 12px;">💬 О себе:</strong>
+                    <p style="margin: 4px 0 0 0; white-space: pre-wrap; font-size: 12px;">${escapeHtml(ad.text)}</p>
                 </div>
             </div>
         `;
@@ -6137,8 +6135,33 @@ async function activatePremium() {
         
         // Проверяем текущий статус
         if (userPremiumStatus.isPremium) {
-            // Уже на PRO - показываем уведомление
-            alert('✅ Вы уже используете PRO аккаунт!\n\nДля понижения до FREE нажмите кнопку "Понизить до FREE" в карточке FREE тарифа.');
+            // Уже на PRO - понижаем до FREE сразу
+            const response = await fetch('/api/premium', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'toggle-premium',
+                    params: { userId }
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.error) {
+                throw new Error(result.error.message);
+            }
+            
+            // Обновляем локальный статус
+            userPremiumStatus.isPremium = false;
+            localStorage.setItem(`premium_status_${userId}`, JSON.stringify(userPremiumStatus));
+            
+            // Обновляем UI
+            updatePremiumUI();
+            updatePremiumModalButtons();
+            
+            tg.showAlert('Вы вернулись на FREE тариф');
+            
+            setTimeout(() => closePremiumModal(), 1000);
             return;
         }
         
