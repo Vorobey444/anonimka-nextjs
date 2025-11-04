@@ -497,7 +497,7 @@
                             <label>От</label>
                             <div class="age-control">
                                 <button type="button" class="age-btn minus" onclick="decreaseAge('ageFrom')">−</button>
-                                <input type="number" id="ageFrom" min="18" max="100" class="neon-input small" placeholder="" onchange="validateAgeRange()">
+                                <input type="number" id="ageFrom" min="18" max="100" class="neon-input small" placeholder="" oninput="validateAgeRange()" onchange="validateAgeRange()">
                                 <button type="button" class="age-btn plus" onclick="increaseAge('ageFrom')">+</button>
                             </div>
                         </div>
@@ -505,7 +505,7 @@
                             <label>До</label>
                             <div class="age-control">
                                 <button type="button" class="age-btn minus" onclick="decreaseAge('ageTo')">−</button>
-                                <input type="number" id="ageTo" min="18" max="100" class="neon-input small" placeholder="" onchange="validateAgeRange()">
+                                <input type="number" id="ageTo" min="18" max="100" class="neon-input small" placeholder="" oninput="validateAgeRange()" onchange="validateAgeRange()">
                                 <button type="button" class="age-btn plus" onclick="increaseAge('ageTo')">+</button>
                             </div>
                         </div>

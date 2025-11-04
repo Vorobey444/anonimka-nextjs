@@ -1321,9 +1321,9 @@ async function loadMyAds() {
                 <div class="no-ads">
                     <div class="neon-icon">📭</div>
                     <h3>У вас пока нет анкет</h3>
-                    <p>Создайте первое анкете и оно появится здесь</p>
+                    <p>Создайте первую анкету и оно появится здесь</p>
                     <button class="neon-button primary" onclick="showCreateAd()">
-                        ✏️ Создать анкете
+                        ✏️ Создать анкету
                     </button>
                 </div>
             `;
@@ -1555,8 +1555,26 @@ function validateAgeRange() {
     const ageTo = document.getElementById('ageTo');
     
     if (ageFrom && ageTo) {
-        const fromValue = parseInt(ageFrom.value) || 18;
-        const toValue = parseInt(ageTo.value) || 18;
+        let fromValue = parseInt(ageFrom.value);
+        let toValue = parseInt(ageTo.value);
+        
+        // Проверяем минимальный возраст 18
+        if (fromValue && fromValue < 18) {
+            fromValue = 18;
+            ageFrom.value = 18;
+        }
+        if (toValue && toValue < 18) {
+            toValue = 18;
+            ageTo.value = 18;
+        }
+        
+        // Если не заполнено, устанавливаем 18 по умолчанию
+        if (!fromValue || isNaN(fromValue)) {
+            fromValue = 18;
+        }
+        if (!toValue || isNaN(toValue)) {
+            toValue = 18;
+        }
         
         // Если "от" больше "до", корректируем "до"
         if (fromValue > toValue) {
@@ -1723,13 +1741,13 @@ async function submitAd() {
         // Отправляем в Supabase через наш API
         const result = await window.SupabaseClient.createAd(adData);
         
-        console.log('анкете опубликовано:', result);
+        console.log('Анкета опубликована:', result);
 
         // Обновляем статус Premium (лимиты изменились)
         await loadPremiumStatus();
 
         // Показываем успех
-        tg.showAlert('✅ анкете успешно опубликовано!', () => {
+        tg.showAlert('✅ Анкета успешно опубликована!', () => {
             // Очищаем форму
             formData = {};
             currentStep = 1;
@@ -1785,7 +1803,7 @@ async function loadAds(filters = {}) {
         const ads = await window.SupabaseClient.getAds(filters);
         
         console.log('✅ Получено анкет:', ads.length);
-        console.log('📋 Первое анкете:', ads[0]);
+        console.log('📋 первую анкету:', ads[0]);
         
         // Отображаем анкеты
         displayAds(ads, filters.city);
@@ -1832,7 +1850,7 @@ function displayAds(ads, city = null) {
             <div class="no-ads">
                 <div class="neon-icon">😔</div>
                 <h3>Пока нет анкет</h3>
-                <p>Будьте первым, кто разместит анкете!</p>
+                <p>Будьте первым, кто разместит анкету!</p>
             </div>
         `;
         return;
@@ -1930,7 +1948,7 @@ function showAdDetails(index) {
     const ad = window.currentAds?.[index];
     
     if (!ad) {
-        alert('анкете не найдено');
+        alert('Анкета не найдена');
         return;
     }
     
@@ -2001,7 +2019,7 @@ async function contactAuthor(adIndex) {
     const ad = window.currentAds?.[adIndex];
     
     if (!ad) {
-        alert('анкете не найдено');
+        alert('Анкета не найдена');
         return;
     }
     
@@ -2015,7 +2033,7 @@ async function contactAuthor(adIndex) {
     
     // Проверяем, не пытается ли пользователь написать самому себе
     if (ad.tg_id === currentUserId) {
-        alert('Вы не можете отправить сообщение на своё анкете');
+        alert('Вы не можете отправить сообщение на свою анкету');
         return;
     }
     
@@ -2111,9 +2129,9 @@ async function contactAuthor(adIndex) {
     }
 }
 
-// Удалить мое анкете
+// Удалить мою анкету
 async function deleteMyAd(adId) {
-    if (!confirm('Вы уверены, что хотите удалить это анкете?')) {
+    if (!confirm('Вы уверены, что хотите удалить эту анкету?')) {
         return;
     }
     
@@ -2121,11 +2139,11 @@ async function deleteMyAd(adId) {
         const deleted = await window.SupabaseClient.deleteAd(adId);
         
         if (deleted) {
-            tg.showAlert('✅ анкете успешно удалено');
+            tg.showAlert('✅ Анкета успешно удалена');
             // Перезагружаем список
             loadMyAds();
         } else {
-            tg.showAlert('❌ Не удалось удалить анкете');
+            tg.showAlert('❌ Не удалось удалить анкету');
         }
     } catch (error) {
         console.error('Error deleting ad:', error);
@@ -2133,7 +2151,7 @@ async function deleteMyAd(adId) {
     }
 }
 
-// Закрепить/открепить мое анкете
+// Закрепить/открепить мою анкету
 async function pinMyAd(adId, shouldPin) {
     try {
         // Если закрепляем - проверяем лимит
@@ -2164,9 +2182,9 @@ async function pinMyAd(adId, shouldPin) {
                 // Обновляем статус Premium (лимиты изменились)
                 await loadPremiumStatus();
                 
-                tg.showAlert('✅ Функция успешно оплачена и включена!\n\nВаше анкете будет закреплено поверх других на 1 час.');
+                tg.showAlert('✅ Функция успешно оплачена и включена!\n\nВаша анкета будет закреплено поверх других на 1 час.');
             } else {
-                tg.showAlert('✅ анкете откреплено');
+                tg.showAlert('✅ Анкета откреплена');
             }
             // Перезагружаем список
             loadMyAds();
@@ -2250,7 +2268,7 @@ tg.onEvent('web_app_data_received', function(data) {
                 displayAds(response.ads, response.city);
                 break;
             case 'adCreated':
-                tg.showAlert('анкете создано!');
+                tg.showAlert('Анкета создана!');
                 showMainMenu();
                 break;
             default:
@@ -4863,7 +4881,7 @@ async function loadMyChats() {
                 return `
                     <div class="chat-card" onclick="openChat('${chat.id}')">
                         <div class="chat-card-header">
-                            <span class="chat-ad-id" onclick="event.stopPropagation(); showAdModal('${chat.ad_id}');">💬 анкете #${chat.ad_id || 'N/A'}</span>
+                            <span class="chat-ad-id" onclick="event.stopPropagation(); showAdModal('${chat.ad_id}');">💬 Анкета #${chat.ad_id || 'N/A'}</span>
                             <span class="chat-time">${lastMessageTime}</span>
                         </div>
                         <div class="chat-preview">
@@ -4898,7 +4916,7 @@ async function loadMyChats() {
                 return `
                     <div class="chat-request-card">
                         <div class="request-header">
-                            <span class="request-ad-id">📨 анкете #${chat.ad_id || 'N/A'}</span>
+                            <span class="request-ad-id">📨 Анкета #${chat.ad_id || 'N/A'}</span>
                             <span class="request-time">${requestTime}</span>
                         </div>
                         <div class="request-message">
@@ -5104,7 +5122,7 @@ async function openChat(chatId) {
 
         // Обновляем заголовок
         document.getElementById('chatTitle').textContent = 'Анонимный чат';
-        document.getElementById('chatAdId').textContent = `анкете #${chat.ad_id || 'N/A'}`;
+        document.getElementById('chatAdId').textContent = `Анкета #${chat.ad_id || 'N/A'}`;
 
         // Загружаем сообщения
         await loadChatMessages(chatId);
@@ -5636,7 +5654,7 @@ window.addEventListener('beforeunload', () => {
 
 // ============= МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА анкеты =============
 
-// Показать анкете в модальном окне
+// Показать анкету в модальном окне
 async function showAdModal(adId) {
     const modal = document.getElementById('adModal');
     const modalBody = document.getElementById('adModalBody');
@@ -5645,7 +5663,7 @@ async function showAdModal(adId) {
         modalBody.innerHTML = `
             <div class="empty-state">
                 <div class="neon-icon">⚠️</div>
-                <h3>анкете не найдено</h3>
+                <h3>Анкета не найдена</h3>
                 <p>ID анкеты недоступен</p>
             </div>
         `;
@@ -5668,7 +5686,7 @@ async function showAdModal(adId) {
         const result = await response.json();
         
         if (result.error || !result.data) {
-            throw new Error(result.error?.message || 'анкете не найдено');
+            throw new Error(result.error?.message || 'Анкета не найдена');
         }
         
         const ad = result.data;
@@ -5756,6 +5774,20 @@ async function loadPremiumStatus() {
             return;
         }
         
+        // Загружаем из localStorage для мгновенного отображения
+        const cachedStatus = localStorage.getItem(`premium_status_${userId}`);
+        if (cachedStatus) {
+            try {
+                userPremiumStatus = JSON.parse(cachedStatus);
+                updatePremiumUI();
+                updateAdLimitBadge();
+                console.log('📦 Premium статус загружен из кэша');
+            } catch (e) {
+                console.error('Ошибка парсинга кэша Premium:', e);
+            }
+        }
+        
+        // Затем обновляем с сервера (источник истины)
         const response = await fetch('/api/premium', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -5773,10 +5805,14 @@ async function loadPremiumStatus() {
         }
         
         userPremiumStatus = result.data;
+        
+        // Сохраняем в localStorage для следующей загрузки
+        localStorage.setItem(`premium_status_${userId}`, JSON.stringify(userPremiumStatus));
+        
         updatePremiumUI();
         updateAdLimitBadge();
         
-        console.log('✅ Premium статус загружен:', userPremiumStatus);
+        console.log('✅ Premium статус загружен и сохранен:', userPremiumStatus);
     } catch (error) {
         console.error('Ошибка loadPremiumStatus:', error);
     }
@@ -5947,6 +5983,9 @@ async function activatePremium() {
         
         // Обновляем локальный статус
         userPremiumStatus.isPremium = result.data.isPremium;
+        
+        // Сохраняем в localStorage
+        localStorage.setItem(`premium_status_${userId}`, JSON.stringify(userPremiumStatus));
         
         // Обновляем UI
         updatePremiumUI();
