@@ -1382,11 +1382,12 @@ async function loadMyAds() {
             const nickname = ad.nickname || 'Аноним';
             
             const authorGender = formatGender(ad.gender);
-            const authorIcon = ad.gender === 'male' ? '♂️' : '♀️';
+            // Проверяем и на русском, и на английском
+            const authorIcon = (ad.gender?.toLowerCase() === 'male' || ad.gender?.toLowerCase() === 'мужчина') ? '♂️' : '♀️';
             const targetText = formatTarget(ad.target);
-            // Проверяем на английском, так как в БД хранится 'male', 'female'
-            const targetIcon = (ad.target?.toLowerCase() === 'male') ? '♂️' : 
-                              (ad.target?.toLowerCase() === 'female') ? '♀️' : '👤';
+            // Проверяем на английском и русском
+            const targetIcon = (ad.target?.toLowerCase() === 'male' || ad.target?.toLowerCase() === 'мужчину') ? '♂️' : 
+                              (ad.target?.toLowerCase() === 'female' || ad.target?.toLowerCase() === 'женщину') ? '♀️' : '👤';
             
             return `
             <div class="ad-card" data-ad-id="${ad.id}">
