@@ -2524,20 +2524,21 @@ h3 {
 }
 
 .loading-spinner {
-    display: inline-block;
-    width: 60px;
-    height: 60px;
+    display: block;
+    width: 120px;
+    height: 120px;
     background-image: url('images/loading.gif');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin-right: 0.5rem;
-    vertical-align: middle;
+    margin: 0 auto 1rem auto;
 }
 
 /* Убираем вращение для loading-spinner */
+.loading-spinner,
 .loading-spinner * {
     animation: none !important;
+    transform: none !important;
 }
 
 @keyframes spin {

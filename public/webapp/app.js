@@ -941,10 +941,8 @@ function generateTelegramQR(authToken) {
     // Показываем загрузку с собакой
     if (qrLoading) {
         qrLoading.innerHTML = `
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-                <p>Генерируем QR-код...</p>
-            </div>
+            <div class="loading-spinner"></div>
+            <p>Генерируем QR-код...</p>
         `;
         qrLoading.classList.remove('hidden');
     }
@@ -1084,14 +1082,18 @@ function getUserNickname() {
 // Получить локацию пользователя
 function getUserLocation() {
     const locationStr = localStorage.getItem('userLocation');
+    console.log('📍 localStorage.userLocation:', locationStr);
     if (locationStr) {
         try {
-            return JSON.parse(locationStr);
+            const parsed = JSON.parse(locationStr);
+            console.log('📍 Parsed location:', parsed);
+            return parsed;
         } catch (e) {
             console.error('Ошибка парсинга userLocation:', e);
             return null;
         }
     }
+    console.log('⚠️ userLocation не найден в localStorage');
     return null;
 }
 
@@ -1354,10 +1356,8 @@ async function loadMyAds() {
     }
     
     myAdsList.innerHTML = `
-        <div class="loading-spinner">
-            <div class="spinner"></div>
-            <p>Загрузка ваших анкет...</p>
-        </div>
+        <div class="loading-spinner"></div>
+        <p>Загрузка ваших анкет...</p>
     `;
     
     try {
@@ -1916,10 +1916,8 @@ async function loadAds(filters = {}) {
         const adsList = document.getElementById('adsList');
         if (adsList) {
             adsList.innerHTML = `
-                <div class="loading-spinner">
-                    <div class="spinner"></div>
-                    <p>Загружаем анкеты...</p>
-                </div>
+                <div class="loading-spinner"></div>
+                <p>Загружаем анкеты...</p>
             `;
         }
 
@@ -4665,10 +4663,8 @@ window.handleEmailSubmit = async function(event) {
     const statusContainer = document.getElementById('email-status');
     if (statusContainer) {
         statusContainer.innerHTML = `
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-                <p>📤 Отправляем письмо...</p>
-            </div>
+            <div class="loading-spinner"></div>
+            <p>📤 Отправляем письмо...</p>
         `;
         statusContainer.className = 'status loading';
     }
@@ -6003,10 +5999,8 @@ async function showAdModal(adId) {
     // Показать модалку с загрузкой
     modal.style.display = 'flex';
     modalBody.innerHTML = `
-        <div class="loading-spinner">
-            <div class="spinner"></div>
-            <p>Загрузка анкеты...</p>
-        </div>
+        <div class="loading-spinner"></div>
+        <p>Загрузка анкеты...</p>
     `;
     
     try {
@@ -6208,18 +6202,20 @@ async function showPremiumModal() {
     if (userLocation && userLocation.country) {
         console.log('Страна пользователя:', userLocation.country);
         
-        // Проверяем разные варианты названия России
+        // Проверяем разные варианты: ключ 'russia' или название 'Россия'
         const countryLower = userLocation.country.toLowerCase();
-        if (countryLower.includes('россия') || countryLower.includes('russia') || countryLower.includes('russian')) {
+        if (countryLower === 'russia' || countryLower.includes('россия') || countryLower.includes('russian')) {
             currency = '₽';
             proPrice = 99;
-            console.log('✅ Установлена валюта: рубли');
+            console.log('✅ Установлена валюта: рубли (99₽)');
         } else {
-            console.log('✅ Установлена валюта: тенге (Казахстан)');
+            console.log('✅ Установлена валюта: тенге (499₸)');
         }
     } else {
         console.log('⚠️ Локация не определена, используем тенге по умолчанию');
     }
+    
+    console.log('💰 Итоговая валюта:', currency, 'Цена:', proPrice);
     
     // Обновляем валюту в FREE тарифе
     const freeCurrencyElement = document.querySelector('.pricing-card:not(.featured) .price-currency');
