@@ -901,6 +901,36 @@ function generateTelegramQR(authToken) {
     }, 100);
 }
 
+// Обработчик Telegram Login Widget
+window.onTelegramAuth = function(user) {
+    console.log('🔐 Авторизация через Telegram Login Widget:', user);
+    
+    // Сохраняем данные пользователя
+    const userData = {
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name || '',
+        username: user.username || '',
+        photo_url: user.photo_url || '',
+        auth_date: user.auth_date,
+        hash: user.hash
+    };
+    
+    // Сохраняем в localStorage
+    localStorage.setItem('telegram_user', JSON.stringify(userData));
+    localStorage.setItem('user_id', user.id);
+    
+    // Показываем успешную авторизацию
+    console.log('✅ Авторизация успешна! User ID:', user.id);
+    
+    // Обновляем интерфейс
+    currentUserId = user.id;
+    checkAuthStatus();
+    
+    // Показываем список анкет
+    showAdsList();
+};
+
 // Закрыть модальное окно (только если пользователь авторизован)
 function closeTelegramAuthModal() {
     const savedUser = localStorage.getItem('telegram_user');
