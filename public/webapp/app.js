@@ -1359,9 +1359,11 @@ async function loadMyAds() {
             const ageFrom = ad.age_from || ad.ageFrom || '?';
             const ageTo = ad.age_to || ad.ageTo || '?';
             
-            const authorGender = ad.gender === 'male' ? 'Мужчина' : 'Женщина';
+            const nickname = ad.nickname || 'Аноним';
+            
+            const authorGender = formatGender(ad.gender);
             const authorIcon = ad.gender === 'male' ? '👨' : '👩';
-            const targetText = ad.target === 'male' || ad.target === 'мужчину' ? 'мужчину' : 'женщину';
+            const targetText = formatTarget(ad.target);
             const targetIcon = ad.target === 'male' || ad.target === 'мужчину' ? '👨' : '👩';
             
             return `
@@ -1378,7 +1380,7 @@ async function loadMyAds() {
                     </div>
                     <div class="ad-field">
                         <span class="icon">🎯</span>
-                        <span><strong>Цель:</strong> ${ad.goal || 'не указано'}</span>
+                        <span class="label">Цель:</span>`n                        <span class="value">${formatGoals(ad.goal)}</span>
                     </div>
                     <div class="ad-field">
                         <span class="icon">${targetIcon}</span>
@@ -1917,17 +1919,17 @@ function displayAds(ads, city = null) {
                 <div class="ad-field">
                     <span class="icon">👤</span>
                     <span class="label">Пол:</span>
-                    <span class="value">${ad.gender}</span>
+                    <span class="value">${formatGender(ad.gender)}</span>
                 </div>
                 <div class="ad-field">
                     <span class="icon">🔍</span>
                     <span class="label">Ищет:</span>
-                    <span class="value">${ad.target}</span>
+                    <span class="value">${formatTarget(ad.target)}</span>
                 </div>
                 <div class="ad-field">
                     <span class="icon">🎯</span>
                     <span class="label">Цель:</span>
-                    <span class="value">${ad.goal}</span>
+                    <span class="value">${formatGoals(ad.goal)}</span>
                 </div>
                 <div class="ad-field">
                     <span class="icon">🎂</span>
@@ -2010,11 +2012,11 @@ function showAdDetails(index) {
                 <div class="search-params">
                     <div class="param-item">
                         <span class="param-icon">👥</span>
-                        <span>${ad.target}, ${ageFrom}-${ageTo} лет</span>
+                        <span>${formatTarget(ad.target)}, ${ageFrom}-${ageTo} лет</span>
                     </div>
                     <div class="param-item">
                         <span class="param-icon">🎯</span>
-                        <span>${ad.goal}</span>
+                        <span>${formatGoals(ad.goal)}</span>
                     </div>
                 </div>
             </div>
@@ -5399,15 +5401,10 @@ async function showAdModal(adId) {
         
         const ad = result.ads[0];
         
-        // Формируем HTML для модального окна
-        const genderLabels = { male: 'Мужчина', female: 'Женщина' };
-        const targetLabels = { male: 'Мужчину', female: 'Женщину', any: 'Не важно' };
-        const goalLabels = {
-            friendship: 'Дружба',
-            relationship: 'Отношения',
-            chat: 'Общение',
-            other: 'Другое'
-        };
+        // Используем helper функции для форматирования
+        const genderFormatted = formatGender(ad.gender);
+        const targetFormatted = formatTarget(ad.target);
+        const goalsFormatted = formatGoals(ad.goal);
         
         const bodyLabels = {
             slim: 'Худощавое',
@@ -5420,9 +5417,9 @@ async function showAdModal(adId) {
             <div style="padding: 20px; max-width: 400px;">
                 <h3 style="margin-top: 0; color: var(--neon-cyan);">📋 Анкета #${ad.id}</h3>
                 <div style="margin-bottom: 15px;">
-                    <strong>👤 Пол:</strong> ${genderLabels[ad.gender] || ad.gender}<br>
-                    <strong>🎯 Ищет:</strong> ${targetLabels[ad.target] || ad.target}<br>
-                    <strong>💫 Цель:</strong> ${goalLabels[ad.goal] || ad.goal}<br>
+                    <strong>👤 Пол:</strong> ${genderFormatted}<br>
+                    <strong>🎯 Ищет:</strong> ${targetFormatted}<br>
+                    <strong>💫 Цель:</strong> ${goalsFormatted}<br>
                     <strong>🎂 Возраст:</strong> ${ad.my_age || 'Не указан'} лет<br>
                     <strong>📏 Ищет возраст:</strong> ${ad.age_from || '18'} - ${ad.age_to || '99'} лет<br>
                     ${ad.body_type ? `<strong>💪 Телосложение:</strong> ${bodyLabels[ad.body_type] || ad.body_type}<br>` : ''}
@@ -5700,6 +5697,61 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Форматирование пола для отображения
+function formatGender(gender) {
+    const genderMap = {
+        'male': 'Мужчина',
+        'female': 'Женщина',
+        'мужчина': 'Мужчина',
+        'женщина': 'Женщина'
+    };
+    return genderMap[gender?.toLowerCase()] || gender || 'Не указан';
+}
+
+// Форматирование цели поиска
+function formatTarget(target) {
+    const targetMap = {
+        'male': 'Мужчину',
+        'female': 'Женщину',
+        'any': 'Не важно',
+        'мужчину': 'Мужчину',
+        'женщину': 'Женщину'
+    };
+    return targetMap[target?.toLowerCase()] || target || 'Не важно';
+}
+
+// Форматирование целей знакомства (может быть несколько через запятую)
+function formatGoals(goals) {
+    if (!goals) return 'Не указано';
+    
+    const goalMap = {
+        'friendship': 'Дружба',
+        'relationship': 'Отношения',
+        'chat': 'Общение',
+        'other': 'Другое',
+        'дружба': 'Дружба',
+        'отношения': 'Отношения',
+        'общение': 'Общение',
+        'другое': 'Другое'
+    };
+    
+    // Если это массив
+    if (Array.isArray(goals)) {
+        return goals.map(g => goalMap[g?.toLowerCase()] || g).join(', ');
+    }
+    
+    // Если это строка с запятыми
+    if (typeof goals === 'string' && goals.includes(',')) {
+        return goals.split(',').map(g => {
+            g = g.trim();
+            return goalMap[g?.toLowerCase()] || g;
+        }).join(', ');
+    }
+    
+    // Одна цель
+    return goalMap[goals?.toLowerCase()] || goals;
 }
 
 // Обработчик нажатия Enter в поле ввода
