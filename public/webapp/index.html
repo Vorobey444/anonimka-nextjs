@@ -412,7 +412,7 @@
                     
                     <div class="nickname-edit-form">
                         <h3>Новый никнейм</h3>
-                        <p class="nickname-hint-page">Выберите, как вас будут видеть в анкетиях</p>
+                        <p class="nickname-hint-page">Выберите, как вас будут видеть в анкетах</p>
                         <div class="nickname-input-wrapper-page">
                             <input type="text" 
                                    id="nicknameInputPage" 
@@ -440,7 +440,7 @@
             </div>
         </div>
 
-        <!-- Создание анкетия -->
+        <!-- Создание анкеты -->
         <div id="createAd" class="screen">
             <div class="header">
                 <button class="back-btn" onclick="showMainMenu()">← Назад</button>
@@ -479,8 +479,10 @@
 
                 <div class="form-step" id="step3">
                     <h3>🎯 Цель знакомства</h3>
+                    <p style="font-size: 0.9rem; color: var(--text-gray); margin-bottom: 15px;">Выберите одну или несколько целей</p>
                     <div class="goal-select">
                         <button type="button" class="goal-btn" data-goal="Дружба">🤝 Дружба</button>
+                        <button type="button" class="goal-btn" data-goal="Флирт">😊 Флирт</button>
                         <button type="button" class="goal-btn" data-goal="Путешествия">✈️ Путешествия</button>
                         <button type="button" class="goal-btn" data-goal="Общение">💬 Общение</button>
                         <button type="button" class="goal-btn" data-goal="Секс">🔥 Секс</button>
@@ -495,7 +497,7 @@
                             <label>От</label>
                             <div class="age-control">
                                 <button type="button" class="age-btn minus" onclick="decreaseAge('ageFrom')">−</button>
-                                <input type="number" id="ageFrom" min="18" max="100" class="neon-input small" placeholder="18" onchange="validateAgeRange()">
+                                <input type="number" id="ageFrom" min="18" max="100" class="neon-input small" placeholder="" onchange="validateAgeRange()">
                                 <button type="button" class="age-btn plus" onclick="increaseAge('ageFrom')">+</button>
                             </div>
                         </div>
@@ -503,7 +505,7 @@
                             <label>До</label>
                             <div class="age-control">
                                 <button type="button" class="age-btn minus" onclick="decreaseAge('ageTo')">−</button>
-                                <input type="number" id="ageTo" min="18" max="100" class="neon-input small" placeholder="18" onchange="validateAgeRange()">
+                                <input type="number" id="ageTo" min="18" max="100" class="neon-input small" placeholder="" onchange="validateAgeRange()">
                                 <button type="button" class="age-btn plus" onclick="increaseAge('ageTo')">+</button>
                             </div>
                         </div>
@@ -531,7 +533,7 @@
                 </div>
 
                 <div class="form-step" id="step7">
-                    <h3>💬 Текст анкетия</h3>
+                    <h3>💬 Текст анкеты</h3>
                 </div>
             </form>
 
@@ -572,7 +574,7 @@
         <div id="browseAds" class="screen">
             <div class="header">
                 <button class="back-btn" onclick="showMainMenu()">← Назад</button>
-                <h2>анкетия</h2>
+                <h2>Анкеты</h2>
             </div>
             
             <div class="current-location-display">
@@ -584,19 +586,19 @@
             </div>
 
             <div id="adsList" class="ads-list">
-                <!-- анкетия будут загружены через JS -->
+                <!-- Анкеты будут загружены через JS -->
             </div>
         </div>
 
-        <!-- Мои анкетия -->
+        <!-- Мои анкеты -->
         <div id="myAds" class="screen">
             <div class="header">
                 <button class="back-btn" onclick="showMainMenu()">← Назад</button>
-                <h2>Мои анкетия</h2>
+                <h2>Мои анкеты</h2>
             </div>
 
             <div id="myAdsList" class="ads-list">
-                <!-- анкетия пользователя будут загружены через JS -->
+                <!-- Анкеты пользователя будут загружены через JS -->
             </div>
         </div>
 
@@ -678,14 +680,14 @@
             </div>
         </div>
 
-        <!-- Детали анкетия -->
+        <!-- Детали анкеты -->
         <div id="adDetails" class="screen">
             <div class="header">
-                <button class="back-btn" onclick="showBrowseAds()">← К анкетиям</button>
+                <button class="back-btn" onclick="showBrowseAds()">← К анкетам</button>
             </div>
             
             <div id="adContent" class="ad-details">
-                <!-- Контент анкетия -->
+                <!-- Контент анкеты -->
             </div>
             
             <div class="ad-details-footer">
@@ -711,7 +713,7 @@
                     <p>Для продолжения использования сайта необходимо авторизоваться через Telegram.</p>
                     <p>Это позволит:</p>
                     <ul>
-                        <li>✅ Создавать анкетия</li>
+                        <li>✅ Создавать анкеты</li>
                         <li>✅ Получать уведомления о сообщениях</li>
                         <li>✅ Создавать приватные чаты</li>
                     </ul>

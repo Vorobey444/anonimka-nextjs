@@ -1143,6 +1143,16 @@ function showScreen(screenId) {
     });
     document.getElementById(screenId).classList.add('active');
     
+    // Управление видимостью переключателя тарифов
+    const premiumToggle = document.getElementById('premiumToggle');
+    if (premiumToggle) {
+        if (screenId === 'mainMenu') {
+            premiumToggle.style.display = 'flex';
+        } else {
+            premiumToggle.style.display = 'none';
+        }
+    }
+    
     // Обновляем кнопки Telegram
     updateTelegramButtons(screenId);
 }
@@ -1568,9 +1578,15 @@ function validateCurrentStep() {
             console.log(`Шаг 2 (Кого ищет): ${hasTarget ? '✅' : '❌'}`, formData.target);
             return hasTarget;
         case 3: // Цель
-            const hasGoal = !!formData.goal;
-            console.log(`Шаг 3 (Цель): ${hasGoal ? '✅' : '❌'}`, formData.goal);
-            return hasGoal;
+            const hasGoals = formData.goals && formData.goals.length > 0;
+            console.log(`Шаг 3 (Цель): ${hasGoals ? '✅' : '❌'}`, formData.goals);
+            if (!hasGoals) {
+                alert('Выберите хотя бы одну цель знакомства');
+                return false;
+            }
+            // Обновляем formData.goal для обратной совместимости
+            formData.goal = formData.goals.join(', ');
+            return true;
         case 4: // Возраст партнера
             const ageFrom = document.getElementById('ageFrom').value;
             const ageTo = document.getElementById('ageTo').value;
@@ -1626,9 +1642,24 @@ function selectTarget(target) {
 }
 
 function selectGoal(goal) {
-    document.querySelectorAll('.goal-btn').forEach(btn => btn.classList.remove('selected'));
-    document.querySelector(`[data-goal="${goal}"]`).classList.add('selected');
-    formData.goal = goal;
+    const btn = document.querySelector(`[data-goal="${goal}"]`);
+    
+    // Переключаем выбор (toggle)
+    if (btn.classList.contains('selected')) {
+        btn.classList.remove('selected');
+        // Удаляем из массива
+        formData.goals = (formData.goals || []).filter(g => g !== goal);
+    } else {
+        btn.classList.add('selected');
+        // Добавляем в массив
+        formData.goals = formData.goals || [];
+        formData.goals.push(goal);
+    }
+    
+    // Для обратной совместимости - сохраняем первую цель в formData.goal
+    formData.goal = (formData.goals || [])[0] || '';
+    
+    console.log('Выбранные цели:', formData.goals);
 }
 
 function selectBody(body) {
@@ -1827,11 +1858,15 @@ function displayAds(ads, city = null) {
         const myAge = ad.my_age || ad.myAge || '?';
         const ageFrom = ad.age_from || ad.ageFrom || '?';
         const ageTo = ad.age_to || ad.ageTo || '?';
+        const nickname = ad.nickname || 'Аноним';
         const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > now);
         
         return `
         <div class="ad-card" onclick="showAdDetails(${index})">
             ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
+            <div class="ad-header">
+                <h3>👤 ${nickname}</h3>
+            </div>
             <div class="ad-info">
                 <div class="ad-field">
                     <span class="icon">🏙</span>
@@ -5878,6 +5913,13 @@ async function activatePremium() {
         const userId = getCurrentUserId();
         if (!userId || userId.startsWith('web_')) {
             tg.showAlert('Необходима авторизация через Telegram');
+            return;
+        }
+        
+        // Проверяем текущий статус
+        if (userPremiumStatus.isPremium) {
+            // Уже на PRO - показываем уведомление
+            alert('✅ Вы уже используете PRO аккаунт!\n\nДля понижения до FREE нажмите кнопку "Понизить до FREE" в карточке FREE тарифа.');
             return;
         }
         
