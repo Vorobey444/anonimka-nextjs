@@ -6013,7 +6013,8 @@ async function showAdModal(adId) {
             curvy: 'Полное'
         };
         
-        const genderIcon = ad.gender === 'male' ? '♂️' : '♀️';
+        const genderLower = ad.gender?.toLowerCase();
+        const genderIcon = (genderLower === 'male' || genderLower === 'мужчина') ? '♂️' : '♀️';
         
         // Отображаем анкету
         modalBody.innerHTML = `
@@ -7046,8 +7047,8 @@ async function showBlockedUsers() {
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="neon-icon">✅</div>
-                    <h3>Нет заблокированных</h3>
-                    <p>Вы никого не заблокировали</p>
+                    <h3>Список пуст</h3>
+                    <p>У вас нет заблокированных пользователей</p>
                 </div>
             `;
             return;
@@ -7062,8 +7063,8 @@ async function showBlockedUsers() {
                         <div class="blocked-user-date">Заблокирован ${formatChatTime(user.blocked_at)}</div>
                     </div>
                 </div>
-                <button class="neon-button small" onclick="unblockUserFromList('${user.blocked_id}')">
-                    Разблокировать
+                <button class="unblock-btn" onclick="unblockUserFromList('${user.blocked_id}')" title="Разблокировать">
+                    ×
                 </button>
             </div>
         `).join('');

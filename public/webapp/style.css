@@ -3677,6 +3677,11 @@ h3 {
     gap: 15px;
 }
 
+.header h2 {
+    margin-left: 45px;
+    font-size: 1rem;
+}
+
 .chat-menu-btn {
     background: transparent;
     border: none;
@@ -3748,15 +3753,16 @@ h3 {
 .block-warning {
     background: linear-gradient(135deg, rgba(255, 0, 100, 0.2), rgba(255, 0, 255, 0.2));
     border: 2px solid var(--neon-pink);
+    border-radius: 10px;
     padding: 12px 15px;
     text-align: center;
     color: var(--neon-pink);
     font-weight: bold;
     animation: pulse 2s infinite;
     position: sticky;
-    bottom: 0;
+    bottom: 10px;
     z-index: 50;
-    margin-top: auto;
+    margin: 10px;
     font-size: 0.9rem;
 }
 
@@ -3808,6 +3814,30 @@ h3 {
 .blocked-user-date {
     color: var(--text-gray);
     font-size: 0.8rem;
+}
+
+.unblock-btn {
+    background: transparent;
+    border: 2px solid var(--neon-pink);
+    color: var(--neon-pink);
+    font-size: 1.8rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    line-height: 1;
+    padding: 0;
+}
+
+.unblock-btn:hover {
+    background: var(--neon-pink);
+    color: var(--bg-dark);
+    box-shadow: 0 0 15px var(--neon-pink);
+    transform: rotate(90deg);
 }
 
 .neon-button.small {
@@ -4270,14 +4300,15 @@ h3 {
     max-width: 600px;
     width: 90%;
     max-height: 80vh;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     box-shadow: 0 10px 40px rgba(0, 217, 255, 0.3);
     animation: slideUp 0.3s ease;
 }
 
 @keyframes slideUp {
     from {
-        transform: translateY(50px);
+        transform: translateY(30px);
         opacity: 0;
     }
     to {

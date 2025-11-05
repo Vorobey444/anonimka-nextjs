@@ -626,7 +626,7 @@
                             <label>От</label>
                             <div class="age-control">
                                 <button type="button" class="age-btn minus" onclick="decreaseAge('ageFrom')">−</button>
-                                <input type="number" id="ageFrom" min="18" max="99" class="neon-input small" placeholder="" oninput="validateAgeRange()" onchange="validateAgeRange()">
+                                <input type="number" id="ageFrom" min="18" max="99" class="neon-input small" placeholder="" onblur="validateAgeRange()">
                                 <button type="button" class="age-btn plus" onclick="increaseAge('ageFrom')">+</button>
                             </div>
                         </div>
@@ -634,7 +634,7 @@
                             <label>До</label>
                             <div class="age-control">
                                 <button type="button" class="age-btn minus" onclick="decreaseAge('ageTo')">−</button>
-                                <input type="number" id="ageTo" min="18" max="99" class="neon-input small" placeholder="" oninput="validateAgeRange()" onchange="validateAgeRange()">
+                                <input type="number" id="ageTo" min="18" max="99" class="neon-input small" placeholder="" onblur="validateAgeRange()">
                                 <button type="button" class="age-btn plus" onclick="increaseAge('ageTo')">+</button>
                             </div>
                         </div>
@@ -849,6 +849,11 @@
                 <div id="chatMessages" class="chat-messages">
                     <!-- Сообщения будут загружены через JS -->
                 </div>
+                
+                <!-- Предупреждение о блокировке -->
+                <div id="blockWarning" class="block-warning" style="display: none;">
+                    ⚠️ Собеседник внес вас в черный список
+                </div>
             </div>
 
             <div class="chat-input-container">
@@ -864,11 +869,6 @@
                 <button id="sendButton" class="send-button" onclick="sendMessage()">
                     <span class="send-icon">✈️</span>
                 </button>
-            </div>
-            
-            <!-- Предупреждение о блокировке -->
-            <div id="blockWarning" class="block-warning" style="display: none;">
-                ⚠️ Собеседник внес вас в черный список
             </div>
         </div>
 
@@ -1058,7 +1058,7 @@
 
     <!-- Реферальное модальное окно -->
     <div id="referralModal" class="modal" style="display: none;">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 420px;">
             <div class="modal-header">
                 <h2>🎁 Пригласи друга</h2>
                 <button class="modal-close" onclick="closeReferralModal()">×</button>
