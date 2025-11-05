@@ -10,54 +10,36 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'check-existing': {
-        const { user1, user2, adId } = params;
+        const { user1_token, user2_token, adId } = params;
         const result = await sql`
           SELECT id, accepted, blocked_by 
           FROM private_chats 
-          WHERE user1 = ${user1} AND user2 = ${user2} AND ad_id = ${adId}
+          WHERE user1 = ${user1_token} AND user2 = ${user2_token} AND ad_id = ${adId}
           LIMIT 1
         `;
         return NextResponse.json({ data: result.rows[0] || null, error: null });
       }
 
       case 'create': {
-        const { user1, user2, adId, message } = params;
+        const { user1_token, user2_token, adId, message } = params;
         const result = await sql`
           INSERT INTO private_chats (user1, user2, ad_id, message, accepted)
-          VALUES (${user1}, ${user2}, ${adId}, ${message || ''}, false)
+          VALUES (${user1_token}, ${user2_token}, ${adId}, ${message || ''}, false)
           RETURNING *
         `;
         return NextResponse.json({ data: result.rows[0], error: null });
       }
 
       case 'get-pending': {
-        const { userId } = params;
+        const { user_token } = params;
         const result = await sql`
-          SELECT 
-            pc.*,
-            u.is_premium as sender_is_premium,
-            (
-              SELECT sender_nickname
-              FROM messages
-              switch (action) {
-                case 'check-existing': {
-                  const { user1_token, user2_token, adId } = params;
-                  const result = await sql`SELECT id, accepted, blocked_by FROM private_chats WHERE user1 = ${user1_token} AND user2 = ${user2_token} AND ad_id = ${adId} LIMIT 1`;
-                  return NextResponse.json({ data: result.rows[0] || null, error: null });
-                }
-
-                case 'create': {
-                  const { user1_token, user2_token, adId, message } = params;
-                  const result = await sql`INSERT INTO private_chats (user1, user2, ad_id, message, accepted) VALUES (${user1_token}, ${user2_token}, ${adId}, ${message || ''}, false) RETURNING *`;
-                  return NextResponse.json({ data: result.rows[0], error: null });
-                }
-
-                case 'get-pending': {
-                  const { user_token } = params;
-                  const result = await sql`SELECT pc.*, u.is_premium as sender_is_premium, (SELECT sender_nickname FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as sender_nickname, (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_text FROM private_chats pc LEFT JOIN users u ON (CASE WHEN pc.user1 = ${user_token} THEN pc.user2 = u.id ELSE pc.user1 = u.id END) WHERE user2 = ${user_token} AND accepted = false ORDER BY pc.created_at DESC`;
-                  return NextResponse.json({ data: result.rows, error: null });
-                }
-          ORDER BY last_message_time DESC NULLS LAST, pc.created_at DESC
+          SELECT pc.*, u.is_premium as sender_is_premium,
+            (SELECT sender_nickname FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as sender_nickname,
+            (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_text
+          FROM private_chats pc
+          LEFT JOIN users u ON (CASE WHEN pc.user1 = ${user_token} THEN pc.user2 = u.id ELSE pc.user1 = u.id END)
+          WHERE user2 = ${user_token} AND accepted = false
+          ORDER BY pc.created_at DESC
         `;
         return NextResponse.json({ data: result.rows, error: null });
       }
