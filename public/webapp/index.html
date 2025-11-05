@@ -215,6 +215,10 @@
                         <span class="hamburger-icon">📍</span>
                         Сменить город
                     </a>
+                    <a href="#" class="hamburger-item" onclick="showBlockedUsers()">
+                        <span class="hamburger-icon">🚫</span>
+                        Мои заблокированные
+                    </a>
                     <a href="#" class="hamburger-item" onclick="showContacts()">
                         <span class="hamburger-icon">📞</span>
                         Тех.поддержка
@@ -499,6 +503,22 @@
                 </div>
                 <div class="about-section">
                     <p class="copyright">© 2025 Anonimka.kz. Все права защищены.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Мои заблокированные -->
+        <div id="blockedUsers" class="screen info-screen">
+            <div class="header">
+                <button class="back-btn" onclick="closeHamburgerAndGoHome()">← Назад</button>
+                <h2>🚫 Заблокированные</h2>
+            </div>
+            <div class="info-content">
+                <div id="blockedUsersContainer">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                        <p>Загрузка...</p>
+                    </div>
                 </div>
             </div>
         </div>

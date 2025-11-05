@@ -5067,6 +5067,17 @@ async function loadMyChats() {
                 const unreadCount = chat.unread_count || 0;
                 const unreadBadge = unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : '';
                 
+                // Проверяем блокировку
+                let blockStatus = '';
+                if (chat.blocked_by) {
+                    const isBlockedByMe = chat.blocked_by == userId;
+                    if (isBlockedByMe) {
+                        blockStatus = '<span style="color: var(--neon-orange); font-size: 0.8rem;">🚫 Вы заблокировали</span>';
+                    } else {
+                        blockStatus = '<span style="color: var(--neon-pink); font-size: 0.8rem;">🚫 Вы заблокированы</span>';
+                    }
+                }
+                
                 return `
                     <div class="chat-card" onclick="openChat('${chat.id}')">
                         <div class="chat-card-header">
@@ -5077,7 +5088,7 @@ async function loadMyChats() {
                             </div>
                         </div>
                         <div class="chat-preview">
-                            ${lastMessagePreview}
+                            ${blockStatus || lastMessagePreview}
                         </div>
                     </div>
                 `;
@@ -6009,7 +6020,7 @@ async function showAdModal(adId) {
             <div class="ad-detail-view" style="padding: 12px; max-width: 380px; font-size: 13px;">
                 <h3 style="margin-top: 0; margin-bottom: 10px; color: var(--neon-cyan); font-size: 16px;">${genderIcon} ${genderFormatted}, ${ad.my_age || '?'} лет</h3>
                 <div style="margin-bottom: 10px; line-height: 1.6;">
-                    <div style="margin-bottom: 4px;">� <strong>Телосложение:</strong> ${bodyLabels[ad.body_type] || 'Не указано'}</div>
+                    <div style="margin-bottom: 4px;">💪 <strong>Телосложение:</strong> ${bodyLabels[ad.body_type] || 'Не указано'}</div>
                     <div style="margin-bottom: 4px;">🎯 <strong>Цель:</strong> ${goalsFormatted}</div>
                     <div style="margin-bottom: 4px;">🔍 <strong>Ищу:</strong> ${targetFormatted}, ${ad.age_from || '18'}-${ad.age_to || '99'} лет</div>
                     <div style="margin-bottom: 4px;">📍 <strong>Город:</strong> ${ad.city || 'Не указан'}</div>
@@ -6978,5 +6989,129 @@ window.addEventListener('click', (event) => {
         closeReferralModal();
     }
 });
+
+// ============= УПРАВЛЕНИЕ ЗАБЛОКИРОВАННЫМИ =============
+
+async function showBlockedUsers() {
+    closeHamburgerMenu();
+    const container = document.getElementById('blockedUsersContainer');
+    showScreen('blockedUsers');
+    
+    container.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Загрузка...</p>
+        </div>
+    `;
+    
+    try {
+        const userId = getCurrentUserId();
+        
+        if (!userId || userId.startsWith('web_')) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="neon-icon">🔒</div>
+                    <h3>Требуется авторизация</h3>
+                    <p>Для просмотра заблокированных пользуйтесь Telegram</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const response = await fetch('/api/blocks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get-blocked-users',
+                params: { userId }
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="neon-icon">⚠️</div>
+                    <h3>Ошибка</h3>
+                    <p>${result.error.message}</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const blockedUsers = result.data || [];
+        
+        if (blockedUsers.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="neon-icon">✅</div>
+                    <h3>Нет заблокированных</h3>
+                    <p>Вы никого не заблокировали</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = blockedUsers.map(user => `
+            <div class="blocked-user-card">
+                <div class="blocked-user-info">
+                    <span class="blocked-user-icon">👤</span>
+                    <div class="blocked-user-details">
+                        <div class="blocked-user-name">${escapeHtml(user.nickname || 'Собеседник')}</div>
+                        <div class="blocked-user-date">Заблокирован ${formatChatTime(user.blocked_at)}</div>
+                    </div>
+                </div>
+                <button class="neon-button small" onclick="unblockUserFromList('${user.blocked_id}')">
+                    Разблокировать
+                </button>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Ошибка загрузки заблокированных:', error);
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="neon-icon">⚠️</div>
+                <h3>Ошибка</h3>
+                <p>Не удалось загрузить список</p>
+            </div>
+        `;
+    }
+}
+
+async function unblockUserFromList(blockedId) {
+    const userId = getCurrentUserId();
+    
+    tg.showConfirm('Разблокировать пользователя?', async (confirmed) => {
+        if (!confirmed) return;
+        
+        try {
+            const response = await fetch('/api/blocks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'unblock-user',
+                    params: { blockerId: userId, blockedId }
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.error) {
+                tg.showAlert('Ошибка: ' + result.error.message);
+                return;
+            }
+            
+            tg.showAlert('✅ Пользователь разблокирован');
+            // Перезагружаем список
+            showBlockedUsers();
+            
+        } catch (error) {
+            console.error('Ошибка разблокировки:', error);
+            tg.showAlert('Ошибка при разблокировке');
+        }
+    });
+}
 
 

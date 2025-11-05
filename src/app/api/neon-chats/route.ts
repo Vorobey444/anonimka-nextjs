@@ -93,8 +93,7 @@ export async function POST(request: NextRequest) {
             ) as unread_count
           FROM private_chats pc
           WHERE (user1 = ${userId} OR user2 = ${userId})
-            AND accepted = true 
-            AND blocked_by IS NULL
+            AND accepted = true
           ORDER BY last_message_time DESC NULLS LAST, pc.created_at DESC
         `;
         return NextResponse.json({ data: result.rows, error: null });
