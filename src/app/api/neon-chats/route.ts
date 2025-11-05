@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
         const result = await sql`
           SELECT id, accepted, blocked_by 
           FROM private_chats 
-          WHERE user1 = ${user1_token} AND user2 = ${user2_token} AND ad_id = ${adId}
+          WHERE user_token_1 = ${user1_token} AND user_token_2 = ${user2_token} AND ad_id = ${adId}
           LIMIT 1
         `;
         return NextResponse.json({ data: result.rows[0] || null, error: null });
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       case 'create': {
         const { user1_token, user2_token, adId, message } = params;
         const result = await sql`
-          INSERT INTO private_chats (user1, user2, ad_id, message, accepted)
+          INSERT INTO private_chats (user_token_1, user_token_2, ad_id, message, accepted)
           VALUES (${user1_token}, ${user2_token}, ${adId}, ${message || ''}, false)
           RETURNING *
         `;
@@ -44,10 +44,10 @@ export async function POST(request: NextRequest) {
           SELECT pc.*,
             (SELECT sender_nickname FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as sender_nickname,
             (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_text,
-            -- токен оппонента (создателя запроса)
-            (SELECT a.user_token FROM ads a WHERE a.tg_id = pc.user1 ORDER BY a.created_at DESC LIMIT 1) as opponent_token
+            -- токен оппонента (создателя запроса) теперь уже в user_token_1
+            pc.user_token_1 as opponent_token
           FROM private_chats pc
-          WHERE user2 = ${userIdentifier}
+          WHERE user_token_2 = ${userIdentifier}
             AND accepted = false
           ORDER BY pc.created_at DESC
         `;
@@ -66,15 +66,13 @@ export async function POST(request: NextRequest) {
           SELECT pc.*,
             (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message,
             (SELECT created_at FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
-            CASE WHEN ${userId} = pc.user1 THEN 'user1' ELSE 'user2' END as my_role,
+            CASE WHEN ${userId} = pc.user_token_1 THEN 'user1' ELSE 'user2' END as my_role,
             CASE 
-              WHEN ${userId} = pc.user1 THEN 
-                (SELECT a.user_token FROM ads a WHERE a.id = pc.ad_id LIMIT 1)
-              ELSE 
-                (SELECT a.user_token FROM ads a WHERE a.tg_id = pc.user1 ORDER BY a.created_at DESC LIMIT 1)
+              WHEN ${userId} = pc.user_token_1 THEN pc.user_token_2
+              ELSE pc.user_token_1
             END as opponent_token
           FROM private_chats pc
-          WHERE (user1 = ${userId} OR user2 = ${userId})
+          WHERE (user_token_1 = ${userId} OR user_token_2 = ${userId})
             AND accepted = true
             AND blocked_by IS NULL
           ORDER BY pc.created_at DESC
@@ -88,7 +86,7 @@ export async function POST(request: NextRequest) {
         // Сначала получаем информацию о чате и первоначальное сообщение
         const chatInfo = await sql`
           SELECT * FROM private_chats 
-          WHERE id = ${chatId} AND user2 = ${userId}
+          WHERE id = ${chatId} AND user_token_2 = ${userId}
         `;
         
         if (chatInfo.rows.length === 0) {
@@ -103,8 +101,8 @@ export async function POST(request: NextRequest) {
         // Если есть первоначальное сообщение, сохраняем его в таблицу messages
         if (chat.message && chat.message.trim()) {
           await sql`
-            INSERT INTO messages (chat_id, sender_id, message, created_at)
-            VALUES (${chatId}, ${chat.user1}, ${chat.message}, ${chat.created_at})
+            INSERT INTO messages (chat_id, sender_token, message, created_at)
+            VALUES (${chatId}, ${chat.user_token_1}, ${chat.message}, ${chat.created_at})
           `;
         }
         
@@ -112,7 +110,7 @@ export async function POST(request: NextRequest) {
         const result = await sql`
           UPDATE private_chats 
           SET accepted = true 
-          WHERE id = ${chatId} AND user2 = ${userId}
+          WHERE id = ${chatId} AND user_token_2 = ${userId}
           RETURNING *
         `;
         
@@ -123,7 +121,7 @@ export async function POST(request: NextRequest) {
         const { chatId, userId } = params;
         const result = await sql`
           DELETE FROM private_chats 
-          WHERE id = ${chatId} AND user2 = ${userId}
+          WHERE id = ${chatId} AND user_token_2 = ${userId}
           RETURNING *
         `;
         return NextResponse.json({ data: result.rows[0], error: null });
@@ -134,7 +132,7 @@ export async function POST(request: NextRequest) {
         const result = await sql`
           SELECT COUNT(*) as count 
           FROM private_chats 
-          WHERE user2 = ${userId} 
+          WHERE user_token_2 = ${userId} 
             AND accepted = false 
             AND blocked_by IS NULL
         `;
@@ -166,7 +164,7 @@ export async function POST(request: NextRequest) {
         const chatCheck = await sql`
           SELECT id FROM private_chats
           WHERE id = ${chatId}
-            AND (user1 = ${userId} OR user2 = ${userId})
+            AND (user_token_1 = ${userId} OR user_token_2 = ${userId})
         `;
         
         if (chatCheck.rows.length === 0) {

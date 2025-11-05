@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
         const { chatId } = params;
         const result = await sql`
           SELECT m.*, 
-            pc.user1, 
-            pc.user2,
+            pc.user_token_1, 
+            pc.user_token_2,
             pc.ad_id
           FROM messages m
           JOIN private_chats pc ON m.chat_id = pc.id
@@ -69,20 +69,26 @@ export async function POST(request: NextRequest) {
         
         const chat = chatCheck.rows[0];
         
-        // Определяем получателя
-        const receiverId = chat.user1 == senderId ? chat.user2 : chat.user1;
+        // Определяем получателя (токен)
+        const receiverToken = chat.user_token_1 == senderId ? chat.user_token_2 : chat.user_token_1;
+        
+        // Получаем tg_id получателя для уведомлений (из таблицы ads по токену)
+        const receiverInfo = await sql`
+          SELECT tg_id FROM ads WHERE user_token = ${receiverToken} ORDER BY created_at DESC LIMIT 1
+        `;
+        const receiverId = receiverInfo.rows[0]?.tg_id || null;
         
         // Используем переданный nickname или дефолтный
         const nickname = senderNickname || 'Анонимный';
         
-        // Сохраняем сообщение с nickname и фото
+        // Сохраняем сообщение с nickname и фото (используем sender_token вместо sender_id)
         const result = await sql`
           INSERT INTO messages (
-            chat_id, sender_id, receiver_id, message, sender_nickname, 
+            chat_id, sender_token, receiver_id, message, sender_nickname, 
             photo_url, telegram_file_id, created_at
           )
           VALUES (
-            ${chatId}, ${senderId}, ${receiverId}, ${messageText || ''}, ${nickname},
+            ${chatId}, ${senderId}, ${receiverToken}, ${messageText || ''}, ${nickname},
             ${photoUrl || null}, ${telegramFileId || null}, NOW()
           )
           RETURNING *
@@ -110,8 +116,8 @@ export async function POST(request: NextRequest) {
           WHERE id = ${chatId}
         `;
         
-        // Отправляем уведомление в Telegram (если не skipNotification)
-        if (!skipNotification) {
+        // Отправляем уведомление в Telegram (если не skipNotification и есть tg_id)
+        if (!skipNotification && receiverId) {
           const botToken = process.env.TELEGRAM_BOT_TOKEN;
           
           // Проверяем активность получателя
@@ -127,16 +133,15 @@ export async function POST(request: NextRequest) {
             });
             const activityResult = await activityCheck.json();
             receiverIsActive = activityResult.data?.active || false;
-            console.log('� Активность получателя:', { receiverId, chatId, active: receiverIsActive });
+            console.log('[MESSAGES] Активность получателя:', { chatId, active: receiverIsActive });
           } catch (error) {
-            console.error('Ошибка проверки активности:', error);
+            console.error('[MESSAGES] Ошибка проверки активности:', error);
             // Если ошибка - отправляем уведомление на всякий случай
           }
           
           // Отправляем уведомление только если получатель НЕ активен в этом чате
           if (!receiverIsActive) {
-            console.log(' Попытка отправить уведомление:', {
-              receiverId,
+            console.log('[MESSAGES] Попытка отправить уведомление:', {
               hasToken: !!botToken,
               skipNotification,
               senderNickname
@@ -170,24 +175,24 @@ export async function POST(request: NextRequest) {
                   })
                 });
                 
-                const result = await response.json();
-                console.log('📤 Ответ Telegram API:', result);
+                const telegramResult = await response.json();
+                console.log('[MESSAGES] Ответ Telegram API:', telegramResult);
                 
-                if (!result.ok) {
-                  console.error('❌ Telegram API ошибка:', result);
+                if (!telegramResult.ok) {
+                  console.error('[MESSAGES] Telegram API ошибка:', telegramResult);
                 }
               } catch (error) {
-                console.error('❌ Ошибка отправки уведомления:', error);
+                console.error('[MESSAGES] Ошибка отправки уведомления:', error);
                 // Не прерываем выполнение, уведомление не критично
               }
             } else {
-              console.warn('⚠️ TELEGRAM_BOT_TOKEN не установлен в переменных окружения!');
+              console.warn('[MESSAGES] TELEGRAM_BOT_TOKEN не установлен!');
             }
           } else {
-            console.log('🔕 Уведомление пропущено - получатель активен в чате');
+            console.log('[MESSAGES] Уведомление пропущено - получатель активен в чате');
           }
         } else {
-          console.log('🔕 Уведомление пропущено (skipNotification=true)');
+          console.log('[MESSAGES] Уведомление пропущено (skipNotification=true или нет receiverId)');
         }
         
         return NextResponse.json({ data: result.rows[0], error: null });
