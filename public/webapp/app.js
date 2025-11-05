@@ -5159,7 +5159,7 @@ async function loadMyChats() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'get-pending',
-                params: { userId }
+                params: { user_token: userId }
             })
         });
         const pendingResult = await pendingResponse.json();
