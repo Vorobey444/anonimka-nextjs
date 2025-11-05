@@ -1125,6 +1125,12 @@ window.onTelegramAuth = function(user) {
     location.reload();
 };
 
+// ...existing code...
+
+function showReferralModal() {
+    const modal = document.getElementById('referralModal');
+    const referralLinkEl = document.getElementById('referralLink');
+    modal.style.display = 'flex';
     // Получаем user_token текущего пользователя
     const userToken = localStorage.getItem('user_token');
     if (!userToken) {
@@ -1136,6 +1142,7 @@ window.onTelegramAuth = function(user) {
     const referralLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
     referralLinkEl.textContent = referralLink;
     window.currentReferralLink = referralLink;
+}
             const userData = JSON.parse(savedUser);
             return userData.id?.toString();
         } catch (e) {
