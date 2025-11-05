@@ -7091,6 +7091,7 @@ async function showBlockedUsers() {
         }
         
         const blockedUsers = result.data || [];
+        console.log('🚫 Заблокированные пользователи:', blockedUsers);
         
         if (blockedUsers.length === 0) {
             container.innerHTML = `
