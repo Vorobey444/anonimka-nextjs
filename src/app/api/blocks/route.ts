@@ -121,26 +121,20 @@ export async function POST(request: NextRequest) {
           }, { status: 400 });
         }
 
-        // Получаем список заблокированных пользователей с nickname
+        // Получаем список заблокированных пользователей с nickname из ads
         const result = await sql`
           SELECT 
             ub.blocked_id,
             ub.created_at as blocked_at,
             COALESCE(
               (
-                SELECT m.sender_nickname
-                FROM messages m
-                JOIN private_chats pc ON m.chat_id = pc.id
-                WHERE (
-                  (pc.user1 = ${userId} AND pc.user2 = ub.blocked_id)
-                  OR (pc.user2 = ${userId} AND pc.user1 = ub.blocked_id)
-                )
-                AND m.sender_id = ub.blocked_id
-                AND m.sender_nickname IS NOT NULL
-                ORDER BY m.created_at DESC
+                SELECT a.nickname
+                FROM ads a
+                WHERE a.tg_id = ub.blocked_id::text
+                ORDER BY a.created_at DESC
                 LIMIT 1
               ),
-              'ID: ' || ub.blocked_id
+              'Собеседник'
             ) as nickname
           FROM user_blocks ub
           WHERE ub.blocker_id = ${userId}
