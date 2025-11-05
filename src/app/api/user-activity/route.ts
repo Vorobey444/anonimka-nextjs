@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeLog } from '@/utils/safeLogger';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
           lastSeen: Date.now()
         });
         
-        console.log('👤 Пользователь активен:', { userId, chatId, activeCount: activeUsers.size });
+        safeLog('👤 Пользователь активен', { userId, chatId, activeCount: activeUsers.size });
         
         return NextResponse.json({ 
           data: { active: true, timestamp: Date.now() }, 
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
         const { userId } = params;
         const removed = activeUsers.delete(userId.toString());
         
-        console.log('👋 Пользователь неактивен:', { userId, removed });
+        safeLog('👋 Пользователь неактивен', { userId, removed });
         
         return NextResponse.json({ 
           data: { inactive: true, removed }, 

@@ -4,17 +4,17 @@ import { sql } from '@vercel/postgres';
 // POST - регистрация перехода по реферальной ссылке
 export async function POST(request: NextRequest) {
     try {
-        const { referrerId, newUserId } = await request.json();
+        const { referrer_token, new_user_token } = await request.json();
         
-        if (!referrerId || !newUserId) {
+        if (!referrer_token || !new_user_token) {
             return NextResponse.json(
-                { error: 'referrerId и newUserId обязательны' },
+                { error: 'referrer_token и new_user_token обязательны' },
                 { status: 400 }
             );
         }
         
         // Проверяем что пользователь не приглашает сам себя
-        if (referrerId === newUserId) {
+        if (referrer_token === new_user_token) {
             return NextResponse.json(
                 { error: 'Нельзя пригласить самого себя' },
                 { status: 400 }
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         
         // Проверяем не был ли этот пользователь уже приглашен
         const existingReferral = await sql`
-            SELECT id FROM referrals WHERE referred_id = ${newUserId}
+            SELECT id FROM referrals WHERE user_token = ${new_user_token}
         `;
         
         if (existingReferral.rows.length > 0) {
@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
         
         // Создаем запись о реферале
         await sql`
-            INSERT INTO referrals (referrer_id, referred_id)
-            VALUES (${referrerId}, ${newUserId})
+            INSERT INTO referrals (referrer_id, referred_id, user_token)
+            VALUES (${referrer_token}, ${new_user_token}, ${new_user_token})
         `;
         
         return NextResponse.json({ 
@@ -56,11 +56,11 @@ export async function POST(request: NextRequest) {
 // PUT - выдача награды за реферала (вызывается когда новый пользователь создал анкету)
 export async function PUT(request: NextRequest) {
     try {
-        const { newUserId } = await request.json();
+        const { new_user_token } = await request.json();
         
-        if (!newUserId) {
+        if (!new_user_token) {
             return NextResponse.json(
-                { error: 'newUserId обязателен' },
+                { error: 'new_user_token обязателен' },
                 { status: 400 }
             );
         }
@@ -69,7 +69,7 @@ export async function PUT(request: NextRequest) {
         const referralResult = await sql`
             SELECT referrer_id, reward_given 
             FROM referrals 
-            WHERE referred_id = ${newUserId}
+            WHERE user_token = ${new_user_token}
             LIMIT 1
         `;
         
@@ -89,7 +89,7 @@ export async function PUT(request: NextRequest) {
             );
         }
         
-        const referrerId = referral.referrer_id;
+        const referrer_token = referral.referrer_id;
         
         // Выдаем 30 дней PRO приглашающему
         const expiresAt = new Date();
@@ -97,7 +97,7 @@ export async function PUT(request: NextRequest) {
         
         // Обновляем или создаем PRO подписку
         const existingPro = await sql`
-            SELECT premium_until FROM ads WHERE tg_id = ${String(referrerId)} LIMIT 1
+            SELECT premium_until FROM ads WHERE user_token = ${String(referrer_token)} LIMIT 1
         `;
         
         let newExpiresAt = expiresAt;
@@ -117,7 +117,7 @@ export async function PUT(request: NextRequest) {
         await sql`
             UPDATE ads 
             SET premium_until = ${newExpiresAt.toISOString()}
-            WHERE tg_id = ${String(referrerId)}
+            WHERE user_token = ${String(referrer_token)}
         `;
         
         // Отмечаем что награда выдана
@@ -125,15 +125,13 @@ export async function PUT(request: NextRequest) {
             UPDATE referrals 
             SET reward_given = TRUE,
                 reward_given_at = NOW()
-            WHERE referred_id = ${newUserId}
+            WHERE user_token = ${new_user_token}
         `;
-        
-        console.log(`✅ PRO выдан пользователю ${referrerId} за приглашение ${newUserId} до ${newExpiresAt.toISOString()}`);
         
         return NextResponse.json({ 
             success: true,
             message: 'PRO подписка выдана',
-            referrerId,
+            referrer_token,
             expiresAt: newExpiresAt.toISOString()
         });
         

@@ -98,8 +98,16 @@ export async function POST(req: NextRequest) {
       country,
       region,
       city,
-      tgId 
+      tgId,
+      user_token
     } = body;
+
+    // Генерируем user_token если не передан
+    let finalUserToken = user_token;
+    if (!finalUserToken) {
+      // Генерируем случайный токен (24 байта hex)
+      finalUserToken = [...Array(24)].map(() => Math.floor(Math.random()*16).toString(16)).join('');
+    }
     
     console.log("[ADS API] Данные объявления:", {
       gender,
@@ -163,7 +171,7 @@ export async function POST(req: NextRequest) {
     const result = await sql`
       INSERT INTO ads (
         gender, target, goal, age_from, age_to, my_age, 
-        body_type, text, nickname, country, region, city, tg_id, created_at
+        body_type, text, nickname, country, region, city, tg_id, user_token, created_at
       )
       VALUES (
         ${gender}, ${target}, ${goal}, 
@@ -172,9 +180,9 @@ export async function POST(req: NextRequest) {
         ${myAge ? parseInt(myAge) : null},
         ${bodyType || null}, ${text}, ${nickname || 'Аноним'},
         ${country || 'Россия'}, ${region || ''}, ${city}, 
-        ${tgId || 'anonymous'}, NOW()
+        ${tgId || 'anonymous'}, ${finalUserToken}, NOW()
       )
-      RETURNING *
+      RETURNING id, nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, text
     `;
 
     const newAd = result.rows[0];
@@ -200,7 +208,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Объявление успешно опубликовано!",
-      ad: newAd
+      ad: newAd // user_token и nickname
     });
 
   } catch (error: any) {

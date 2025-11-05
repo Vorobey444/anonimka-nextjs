@@ -10,31 +10,27 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'block-user': {
-        const { blockerId, blockedId } = params;
-        
-        if (!blockerId || !blockedId) {
+        const { blocker_token, blocked_token } = params;
+        if (!blocker_token || !blocked_token) {
           return NextResponse.json({ 
-            error: { message: 'ID пользователей не указаны' } 
+            error: { message: 'user_token не указан' } 
           }, { status: 400 });
         }
-
         // Добавляем блокировку
         const result = await sql`
-          INSERT INTO user_blocks (blocker_id, blocked_id, created_at)
-          VALUES (${blockerId}, ${blockedId}, NOW())
-          ON CONFLICT (blocker_id, blocked_id) DO NOTHING
+          INSERT INTO user_blocks (user_token, blocked_id, created_at)
+          VALUES (${blocker_token}, ${blocked_token}, NOW())
+          ON CONFLICT (user_token, blocked_id) DO NOTHING
           RETURNING *
         `;
-
         // Обновляем чаты, помечаем как заблокированные
         await sql`
           UPDATE private_chats
-          SET blocked_by = ${blockerId}
-          WHERE (user1 = ${blockerId} AND user2 = ${blockedId})
-             OR (user1 = ${blockedId} AND user2 = ${blockerId})
+          SET blocked_by = ${blocker_token}
+          WHERE (user_token = ${blocker_token} AND user_token = ${blocked_token})
+             OR (user_token = ${blocked_token} AND user_token = ${blocker_token})
         `;
-
-        console.log('[BLOCKS API] Пользователь заблокирован:', { blockerId, blockedId });
+        console.log('[BLOCKS API] Пользователь заблокирован:', { blocker_token, blocked_token });
         return NextResponse.json({ 
           data: result.rows[0] || { success: true },
           error: null 
@@ -42,31 +38,27 @@ export async function POST(request: NextRequest) {
       }
 
       case 'unblock-user': {
-        const { blockerId, blockedId } = params;
-        
-        if (!blockerId || !blockedId) {
+        const { blocker_token, blocked_token } = params;
+        if (!blocker_token || !blocked_token) {
           return NextResponse.json({ 
-            error: { message: 'ID пользователей не указаны' } 
+            error: { message: 'user_token не указан' } 
           }, { status: 400 });
         }
-
         // Удаляем блокировку
         const result = await sql`
           DELETE FROM user_blocks
-          WHERE blocker_id = ${blockerId} AND blocked_id = ${blockedId}
+          WHERE user_token = ${blocker_token} AND blocked_id = ${blocked_token}
           RETURNING *
         `;
-
         // Убираем отметку blocked_by из чатов
         await sql`
           UPDATE private_chats
           SET blocked_by = NULL
-          WHERE blocked_by = ${blockerId}
-            AND ((user1 = ${blockerId} AND user2 = ${blockedId})
-                OR (user1 = ${blockedId} AND user2 = ${blockerId}))
+          WHERE blocked_by = ${blocker_token}
+            AND ((user_token = ${blocker_token} AND user_token = ${blocked_token})
+                OR (user_token = ${blocked_token} AND user_token = ${blocker_token}))
         `;
-
-        console.log('[BLOCKS API] Пользователь разблокирован:', { blockerId, blockedId });
+        console.log('[BLOCKS API] Пользователь разблокирован:', { blocker_token, blocked_token });
         return NextResponse.json({ 
           data: result.rows[0] || { success: true },
           error: null 
@@ -74,33 +66,29 @@ export async function POST(request: NextRequest) {
       }
 
       case 'check-block-status': {
-        const { user1, user2 } = params;
-        
-        if (!user1 || !user2) {
+        const { user1_token, user2_token } = params;
+        if (!user1_token || !user2_token) {
           return NextResponse.json({ 
-            error: { message: 'ID пользователей не указаны' } 
+            error: { message: 'user_token не указан' } 
           }, { status: 400 });
         }
-
         // Проверяем блокировку в обе стороны
         const result = await sql`
-          SELECT blocker_id, blocked_id
+          SELECT user_token, blocked_id
           FROM user_blocks
-          WHERE (blocker_id = ${user1} AND blocked_id = ${user2})
-             OR (blocker_id = ${user2} AND blocked_id = ${user1})
+          WHERE (user_token = ${user1_token} AND blocked_id = ${user2_token})
+             OR (user_token = ${user2_token} AND blocked_id = ${user1_token})
           LIMIT 1
         `;
-
         const blockData = result.rows[0];
-        
         if (blockData) {
           return NextResponse.json({ 
             data: {
               isBlocked: true,
-              blockedByCurrentUser: blockData.blocker_id == user1,
-              blockedByOther: blockData.blocker_id == user2,
-              blockerId: blockData.blocker_id,
-              blockedId: blockData.blocked_id
+              blockedByCurrentUser: blockData.user_token == user1_token,
+              blockedByOther: blockData.user_token == user2_token,
+              blocker_token: blockData.user_token,
+              blocked_token: blockData.blocked_id
             },
             error: null 
           });
@@ -113,11 +101,11 @@ export async function POST(request: NextRequest) {
       }
 
       case 'get-blocked-users': {
-        const { userId } = params;
+        const { user_token } = params;
         
-        if (!userId) {
+        if (!user_token) {
           return NextResponse.json({ 
-            error: { message: 'ID пользователя не указан' } 
+            error: { message: 'user_token не указан' } 
           }, { status: 400 });
         }
 
@@ -126,7 +114,7 @@ export async function POST(request: NextRequest) {
           const blockedList = await sql`
             SELECT blocked_id, created_at as blocked_at
             FROM user_blocks
-            WHERE blocker_id = ${userId}
+            WHERE user_token = ${user_token}
             ORDER BY created_at DESC
           `;
 
@@ -137,7 +125,7 @@ export async function POST(request: NextRequest) {
                 const nicknameResult = await sql`
                   SELECT nickname
                   FROM ads
-                  WHERE tg_id = ${String(block.blocked_id)}
+                  WHERE user_token = ${String(block.blocked_id)}
                   ORDER BY created_at DESC
                   LIMIT 1
                 `;
@@ -148,7 +136,6 @@ export async function POST(request: NextRequest) {
                   nickname: nicknameResult.rows[0]?.nickname || 'Собеседник'
                 };
               } catch (err) {
-                console.error('[BLOCKS API] Ошибка получения nickname для:', block.blocked_id, err);
                 return {
                   blocked_id: block.blocked_id,
                   blocked_at: block.blocked_at,
@@ -158,13 +145,11 @@ export async function POST(request: NextRequest) {
             })
           );
 
-          console.log('[BLOCKS API] Получен список заблокированных:', { userId, count: blockedUsers.length, data: blockedUsers });
           return NextResponse.json({ 
             data: blockedUsers,
             error: null 
           });
         } catch (error: any) {
-          console.error('[BLOCKS API] Ошибка get-blocked-users:', error);
           return NextResponse.json({ 
             error: { message: error?.message || 'Ошибка получения списка' } 
           }, { status: 500 });

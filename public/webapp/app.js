@@ -21,6 +21,40 @@ let tg = window.Telegram?.WebApp || {
     close: () => {}
 };
 
+// ============= БЕЗОПАСНОСТЬ: СКРЫТИЕ ЧУВСТВИТЕЛЬНЫХ ДАННЫХ В ЛОГАХ =============
+// Функция для хеширования чувствительных данных в логах
+function hashSensitiveData(data) {
+    if (!data) return '***';
+    const str = String(data);
+    // Показываем только первые 3 и последние 3 символа
+    if (str.length <= 6) return '***';
+    return str.substring(0, 3) + '***' + str.substring(str.length - 3);
+}
+
+// Безопасный console.log для разработки (в продакшене можно отключить)
+const ENABLE_DEBUG_LOGS = false; // Установи false в продакшене!
+
+function safeLog(...args) {
+    if (!ENABLE_DEBUG_LOGS) return;
+    
+    // Заменяем чувствительные данные на хешированные
+    const safeArgs = args.map(arg => {
+        if (typeof arg === 'object' && arg !== null) {
+            const safeCopy = { ...arg };
+            // Скрываем чувствительные поля
+            if (safeCopy.userId) safeCopy.userId = hashSensitiveData(safeCopy.userId);
+            if (safeCopy.tg_id) safeCopy.tg_id = hashSensitiveData(safeCopy.tg_id);
+            if (safeCopy.tgId) safeCopy.tgId = hashSensitiveData(safeCopy.tgId);
+            if (safeCopy.chatId) safeCopy.chatId = hashSensitiveData(safeCopy.chatId);
+            if (safeCopy.referrerId) safeCopy.referrerId = hashSensitiveData(safeCopy.referrerId);
+            if (safeCopy.currentUserId) safeCopy.currentUserId = hashSensitiveData(safeCopy.currentUserId);
+            return safeCopy;
+        }
+        return arg;
+    });
+    console.log(...safeArgs);
+}
+
 // Безопасная обертка для showAlert с fallback на alert()
 // Сохраняем оригинальные методы
 const originalShowAlert = tg.showAlert ? tg.showAlert.bind(tg) : null;
@@ -733,11 +767,10 @@ async function saveNicknamePage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'update-all-nicknames',
-                        tgId: userId,
+                        user_token: localStorage.getItem('user_token'),
                         nickname: nickname
                     })
                 });
-                
                 const result = await response.json();
                 if (result.success) {
                     console.log('✅ Никнейм обновлен в анкетах:', result.count);
@@ -1092,17 +1125,17 @@ window.onTelegramAuth = function(user) {
     location.reload();
 };
 
-// Получить ID текущего пользователя
-function getCurrentUserId() {
-    // Если в Telegram WebApp
-    if (isTelegramWebApp && tg.initDataUnsafe?.user?.id) {
-        return tg.initDataUnsafe.user.id.toString();
+    // Получаем user_token текущего пользователя
+    const userToken = localStorage.getItem('user_token');
+    if (!userToken) {
+        referralLinkEl.textContent = 'Авторизуйтесь для получения реферальной ссылки';
+        return;
     }
-    
-    // Если авторизован через Login Widget
-    const savedUser = localStorage.getItem('telegram_user');
-    if (savedUser) {
-        try {
+    // Генерируем реферальную ссылку
+    const botUsername = 'anonimka_dating_bot'; // Замените на реальное имя бота
+    const referralLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
+    referralLinkEl.textContent = referralLink;
+    window.currentReferralLink = referralLink;
             const userData = JSON.parse(savedUser);
             return userData.id?.toString();
         } catch (e) {
@@ -1409,7 +1442,7 @@ async function loadMyAds() {
     
     try {
         const userId = getCurrentUserId();
-        console.log('📋 Загрузка анкет для пользователя:', userId);
+        safeLog('📋 Загрузка анкет для пользователя:', userId);
         
         if (userId.startsWith('web_')) {
             myAdsList.innerHTML = `
@@ -1950,9 +1983,8 @@ async function submitAd() {
             tgId: getCurrentUserId()
         };
 
-        console.log('Отправка анкеты в Supabase:', adData);
-        console.log('Telegram User ID:', getCurrentUserId());
-        console.log('Никнейм:', nickname);
+        safeLog('Отправка анкеты в Supabase');
+        safeLog('Никнейм:', nickname);
 
 
         // Показываем индикатор загрузки
@@ -1965,8 +1997,11 @@ async function submitAd() {
         // Отправляем в Supabase через наш API
         const result = await window.SupabaseClient.createAd(adData);
         
-        console.log('Анкета опубликована:', result);
-
+        // Сохраняем user_token в localStorage
+        if (result && result.ad && result.ad.user_token) {
+            localStorage.setItem('user_token', result.ad.user_token);
+        }
+        
         // Обновляем статус Premium (лимиты изменились)
         await loadPremiumStatus();
         
@@ -5044,14 +5079,14 @@ async function loadMyChats() {
             if (savedUser) {
                 const userData = JSON.parse(savedUser);
                 userId = userData.id;
-                console.log('✅ User ID получен из localStorage:', userId);
+                safeLog('✅ User ID получен из localStorage');
             }
         } else {
-            console.log('✅ User ID получен из Telegram:', userId);
+            safeLog('✅ User ID получен из Telegram');
         }
         
         if (!userId) {
-            console.error('❌ User ID не найден ни в Telegram, ни в localStorage');
+            console.error('❌ User ID не найден');
             const errorHTML = `
                 <div class="empty-chats">
                     <div class="neon-icon">🔒</div>
@@ -5064,7 +5099,7 @@ async function loadMyChats() {
             return;
         }
 
-        console.log('📡 Загружаем чаты для пользователя:', userId);
+        safeLog('📡 Загружаем чаты для пользователя');
 
         // Получаем принятые чаты через Neon API
         const acceptedResponse = await fetch('/api/neon-chats', {
@@ -5974,7 +6009,7 @@ async function markUserActive(userId, chatId) {
                 params: { userId, chatId }
             })
         });
-        console.log('👤 Активность отмечена:', { userId, chatId });
+        safeLog('👤 Активность отмечена');
     } catch (error) {
         console.error('Ошибка отметки активности:', error);
     }
@@ -5991,7 +6026,7 @@ async function markUserInactive(userId) {
                 params: { userId }
             })
         });
-        console.log('👋 Пользователь неактивен:', { userId });
+        safeLog('👋 Пользователь неактивен');
     } catch (error) {
         console.error('Ошибка отметки неактивности:', error);
     }
@@ -6145,7 +6180,7 @@ async function loadPremiumStatus() {
             return;
         }
         
-        console.log('� Загружаем Premium статус для userId:', userId);
+        safeLog('💎 Загружаем Premium статус');
         
         // Сначала загружаем с сервера (источник истины)
         const response = await fetch('/api/premium', {
@@ -6678,7 +6713,7 @@ async function checkBlockStatus(chatId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'check-block-status',
-                params: { user1: userId, user2: currentOpponentId }
+                params: { user1_token: localStorage.getItem('user_token'), user2_token: currentOpponentId }
             })
         });
         
@@ -6768,8 +6803,8 @@ async function toggleBlockUser() {
                 body: JSON.stringify({
                     action: action,
                     params: { 
-                        blockerId: userId, 
-                        blockedId: currentOpponentId 
+                        blocker_token: localStorage.getItem('user_token'), 
+                        blocked_token: currentOpponentId 
                     }
                 })
             });
@@ -6975,7 +7010,7 @@ async function handleReferralLink() {
             return;
         }
         
-        console.log(`📨 Обработка реферальной ссылки: пользователь ${currentUserId} пришел по ссылке ${referrerId}`);
+        safeLog('📨 Обработка реферальной ссылки');
         
         // Отправляем на сервер
         const response = await fetch('/api/referrals', {
@@ -6990,7 +7025,7 @@ async function handleReferralLink() {
         const data = await response.json();
         
         if (response.ok && data.success) {
-            console.log('✅ Реферал зарегистрирован');
+            safeLog('✅ Реферал зарегистрирован');
             // Сохраняем что реферал обработан
             localStorage.setItem('referral_processed', 'true');
             localStorage.setItem('referrer_id', referrerId);
@@ -7198,7 +7233,7 @@ async function showBlockedUsers() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'get-blocked-users',
-                params: { userId }
+                params: { user_token: localStorage.getItem('user_token') }
             })
         });
         
@@ -7257,7 +7292,7 @@ async function showBlockedUsers() {
 }
 
 async function unblockUserFromList(blockedId) {
-    const userId = getCurrentUserId();
+    const userToken = localStorage.getItem('user_token');
     
     tg.showConfirm('Разблокировать пользователя?', async (confirmed) => {
         if (!confirmed) return;
@@ -7268,7 +7303,7 @@ async function unblockUserFromList(blockedId) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'unblock-user',
-                    params: { blockerId: userId, blockedId }
+                    params: { blocker_token: userToken, blocked_token: blockedId }
                 })
             });
             

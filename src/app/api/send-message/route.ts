@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { adId, senderTgId, receiverTgId, messageText, photoUrl, senderName } = await request.json();
+  const { adId, sender_token, receiver_token, messageText, photoUrl, senderName } = await request.json();
 
     // Валидация: должен быть либо текст, либо фото
-    if (!adId || !senderTgId || !receiverTgId || (!messageText && !photoUrl)) {
+    if (!adId || !sender_token || !receiver_token || (!messageText && !photoUrl)) {
       return NextResponse.json(
         { error: 'Missing required fields. Need either messageText or photoUrl' },
         { status: 400 }
@@ -25,10 +25,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверяем, существует ли уже чат по этому объявлению
-    console.log(`🔍 Проверяем существующий чат: ad_id=${adId}, sender=${senderTgId}, receiver=${receiverTgId}`);
+  console.log(`🔍 Проверяем существующий чат: ad_id=${adId}, sender=${sender_token}, receiver=${receiver_token}`);
     
     const checkChatResponse = await fetch(
-      `${supabaseUrl}/rest/v1/private_chats?ad_id=eq.${adId}&or=(and(user1.eq.${senderTgId},user2.eq.${receiverTgId}),and(user1.eq.${receiverTgId},user2.eq.${senderTgId}))`,
+  `${supabaseUrl}/rest/v1/private_chats?ad_id=eq.${adId}&or=(and(user_token.eq.${sender_token},user_token.eq.${receiver_token}),and(user_token.eq.${receiver_token},user_token.eq.${sender_token}))`,
       {
         headers: {
           'apikey': supabaseKey,
@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         ad_id: adId,
-        user1: senderTgId,
-        user2: receiverTgId,
+        user_token: sender_token,
+        user_token_2: receiver_token,
         accepted: false,
         initial_message: messageText,
         blocked_by: null
@@ -90,8 +90,8 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         ad_id: adId,
-        sender_tg_id: senderTgId,
-        receiver_tg_id: receiverTgId,
+        sender_token: sender_token,
+        receiver_token: receiver_token,
         message_text: messageText || null,
         photo_url: photoUrl || null,
         message_type: photoUrl ? 'photo' : 'text',
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     let senderNickname = senderName || 'Пользователь';
     
     const nicknameResponse = await fetch(
-      `${supabaseUrl}/rest/v1/ads?tg_id=eq.${senderTgId}&select=nickname&limit=1`,
+      `${supabaseUrl}/rest/v1/ads?user_token=eq.${sender_token}&select=nickname&limit=1`,
       {
         headers: {
           'apikey': supabaseKey,
@@ -187,7 +187,7 @@ ${messageText ? `\n💬 <i>"${messageText}"</i>` : ''}
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        chat_id: receiverTgId,
+  chat_id: receiver_token,
         text: notificationText,
         parse_mode: 'HTML',
         reply_markup: keyboard
