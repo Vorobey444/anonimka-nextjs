@@ -653,6 +653,7 @@
                     placeholder="Расскажите о себе и что ищете..." 
                     rows="6"
                     maxlength="500"
+                    oninput="updateCharacterCount()"
                     style="
                         width: 100%;
                         max-width: 500px;
@@ -671,6 +672,9 @@
                         opacity: 1 !important;
                     "
                 ></textarea>
+                <div id="charCounter" style="text-align: right; color: var(--text-gray); font-size: 0.85rem; margin-top: 5px;">
+                    0/500
+                </div>
             </div>
 
             <div class="form-navigation">
@@ -1041,32 +1045,31 @@
             </div>
             <div class="modal-body" style="text-align: center; padding: 20px;">
                 <div class="referral-info">
-                    <div class="pulse-gift" style="font-size: 60px; margin: 20px 0;">🎁</div>
-                    <h3 style="color: var(--neon-cyan); margin: 15px 0;">Получи месяц PRO бесплатно!</h3>
-                    <p style="color: var(--text-gray); margin: 15px 0; line-height: 1.6;">
+                    <div class="pulse-gift" style="font-size: 48px; margin: 15px 0;">🎁</div>
+                    <h3 style="color: var(--neon-cyan); margin: 10px 0; font-size: 1.1rem;">Получи месяц PRO бесплатно!</h3>
+                    <p style="color: var(--text-gray); margin: 10px 0; line-height: 1.5; font-size: 0.9rem;">
                         Пригласи друга через Telegram, и когда он авторизуется - 
-                        вы оба получите <strong style="color: var(--neon-pink);">1 месяц PRO</strong> в подарок!
+                        ты получишь <strong style="color: var(--neon-pink);">1 месяц PRO</strong> в подарок!
                     </p>
-                    <div class="referral-benefits" style="text-align: left; margin: 20px 0; background: rgba(0,217,255,0.05); padding: 15px; border-radius: 10px; border-left: 3px solid var(--neon-cyan);">
-                        <h4 style="color: var(--neon-cyan); margin-bottom: 10px;">PRO возможности:</h4>
-                        <ul style="color: var(--text-gray); line-height: 1.8;">
-                            <li>✅ 3 анкеты в день вместо 1</li>
-                            <li>✅ Безлимитная отправка фото</li>
-                            <li>✅ 3 закрепления анкет в день</li>
-                            <li>✅ Приоритет в поиске</li>
+                    <div class="referral-benefits" style="text-align: left; margin: 15px 0; background: rgba(0,217,255,0.05); padding: 12px; border-radius: 8px; border-left: 3px solid var(--neon-cyan);">
+                        <h4 style="color: var(--neon-cyan); margin-bottom: 8px; font-size: 0.95rem;">PRO возможности:</h4>
+                        <ul style="color: var(--text-gray); line-height: 1.6; font-size: 0.85rem; margin: 0; padding-left: 20px;">
+                            <li>3 анкеты в день</li>
+                            <li>Безлимит фото</li>
+                            <li>3 закрепления/день</li>
                         </ul>
                     </div>
-                    <div id="referralLinkContainer" style="margin: 20px 0;">
-                        <p style="color: var(--text-gray); margin-bottom: 10px;">Твоя реферальная ссылка:</p>
-                        <div style="background: rgba(131,56,236,0.1); padding: 12px; border-radius: 8px; word-break: break-all; color: var(--neon-cyan); font-family: monospace; font-size: 0.9rem;" id="referralLink">
+                    <div id="referralLinkContainer" style="margin: 15px 0;">
+                        <p style="color: var(--text-gray); margin-bottom: 8px; font-size: 0.85rem;">Твоя реферальная ссылка:</p>
+                        <div style="background: rgba(131,56,236,0.1); padding: 10px; border-radius: 8px; word-break: break-all; color: var(--neon-cyan); font-family: monospace; font-size: 0.8rem;" id="referralLink">
                             Загрузка...
                         </div>
                     </div>
-                    <button class="neon-button primary" onclick="copyReferralLink()" style="width: 100%; margin-top: 15px;">
+                    <button class="neon-button primary" onclick="copyReferralLink()" style="width: 100%; margin-top: 12px; padding: 10px;">
                         <span class="icon">📋</span>
                         Скопировать ссылку
                     </button>
-                    <button class="neon-button" onclick="shareReferralLink()" style="width: 100%; margin-top: 10px;">
+                    <button class="neon-button" onclick="shareReferralLink()" style="width: 100%; margin-top: 8px; padding: 10px;">
                         <span class="icon">📤</span>
                         Поделиться в Telegram
                     </button>

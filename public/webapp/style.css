@@ -3767,6 +3767,12 @@ h3 {
 .chat-info {
     flex: 1;
     text-align: center;
+    margin-left: 40px; /* Сместили правее от кнопки "Назад" */
+}
+
+.chat-info h2 {
+    font-size: 1rem; /* Уменьшили размер шрифта */
+    margin: 0;
 }
 
 .chat-subtitle {

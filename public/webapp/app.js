@@ -1641,38 +1641,60 @@ function validateAgeRange() {
         let fromValue = parseInt(ageFrom.value);
         let toValue = parseInt(ageTo.value);
         
-        // Проверяем минимальный возраст 18
-        if (fromValue && fromValue < 18) {
-            fromValue = 18;
-            ageFrom.value = 18;
-        }
-        // Проверяем максимальный возраст 99
-        if (fromValue && fromValue > 99) {
-            fromValue = 99;
-            ageFrom.value = 99;
-        }
-        
-        if (toValue && toValue < 18) {
-            toValue = 18;
-            ageTo.value = 18;
-        }
-        // Проверяем максимальный возраст 99
-        if (toValue && toValue > 99) {
-            toValue = 99;
-            ageTo.value = 99;
+        // Только проверяем и корректируем если значение введено полностью
+        // Не мешаем пользователю вводить
+        if (ageFrom.value && !isNaN(fromValue)) {
+            // Проверяем минимальный возраст 18
+            if (fromValue < 18) {
+                ageFrom.value = 18;
+                fromValue = 18;
+            }
+            // Проверяем максимальный возраст 99
+            if (fromValue > 99) {
+                ageFrom.value = 99;
+                fromValue = 99;
+            }
         }
         
-        // Если не заполнено, устанавливаем 18 по умолчанию
-        if (!fromValue || isNaN(fromValue)) {
-            fromValue = 18;
-        }
-        if (!toValue || isNaN(toValue)) {
-            toValue = 99;
+        if (ageTo.value && !isNaN(toValue)) {
+            // Проверяем минимальный возраст 18
+            if (toValue < 18) {
+                ageTo.value = 18;
+                toValue = 18;
+            }
+            // Проверяем максимальный возраст 99
+            if (toValue > 99) {
+                ageTo.value = 99;
+                toValue = 99;
+            }
         }
         
-        // Если "от" больше "до", корректируем "до"
-        if (fromValue > toValue) {
-            ageTo.value = fromValue;
+        // Если оба поля заполнены и "от" больше "до", корректируем "до"
+        if (ageFrom.value && ageTo.value && !isNaN(fromValue) && !isNaN(toValue)) {
+            if (fromValue > toValue) {
+                ageTo.value = fromValue;
+            }
+        }
+    }
+}
+
+// Обновление счетчика символов для текста анкеты
+function updateCharacterCount() {
+    const textarea = document.getElementById('adText');
+    const counter = document.getElementById('charCounter');
+    
+    if (textarea && counter) {
+        const currentLength = textarea.value.length;
+        const maxLength = textarea.getAttribute('maxlength') || 500;
+        counter.textContent = `${currentLength}/${maxLength}`;
+        
+        // Меняем цвет если приближаемся к лимиту
+        if (currentLength >= maxLength) {
+            counter.style.color = 'var(--neon-pink)';
+        } else if (currentLength >= maxLength * 0.9) {
+            counter.style.color = 'var(--neon-orange)';
+        } else {
+            counter.style.color = 'var(--text-gray)';
         }
     }
 }
@@ -6199,6 +6221,7 @@ async function manualRefreshLimits() {
 function updatePremiumUI() {
     const freeBtn = document.getElementById('freeBtn');
     const proBtn = document.getElementById('proBtn');
+    const referralBtn = document.querySelector('.referral-button');
     
     if (!freeBtn || !proBtn) return;
     
@@ -6209,9 +6232,19 @@ function updatePremiumUI() {
     if (userPremiumStatus.isPremium) {
         // PRO активен
         proBtn.classList.add('active', 'pro');
+        
+        // Скрываем реферальную кнопку для PRO пользователей
+        if (referralBtn) {
+            referralBtn.style.display = 'none';
+        }
     } else {
         // FREE активен
         freeBtn.classList.add('active', 'free');
+        
+        // Показываем реферальную кнопку для FREE пользователей
+        if (referralBtn) {
+            referralBtn.style.display = 'block';
+        }
     }
 }
 
