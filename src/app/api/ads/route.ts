@@ -19,13 +19,19 @@ export async function GET(req: NextRequest) {
     if (id) {
       // Получение конкретной анкеты по ID
       result = await sql`
-        SELECT * FROM ads
+        SELECT id, gender, target, goal, age_from, age_to, my_age, 
+               body_type, text, nickname, country, region, city, 
+               is_pinned, pinned_until, created_at, user_token
+        FROM ads
         WHERE id = ${parseInt(id)}
         LIMIT 1
       `;
     } else if (city && country) {
       result = await sql`
-        SELECT * FROM ads
+        SELECT id, gender, target, goal, age_from, age_to, my_age, 
+               body_type, text, nickname, country, region, city, 
+               is_pinned, pinned_until, created_at, user_token
+        FROM ads
         WHERE city = ${city} AND country = ${country}
         ORDER BY 
           CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
@@ -33,7 +39,10 @@ export async function GET(req: NextRequest) {
       `;
     } else if (city) {
       result = await sql`
-        SELECT * FROM ads
+        SELECT id, gender, target, goal, age_from, age_to, my_age, 
+               body_type, text, nickname, country, region, city, 
+               is_pinned, pinned_until, created_at, user_token
+        FROM ads
         WHERE city = ${city}
         ORDER BY 
           CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
@@ -41,7 +50,10 @@ export async function GET(req: NextRequest) {
       `;
     } else if (country) {
       result = await sql`
-        SELECT * FROM ads
+        SELECT id, gender, target, goal, age_from, age_to, my_age, 
+               body_type, text, nickname, country, region, city, 
+               is_pinned, pinned_until, created_at, user_token
+        FROM ads
         WHERE country = ${country}
         ORDER BY 
           CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
@@ -49,7 +61,10 @@ export async function GET(req: NextRequest) {
       `;
     } else {
       result = await sql`
-        SELECT * FROM ads
+        SELECT id, gender, target, goal, age_from, age_to, my_age, 
+               body_type, text, nickname, country, region, city, 
+               is_pinned, pinned_until, created_at, user_token
+        FROM ads
         ORDER BY 
           CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
           created_at DESC
@@ -102,19 +117,22 @@ export async function POST(req: NextRequest) {
       user_token
     } = body;
 
-    // Генерируем user_token если не передан
+    // Генерируем user_token если не передан (используем crypto для безопасности)
     let finalUserToken = user_token;
     if (!finalUserToken) {
-      // Генерируем случайный токен (24 байта hex)
-      finalUserToken = [...Array(24)].map(() => Math.floor(Math.random()*16).toString(16)).join('');
+      // Генерируем криптографически безопасный случайный токен (32 байта = 64 hex символа)
+      const crypto = require('crypto');
+      finalUserToken = crypto.randomBytes(32).toString('hex');
     }
     
-    console.log("[ADS API] Данные объявления:", {
+    // Безопасное логирование (без чувствительных данных)
+    console.log("[ADS API] Создание объявления:", {
       gender,
       target,
       goal,
       city,
-      textLength: text?.length
+      textLength: text?.length,
+      hasToken: !!finalUserToken
     });
     
     // Валидация
@@ -152,7 +170,7 @@ export async function POST(req: NextRequest) {
       
       // Проверяем лимит
       if (adsToday >= maxAds) {
-        console.log("[ADS API] Превышен лимит объявлений:", { adsToday, maxAds, isPremium });
+        console.log("[ADS API] Лимит превышен: ads_today=" + adsToday + ", max=" + maxAds);
         return NextResponse.json(
           { 
             success: false, 
@@ -203,12 +221,12 @@ export async function POST(req: NextRequest) {
       `;
     }
     
-    console.log("[ADS API] Объявление создано:", newAd);
+    console.log("[ADS API] Объявление создано, ID:", newAd.id);
     
     return NextResponse.json({
       success: true,
       message: "Объявление успешно опубликовано!",
-      ad: newAd // user_token и nickname
+      ad: newAd // user_token и nickname (для клиента, tg_id скрыт)
     });
 
   } catch (error: any) {
@@ -243,7 +261,7 @@ export async function DELETE(req: NextRequest) {
     const body = await req.json();
     const { id, tgId } = body;
 
-    console.log("[ADS API] Удаление объявления:", { id, tgId });
+    console.log("[ADS API] Запрос на удаление объявления ID:", id);
 
     if (!id) {
       return NextResponse.json(
@@ -276,10 +294,7 @@ export async function DELETE(req: NextRequest) {
     const requesterId = Number(tgId);
     
     if (adOwnerId !== requesterId) {
-      console.log("[ADS API] Попытка удалить чужое объявление:", { 
-        adOwner: checkResult.rows[0].tg_id, 
-        requester: tgId
-      });
+      console.log("[ADS API] Отказано: пользователь не владелец объявления");
       return NextResponse.json(
         { success: false, error: "Вы можете удалять только свои объявления" },
         { status: 403 }
@@ -343,7 +358,7 @@ export async function PATCH(req: NextRequest) {
         RETURNING id
       `;
 
-      console.log("[ADS API] Обновлено анкет:", result.rows.length);
+      console.log("[ADS API] Никнейм обновлен в анкетах, кол-во:", result.rows.length);
 
       return NextResponse.json({
         success: true,
@@ -384,10 +399,7 @@ export async function PATCH(req: NextRequest) {
     const requesterId = Number(tgId);
     
     if (adOwnerId !== requesterId) {
-      console.log("[ADS API] Попытка обновить чужое объявление:", { 
-        adOwner: checkResult.rows[0].tg_id, 
-        requester: tgId
-      });
+      console.log("[ADS API] Отказано: пользователь не владелец объявления");
       return NextResponse.json(
         { success: false, error: "Вы можете обновлять только свои объявления" },
         { status: 403 }

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
           WHERE (user1 = ${blocker_token} AND user2 = ${blocked_token})
              OR (user1 = ${blocked_token} AND user2 = ${blocker_token})
         `;
-        console.log('[BLOCKS API] Пользователь заблокирован:', { blocker_token, blocked_token });
+        console.log('[BLOCKS API] Блокировка добавлена');
         return NextResponse.json({ 
           data: result.rows[0] || { success: true },
           error: null 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
             AND ((user1 = ${blocker_token} AND user2 = ${blocked_token})
                 OR (user1 = ${blocked_token} AND user2 = ${blocker_token}))
         `;
-        console.log('[BLOCKS API] Пользователь разблокирован:', { blocker_token, blocked_token });
+        console.log('[BLOCKS API] Блокировка удалена');
         return NextResponse.json({ 
           data: result.rows[0] || { success: true },
           error: null 
