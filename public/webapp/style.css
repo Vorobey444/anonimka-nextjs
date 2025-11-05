@@ -95,8 +95,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     position: relative;
+    min-height: 50px;
 }
 
 .back-btn {
@@ -3502,6 +3503,55 @@ h3 {
     color: var(--text-gray);
 }
 
+.unread-badge {
+    background: var(--neon-pink);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+    }
+    50% {
+        box-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
+    }
+}
+
+@keyframes pulse-icon {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+}
+
+.pulse-icon {
+    animation: pulse-icon 1.5s ease-in-out infinite;
+}
+
+.pulse-gift {
+    animation: pulse-icon 2s ease-in-out infinite;
+}
+
+.referral-button {
+    background: linear-gradient(135deg, #ff006e, #8338ec);
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 15px rgba(255, 0, 110, 0.5);
+    animation: pulse 2s ease-in-out infinite;
+    font-weight: 600;
+}
+
+.referral-button:hover {
+    box-shadow: 0 0 25px rgba(255, 0, 110, 0.8);
+    transform: translateY(-2px);
+}
+
 .chat-preview {
     font-size: 0.9rem;
     color: var(--text-gray);
@@ -3983,15 +4033,30 @@ h3 {
     transition: all 0.3s ease;
     font-size: 1.2rem;
     flex-shrink: 0;
+    box-shadow: 0 0 10px rgba(131, 56, 236, 0.5);
+}
+
+.send-icon {
+    display: inline-block;
+    transition: transform 0.3s ease;
 }
 
 .send-button:hover {
-    box-shadow: var(--shadow-pink);
+    box-shadow: 0 0 20px var(--neon-purple), 0 0 30px var(--neon-pink);
     transform: scale(1.1);
+}
+
+.send-button:hover .send-icon {
+    transform: translateX(2px) translateY(-2px) rotate(-15deg);
 }
 
 .send-button:active {
     transform: scale(0.95);
+}
+
+.send-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 /* Кнопка Мои чаты */

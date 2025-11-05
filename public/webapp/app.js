@@ -1729,12 +1729,30 @@ function validateCurrentStep() {
             formData.goal = formData.goals.join(', ');
             return true;
         case 4: // Возраст партнера
-            // Используем новую валидацию с сообщением
-            if (!validateAgeRangeWithMessage()) {
-                return false;
-            }
             const ageFrom = document.getElementById('ageFrom').value;
             const ageTo = document.getElementById('ageTo').value;
+            
+            // Проверяем, что поля заполнены
+            if (!ageFrom || !ageTo) {
+                tg.showAlert('❌ Пожалуйста, укажите возраст партнера.\n\nИспользуйте кнопки + и - или введите возраст вручную.');
+                return false;
+            }
+            
+            const ageFromNum = parseInt(ageFrom);
+            const ageToNum = parseInt(ageTo);
+            
+            // Проверяем диапазон 18-99
+            if (ageFromNum < 18 || ageFromNum > 99 || ageToNum < 18 || ageToNum > 99) {
+                tg.showAlert('❌ Пожалуйста, исправьте опечатку.\n\nВозраст должен быть от 18 до 99 лет.');
+                return false;
+            }
+            
+            // Проверяем, что "от" не больше "до"
+            if (ageFromNum > ageToNum) {
+                tg.showAlert('❌ Возраст "от" не может быть больше возраста "до"');
+                return false;
+            }
+            
             formData.ageFrom = ageFrom;
             formData.ageTo = ageTo;
             console.log(`Шаг 4 (Возраст партнера): ✅ ${ageFrom}-${ageTo}`);
@@ -3821,45 +3839,6 @@ function setupEventListeners() {
     });
 }
 
-// Обновляем валидацию первого шага
-function validateCurrentStep() {
-    switch(currentStep) {
-        case 1:
-            // Первый шаг - выбор пола
-            return formData.gender;
-        case 2:
-            return formData.target;
-        case 3:
-            return formData.goal;
-        case 4:
-            const ageFrom = document.getElementById('ageFrom').value;
-            const ageTo = document.getElementById('ageTo').value;
-            if (ageFrom && ageTo) {
-                formData.ageFrom = ageFrom;
-                formData.ageTo = ageTo;
-                return true;
-            }
-            return false;
-        case 5:
-            const myAge = document.getElementById('myAge').value;
-            if (myAge) {
-                formData.myAge = myAge;
-                return true;
-            }
-            return false;
-        case 6:
-            return formData.body;
-        case 7:
-            const adText = document.getElementById('adText').value.trim();
-            if (adText) {
-                formData.text = adText;
-                return true;
-            }
-            return false;
-    }
-    return false;
-}
-
 // Обновляем сброс формы
 function resetForm() {
     formData = {};
@@ -5063,12 +5042,17 @@ async function loadMyChats() {
                 const lastMessageTime = chat.last_message_time ? formatChatTime(chat.last_message_time) : (chat.updated_at ? formatChatTime(chat.updated_at) : '');
                 const lastMessage = chat.last_message || 'Нажмите для открытия чата';
                 const lastMessagePreview = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
+                const unreadCount = chat.unread_count || 0;
+                const unreadBadge = unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : '';
                 
                 return `
                     <div class="chat-card" onclick="openChat('${chat.id}')">
                         <div class="chat-card-header">
                             <span class="chat-ad-id" onclick="event.stopPropagation(); showAdModal('${chat.ad_id}');">💬 Чат #${chat.ad_id || 'N/A'}</span>
-                            <span class="chat-time">${lastMessageTime}</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                ${unreadBadge}
+                                <span class="chat-time">${lastMessageTime}</span>
+                            </div>
                         </div>
                         <div class="chat-preview">
                             ${lastMessagePreview}
@@ -5548,71 +5532,6 @@ function closePhotoModal() {
     modalImage.src = '';
 }
 
-// Показать модальное окно с информацией об анкете
-async function showAdModal(adId) {
-    if (!adId) {
-        tg.showAlert('ID анкеты не найден');
-        return;
-    }
-    
-    try {
-        // Получаем данные анкеты
-        const response = await fetch(`/api/ads?id=${adId}`);
-        const result = await response.json();
-        
-        if (!result.success || !result.ads || result.ads.length === 0) {
-            tg.showAlert('Анкета не найдена');
-            return;
-        }
-        
-        const ad = result.ads[0];
-        
-        // Используем helper функции для форматирования
-        const genderFormatted = formatGender(ad.gender);
-        const targetFormatted = formatTarget(ad.target);
-        const goalsFormatted = formatGoals(ad.goal);
-        
-        const bodyLabels = {
-            slim: 'Худощавое',
-            athletic: 'Спортивное',
-            average: 'Среднее',
-            curvy: 'Полное'
-        };
-        
-        const genderIcon = ad.gender === 'male' ? '♂️' : '♀️';
-        
-        const modalHTML = `
-            <div style="padding: 12px; max-width: 380px; font-size: 13px;">
-                <h3 style="margin-top: 0; margin-bottom: 10px; color: var(--neon-cyan); font-size: 16px;">${genderIcon} ${genderFormatted}, ${ad.my_age || '?'} лет</h3>
-                <div style="margin-bottom: 10px; line-height: 1.6;">
-                    <div style="margin-bottom: 4px;">� <strong>Телосложение:</strong> ${bodyLabels[ad.body_type] || 'Не указано'}</div>
-                    <div style="margin-bottom: 4px;">🎯 <strong>Цель:</strong> ${goalsFormatted}</div>
-                    <div style="margin-bottom: 4px;">🔍 <strong>Ищу:</strong> ${targetFormatted}, ${ad.age_from || '18'}-${ad.age_to || '99'} лет</div>
-                    <div style="margin-bottom: 4px;">📍 <strong>Город:</strong> ${ad.city || 'Не указан'}</div>
-                </div>
-                <div style="background: rgba(0,255,255,0.05); padding: 8px; border-radius: 6px; border-left: 3px solid var(--neon-cyan);">
-                    <strong style="font-size: 12px;">💬 О себе:</strong>
-                    <p style="margin: 4px 0 0 0; white-space: pre-wrap; font-size: 12px;">${escapeHtml(ad.text)}</p>
-                </div>
-            </div>
-        `;
-        
-        if (isTelegramWebApp) {
-            tg.showPopup({
-                title: 'Информация об анкете',
-                message: modalHTML,
-                buttons: [{ type: 'close', text: 'Закрыть' }]
-            });
-        } else {
-            alert(`Анкета #${ad.id}\n\n${ad.text}`);
-        }
-        
-    } catch (error) {
-        console.error('Ошибка загрузки анкеты:', error);
-        tg.showAlert('Ошибка загрузки анкеты');
-    }
-}
-
 // Загрузить фото в Telegram и получить file_id
 async function uploadPhotoToTelegram(file, userId) {
     try {
@@ -5640,12 +5559,16 @@ async function uploadPhotoToTelegram(file, userId) {
 
 async function sendMessage() {
     const input = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
     const messageText = input.value.trim();
 
     // Проверяем что есть либо текст либо фото
     if (!messageText && !selectedPhoto) return;
     
     if (!currentChatId) return;
+    
+    // Блокируем кнопку отправки чтобы избежать дубликатов
+    if (sendButton.disabled) return;
 
     const userId = getCurrentUserId();
     if (!userId || userId.startsWith('web_')) {
@@ -5654,6 +5577,11 @@ async function sendMessage() {
     }
 
     try {
+        // Блокируем UI
+        sendButton.disabled = true;
+        sendButton.style.opacity = '0.5';
+        input.disabled = true;
+        
         let photoData = null;
         
         // Загружаем фото если выбрано
@@ -5755,7 +5683,11 @@ async function sendMessage() {
         console.error('Ошибка:', error);
         tg.showAlert('Ошибка отправки сообщения: ' + error.message);
     } finally {
-        // Восстанавливаем input
+        // Восстанавливаем UI
+        if (sendButton) {
+            sendButton.disabled = false;
+            sendButton.style.opacity = '1';
+        }
         input.disabled = false;
         input.placeholder = 'Введите сообщение...';
     }
@@ -6007,47 +5939,62 @@ async function showAdModal(adId) {
     `;
     
     try {
-        // Получаем анкету из базы
+        // Сначала пытаемся получить анкету из таблицы ads
         const response = await fetch(`/api/ads?id=${adId}`);
         const result = await response.json();
         
-        if (result.error || !result.data) {
-            throw new Error(result.error?.message || 'Анкета не найдена');
+        let ad = null;
+        
+        if (result.success && result.ads && result.ads.length > 0) {
+            ad = result.ads[0];
+        } else {
+            // Если анкета удалена, пытаемся получить информацию из чата
+            const chatResponse = await fetch('/api/neon-chats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'get-ad-from-chat',
+                    params: { adId: parseInt(adId) }
+                })
+            });
+            const chatResult = await chatResponse.json();
+            
+            if (chatResult.data) {
+                ad = chatResult.data;
+            }
         }
         
-        const ad = result.data;
+        if (!ad) {
+            throw new Error('Анкета не найдена. Возможно, она была удалена автором.');
+        }
+        
+        // Используем helper функции для форматирования
+        const genderFormatted = formatGender(ad.gender);
+        const targetFormatted = formatTarget(ad.target);
+        const goalsFormatted = formatGoals(ad.goal);
+        
+        const bodyLabels = {
+            slim: 'Худощавое',
+            athletic: 'Спортивное',
+            average: 'Среднее',
+            curvy: 'Полное'
+        };
+        
+        const genderIcon = ad.gender === 'male' ? '♂️' : '♀️';
         
         // Отображаем анкету
         modalBody.innerHTML = `
-            <div class="ad-detail-view">
-                <div class="ad-detail-header">
-                    <h3>${escapeHtml(ad.title)}</h3>
-                    <span class="ad-price">${ad.price ? ad.price + ' ₽' : 'Договорная'}</span>
+            <div class="ad-detail-view" style="padding: 12px; max-width: 380px; font-size: 13px;">
+                <h3 style="margin-top: 0; margin-bottom: 10px; color: var(--neon-cyan); font-size: 16px;">${genderIcon} ${genderFormatted}, ${ad.my_age || '?'} лет</h3>
+                <div style="margin-bottom: 10px; line-height: 1.6;">
+                    <div style="margin-bottom: 4px;">� <strong>Телосложение:</strong> ${bodyLabels[ad.body_type] || 'Не указано'}</div>
+                    <div style="margin-bottom: 4px;">🎯 <strong>Цель:</strong> ${goalsFormatted}</div>
+                    <div style="margin-bottom: 4px;">🔍 <strong>Ищу:</strong> ${targetFormatted}, ${ad.age_from || '18'}-${ad.age_to || '99'} лет</div>
+                    <div style="margin-bottom: 4px;">📍 <strong>Город:</strong> ${ad.city || 'Не указан'}</div>
                 </div>
-                
-                ${ad.photo_url ? `
-                    <div class="ad-photo">
-                        <img src="${ad.photo_url}" alt="Фото анкеты" />
-                    </div>
-                ` : ''}
-                
-                <div class="ad-detail-info">
-                    <p class="ad-description">${escapeHtml(ad.description || 'Без описания')}</p>
-                    
-                    <div class="ad-meta">
-                        <div class="ad-meta-item">
-                            <span class="meta-label">📍 Локация:</span>
-                            <span class="meta-value">${ad.city || 'Не указано'}</span>
-                        </div>
-                        <div class="ad-meta-item">
-                            <span class="meta-label">📅 Создано:</span>
-                            <span class="meta-value">${formatChatTime(ad.created_at)}</span>
-                        </div>
-                        <div class="ad-meta-item">
-                            <span class="meta-label">🆔 ID:</span>
-                            <span class="meta-value">#${ad.id}</span>
-                        </div>
-                    </div>
+                <div style="background: rgba(0,255,255,0.05); padding: 8px; border-radius: 6px; border-left: 3px solid var(--neon-cyan);">
+                    <strong style="font-size: 12px;">💬 О себе:</strong>
+                    <p style="margin: 4px 0 0 0; white-space: pre-wrap; font-size: 12px;">${escapeHtml(ad.text)}</p>
                 </div>
             </div>
         `;
@@ -6895,5 +6842,108 @@ function resetFilters() {
     document.getElementById('filtersPanel').style.display = 'none';
     showBrowseAds();
 }
+
+// ============= РЕФЕРАЛЬНАЯ СИСТЕМА =============
+
+function showReferralModal() {
+    const modal = document.getElementById('referralModal');
+    const referralLinkEl = document.getElementById('referralLink');
+    
+    modal.style.display = 'flex';
+    
+    // Получаем ID текущего пользователя
+    const userId = getCurrentUserId();
+    
+    if (!userId || userId.startsWith('web_')) {
+        referralLinkEl.textContent = 'Авторизуйтесь через Telegram для получения реферальной ссылки';
+        return;
+    }
+    
+    // Генерируем реферальную ссылку
+    const botUsername = 'anonimka_dating_bot'; // Замените на реальное имя бота
+    const referralLink = `https://t.me/${botUsername}?start=ref_${userId}`;
+    
+    referralLinkEl.textContent = referralLink;
+    window.currentReferralLink = referralLink;
+}
+
+function closeReferralModal() {
+    const modal = document.getElementById('referralModal');
+    modal.style.display = 'none';
+}
+
+async function copyReferralLink() {
+    const link = window.currentReferralLink;
+    
+    if (!link) {
+        tg.showAlert('Ссылка не готова');
+        return;
+    }
+    
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(link);
+            tg.showAlert('✅ Ссылка скопирована!');
+        } else {
+            // Fallback для старых браузеров
+            const textArea = document.createElement('textarea');
+            textArea.value = link;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                tg.showAlert('✅ Ссылка скопирована!');
+            } catch (err) {
+                tg.showAlert('Не удалось скопировать. Скопируйте вручную.');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+    } catch (error) {
+        console.error('Ошибка копирования:', error);
+        tg.showAlert('Ошибка при копировании');
+    }
+}
+
+function shareReferralLink() {
+    const link = window.currentReferralLink;
+    
+    if (!link) {
+        tg.showAlert('Ссылка не готова');
+        return;
+    }
+    
+    const shareText = `🎁 Присоединяйся к анонимным знакомствам!\n\nИспользуй мою реферальную ссылку и мы оба получим месяц PRO бесплатно!\n\n${link}`;
+    
+    // Проверяем доступность Telegram WebApp API
+    if (isTelegramWebApp && tg.openTelegramLink) {
+        // Открываем диалог выбора чата для отправки
+        const encodedText = encodeURIComponent(shareText);
+        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('🎁 Присоединяйся к анонимным знакомствам! Используй мою реферальную ссылку и мы оба получим месяц PRO бесплатно!')}`);
+    } else if (navigator.share) {
+        // Используем Web Share API
+        navigator.share({
+            title: 'Пригласи друга',
+            text: shareText
+        }).catch(err => {
+            console.log('Отмена шаринга:', err);
+        });
+    } else {
+        // Fallback - копируем текст
+        copyReferralLink();
+    }
+}
+
+// Закрытие реферального модального окна по клику вне его
+window.addEventListener('click', (event) => {
+    const referralModal = document.getElementById('referralModal');
+    if (event.target === referralModal) {
+        closeReferralModal();
+    }
+});
 
 

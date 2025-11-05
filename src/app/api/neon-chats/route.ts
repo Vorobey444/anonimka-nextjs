@@ -83,7 +83,14 @@ export async function POST(request: NextRequest) {
               WHERE chat_id = pc.id 
               ORDER BY created_at DESC 
               LIMIT 1
-            ) as last_message_time
+            ) as last_message_time,
+            (
+              SELECT COUNT(*)::int
+              FROM messages 
+              WHERE chat_id = pc.id 
+                AND sender_id != ${userId}
+                AND read = false
+            ) as unread_count
           FROM private_chats pc
           WHERE (user1 = ${userId} OR user2 = ${userId})
             AND accepted = true 
@@ -95,12 +102,38 @@ export async function POST(request: NextRequest) {
 
       case 'accept': {
         const { chatId, userId } = params;
+        
+        // Сначала получаем информацию о чате и первоначальное сообщение
+        const chatInfo = await sql`
+          SELECT * FROM private_chats 
+          WHERE id = ${chatId} AND user2 = ${userId}
+        `;
+        
+        if (chatInfo.rows.length === 0) {
+          return NextResponse.json(
+            { error: { message: 'Чат не найден' } },
+            { status: 404 }
+          );
+        }
+        
+        const chat = chatInfo.rows[0];
+        
+        // Если есть первоначальное сообщение, сохраняем его в таблицу messages
+        if (chat.message && chat.message.trim()) {
+          await sql`
+            INSERT INTO messages (chat_id, sender_id, message, created_at)
+            VALUES (${chatId}, ${chat.user1}, ${chat.message}, ${chat.created_at})
+          `;
+        }
+        
+        // Обновляем статус чата на принятый
         const result = await sql`
           UPDATE private_chats 
           SET accepted = true 
           WHERE id = ${chatId} AND user2 = ${userId}
           RETURNING *
         `;
+        
         return NextResponse.json({ data: result.rows[0], error: null });
       }
 
@@ -124,6 +157,17 @@ export async function POST(request: NextRequest) {
             AND blocked_by IS NULL
         `;
         return NextResponse.json({ data: { count: parseInt(result.rows[0].count) }, error: null });
+      }
+
+      case 'get-ad-from-chat': {
+        const { adId } = params;
+        const result = await sql`
+          SELECT a.* FROM private_chats pc
+          JOIN ads a ON a.id = pc.ad_id
+          WHERE pc.ad_id = ${adId}
+          LIMIT 1
+        `;
+        return NextResponse.json({ data: result.rows[0] || null, error: null });
       }
 
       case 'delete-chat': {
@@ -163,6 +207,58 @@ export async function POST(request: NextRequest) {
         
         console.log('[NEON-CHATS] Чат удален:', chatId);
         return NextResponse.json({ data: result.rows[0], error: null });
+      }
+
+      case 'get-ad-from-chat': {
+        const { adId } = params;
+        
+        if (!adId) {
+          return NextResponse.json(
+            { error: { message: 'adId не указан' } },
+            { status: 400 }
+          );
+        }
+        
+        // Получаем информацию об анкете из таблицы чатов
+        // Это позволяет показывать анкету даже если она удалена из таблицы ads
+        const result = await sql`
+          SELECT 
+            pc.ad_id,
+            ads.gender,
+            ads.target,
+            ads.goal,
+            ads.age_from,
+            ads.age_to,
+            ads.my_age,
+            ads.body_type,
+            ads.text,
+            ads.city,
+            ads.country
+          FROM private_chats pc
+          LEFT JOIN ads ON ads.id = pc.ad_id
+          WHERE pc.ad_id = ${adId}
+          LIMIT 1
+        `;
+        
+        if (result.rows.length === 0) {
+          return NextResponse.json(
+            { error: { message: 'Информация об анкете не найдена' } },
+            { status: 404 }
+          );
+        }
+        
+        // Возвращаем данные анкеты (из ads если она существует, иначе NULL)
+        const adData = result.rows[0];
+        
+        if (!adData.gender) {
+          // Если ads уже удалена, информации об анкете нет
+          return NextResponse.json(
+            { error: { message: 'Анкета была удалена и информация о ней недоступна' } },
+            { status: 404 }
+          );
+        }
+        
+        return NextResponse.json({ data: adData, error: null });
       }
 
       default:
