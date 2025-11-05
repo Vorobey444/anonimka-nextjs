@@ -6227,6 +6227,27 @@ function startMidnightLimitCheck() {
     }, 60000); // Проверяем каждую минуту
 }
 
+// Ручное обновление лимитов (для тестирования и debug)
+async function manualRefreshLimits() {
+    console.log('🔄 Ручное обновление лимитов...');
+    
+    try {
+        await loadPremiumStatus();
+        updateAdLimitBadge();
+        
+        if (tg && tg.showAlert) {
+            tg.showAlert('✅ Лимиты обновлены с сервера!');
+        }
+        
+        console.log('✅ Лимиты успешно обновлены');
+    } catch (error) {
+        console.error('❌ Ошибка обновления лимитов:', error);
+        if (tg && tg.showAlert) {
+            tg.showAlert('❌ Ошибка обновления лимитов');
+        }
+    }
+}
+
 // Обновить UI переключателя Premium
 function updatePremiumUI() {
     const freeBtn = document.getElementById('freeBtn');
