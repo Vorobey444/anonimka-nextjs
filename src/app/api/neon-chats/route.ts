@@ -32,13 +32,39 @@ export async function POST(request: NextRequest) {
 
       case 'get-pending': {
         const { user_token } = params;
+        if (!user_token) {
+          return NextResponse.json(
+            { error: { message: 'user_token не указан' } },
+            { status: 400 }
+          );
+        }
         const result = await sql`
-          SELECT pc.*, u.is_premium as sender_is_premium,
+          SELECT pc.*,
             (SELECT sender_nickname FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as sender_nickname,
             (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_text
           FROM private_chats pc
-          LEFT JOIN users u ON (CASE WHEN pc.user1 = ${user_token} THEN pc.user2 = u.id ELSE pc.user1 = u.id END)
           WHERE user2 = ${user_token} AND accepted = false
+          ORDER BY pc.created_at DESC
+        `;
+        return NextResponse.json({ data: result.rows, error: null });
+      }
+
+      case 'get-active': {
+        const { userId } = params;
+        if (!userId) {
+          return NextResponse.json(
+            { error: { message: 'userId не указан' } },
+            { status: 400 }
+          );
+        }
+        const result = await sql`
+          SELECT pc.*,
+            (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message,
+            (SELECT created_at FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_time
+          FROM private_chats pc
+          WHERE (user1 = ${userId} OR user2 = ${userId})
+            AND accepted = true
+            AND blocked_by IS NULL
           ORDER BY pc.created_at DESC
         `;
         return NextResponse.json({ data: result.rows, error: null });

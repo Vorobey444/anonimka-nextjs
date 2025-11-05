@@ -767,7 +767,7 @@ async function saveNicknamePage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'update-all-nicknames',
-                        user_token: localStorage.getItem('user_token'),
+                        tgId: userId,
                         nickname: nickname
                     })
                 });
@@ -2085,8 +2085,18 @@ async function loadAds(filters = {}) {
             `;
         }
 
-        // Запрашиваем анкеты из Supabase через API
-    // ...реализация через Neon API...
+        // Запрашиваем анкеты через Neon API
+        const response = await fetch('/api/ads', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        const ads = result.ads || [];
         
         console.log('✅ Получено анкет:', ads.length);
         console.log('📋 первую анкету:', ads[0]);
@@ -2112,7 +2122,17 @@ async function loadAds(filters = {}) {
 
 // Вспомогательная функция для получения всех анкет
 async function getAllAds() {
-    // ...реализация через Neon API...
+    const response = await fetch('/api/ads', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    const ads = result.ads || [];
     
     // Сортируем: сначала закрепленные (и еще не истекшие), потом обычные по дате
     const now = new Date();
@@ -7249,12 +7269,14 @@ async function showBlockedUsers() {
             return;
         }
         
+        const userToken = localStorage.getItem('user_token') || userId;
+        
         const response = await fetch('/api/blocks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'get-blocked-users',
-                params: { user_token: localStorage.getItem('user_token') }
+                params: { user_token: userToken }
             })
         });
         
