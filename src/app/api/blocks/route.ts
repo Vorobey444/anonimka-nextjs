@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
               (
                 SELECT a.nickname
                 FROM ads a
-                WHERE a.tg_id = ub.blocked_id::text
+                WHERE a.tg_id = CAST(ub.blocked_id AS TEXT)
                 ORDER BY a.created_at DESC
                 LIMIT 1
               ),
