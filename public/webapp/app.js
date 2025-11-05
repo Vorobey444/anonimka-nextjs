@@ -5064,15 +5064,11 @@ async function loadMyChats() {
                 const lastMessage = chat.last_message || 'Нажмите для открытия чата';
                 const lastMessagePreview = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
                 
-                // Счетчик непрочитанных сообщений для этого чата
-                const unreadCount = chat.unread_count || 0;
-                const unreadBadge = unreadCount > 0 ? `<span class="chat-unread-badge">${unreadCount}</span>` : '';
-                
                 return `
                     <div class="chat-card" onclick="openChat('${chat.id}')">
                         <div class="chat-card-header">
                             <span class="chat-ad-id" onclick="event.stopPropagation(); showAdModal('${chat.ad_id}');">💬 Чат #${chat.ad_id || 'N/A'}</span>
-                            <span class="chat-time">${lastMessageTime}${unreadBadge}</span>
+                            <span class="chat-time">${lastMessageTime}</span>
                         </div>
                         <div class="chat-preview">
                             ${lastMessagePreview}

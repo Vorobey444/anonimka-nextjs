@@ -83,14 +83,7 @@ export async function POST(request: NextRequest) {
               WHERE chat_id = pc.id 
               ORDER BY created_at DESC 
               LIMIT 1
-            ) as last_message_time,
-            (
-              SELECT COUNT(*) 
-              FROM messages 
-              WHERE chat_id = pc.id 
-                AND recipient_id = ${userId}
-                AND delivered = false
-            )::int as unread_count
+            ) as last_message_time
           FROM private_chats pc
           WHERE (user1 = ${userId} OR user2 = ${userId})
             AND accepted = true 
