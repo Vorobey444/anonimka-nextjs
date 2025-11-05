@@ -121,31 +121,54 @@ export async function POST(request: NextRequest) {
           }, { status: 400 });
         }
 
-        // Получаем список заблокированных пользователей с nickname из ads
-        const result = await sql`
-          SELECT 
-            ub.blocked_id,
-            ub.created_at as blocked_at,
-            COALESCE(
-              (
-                SELECT a.nickname
-                FROM ads a
-                WHERE a.tg_id = CAST(ub.blocked_id AS TEXT)
-                ORDER BY a.created_at DESC
-                LIMIT 1
-              ),
-              'Собеседник'
-            ) as nickname
-          FROM user_blocks ub
-          WHERE ub.blocker_id = ${userId}
-          ORDER BY ub.created_at DESC
-        `;
+        try {
+          // Получаем список заблокированных пользователей
+          const blockedList = await sql`
+            SELECT blocked_id, created_at as blocked_at
+            FROM user_blocks
+            WHERE blocker_id = ${userId}
+            ORDER BY created_at DESC
+          `;
 
-        console.log('[BLOCKS API] Получен список заблокированных:', { userId, count: result.rows.length, data: result.rows });
-        return NextResponse.json({ 
-          data: result.rows,
-          error: null 
-        });
+          // Для каждого заблокированного получаем nickname из ads
+          const blockedUsers = await Promise.all(
+            blockedList.rows.map(async (block) => {
+              try {
+                const nicknameResult = await sql`
+                  SELECT nickname
+                  FROM ads
+                  WHERE tg_id = ${String(block.blocked_id)}
+                  ORDER BY created_at DESC
+                  LIMIT 1
+                `;
+                
+                return {
+                  blocked_id: block.blocked_id,
+                  blocked_at: block.blocked_at,
+                  nickname: nicknameResult.rows[0]?.nickname || 'Собеседник'
+                };
+              } catch (err) {
+                console.error('[BLOCKS API] Ошибка получения nickname для:', block.blocked_id, err);
+                return {
+                  blocked_id: block.blocked_id,
+                  blocked_at: block.blocked_at,
+                  nickname: 'Собеседник'
+                };
+              }
+            })
+          );
+
+          console.log('[BLOCKS API] Получен список заблокированных:', { userId, count: blockedUsers.length, data: blockedUsers });
+          return NextResponse.json({ 
+            data: blockedUsers,
+            error: null 
+          });
+        } catch (error: any) {
+          console.error('[BLOCKS API] Ошибка get-blocked-users:', error);
+          return NextResponse.json({ 
+            error: { message: error?.message || 'Ошибка получения списка' } 
+          }, { status: 500 });
+        }
       }
 
       default:
