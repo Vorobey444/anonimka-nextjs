@@ -4022,6 +4022,22 @@ h3 {
     animation: pulse 2s infinite;
 }
 
+/* Badge непрочитанных на отдельных чатах */
+.chat-unread-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff006e, #8338ec);
+    color: white;
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: 8px;
+    min-width: 18px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(255, 0, 110, 0.5);
+    animation: pulse 2s infinite;
+}
+
 .limit-badge {
     position: absolute;
     bottom: -8px;

@@ -5064,11 +5064,15 @@ async function loadMyChats() {
                 const lastMessage = chat.last_message || 'Нажмите для открытия чата';
                 const lastMessagePreview = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
                 
+                // Счетчик непрочитанных сообщений для этого чата
+                const unreadCount = chat.unread_count || 0;
+                const unreadBadge = unreadCount > 0 ? `<span class="chat-unread-badge">${unreadCount}</span>` : '';
+                
                 return `
                     <div class="chat-card" onclick="openChat('${chat.id}')">
                         <div class="chat-card-header">
-                            <span class="chat-ad-id" onclick="event.stopPropagation(); showAdModal('${chat.ad_id}');">💬 Анкета #${chat.ad_id || 'N/A'}</span>
-                            <span class="chat-time">${lastMessageTime}</span>
+                            <span class="chat-ad-id" onclick="event.stopPropagation(); showAdModal('${chat.ad_id}');">💬 Чат #${chat.ad_id || 'N/A'}</span>
+                            <span class="chat-time">${lastMessageTime}${unreadBadge}</span>
                         </div>
                         <div class="chat-preview">
                             ${lastMessagePreview}
@@ -5111,7 +5115,7 @@ async function loadMyChats() {
                 return `
                     <div class="chat-request-card">
                         <div class="request-header">
-                            <span class="request-ad-id">📨 Анкета #${chat.ad_id || 'N/A'}</span>
+                            <span class="request-ad-id">📨 Чат #${chat.ad_id || 'N/A'}</span>
                             <span class="request-time">${requestTime}</span>
                         </div>
                         <div class="request-message">
@@ -5324,7 +5328,7 @@ async function openChat(chatId) {
         // Обновляем заголовок
         document.getElementById('chatTitle').textContent = 'Анонимный чат';
         const chatAdIdElement = document.getElementById('chatAdId');
-        chatAdIdElement.innerHTML = `Анкета #${chat.ad_id || 'N/A'} - <span class="view-ad-link" onclick="showAdModal(${chat.ad_id})">Смотреть</span>`;
+        chatAdIdElement.innerHTML = `Чат #${chat.ad_id || 'N/A'} - <span class="view-ad-link" onclick="showAdModal(${chat.ad_id})">Смотреть</span>`;
         
         // Сохраняем ad_id для использования в других функциях
         currentAdId = chat.ad_id;
