@@ -6749,12 +6749,13 @@ async function checkBlockStatus(chatId) {
         currentOpponentId = isUser1 ? chat.user2 : chat.user1;
         
         // Проверяем блокировку
+        const userToken = localStorage.getItem('user_token') || userId;
         const blockResponse = await fetch('/api/blocks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'check-block-status',
-                params: { user1_token: localStorage.getItem('user_token'), user2_token: currentOpponentId }
+                params: { user1_token: userToken, user2_token: currentOpponentId }
             })
         });
         
@@ -6838,13 +6839,14 @@ async function toggleBlockUser() {
         if (!confirmed) return;
         
         try {
+            const blockerToken = localStorage.getItem('user_token') || userId;
             const response = await fetch('/api/blocks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: action,
                     params: { 
-                        blocker_token: localStorage.getItem('user_token'), 
+                        blocker_token: blockerToken, 
                         blocked_token: currentOpponentId 
                     }
                 })
