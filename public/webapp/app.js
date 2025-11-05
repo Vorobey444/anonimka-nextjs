@@ -96,6 +96,9 @@ if (isTelegramWebApp) {
     // Блокировка вертикальных свайпов для предотвращения скриншотов
     tg.disableVerticalSwipes();
     console.log('🔒 Вертикальные свайпы отключены');
+    
+    // Запускаем проверку обновления лимитов в полночь
+    startMidnightLimitCheck();
 } else {
     console.log('⚠️ НЕ запущено в Telegram WebApp');
 }
@@ -6146,10 +6149,21 @@ function updateAdLimitBadge() {
     const remaining = adsLimit.remaining || 0;
     
     if (remaining === 0) {
-        // Лимит исчерпан
-        badge.textContent = `${used}/${max} 🚫`;
+        // Лимит исчерпан - показываем таймер
+        const timeUntilReset = getTimeUntilMidnight();
+        badge.innerHTML = `${used}/${max} 🚫<br><span style="font-size: 0.7em;">⏰ ${timeUntilReset}</span>`;
         badge.className = 'limit-badge danger';
         badge.style.display = 'block';
+        
+        // Обновляем таймер каждую минуту
+        if (!window.limitTimerInterval) {
+            window.limitTimerInterval = setInterval(() => {
+                const timeLeft = getTimeUntilMidnight();
+                if (badge.style.display !== 'none' && remaining === 0) {
+                    badge.innerHTML = `${used}/${max} 🚫<br><span style="font-size: 0.7em;">⏰ ${timeLeft}</span>`;
+                }
+            }, 60000); // Обновляем каждую минуту
+        }
     } else if (remaining === 1 && !userPremiumStatus.isPremium) {
         // Осталось 1 (для FREE это последнее)
         badge.textContent = `${used}/${max}`;
@@ -6164,6 +6178,53 @@ function updateAdLimitBadge() {
         // Ещё не создано анкет
         badge.style.display = 'none';
     }
+}
+
+// Функция для расчета времени до полуночи (обновления лимитов)
+function getTimeUntilMidnight() {
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0); // Следующая полночь
+    
+    const diff = midnight - now;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) {
+        return `${hours}ч ${minutes}м`;
+    } else {
+        return `${minutes}м`;
+    }
+}
+
+// Запуск проверки обновления лимитов в полночь
+function startMidnightLimitCheck() {
+    console.log('⏰ Запущена проверка обновления лимитов в полночь');
+    
+    // Проверяем каждую минуту, не наступила ли полночь
+    setInterval(() => {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        
+        // Если сейчас 00:00 или 00:01 - обновляем лимиты
+        if (hours === 0 && minutes <= 1) {
+            console.log('🌙 Полночь! Обновляем лимиты...');
+            
+            // Проверяем лимиты с сервера
+            if (typeof loadPremiumStatus === 'function') {
+                loadPremiumStatus().then(() => {
+                    console.log('✅ Лимиты обновлены после полуночи');
+                    updateAdLimitBadge();
+                    
+                    // Показываем уведомление пользователю
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('🎉 Лимиты обновлены! Можете создавать новые анкеты.');
+                    }
+                });
+            }
+        }
+    }, 60000); // Проверяем каждую минуту
 }
 
 // Обновить UI переключателя Premium
@@ -6229,6 +6290,50 @@ async function showPremiumModal() {
     
     // Обновляем кнопки в зависимости от текущего статуса
     updatePremiumModalButtons();
+    
+    // Устанавливаем активную кнопку валюты
+    const currencyToSet = (currency === '₽') ? 'rub' : 'kzt';
+    document.querySelectorAll('.currency-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.currency === currencyToSet) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+// Переключение валюты в модальном окне тарифов
+function switchCurrency(currencyCode) {
+    console.log('💱 Переключение валюты на:', currencyCode);
+    
+    let currency, proPrice;
+    
+    if (currencyCode === 'rub') {
+        currency = '₽';
+        proPrice = 99;
+    } else {
+        currency = '₸';
+        proPrice = 499;
+    }
+    
+    // Обновляем кнопки переключателя
+    document.querySelectorAll('.currency-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.currency === currencyCode) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Обновляем валюту в FREE тарифе
+    const freeCurrencyElement = document.querySelector('.pricing-card:not(.featured) .price-currency');
+    if (freeCurrencyElement) {
+        freeCurrencyElement.textContent = currency;
+    }
+    
+    // Обновляем цену и валюту в PRO тарифе
+    document.getElementById('proPriceAmount').textContent = proPrice;
+    document.getElementById('proPriceCurrency').textContent = currency;
+    
+    console.log('✅ Валюта обновлена:', currency, proPrice);
 }
 
 // Закрыть модальное окно тарифов
