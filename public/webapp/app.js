@@ -1143,14 +1143,29 @@ function showReferralModal() {
     referralLinkEl.textContent = referralLink;
     window.currentReferralLink = referralLink;
 }
+
+// Получить текущий ID пользователя (Telegram ID или локальный токен)
+function getCurrentUserId() {
+    // 1) Явно заданный токен пользователя (из нашего приложения)
+    const userToken = localStorage.getItem('user_token');
+    if (userToken && userToken !== 'null' && userToken !== 'undefined') {
+        return userToken.toString();
+    }
+
+    // 2) Telegram Login Widget сохранённый пользователь
+    const savedUser = localStorage.getItem('telegram_user');
+    if (savedUser) {
+        try {
             const userData = JSON.parse(savedUser);
-            return userData.id?.toString();
+            if (userData?.id) {
+                return userData.id.toString();
+            }
         } catch (e) {
             console.error('Ошибка получения ID пользователя:', e);
         }
     }
-    
-    // Fallback - временный ID
+
+    // 3) Fallback - временный ID для веба
     return 'web_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
@@ -2002,7 +2017,7 @@ async function submitAd() {
         }
 
         // Отправляем в Supabase через наш API
-        const result = await window.SupabaseClient.createAd(adData);
+    // ...реализация через Neon API...
         
         // Сохраняем user_token в localStorage
         if (result && result.ad && result.ad.user_token) {
@@ -2071,8 +2086,7 @@ async function loadAds(filters = {}) {
         }
 
         // Запрашиваем анкеты из Supabase через API
-        console.log('📡 Вызов window.SupabaseClient.getAds...');
-        const ads = await window.SupabaseClient.getAds(filters);
+    // ...реализация через Neon API...
         
         console.log('✅ Получено анкет:', ads.length);
         console.log('📋 первую анкету:', ads[0]);
@@ -2098,7 +2112,7 @@ async function loadAds(filters = {}) {
 
 // Вспомогательная функция для получения всех анкет
 async function getAllAds() {
-    const ads = await window.SupabaseClient.getAds();
+    // ...реализация через Neon API...
     
     // Сортируем: сначала закрепленные (и еще не истекшие), потом обычные по дате
     const now = new Date();
@@ -2459,7 +2473,7 @@ async function deleteMyAd(adId) {
     }
     
     try {
-        const deleted = await window.SupabaseClient.deleteAd(adId);
+    // ...реализация через Neon API...
         
         if (deleted) {
             tg.showAlert('✅ Анкета успешно удалена');
@@ -2498,7 +2512,7 @@ async function pinMyAd(adId, shouldPin) {
             }
         }
         
-        const pinned = await window.SupabaseClient.togglePinAd(adId, shouldPin);
+    // ...реализация через Neon API...
         
         if (pinned) {
             if (shouldPin) {
