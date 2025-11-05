@@ -78,8 +78,14 @@ function customConfirmCancel() {
 
 // Fallback для showConfirm в браузерной версии
 tg.showConfirm = tg.showConfirm || function(message, callback) {
-    // Если есть нативный метод - используем его
-    if (window.Telegram?.WebApp?.showConfirm) {
+    // ТОЛЬКО для Telegram WebApp используем нативный метод
+    const isRealTelegram = !!(
+        window.Telegram?.WebApp?.platform && 
+        window.Telegram.WebApp.platform !== 'unknown' &&
+        window.Telegram.WebApp.initData
+    );
+    
+    if (isRealTelegram && window.Telegram?.WebApp?.showConfirm) {
         try {
             window.Telegram.WebApp.showConfirm(message, callback);
             return;
@@ -88,7 +94,7 @@ tg.showConfirm = tg.showConfirm || function(message, callback) {
         }
     }
     
-    // Используем кастомное модальное окно вместо confirm()
+    // В браузерной версии используем кастомное модальное окно
     const modal = document.getElementById('customConfirmModal');
     const messageEl = document.getElementById('customConfirmMessage');
     
@@ -318,6 +324,12 @@ function initializeApp() {
             console.log('✅ checkTelegramAuth выполнен');
         } catch (e) {
             console.error('❌ Ошибка checkTelegramAuth:', e);
+        }
+        
+        try {
+            handleReferralLink(); // Обработка реферальной ссылки
+        } catch (e) {
+            console.error('❌ Ошибка handleReferralLink:', e);
         }
         
         try {
@@ -1957,6 +1969,14 @@ async function submitAd() {
 
         // Обновляем статус Premium (лимиты изменились)
         await loadPremiumStatus();
+        
+        // Обрабатываем реферальную награду (если пользователь пришел по реферальной ссылке)
+        try {
+            await processReferralReward();
+        } catch (refError) {
+            console.error('Ошибка обработки реферальной награды:', refError);
+            // Не прерываем выполнение, анкета уже создана
+        }
 
         // Показываем успех
         tg.showAlert('✅ Анкета успешно опубликована!', () => {
@@ -6934,6 +6954,90 @@ function resetFilters() {
 
 // ============= РЕФЕРАЛЬНАЯ СИСТЕМА =============
 
+// Обработка реферальной ссылки при запуске
+async function handleReferralLink() {
+    try {
+        // Проверяем есть ли start_param в Telegram WebApp
+        const startParam = tg?.initDataUnsafe?.start_param;
+        
+        if (!startParam || !startParam.startsWith('ref_')) {
+            console.log('ℹ️ Реферальный параметр не найден');
+            return;
+        }
+        
+        const referrerId = startParam.replace('ref_', '');
+        const currentUserId = getCurrentUserId();
+        
+        if (!currentUserId || currentUserId.startsWith('web_')) {
+            console.log('⚠️ Пользователь не авторизован, реферал будет обработан позже');
+            // Сохраняем реферала для последующей обработки
+            localStorage.setItem('pending_referral', referrerId);
+            return;
+        }
+        
+        console.log(`📨 Обработка реферальной ссылки: пользователь ${currentUserId} пришел по ссылке ${referrerId}`);
+        
+        // Отправляем на сервер
+        const response = await fetch('/api/referrals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                referrerId: parseInt(referrerId),
+                newUserId: parseInt(currentUserId)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            console.log('✅ Реферал зарегистрирован');
+            // Сохраняем что реферал обработан
+            localStorage.setItem('referral_processed', 'true');
+            localStorage.setItem('referrer_id', referrerId);
+        } else {
+            console.log('ℹ️ Реферал не зарегистрирован:', data.message);
+        }
+        
+    } catch (error) {
+        console.error('❌ Ошибка обработки реферальной ссылки:', error);
+    }
+}
+
+// Функция вызывается после создания анкеты для выдачи награды
+async function processReferralReward() {
+    try {
+        const referrerId = localStorage.getItem('referrer_id');
+        
+        if (!referrerId) {
+            return; // Пользователь пришел не по реферальной ссылке
+        }
+        
+        const currentUserId = getCurrentUserId();
+        
+        console.log(`🎁 Запрос на выдачу PRO для реферера ${referrerId}`);
+        
+        const response = await fetch('/api/referrals', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                newUserId: parseInt(currentUserId)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            console.log(`✅ PRO подписка выдана пользователю ${data.referrerId} до ${data.expiresAt}`);
+            // Очищаем данные реферала
+            localStorage.removeItem('referrer_id');
+            localStorage.removeItem('pending_referral');
+        }
+        
+    } catch (error) {
+        console.error('❌ Ошибка выдачи награды за реферала:', error);
+    }
+}
+
 function showReferralModal() {
     const modal = document.getElementById('referralModal');
     const referralLinkEl = document.getElementById('referralLink');
@@ -7006,13 +7110,34 @@ function shareReferralLink() {
         return;
     }
     
-    const shareText = `🎁 Присоединяйся к анонимным знакомствам!\n\nИспользуй мою реферальную ссылку и мы оба получим месяц PRO бесплатно!\n\n${link}`;
+    // Массив креативных текстов (точь-в-точь как указано)
+    const referralTexts = [
+        `Один клик - и ты в анонимном мире знакомств, где нет лайков, только инстинкт.\n(а у меня будет месяц PRO, но не завидуй, просто тоже пригласи кого-нибудь)\n\n${link}`,
+        
+        `Регистрация в один клик — и ты уже в тени.\nБез фото, без прошлого, только ники и честные намерения.\n(а у меня - месяц PRO, потому что я тебя заманил 😏)\n\n${link}`,
+        
+        `Анонимные знакомства, без лиц, без фильтров, без имён.\nТолько ты, ники и лёгкий запах странных решений.\n(и мой бесплатный PRO, если ты зайдёшь 😎)\n\n${link}`,
+        
+        `Регистрация в один клик - и всё, ты уже в мире, где никто не знает, кто ты, но все хотят узнать.\n(а я за это получаю PRO, потому что жизнь несправедлива 😏)\n\n${link}`
+    ];
+    
+    // Выбираем рандомный текст
+    const shareText = referralTexts[Math.floor(Math.random() * referralTexts.length)];
+    
+    // Короткий текст для кнопки "Поделиться"
+    const shortTexts = [
+        'Один клик - и ты в анонимном мире знакомств',
+        'Регистрация в один клик — и ты уже в тени',
+        'Анонимные знакомства без лиц и фильтров',
+        'Мир, где никто не знает, кто ты'
+    ];
+    const shortText = shortTexts[Math.floor(Math.random() * shortTexts.length)];
     
     // Проверяем доступность Telegram WebApp API
     if (isTelegramWebApp && tg.openTelegramLink) {
         // Открываем диалог выбора чата для отправки
         const encodedText = encodeURIComponent(shareText);
-        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('🎁 Присоединяйся к анонимным знакомствам! Используй мою реферальную ссылку и мы оба получим месяц PRO бесплатно!')}`);
+        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shortText)}`);
     } else if (navigator.share) {
         // Используем Web Share API
         navigator.share({
