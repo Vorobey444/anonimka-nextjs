@@ -549,7 +549,7 @@ function checkTelegramAuth() {
             photo_url: tg.initDataUnsafe.user.photo_url
         };
         
-        console.log('✅ Данные пользователя получены:', userData);
+        console.log('✅ Данные пользователя получены');
         
         // Проверяем, была ли уже авторизация
         const savedUser = localStorage.getItem('telegram_user');
@@ -558,7 +558,7 @@ function checkTelegramAuth() {
         // Сохраняем в localStorage
         localStorage.setItem('telegram_user', JSON.stringify(userData));
         localStorage.setItem('telegram_auth_time', Date.now().toString());
-        console.log('✅ Авторизован через Telegram WebApp:', userData);
+        console.log('✅ Авторизован через Telegram WebApp');
         
         // Закрываем модальное окно если оно было открыто
         const modal = document.getElementById('telegramAuthModal');
@@ -579,14 +579,14 @@ function checkTelegramAuth() {
     }
     
     console.log('⚠️ Telegram авторизация недоступна');
-    console.log('  - Причина: isTelegramWebApp=' + isTelegramWebApp + ', user.id=' + (tg.initDataUnsafe?.user?.id || 'null'));
+    console.log('  - Причина: isTelegramWebApp=' + isTelegramWebApp + ', user=' + (tg.initDataUnsafe?.user ? 'present' : 'null'));
     
     // Проверяем сохранённые данные из предыдущей сессии
     const savedUser = localStorage.getItem('telegram_user');
     if (savedUser) {
         try {
             const userData = JSON.parse(savedUser);
-            console.log('✅ Найдена сохранённая авторизация:', userData);
+            console.log('✅ Найдена сохранённая авторизация');
             // Проверяем, не истекла ли авторизация (опционально)
             const authTime = localStorage.getItem('telegram_auth_time');
             const now = Date.now();
@@ -982,7 +982,7 @@ function showTelegramAuthModal() {
                 
                 // Если авторизация произошла менее 10 секунд назад
                 if (timeDiff < 10000) {
-                    console.log('✅ Обнаружена авторизация через Login Widget:', userData);
+                    console.log('✅ Обнаружена авторизация через Login Widget');
                     
                     // Закрываем модальное окно
                     clearInterval(checkInterval);
