@@ -626,7 +626,7 @@
                             <label>От</label>
                             <div class="age-control">
                                 <button type="button" class="age-btn minus" onclick="decreaseAge('ageFrom')">−</button>
-                                <input type="number" id="ageFrom" min="18" max="99" class="neon-input small" placeholder="" onblur="validateAgeRange()">
+                                <input type="number" id="ageFrom" min="18" max="99" class="neon-input small" placeholder="">
                                 <button type="button" class="age-btn plus" onclick="increaseAge('ageFrom')">+</button>
                             </div>
                         </div>
@@ -634,7 +634,7 @@
                             <label>До</label>
                             <div class="age-control">
                                 <button type="button" class="age-btn minus" onclick="decreaseAge('ageTo')">−</button>
-                                <input type="number" id="ageTo" min="18" max="99" class="neon-input small" placeholder="" onblur="validateAgeRange()">
+                                <input type="number" id="ageTo" min="18" max="99" class="neon-input small" placeholder="">
                                 <button type="button" class="age-btn plus" onclick="increaseAge('ageTo')">+</button>
                             </div>
                         </div>
@@ -849,11 +849,11 @@
                 <div id="chatMessages" class="chat-messages">
                     <!-- Сообщения будут загружены через JS -->
                 </div>
-                
-                <!-- Предупреждение о блокировке -->
-                <div id="blockWarning" class="block-warning" style="display: none;">
-                    ⚠️ Собеседник внес вас в черный список
-                </div>
+            </div>
+
+            <!-- Предупреждение о блокировке -->
+            <div id="blockWarning" class="block-warning" style="display: none;">
+                ⚠️ Собеседник внес вас в черный список
             </div>
 
             <div class="chat-input-container">

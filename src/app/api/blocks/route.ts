@@ -112,6 +112,37 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      case 'get-blocked-users': {
+        const { userId } = params;
+        
+        if (!userId) {
+          return NextResponse.json({ 
+            error: { message: 'ID пользователя не указан' } 
+          }, { status: 400 });
+        }
+
+        // Получаем список заблокированных пользователей
+        const result = await sql`
+          SELECT 
+            ub.blocked_id,
+            ub.created_at as blocked_at,
+            pc.sender_nickname as nickname
+          FROM user_blocks ub
+          LEFT JOIN private_chats pc ON (
+            (pc.user1 = ${userId} AND pc.user2 = ub.blocked_id)
+            OR (pc.user2 = ${userId} AND pc.user1 = ub.blocked_id)
+          )
+          WHERE ub.blocker_id = ${userId}
+          ORDER BY ub.created_at DESC
+        `;
+
+        console.log('[BLOCKS API] Получен список заблокированных:', { userId, count: result.rows.length });
+        return NextResponse.json({ 
+          data: result.rows,
+          error: null 
+        });
+      }
+
       default:
         return NextResponse.json({ 
           error: { message: 'Неизвестное действие' } 

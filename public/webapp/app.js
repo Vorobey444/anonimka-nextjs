@@ -1602,9 +1602,15 @@ function increaseAge(inputId) {
     let currentValue = parseInt(input.value);
     const maxValue = parseInt(input.max) || 100;
     
-    // Если поле пустое, устанавливаем начальное значение 18
+    // Если поле пустое, устанавливаем начальное значение
     if (isNaN(currentValue) || !input.value) {
-        input.value = 18;
+        if (inputId === 'ageFrom') {
+            input.value = 18;
+        } else if (inputId === 'ageTo') {
+            input.value = 99;
+        } else {
+            input.value = 18;
+        }
         validateAgeRange();
         return;
     }
@@ -1620,9 +1626,15 @@ function decreaseAge(inputId) {
     let currentValue = parseInt(input.value);
     const minValue = parseInt(input.min) || 18;
     
-    // Если поле пустое, устанавливаем начальное значение 18
+    // Если поле пустое, устанавливаем начальное значение
     if (isNaN(currentValue) || !input.value) {
-        input.value = 18;
+        if (inputId === 'ageFrom') {
+            input.value = 18;
+        } else if (inputId === 'ageTo') {
+            input.value = 99;
+        } else {
+            input.value = 18;
+        }
         validateAgeRange();
         return;
     }
@@ -6630,8 +6642,8 @@ async function checkBlockStatus(chatId) {
                 blockMenuText.textContent = isUserBlocked ? '✅ Разблокировать собеседника' : '🚫 Заблокировать собеседника';
             }
             
-            // Если заблокировал собеседник - показываем предупреждение
-            if (blockedByOther) {
+            // Показываем предупреждение ТОЛЬКО если собеседник заблокировал МЕНЯ (не я его)
+            if (blockedByOther && !isUserBlocked) {
                 showBlockWarning(true);
             } else {
                 showBlockWarning(false);
