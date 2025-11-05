@@ -55,6 +55,28 @@ tg.showPopup = function(params, callback) {
 };
 
 // Безопасная обертка для showConfirm с fallback на confirm()
+// Кастомные функции для confirm модального окна
+let customConfirmCallback = null;
+
+function customConfirmOk() {
+    const modal = document.getElementById('customConfirmModal');
+    modal.style.display = 'none';
+    if (customConfirmCallback) {
+        customConfirmCallback(true);
+        customConfirmCallback = null;
+    }
+}
+
+function customConfirmCancel() {
+    const modal = document.getElementById('customConfirmModal');
+    modal.style.display = 'none';
+    if (customConfirmCallback) {
+        customConfirmCallback(false);
+        customConfirmCallback = null;
+    }
+}
+
+// Fallback для showConfirm в браузерной версии
 tg.showConfirm = tg.showConfirm || function(message, callback) {
     // Если есть нативный метод - используем его
     if (window.Telegram?.WebApp?.showConfirm) {
@@ -66,10 +88,20 @@ tg.showConfirm = tg.showConfirm || function(message, callback) {
         }
     }
     
-    // Fallback на обычный confirm()
-    const result = confirm(message);
-    if (callback) {
-        setTimeout(() => callback(result), 0);
+    // Используем кастомное модальное окно вместо confirm()
+    const modal = document.getElementById('customConfirmModal');
+    const messageEl = document.getElementById('customConfirmMessage');
+    
+    if (modal && messageEl) {
+        messageEl.textContent = message;
+        modal.style.display = 'flex';
+        customConfirmCallback = callback;
+    } else {
+        // Если модалка не найдена, fallback на обычный confirm
+        const result = confirm(message);
+        if (callback) {
+            setTimeout(() => callback(result), 0);
+        }
     }
 };
 
@@ -7000,6 +7032,11 @@ window.addEventListener('click', (event) => {
     const referralModal = document.getElementById('referralModal');
     if (event.target === referralModal) {
         closeReferralModal();
+    }
+    
+    const customConfirmModal = document.getElementById('customConfirmModal');
+    if (event.target === customConfirmModal) {
+        customConfirmCancel();
     }
 });
 
