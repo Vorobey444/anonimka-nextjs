@@ -1639,9 +1639,24 @@ function showStep(step) {
                 margin: '0 auto'
             });
             
-            // Вставляем в контейнер
+            // Вставляем в контейнер и добавляем счетчик символов
+            textarea.maxLength = 500;
+            textarea.addEventListener('input', updateCharacterCount);
             textareaContainer.innerHTML = '';
             textareaContainer.appendChild(textarea);
+            
+            // Добавляем счетчик символов
+            const counter = document.createElement('div');
+            counter.id = 'charCounter';
+            counter.style.marginTop = '8px';
+            counter.style.textAlign = 'right';
+            counter.style.fontSize = '12px';
+            counter.style.color = 'var(--text-gray)';
+            counter.textContent = '0/500';
+            textareaContainer.appendChild(counter);
+            
+            // Инициализируем отображение счетчика
+            setTimeout(() => updateCharacterCount(), 0);
             
             // Проверяем через небольшую задержку
             setTimeout(() => {
@@ -6740,13 +6755,15 @@ async function checkBlockStatus(chatId) {
         });
         
         const chatResult = await chatResponse.json();
-        const chat = chatResult.data?.find(c => c.id == chatId);
+    const chat = chatResult.data?.find(c => c.id == chatId);
         
         if (!chat) return;
         
         // Определяем ID собеседника
-        const isUser1 = chat.user1 == userId;
-        currentOpponentId = isUser1 ? chat.user2 : chat.user1;
+    const isUser1 = chat.user1 == userId;
+    currentOpponentId = isUser1 ? chat.user2 : chat.user1;
+    // Сохраняем токен собеседника, если сервер его вернул
+    window.currentOpponentToken = chat.opponent_token || null;
         
         // Проверяем блокировку
         const userToken = localStorage.getItem('user_token') || userId;
@@ -6755,7 +6772,7 @@ async function checkBlockStatus(chatId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'check-block-status',
-                params: { user1_token: userToken, user2_token: currentOpponentId }
+                params: { user1_token: userToken, user2_token: window.currentOpponentToken || currentOpponentId }
             })
         });
         
@@ -6847,7 +6864,7 @@ async function toggleBlockUser() {
                     action: action,
                     params: { 
                         blocker_token: blockerToken, 
-                        blocked_token: currentOpponentId 
+                        blocked_token: (window.currentOpponentToken || currentOpponentId)
                     }
                 })
             });

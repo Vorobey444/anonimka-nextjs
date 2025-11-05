@@ -31,19 +31,24 @@ export async function POST(request: NextRequest) {
       }
 
       case 'get-pending': {
-        const { user_token } = params;
-        if (!user_token) {
+        const { user_token, userId } = params as any;
+        // Поддержка обоих форматов для обратной совместимости
+        const userIdentifier = userId ?? user_token;
+        if (!userIdentifier) {
           return NextResponse.json(
-            { error: { message: 'user_token не указан' } },
+            { error: { message: 'userId/user_token не указан' } },
             { status: 400 }
           );
         }
         const result = await sql`
           SELECT pc.*,
             (SELECT sender_nickname FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as sender_nickname,
-            (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_text
+            (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_text,
+            -- токен оппонента (создателя запроса)
+            (SELECT a.user_token FROM ads a WHERE a.tg_id = pc.user1 ORDER BY a.created_at DESC LIMIT 1) as opponent_token
           FROM private_chats pc
-          WHERE user2 = ${user_token} AND accepted = false
+          WHERE user2 = ${userIdentifier}
+            AND accepted = false
           ORDER BY pc.created_at DESC
         `;
         return NextResponse.json({ data: result.rows, error: null });
@@ -60,7 +65,14 @@ export async function POST(request: NextRequest) {
         const result = await sql`
           SELECT pc.*,
             (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message,
-            (SELECT created_at FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_time
+            (SELECT created_at FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
+            CASE WHEN ${userId} = pc.user1 THEN 'user1' ELSE 'user2' END as my_role,
+            CASE 
+              WHEN ${userId} = pc.user1 THEN 
+                (SELECT a.user_token FROM ads a WHERE a.id = pc.ad_id LIMIT 1)
+              ELSE 
+                (SELECT a.user_token FROM ads a WHERE a.tg_id = pc.user1 ORDER BY a.created_at DESC LIMIT 1)
+            END as opponent_token
           FROM private_chats pc
           WHERE (user1 = ${userId} OR user2 = ${userId})
             AND accepted = true
