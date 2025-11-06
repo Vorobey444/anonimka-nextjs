@@ -186,6 +186,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Вставляем в Neon PostgreSQL
+    // tg_id должен быть числом или NULL (не строка)
+    const numericTgId = tgId && tgId !== 'anonymous' ? Number(tgId) : null;
+    
     const result = await sql`
       INSERT INTO ads (
         gender, target, goal, age_from, age_to, my_age, 
@@ -198,7 +201,7 @@ export async function POST(req: NextRequest) {
         ${myAge ? parseInt(myAge) : null},
         ${bodyType || null}, ${text}, ${nickname || 'Аноним'},
         ${country || 'Россия'}, ${region || ''}, ${city}, 
-        ${tgId || 'anonymous'}, ${finalUserToken}, NOW()
+        ${numericTgId}, ${finalUserToken}, NOW()
       )
       RETURNING id, nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, text
     `;
