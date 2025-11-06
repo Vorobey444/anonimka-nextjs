@@ -7161,21 +7161,18 @@ async function processReferralReward() {
 function showReferralModal() {
     const modal = document.getElementById('referralModal');
     const referralLinkEl = document.getElementById('referralLink');
-    
     modal.style.display = 'flex';
-    
-    // Получаем ID текущего пользователя
-    const userId = getCurrentUserId();
-    
-    if (!userId || userId.startsWith('web_')) {
-        referralLinkEl.textContent = 'Авторизуйтесь через Telegram для получения реферальной ссылки';
+
+    // Для рефералок используем токен пользователя (универсально: веб и Telegram)
+    const userToken = localStorage.getItem('user_token');
+
+    if (!userToken || userToken === 'null' || userToken === 'undefined') {
+        referralLinkEl.textContent = 'Сначала создайте анкету — после публикации мы дадим вам реферальную ссылку';
         return;
     }
-    
-    // Генерируем реферальную ссылку
+
     const botUsername = 'anonimka_kz_bot';
-    const referralLink = `https://t.me/${botUsername}?start=ref_${userId}`;
-    
+    const referralLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
     referralLinkEl.textContent = referralLink;
     window.currentReferralLink = referralLink;
 }

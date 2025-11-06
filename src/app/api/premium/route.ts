@@ -58,15 +58,34 @@ export async function POST(request: NextRequest) {
             `;
             const used = countRes.rows[0]?.c ?? 0;
 
+            // Проверяем PRO по token (premium_tokens)
+            const prem = await sql`
+              SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${userId} LIMIT 1
+            `;
+            const isPremiumToken = prem.rows[0]?.is_premium || false;
+            const premiumUntilToken = prem.rows[0]?.premium_until || null;
+
             return NextResponse.json({
               data: {
-                isPremium: false,
-                premiumUntil: null,
+                isPremium: isPremiumToken,
+                premiumUntil: premiumUntilToken,
                 country: 'KZ',
                 limits: {
-                  photos: { used: 0, max: LIMITS.FREE.photos_per_day, remaining: LIMITS.FREE.photos_per_day },
-                  ads: { used, max: LIMITS.FREE.ads_per_day, remaining: Math.max(0, LIMITS.FREE.ads_per_day - used) },
-                  pin: { used: 0, max: LIMITS.FREE.pin_per_3days, canUse: true }
+                  photos: {
+                    used: 0,
+                    max: isPremiumToken ? LIMITS.PRO.photos_per_day : LIMITS.FREE.photos_per_day,
+                    remaining: isPremiumToken ? 999999 : LIMITS.FREE.photos_per_day
+                  },
+                  ads: {
+                    used,
+                    max: isPremiumToken ? LIMITS.PRO.ads_per_day : LIMITS.FREE.ads_per_day,
+                    remaining: Math.max(0, (isPremiumToken ? LIMITS.PRO.ads_per_day : LIMITS.FREE.ads_per_day) - used)
+                  },
+                  pin: {
+                    used: 0,
+                    max: isPremiumToken ? LIMITS.PRO.pin_per_day : LIMITS.FREE.pin_per_3days,
+                    canUse: true
+                  }
                 }
               },
               error: null
