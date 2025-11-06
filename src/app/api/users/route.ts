@@ -136,6 +136,11 @@ export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
     const { action, tgId, userToken, nickname } = body || {};
+    console.log('[USERS API] PATCH set-nickname request', {
+      hasTgId: Boolean(tgId),
+      hasUserToken: Boolean(userToken),
+      hasNickname: Boolean(nickname)
+    });
 
     if (action !== 'set-nickname') {
       return NextResponse.json(
@@ -160,6 +165,7 @@ export async function PATCH(req: NextRequest) {
         WHERE id = ${idNum}
         RETURNING id
       `;
+      console.log('[USERS API] set-nickname by tgId updated:', upd.rows.length);
       return NextResponse.json({ success: true, updated: upd.rows.length > 0 });
     }
 
@@ -175,6 +181,7 @@ export async function PATCH(req: NextRequest) {
       `;
       const tgFromAds = res.rows[0]?.tg_id;
       if (!tgFromAds) {
+        console.warn('[USERS API] set-nickname: no tg_id found by userToken');
         return NextResponse.json(
           { success: false, error: 'Не удалось определить пользователя по токену. Передайте tgId.' },
           { status: 404 }
@@ -186,6 +193,7 @@ export async function PATCH(req: NextRequest) {
         WHERE id = ${tgFromAds}
         RETURNING id
       `;
+      console.log('[USERS API] set-nickname by token updated:', upd.rows.length);
       return NextResponse.json({ success: true, updated: upd.rows.length > 0 });
     }
 
