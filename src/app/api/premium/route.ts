@@ -36,31 +36,63 @@ export async function POST(request: NextRequest) {
       case 'get-user-status': {
         const { userId } = params;
         
+        // Определяем, это токен или числовой ID
+        const isToken = userId && typeof userId === 'string' && userId.length > 20;
+        let numericUserId: number;
+        
+        if (isToken) {
+          // Получаем tg_id из ads по user_token
+          const adResult = await sql`
+            SELECT tg_id FROM ads WHERE user_token = ${userId} LIMIT 1
+          `;
+          
+          if (adResult.rows.length === 0) {
+            // Пользователь еще не создал ни одной анкеты
+            return NextResponse.json({
+              data: {
+                isPremium: false,
+                premiumUntil: null,
+                country: 'KZ',
+                limits: {
+                  photos: { used: 0, max: LIMITS.FREE.photos_per_day, remaining: LIMITS.FREE.photos_per_day },
+                  ads: { used: 0, max: LIMITS.FREE.ads_per_day, remaining: LIMITS.FREE.ads_per_day },
+                  pin: { used: 0, max: LIMITS.FREE.pin_per_3days, canUse: true }
+                }
+              },
+              error: null
+            });
+          }
+          
+          numericUserId = Number(adResult.rows[0].tg_id);
+        } else {
+          numericUserId = Number(userId);
+        }
+        
         // Получаем или создаём пользователя
         let user = await sql`
-          SELECT * FROM users WHERE id = ${userId}
+          SELECT * FROM users WHERE id = ${numericUserId}
         `;
         
         if (user.rows.length === 0) {
           // Создаём нового пользователя
           await sql`
             INSERT INTO users (id, is_premium)
-            VALUES (${userId}, false)
+            VALUES (${numericUserId}, false)
           `;
-          user = await sql`SELECT * FROM users WHERE id = ${userId}`;
+          user = await sql`SELECT * FROM users WHERE id = ${numericUserId}`;
         }
         
         // Получаем или создаём лимиты
         let limits = await sql`
-          SELECT * FROM user_limits WHERE user_id = ${userId}
+          SELECT * FROM user_limits WHERE user_id = ${numericUserId}
         `;
         
         if (limits.rows.length === 0) {
           await sql`
             INSERT INTO user_limits (user_id)
-            VALUES (${userId})
+            VALUES (${numericUserId})
           `;
-          limits = await sql`SELECT * FROM user_limits WHERE user_id = ${userId}`;
+          limits = await sql`SELECT * FROM user_limits WHERE user_id = ${numericUserId}`;
         }
         
         const userData = user.rows[0];
@@ -100,8 +132,24 @@ export async function POST(request: NextRequest) {
       case 'check-photo-limit': {
         const { userId } = params;
         
-        const user = await sql`SELECT is_premium FROM users WHERE id = ${userId}`;
-        const limits = await sql`SELECT * FROM user_limits WHERE user_id = ${userId}`;
+        // Определяем, это токен или числовой ID
+        const isToken = userId && typeof userId === 'string' && userId.length > 20;
+        let numericUserId: number;
+        
+        if (isToken) {
+          const adResult = await sql`
+            SELECT tg_id FROM ads WHERE user_token = ${userId} LIMIT 1
+          `;
+          if (adResult.rows.length === 0) {
+            return NextResponse.json({ data: { canSend: true }, error: null });
+          }
+          numericUserId = Number(adResult.rows[0].tg_id);
+        } else {
+          numericUserId = Number(userId);
+        }
+        
+        const user = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
+        const limits = await sql`SELECT * FROM user_limits WHERE user_id = ${numericUserId}`;
         
         if (user.rows.length === 0 || limits.rows.length === 0) {
           return NextResponse.json({ data: { canSend: true }, error: null });
@@ -126,9 +174,25 @@ export async function POST(request: NextRequest) {
       case 'increment-photo-count': {
         const { userId } = params;
         
+        // Определяем, это токен или числовой ID
+        const isToken = userId && typeof userId === 'string' && userId.length > 20;
+        let numericUserId: number;
+        
+        if (isToken) {
+          const adResult = await sql`
+            SELECT tg_id FROM ads WHERE user_token = ${userId} LIMIT 1
+          `;
+          if (adResult.rows.length === 0) {
+            return NextResponse.json({ data: { success: false }, error: { message: 'User not found' } }, { status: 404 });
+          }
+          numericUserId = Number(adResult.rows[0].tg_id);
+        } else {
+          numericUserId = Number(userId);
+        }
+        
         await sql`
           INSERT INTO user_limits (user_id, photos_sent_today, photos_last_reset)
-          VALUES (${userId}, 1, CURRENT_DATE)
+          VALUES (${numericUserId}, 1, CURRENT_DATE)
           ON CONFLICT (user_id) DO UPDATE
           SET photos_sent_today = CASE
               WHEN user_limits.photos_last_reset < CURRENT_DATE THEN 1
@@ -145,7 +209,23 @@ export async function POST(request: NextRequest) {
       case 'toggle-premium': {
         const { userId } = params;
         
-        const user = await sql`SELECT is_premium FROM users WHERE id = ${userId}`;
+        // Определяем, это токен или числовой ID
+        const isToken = userId && typeof userId === 'string' && userId.length > 20;
+        let numericUserId: number;
+        
+        if (isToken) {
+          const adResult = await sql`
+            SELECT tg_id FROM ads WHERE user_token = ${userId} LIMIT 1
+          `;
+          if (adResult.rows.length === 0) {
+            return NextResponse.json({ data: { success: false }, error: { message: 'User not found' } }, { status: 404 });
+          }
+          numericUserId = Number(adResult.rows[0].tg_id);
+        } else {
+          numericUserId = Number(userId);
+        }
+        
+        const user = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
         const currentStatus = user.rows[0]?.is_premium || false;
         
         const premiumUntil = !currentStatus ? 
@@ -157,7 +237,7 @@ export async function POST(request: NextRequest) {
           SET is_premium = ${!currentStatus},
               premium_until = ${premiumUntil},
               updated_at = NOW()
-          WHERE id = ${userId}
+          WHERE id = ${numericUserId}
         `;
         
         return NextResponse.json({

@@ -31,8 +31,27 @@ export async function POST(request: NextRequest) {
         
         // Проверяем лимит фото (если отправляется фото)
         if (photoUrl || telegramFileId) {
-          const userResult = await sql`SELECT is_premium FROM users WHERE id = ${senderId}`;
-          const limitsResult = await sql`SELECT photos_sent_today FROM user_limits WHERE user_id = ${senderId}`;
+          // senderId может быть токеном, получаем числовой tg_id
+          const isToken = senderId && typeof senderId === 'string' && senderId.length > 20;
+          let numericUserId: number;
+          
+          if (isToken) {
+            const senderInfo = await sql`
+              SELECT tg_id FROM ads WHERE user_token = ${senderId} ORDER BY created_at DESC LIMIT 1
+            `;
+            if (senderInfo.rows.length === 0) {
+              return NextResponse.json({ 
+                data: null, 
+                error: { message: 'Sender not found' } 
+              }, { status: 404 });
+            }
+            numericUserId = Number(senderInfo.rows[0].tg_id);
+          } else {
+            numericUserId = Number(senderId);
+          }
+          
+          const userResult = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
+          const limitsResult = await sql`SELECT photos_sent_today FROM user_limits WHERE user_id = ${numericUserId}`;
           
           const isPremium = userResult.rows[0]?.is_premium || false;
           const photosToday = limitsResult.rows[0]?.photos_sent_today || 0;
@@ -96,17 +115,32 @@ export async function POST(request: NextRequest) {
         
         // Увеличиваем счётчик фото (если отправлено фото)
         if (photoUrl || telegramFileId) {
-          await sql`
-            INSERT INTO user_limits (user_id, photos_sent_today, photos_last_reset)
-            VALUES (${senderId}, 1, CURRENT_DATE)
-            ON CONFLICT (user_id) DO UPDATE
-            SET photos_sent_today = CASE
-                WHEN user_limits.photos_last_reset < CURRENT_DATE THEN 1
-                ELSE user_limits.photos_sent_today + 1
-              END,
-              photos_last_reset = CURRENT_DATE,
-              updated_at = NOW()
-          `;
+            // Получаем числовой ID для лимитов (senderId может быть токеном)
+            const isToken = senderId && typeof senderId === 'string' && senderId.length > 20;
+            let numericUserId: number;
+          
+            if (isToken) {
+              const senderInfo = await sql`
+                SELECT tg_id FROM ads WHERE user_token = ${senderId} ORDER BY created_at DESC LIMIT 1
+              `;
+              numericUserId = senderInfo.rows.length > 0 ? Number(senderInfo.rows[0].tg_id) : 0;
+            } else {
+              numericUserId = Number(senderId);
+            }
+          
+            if (numericUserId > 0) {
+              await sql`
+                INSERT INTO user_limits (user_id, photos_sent_today, photos_last_reset)
+                VALUES (${numericUserId}, 1, CURRENT_DATE)
+                ON CONFLICT (user_id) DO UPDATE
+                SET photos_sent_today = CASE
+                    WHEN user_limits.photos_last_reset < CURRENT_DATE THEN 1
+                    ELSE user_limits.photos_sent_today + 1
+                  END,
+                  photos_last_reset = CURRENT_DATE,
+                  updated_at = NOW()
+              `;
+            }
         }
         
         // Обновляем время последнего сообщения в чате
@@ -242,6 +276,9 @@ export async function POST(request: NextRequest) {
       // Получить общее количество непрочитанных сообщений пользователя
       case 'total-unread': {
         const { userId } = params;
+        
+        // receiver_id теперь хранит user_token (строка), а не числовой ID
+        // userId может быть как токеном, так и числовым ID (для обратной совместимости)
         const result = await sql`
           SELECT COUNT(*) as count 
           FROM messages m
