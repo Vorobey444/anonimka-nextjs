@@ -859,7 +859,21 @@ async function saveNicknamePage() {
         // Обновляем nickname во всех анкетах пользователя
         const userId = getCurrentUserId();
         const userToken = localStorage.getItem('user_token');
-        if (userId || userToken) {
+        // Пытаемся вытащить реальный tgId из Telegram WebApp или сохранённого Login Widget
+        let tgIdAuth = null;
+        if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+            tgIdAuth = Number(window.Telegram.WebApp.initDataUnsafe.user.id);
+        } else {
+            const savedUserJson = localStorage.getItem('telegram_user');
+            if (savedUserJson) {
+                try {
+                    const u = JSON.parse(savedUserJson);
+                    if (u?.id) tgIdAuth = Number(u.id);
+                } catch (e) {}
+            }
+        }
+
+        if (userId || userToken || tgIdAuth) {
             try {
                 // Формируем полезную нагрузку: если есть токен — отправляем его, если есть числовой tgId — тоже отправляем
                 const payload = {
@@ -869,7 +883,10 @@ async function saveNicknamePage() {
                 if (userToken && userToken !== 'null' && userToken !== 'undefined') {
                     payload.userToken = userToken;
                 }
-                if (userId && !isNaN(Number(userId))) {
+                // Всегда используем реальный tgId, если удалось получить из Telegram/Widget
+                if (typeof tgIdAuth === 'number' && Number.isFinite(tgIdAuth)) {
+                    payload.tgId = tgIdAuth;
+                } else if (userId && !isNaN(Number(userId))) {
                     payload.tgId = Number(userId);
                 }
 
