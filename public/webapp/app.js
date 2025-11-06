@@ -1718,13 +1718,7 @@ function increaseAge(inputId) {
     
     // Если поле пустое, устанавливаем начальное значение
     if (isNaN(currentValue) || !input.value) {
-        if (inputId === 'ageFrom') {
-            input.value = 18;
-        } else if (inputId === 'ageTo') {
-            input.value = 99;
-        } else {
-            input.value = 18;
-        }
+        input.value = 18;
         validateAgeRange();
         return;
     }
@@ -1742,13 +1736,7 @@ function decreaseAge(inputId) {
     
     // Если поле пустое, устанавливаем начальное значение
     if (isNaN(currentValue) || !input.value) {
-        if (inputId === 'ageFrom') {
-            input.value = 18;
-        } else if (inputId === 'ageTo') {
-            input.value = 99;
-        } else {
-            input.value = 18;
-        }
+        input.value = 18;
         validateAgeRange();
         return;
     }
