@@ -187,7 +187,20 @@ export async function POST(req: NextRequest) {
 
     // Вставляем в Neon PostgreSQL
     // tg_id должен быть числом или NULL (не строка)
-    const numericTgId = tgId && tgId !== 'anonymous' ? Number(tgId) : null;
+    const resolveTgId = (val: any): number | null => {
+      if (val === null || val === undefined) return null;
+      if (typeof val === 'number' && Number.isInteger(val)) return val;
+      if (typeof val === 'string') {
+        // Только чисто цифровые строки считаем валидными tg_id
+        if (/^\d+$/.test(val)) return parseInt(val, 10);
+        return null;
+      }
+      return null;
+    };
+
+    const numericTgId = resolveTgId(tgId);
+
+    console.log('[ADS API] tgId incoming:', tgId, '-> numericTgId:', numericTgId);
     
     const result = await sql`
       INSERT INTO ads (
