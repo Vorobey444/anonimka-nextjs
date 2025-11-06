@@ -1320,8 +1320,13 @@ function updateLogoutButtonVisibility() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
     
-    // Показываем кнопку только если пользователь НЕ в Telegram WebApp
-    if (!isTelegramWebApp) {
+    // Проверяем реальную Telegram авторизацию (через WebApp или Login Widget)
+    const hasRealTelegramAuth = !!(
+        window.Telegram?.WebApp?.initDataUnsafe?.user?.id
+    );
+    
+    // Показываем кнопку только для Login Widget (браузерная авторизация)
+    if (!hasRealTelegramAuth) {
         const savedUser = localStorage.getItem('telegram_user');
         if (savedUser) {
             logoutBtn.style.display = 'flex';
@@ -1329,7 +1334,7 @@ function updateLogoutButtonVisibility() {
             logoutBtn.style.display = 'none';
         }
     } else {
-        // В Telegram WebApp кнопка выхода не нужна
+        // В Telegram WebApp кнопка выхода не нужна (встроенная авторизация)
         logoutBtn.style.display = 'none';
     }
 }
