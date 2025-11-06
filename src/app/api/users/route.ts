@@ -130,3 +130,74 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+// PATCH - обновление публичных данных пользователя (например, display_nickname)
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { action, tgId, userToken, nickname } = body || {};
+
+    if (action !== 'set-nickname') {
+      return NextResponse.json(
+        { success: false, error: 'Неизвестное действие' },
+        { status: 400 }
+      );
+    }
+
+    if (!nickname || typeof nickname !== 'string' || nickname.trim() === '') {
+      return NextResponse.json(
+        { success: false, error: 'Никнейм не указан' },
+        { status: 400 }
+      );
+    }
+
+    // Приоритетное обновление по tgId (надёжно и не требует объявлений)
+    if (tgId && Number.isFinite(Number(tgId))) {
+      const idNum = Number(tgId);
+      const upd = await sql`
+        UPDATE users
+        SET display_nickname = ${nickname.trim()}, updated_at = NOW()
+        WHERE id = ${idNum}
+        RETURNING id
+      `;
+      return NextResponse.json({ success: true, updated: upd.rows.length > 0 });
+    }
+
+    // Если пришёл только userToken — попробуем найти связанный tg_id через объявления
+    if (userToken && typeof userToken === 'string') {
+      const res = await sql`
+        SELECT tg_id
+        FROM ads
+        WHERE user_token = ${userToken}
+        AND tg_id IS NOT NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+      const tgFromAds = res.rows[0]?.tg_id;
+      if (!tgFromAds) {
+        return NextResponse.json(
+          { success: false, error: 'Не удалось определить пользователя по токену. Передайте tgId.' },
+          { status: 404 }
+        );
+      }
+      const upd = await sql`
+        UPDATE users
+        SET display_nickname = ${nickname.trim()}, updated_at = NOW()
+        WHERE id = ${tgFromAds}
+        RETURNING id
+      `;
+      return NextResponse.json({ success: true, updated: upd.rows.length > 0 });
+    }
+
+    return NextResponse.json(
+      { success: false, error: 'Укажите tgId или userToken' },
+      { status: 400 }
+    );
+  } catch (error: any) {
+    console.error('[USERS API] Ошибка при обновлении данных пользователя:', error);
+    return NextResponse.json(
+      { success: false, error: error?.message || 'Ошибка обновления данных пользователя' },
+      { status: 500 }
+    );
+  }
+}

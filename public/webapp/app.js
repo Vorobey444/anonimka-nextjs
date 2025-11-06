@@ -903,6 +903,31 @@ async function saveNicknamePage() {
             } catch (error) {
                 console.error('Ошибка обновления никнейма в анкетах:', error);
             }
+
+            // Дополнительно: обновим users.display_nickname напрямую
+            try {
+                const payload2 = { action: 'set-nickname', nickname };
+                if (typeof tgIdAuth === 'number' && Number.isFinite(tgIdAuth)) {
+                    payload2.tgId = tgIdAuth;
+                } else if (userId && !isNaN(Number(userId))) {
+                    payload2.tgId = Number(userId);
+                } else if (userToken && userToken !== 'null' && userToken !== 'undefined') {
+                    payload2.userToken = userToken;
+                }
+                const respUsers = await fetch('/api/users', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload2)
+                });
+                const resUsers = await respUsers.json();
+                if (resUsers?.success) {
+                    console.log('✅ Никнейм обновлен в users.display_nickname');
+                } else {
+                    console.warn('⚠️ Не удалось обновить users.display_nickname:', resUsers?.error);
+                }
+            } catch (e) {
+                console.warn('⚠️ Ошибка обновления никнейма в users:', e);
+            }
         }
         
         // Показываем уведомление и возвращаемся на главную
