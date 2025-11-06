@@ -2798,8 +2798,8 @@ let setupSelectedCountry = null;
 let setupSelectedRegion = null;
 let setupSelectedCity = null;
 
-// Сохраненная локация пользователя
-let userLocation = null;
+// Сохраненная локация пользователя (глобальная переменная для UI)
+let currentUserLocation = null;
 
 // Переменные для фильтра в просмотре анкет
 let filterSelectedCountry = null;
@@ -2816,8 +2816,8 @@ function checkUserLocation() {
             tg.CloudStorage.getItem('userLocation', function(err, value) {
                 console.log('CloudStorage результат:', {err, value});
                 if (!err && value) {
-                    userLocation = JSON.parse(value);
-                    console.log('Найдена сохраненная локация:', userLocation);
+                    currentUserLocation = JSON.parse(value);
+                    console.log('Найдена сохраненная локация:', currentUserLocation);
                     displayUserLocation();
                     showMainMenu();
                 } else {
@@ -2832,8 +2832,8 @@ function checkUserLocation() {
             const savedLocation = localStorage.getItem('userLocation');
             console.log('localStorage результат:', savedLocation);
             if (savedLocation) {
-                userLocation = JSON.parse(savedLocation);
-                console.log('Найдена сохраненная локация в localStorage:', userLocation);
+                currentUserLocation = JSON.parse(savedLocation);
+                console.log('Найдена сохраненная локация в localStorage:', currentUserLocation);
                 displayUserLocation();
                 showMainMenu();
             } else {
@@ -3467,8 +3467,8 @@ function resetAndDetectLocation() {
 
 // Отображение текущей локации пользователя
 function displayUserLocation() {
-    if (userLocation) {
-        const locationText = `${locationData[userLocation.country].flag} ${userLocation.region}, ${userLocation.city}`;
+    if (currentUserLocation) {
+        const locationText = `${locationData[currentUserLocation.country].flag} ${currentUserLocation.region}, ${currentUserLocation.city}`;
         const locationDisplay = document.getElementById('userLocationDisplay');
         if (locationDisplay) {
             locationDisplay.textContent = locationText;
@@ -3482,7 +3482,7 @@ const updateUserLocationDisplay = displayUserLocation;
 
 // Сохранение локации пользователя
 function saveUserLocation(country, region, city) {
-    userLocation = {
+    currentUserLocation = {
         country: country,
         region: region,
         city: city,
@@ -3491,16 +3491,16 @@ function saveUserLocation(country, region, city) {
     
     try {
         if (supportsCloudStorage()) {
-            tg.CloudStorage.setItem('userLocation', JSON.stringify(userLocation), function(err) {
+            tg.CloudStorage.setItem('userLocation', JSON.stringify(currentUserLocation), function(err) {
                 if (!err) {
                     console.log('Локация сохранена в Telegram Cloud Storage');
                 } else {
                     console.error('Ошибка сохранения в Cloud Storage:', err);
-                    localStorage.setItem('userLocation', JSON.stringify(userLocation));
+                    localStorage.setItem('userLocation', JSON.stringify(currentUserLocation));
                 }
             });
         } else {
-            localStorage.setItem('userLocation', JSON.stringify(userLocation));
+            localStorage.setItem('userLocation', JSON.stringify(currentUserLocation));
             console.log('Локация сохранена в localStorage');
         }
     } catch (error) {
@@ -3534,7 +3534,7 @@ function showManualLocationSetup() {
     // Показываем кнопку "Назад" если локация уже была установлена
     const locationBackBtn = document.getElementById('locationBackBtn');
     if (locationBackBtn) {
-        const hasLocation = localStorage.getItem('userLocation') || (supportsCloudStorage() && userLocation);
+        const hasLocation = localStorage.getItem('userLocation') || (supportsCloudStorage() && currentUserLocation);
         locationBackBtn.style.display = hasLocation ? 'block' : 'none';
     }
 }
@@ -4622,7 +4622,7 @@ window.debugApp = {
             tg.CloudStorage.removeItem('userLocation');
         }
         localStorage.removeItem('userLocation');
-        userLocation = null;
+        currentUserLocation = null;
         showAutoLocationDetection();
     },
     forceAutoDetection: () => {
