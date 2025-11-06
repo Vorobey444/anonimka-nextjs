@@ -130,6 +130,22 @@ export async function POST(req: NextRequest) {
       return null;
     };
 
+    // Helper for tgId
+    const resolveTgId = (val: any): number | null => {
+      if (val === null || val === undefined) return null;
+      if (typeof val === 'number') return Number.isFinite(val) ? Math.trunc(val) : null;
+      if (typeof val === 'string') {
+        const s = val.trim();
+        if (s === '' || s.toLowerCase() === 'nan') return null;
+        if (/^\d+$/.test(s)) return parseInt(s, 10);
+        return null;
+      }
+      return null;
+    };
+
+    const numericTgId = resolveTgId(tgId);
+    console.log('[ADS API] tgId incoming:', tgId, '-> numericTgId:', numericTgId);
+
     // Генерируем user_token если не передан (используем crypto для безопасности)
     let finalUserToken = user_token;
     if (!finalUserToken) {
@@ -157,9 +173,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Проверка лимита объявлений
-    if (tgId && tgId !== 'anonymous') {
-      const userId = Number(tgId);
+    // Проверка лимита объявлений (только если есть валидный numericTgId)
+    if (numericTgId !== null) {
+      const userId = numericTgId;
       
       // Создаём пользователя если его нет
       await sql`
@@ -199,22 +215,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Вставляем в Neon PostgreSQL
-    // tg_id должен быть числом или NULL (не строка)
-    const resolveTgId = (val: any): number | null => {
-      if (val === null || val === undefined) return null;
-      if (typeof val === 'number') return Number.isFinite(val) ? Math.trunc(val) : null;
-      if (typeof val === 'string') {
-        const s = val.trim();
-        if (s === '' || s.toLowerCase() === 'nan') return null;
-        if (/^\d+$/.test(s)) return parseInt(s, 10);
-        return null;
-      }
-      return null;
-    };
-
-    const numericTgId = resolveTgId(tgId);
-
-    console.log('[ADS API] tgId incoming:', tgId, '-> numericTgId:', numericTgId);
+    // tg_id уже приведён к числу или NULL
     
     const result = await sql`
       INSERT INTO ads (
@@ -235,9 +236,9 @@ export async function POST(req: NextRequest) {
 
     const newAd = result.rows[0];
     
-    // Увеличиваем счётчик объявлений
-    if (tgId && tgId !== 'anonymous') {
-      const userId = Number(tgId);
+    // Увеличиваем счётчик объявлений (только для валидного userId)
+    if (numericTgId !== null) {
+      const userId = numericTgId;
       await sql`
         INSERT INTO user_limits (user_id, ads_created_today, ads_last_reset)
         VALUES (${userId}, 1, CURRENT_DATE)
