@@ -536,6 +536,19 @@ function initializeApp() {
         }
     }, 30000);
     
+    // Периодическая проверка Premium статуса (каждые 5 минут)
+    setInterval(() => {
+        try {
+            const userId = getCurrentUserId();
+            if (userId && !userId.startsWith('web_')) {
+                console.log('🔄 Автоматическая проверка Premium статуса');
+                loadPremiumStatus();
+            }
+        } catch (e) {
+            console.error('❌ Ошибка проверки Premium в интервале:', e);
+        }
+    }, 5 * 60 * 1000); // 5 минут
+    
     // Добавляем обработчик видимости страницы
     // Если пользователь вернулся после сканирования QR
     document.addEventListener('visibilitychange', function() {
