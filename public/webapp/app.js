@@ -2411,16 +2411,22 @@ async function contactAuthor(adIndex) {
         return;
     }
     
-    // Проверяем авторизацию
-    const currentUserId = getCurrentUserId();
-    if (currentUserId.startsWith('web_')) {
-        alert('⚠️ Для отправки сообщений необходимо авторизоваться через Telegram');
-        showTelegramAuthModal();
+    // Проверяем авторизацию и получаем токен текущего пользователя
+    const currentUserToken = localStorage.getItem('user_token');
+    if (!currentUserToken || currentUserToken === 'null' || currentUserToken === 'undefined') {
+        alert('⚠️ Сначала создайте анкету или авторизуйтесь');
+        return;
+    }
+
+    // Получаем токен автора объявления (user_token из ads)
+    const authorToken = ad.user_token;
+    if (!authorToken) {
+        alert('⚠️ Не удалось определить автора анкеты');
         return;
     }
     
     // Проверяем, не пытается ли пользователь написать самому себе
-    if (ad.tg_id === currentUserId) {
+    if (currentUserToken === authorToken) {
         alert('Вы не можете отправить сообщение на свою анкету');
         return;
     }
@@ -2433,13 +2439,13 @@ async function contactAuthor(adIndex) {
     }
     
     try {
-        // Проверяем, существует ли уже чат (используем Neon PostgreSQL)
+        // Проверяем, существует ли уже чат (используем токены)
         const checkResponse = await fetch('/api/neon-chats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'check-existing',
-                params: { user1: currentUserId, user2: ad.tg_id, adId: ad.id }
+                params: { user1_token: currentUserToken, user2_token: authorToken, adId: ad.id }
             })
         });
 
@@ -2467,15 +2473,15 @@ async function contactAuthor(adIndex) {
             }
         }
 
-        // Создаем новый запрос на чат
+        // Создаем новый запрос на чат (используем токены)
         const createResponse = await fetch('/api/neon-chats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'create',
                 params: { 
-                    user1: currentUserId, 
-                    user2: ad.tg_id, 
+                    user1_token: currentUserToken, 
+                    user2_token: authorToken, 
                     adId: ad.id,
                     message: message.trim()
                 }

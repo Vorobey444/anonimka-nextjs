@@ -177,11 +177,13 @@ export async function POST(req: NextRequest) {
     if (numericTgId !== null) {
       const userId = numericTgId;
       
-      // Создаём пользователя если его нет
+      // Создаём/обновляем пользователя (сохраняем никнейм если передан)
       await sql`
-        INSERT INTO users (id, created_at, updated_at)
-        VALUES (${userId}, NOW(), NOW())
-        ON CONFLICT (id) DO NOTHING
+        INSERT INTO users (id, display_nickname, created_at, updated_at)
+        VALUES (${userId}, ${nickname || null}, NOW(), NOW())
+        ON CONFLICT (id) DO UPDATE SET
+          display_nickname = COALESCE(EXCLUDED.display_nickname, users.display_nickname),
+          updated_at = NOW()
       `;
       
       // Получаем статус Premium и лимиты
