@@ -19,29 +19,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Проверяем, есть ли уже user в БД с токеном
-    const existingUser = await sql`
-      SELECT user_token FROM users WHERE id = ${tgId} LIMIT 1
+    // Проверяем, есть ли уже user_token для этого tg_id
+    const existingAd = await sql`
+      SELECT user_token FROM ads WHERE tg_id = ${tgId} ORDER BY created_at DESC LIMIT 1
     `;
 
-    let userToken = existingUser.rows[0]?.user_token;
+    let userToken = existingAd.rows[0]?.user_token;
 
-    // Если токена нет - генерируем новый (первый вход)
+    // Если токена нет - генерируем новый
     if (!userToken) {
       const crypto = require('crypto');
       userToken = crypto.randomBytes(32).toString('hex');
-      console.log('[USERS API] 🆕 Генерируем новый токен для нового пользователя');
-    } else {
-      console.log('[USERS API] 🔄 Возвращаем существующий токен (кросс-девайс)');
     }
 
-    // Создаём/обновляем запись в users (сохраняем токен в users.user_token)
+    // Создаём/обновляем запись в users
     await sql`
-      INSERT INTO users (id, user_token, display_nickname, created_at, updated_at)
-      VALUES (${tgId}, ${userToken}, ${nickname || null}, NOW(), NOW())
+      INSERT INTO users (id, display_nickname, created_at, updated_at)
+      VALUES (${tgId}, ${nickname || null}, NOW(), NOW())
       ON CONFLICT (id) DO UPDATE SET
         display_nickname = COALESCE(EXCLUDED.display_nickname, users.display_nickname),
-        user_token = COALESCE(users.user_token, EXCLUDED.user_token),
         updated_at = NOW()
     `;
 
@@ -52,13 +48,13 @@ export async function POST(req: NextRequest) {
       ON CONFLICT (user_id) DO NOTHING
     `;
 
-    console.log('[USERS API] ✅ Пользователь инициализирован (token синхронизирован)');
+    console.log('[USERS API] ✅ Пользователь инициализирован (token выдан)');
 
-    // Возвращаем токен (тот же на всех устройствах для одного tg_id)
+    // Возвращаем только токен, НЕ tg_id
     return NextResponse.json({
       success: true,
       message: 'Пользователь успешно инициализирован',
-      userToken: userToken // Один токен для всех устройств пользователя
+      userToken: userToken // Клиент получает только токен
     });
 
   } catch (error: any) {
