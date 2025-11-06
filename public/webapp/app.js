@@ -164,7 +164,7 @@ function supportsCloudStorage() {
 const isTelegramWebApp = !!(
     window.Telegram?.WebApp && 
     typeof window.Telegram.WebApp === 'object' &&
-    (window.Telegram.WebApp.platform !== 'unknown' || window.Telegram.WebApp.initData)
+    typeof window.Telegram.WebApp.ready === 'function'
 );
 console.log('🔍 Проверка Telegram WebApp:');
 console.log('  - window.Telegram:', !!window.Telegram);
@@ -179,32 +179,6 @@ if (isTelegramWebApp) {
     tg.expand();
     tg.ready();
     
-    // Инициализируем пользователя в БД при входе (если есть Telegram ID)
-    (async function initializeUser() {
-        try {
-            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-            if (tgUser && tgUser.id) {
-                const nickname = localStorage.getItem('userNickname') || null;
-                const response = await fetch('/api/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        tgId: tgUser.id,
-                        nickname: nickname
-                    })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    console.log('✅ Пользователь инициализирован в БД');
-                } else {
-                    console.warn('⚠️ Ошибка инициализации пользователя:', result.error);
-                }
-            }
-        } catch (error) {
-            console.error('❌ Ошибка инициализации пользователя:', error);
-        }
-    })();
-    
     // Блокировка вертикальных свайпов для предотвращения скриншотов
     tg.disableVerticalSwipes();
     console.log('🔒 Вертикальные свайпы отключены');
@@ -213,6 +187,58 @@ if (isTelegramWebApp) {
     startMidnightLimitCheck();
 } else {
     console.log('⚠️ НЕ запущено в Telegram WebApp');
+}
+
+// Инициализация пользователя в БД (вызывается после проверки авторизации)
+async function initializeUserInDatabase() {
+    try {
+        // Проверяем Telegram WebApp user
+        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        
+        // Или проверяем сохранённую авторизацию через Login Widget
+        const savedUser = localStorage.getItem('telegram_user');
+        let userId = null;
+        
+        if (tgUser && tgUser.id) {
+            userId = tgUser.id;
+            console.log('🔑 Используем Telegram WebApp user:', userId);
+        } else if (savedUser) {
+            try {
+                const userData = JSON.parse(savedUser);
+                if (userData?.id) {
+                    userId = userData.id;
+                    console.log('🔑 Используем сохранённый Login Widget user:', userId);
+                }
+            } catch (e) {
+                console.warn('⚠️ Ошибка парсинга сохранённого пользователя:', e);
+            }
+        }
+        
+        if (userId) {
+            const nickname = localStorage.getItem('userNickname') || null;
+            console.log('📤 Инициализируем пользователя в БД:', { userId, nickname });
+            
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tgId: userId,
+                    nickname: nickname
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Пользователь инициализирован в БД');
+            } else {
+                console.warn('⚠️ Ошибка инициализации пользователя:', result.error);
+            }
+        } else {
+            console.log('ℹ️ Telegram ID не найден, пропускаем инициализацию users (веб-пользователь)');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка инициализации пользователя:', error);
+    }
 }
 
 // Debug панель для отладки (показываем первые 5 секунд)
@@ -398,6 +424,12 @@ function initializeApp() {
             console.log('✅ checkTelegramAuth выполнен');
         } catch (e) {
             console.error('❌ Ошибка checkTelegramAuth:', e);
+        }
+        
+        try {
+            initializeUserInDatabase(); // Инициализация пользователя в БД (если есть tg_id)
+        } catch (e) {
+            console.error('❌ Ошибка initializeUserInDatabase:', e);
         }
         
         try {
