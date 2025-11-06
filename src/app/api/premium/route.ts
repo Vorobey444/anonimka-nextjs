@@ -41,13 +41,23 @@ export async function POST(request: NextRequest) {
         let numericUserId: number;
         
         if (isToken) {
-          // Получаем tg_id из ads по user_token
+          // Получаем tg_id из ads по user_token (может быть NULL для веб-пользователей)
           const adResult = await sql`
-            SELECT tg_id FROM ads WHERE user_token = ${userId} LIMIT 1
+            SELECT tg_id FROM ads WHERE user_token = ${userId} ORDER BY created_at DESC LIMIT 1
           `;
-          
-          if (adResult.rows.length === 0) {
-            // Пользователь еще не создал ни одной анкеты
+
+          const tgId = adResult.rows[0]?.tg_id as number | null | undefined;
+
+          if (!tgId) {
+            // Веб-пользователь без числового ID: считаем объявления по токену за сегодня
+            const countRes = await sql`
+              SELECT COUNT(*)::int AS c
+              FROM ads
+              WHERE user_token = ${userId}
+                AND DATE(created_at) = CURRENT_DATE
+            `;
+            const used = countRes.rows[0]?.c ?? 0;
+
             return NextResponse.json({
               data: {
                 isPremium: false,
@@ -55,15 +65,15 @@ export async function POST(request: NextRequest) {
                 country: 'KZ',
                 limits: {
                   photos: { used: 0, max: LIMITS.FREE.photos_per_day, remaining: LIMITS.FREE.photos_per_day },
-                  ads: { used: 0, max: LIMITS.FREE.ads_per_day, remaining: LIMITS.FREE.ads_per_day },
+                  ads: { used, max: LIMITS.FREE.ads_per_day, remaining: Math.max(0, LIMITS.FREE.ads_per_day - used) },
                   pin: { used: 0, max: LIMITS.FREE.pin_per_3days, canUse: true }
                 }
               },
               error: null
             });
           }
-          
-          numericUserId = Number(adResult.rows[0].tg_id);
+
+          numericUserId = Number(tgId);
         } else {
           numericUserId = Number(userId);
         }

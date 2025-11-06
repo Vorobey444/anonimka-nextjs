@@ -214,6 +214,28 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Ограничение на количество объявлений для веб-пользователей (без tgId)
+    if (numericTgId === null) {
+      const countRes = await sql`
+        SELECT COUNT(*)::int AS c
+        FROM ads
+        WHERE user_token = ${finalUserToken}
+          AND DATE(created_at) = CURRENT_DATE
+      `;
+      const used = countRes.rows[0]?.c ?? 0;
+      const maxAds = 1; // FREE для веб-пользователей
+      if (used >= maxAds) {
+        return NextResponse.json(
+          {
+            success: false,
+            limit: true,
+            error: 'Лимит объявлений на сегодня исчерпан (1/1). Вернитесь завтра или оформите PRO в Telegram-версии.'
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     // Вставляем в Neon PostgreSQL
     // tg_id уже приведён к числу или NULL
     
