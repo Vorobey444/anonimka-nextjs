@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { tgId, nickname } = body;
 
-    console.log('[USERS API] Инициализация пользователя:', { tgId, hasNickname: !!nickname });
+    console.log('[USERS API] Инициализация пользователя (анонимно)');
 
     // Проверяем tgId (должен быть числом)
     if (!tgId || typeof tgId !== 'number') {
@@ -17,6 +17,19 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'tgId обязателен и должен быть числом' },
         { status: 400 }
       );
+    }
+
+    // Проверяем, есть ли уже user_token для этого tg_id
+    const existingAd = await sql`
+      SELECT user_token FROM ads WHERE tg_id = ${tgId} ORDER BY created_at DESC LIMIT 1
+    `;
+
+    let userToken = existingAd.rows[0]?.user_token;
+
+    // Если токена нет - генерируем новый
+    if (!userToken) {
+      const crypto = require('crypto');
+      userToken = crypto.randomBytes(32).toString('hex');
     }
 
     // Создаём/обновляем запись в users
@@ -35,12 +48,13 @@ export async function POST(req: NextRequest) {
       ON CONFLICT (user_id) DO NOTHING
     `;
 
-    console.log('[USERS API] ✅ Пользователь инициализирован:', tgId);
+    console.log('[USERS API] ✅ Пользователь инициализирован (token выдан)');
 
+    // Возвращаем только токен, НЕ tg_id
     return NextResponse.json({
       success: true,
       message: 'Пользователь успешно инициализирован',
-      userId: tgId
+      userToken: userToken // Клиент получает только токен
     });
 
   } catch (error: any) {

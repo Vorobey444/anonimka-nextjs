@@ -201,13 +201,13 @@ async function initializeUserInDatabase() {
         
         if (tgUser && tgUser.id) {
             userId = tgUser.id;
-            console.log('🔑 Используем Telegram WebApp user:', userId);
+            console.log('🔑 Используем Telegram WebApp user (анонимно)');
         } else if (savedUser) {
             try {
                 const userData = JSON.parse(savedUser);
                 if (userData?.id) {
                     userId = userData.id;
-                    console.log('🔑 Используем сохранённый Login Widget user:', userId);
+                    console.log('🔑 Используем сохранённый Login Widget user (анонимно)');
                 }
             } catch (e) {
                 console.warn('⚠️ Ошибка парсинга сохранённого пользователя:', e);
@@ -216,7 +216,7 @@ async function initializeUserInDatabase() {
         
         if (userId) {
             const nickname = localStorage.getItem('userNickname') || null;
-            console.log('📤 Инициализируем пользователя в БД:', { userId, nickname });
+            console.log('📤 Инициализируем пользователя в БД (анонимно)');
             
             const response = await fetch('/api/users', {
                 method: 'POST',
@@ -228,8 +228,10 @@ async function initializeUserInDatabase() {
             });
             
             const result = await response.json();
-            if (result.success) {
-                console.log('✅ Пользователь инициализирован в БД');
+            if (result.success && result.userToken) {
+                // Сохраняем токен в localStorage (вместо tg_id)
+                localStorage.setItem('user_token', result.userToken);
+                console.log('✅ Пользователь инициализирован, токен получен');
             } else {
                 console.warn('⚠️ Ошибка инициализации пользователя:', result.error);
             }
