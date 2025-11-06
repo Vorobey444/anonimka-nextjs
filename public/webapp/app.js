@@ -7252,6 +7252,7 @@ async function handleReferralLink() {
         let startParam = tg?.initDataUnsafe?.start_param;
         
         console.log('[REFERRAL DEBUG] start_param из Telegram:', startParam);
+        console.log('[REFERRAL DEBUG] Полный initDataUnsafe:', JSON.stringify(tg?.initDataUnsafe, null, 2));
         
         // Если нет в Telegram, проверяем URL параметр (для перехода через бота)
         if (!startParam) {
@@ -7261,6 +7262,8 @@ async function handleReferralLink() {
                 startParam = 'ref_' + refParam;
             }
             console.log('[REFERRAL DEBUG] URL параметр ?ref=:', refParam, '→ startParam:', startParam);
+        } else {
+            console.log('[REFERRAL DEBUG] Используем start_param из Telegram WebApp');
         }
         
         if (!startParam || !startParam.startsWith('ref_')) {
@@ -7398,10 +7401,9 @@ function showReferralModal() {
 
     const botUsername = 'anonimka_kz_bot';
     
-    // ВАЖНО: Используем startapp если бот настроен как Mini App в BotFather
-    // Если Mini App не настроен, используйте обычный start - бот откроет WebApp с ?ref= в URL
-    // Оба варианта работают! startapp быстрее (параметр сразу в start_param)
-    const referralLink = `https://t.me/${botUsername}?startapp=ref_${userToken}`;
+    // ВАЖНО: Используем обычный start (не startapp) чтобы бот обработал параметр
+    // и добавил ?ref= в URL при открытии WebApp. Иначе параметр теряется!
+    const referralLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
     
     referralLinkEl.textContent = referralLink;
     window.currentReferralLink = referralLink;
