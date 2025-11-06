@@ -137,60 +137,58 @@ export async function PUT(request: NextRequest) {
             );
         }
 
-        // Механика: каждый успешный реферал продлевает PRO реферера на +30 дней
-        // (но один реферал не может дать награду дважды — контролируется reward_given)
+        // АКЦИЯ: PRO выдаётся ОДИН РАЗ, только если у реферера никогда не было PRO
+        // Остальные рефералы ничего не дают (нет стекирования)
         const now = new Date();
         const baseExpiry = new Date(now);
         baseExpiry.setDate(baseExpiry.getDate() + 30);
-        let newExpiresAt = baseExpiry;
 
-        // Если есть токен реферера — выдаём/продлеваем PRO по токену (premium_tokens)
+        // Если есть токен реферера — проверяем/выдаём PRO по токену (premium_tokens)
         if (referral.referrer_token) {
-            const existing = await sql`SELECT premium_until FROM premium_tokens WHERE user_token = ${referral.referrer_token} LIMIT 1`;
-            if (existing.rows.length > 0 && existing.rows[0].premium_until) {
-                const currentExpiry = new Date(existing.rows[0].premium_until);
-                // Если подписка ещё активна — стекируем +30 дней от текущей даты окончания
-                if (currentExpiry > now) {
-                    newExpiresAt = new Date(currentExpiry);
-                    newExpiresAt.setDate(newExpiresAt.getDate() + 30);
-                }
-                await sql`
-                    UPDATE premium_tokens
-                    SET is_premium = TRUE,
-                        premium_until = ${newExpiresAt.toISOString()},
-                        updated_at = NOW()
-                    WHERE user_token = ${referral.referrer_token}
-                `;
-            } else {
-                await sql`
-                    INSERT INTO premium_tokens (user_token, is_premium, premium_until)
-                    VALUES (${referral.referrer_token}, TRUE, ${newExpiresAt.toISOString()})
-                    ON CONFLICT (user_token) DO UPDATE SET
-                      is_premium = EXCLUDED.is_premium,
-                      premium_until = EXCLUDED.premium_until,
-                      updated_at = NOW()
-                `;
+            const existing = await sql`SELECT user_token, premium_until FROM premium_tokens WHERE user_token = ${referral.referrer_token} LIMIT 1`;
+            
+            if (existing.rows.length > 0) {
+                // Запись есть — реферер уже получал PRO ранее (акция использована)
+                console.log('[REFERRAL REWARD] ⚠️ Реферер (token) уже получал PRO — акция действует один раз');
+                // Отмечаем reward_given чтобы не спамить проверками
+                await sql`UPDATE referrals SET reward_given = TRUE, reward_given_at = NOW() WHERE id = ${referral.id}`;
+                return NextResponse.json(
+                    { message: 'Акция доступна только для новых пользователей без PRO' },
+                    { status: 200 }
+                );
             }
-            console.log('[REFERRAL REWARD] ✅ PRO (token) выдан/продлён до:', newExpiresAt.toISOString());
+
+            // Реферер никогда не имел PRO — выдаём первый раз
+            await sql`
+                INSERT INTO premium_tokens (user_token, is_premium, premium_until)
+                VALUES (${referral.referrer_token}, TRUE, ${baseExpiry.toISOString()})
+            `;
+            console.log('[REFERRAL REWARD] ✅ PRO (token) выдан впервые до:', baseExpiry.toISOString());
+
         } else if (referral.referrer_id) {
-            // Иначе есть только numeric (Telegram) — выдаём/продлеваем через таблицу users
-            const u = await sql`SELECT premium_until FROM users WHERE id = ${referral.referrer_id} LIMIT 1`;
-            if (u.rows.length > 0 && u.rows[0].premium_until) {
-                const currentExpiry = new Date(u.rows[0].premium_until);
-                // Если подписка ещё активна — стекируем +30 дней от текущей даты окончания
-                if (currentExpiry > now) {
-                    newExpiresAt = new Date(currentExpiry);
-                    newExpiresAt.setDate(newExpiresAt.getDate() + 30);
-                }
+            // Иначе есть только numeric (Telegram) — проверяем/выдаём через таблицу users
+            const u = await sql`SELECT id, premium_until FROM users WHERE id = ${referral.referrer_id} LIMIT 1`;
+
+            if (u.rows.length > 0 && u.rows[0].premium_until !== null) {
+                // premium_until был установлен ранее — реферер уже получал PRO
+                console.log('[REFERRAL REWARD] ⚠️ Реферер (tg_id) уже получал PRO — акция действует один раз');
+                await sql`UPDATE referrals SET reward_given = TRUE, reward_given_at = NOW() WHERE id = ${referral.id}`;
+                return NextResponse.json(
+                    { message: 'Акция доступна только для новых пользователей без PRO' },
+                    { status: 200 }
+                );
             }
+
+            // Реферер никогда не имел PRO (premium_until = NULL) — выдаём первый раз
             await sql`
                 UPDATE users
                 SET is_premium = TRUE,
-                    premium_until = ${newExpiresAt.toISOString()},
+                    premium_until = ${baseExpiry.toISOString()},
                     updated_at = NOW()
                 WHERE id = ${referral.referrer_id}
             `;
-            console.log('[REFERRAL REWARD] ✅ PRO (tg_id) выдан/продлён до:', newExpiresAt.toISOString());
+            console.log('[REFERRAL REWARD] ✅ PRO (tg_id) выдан впервые до:', baseExpiry.toISOString());
+
         } else {
             console.warn('[REFERRAL REWARD] ⚠️ Не найден валидный идентификатор реферера');
             return NextResponse.json({ message: 'Реферер не найден' }, { status: 404 });
@@ -207,7 +205,7 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ 
             success: true,
             message: 'PRO подписка выдана',
-            expiresAt: newExpiresAt.toISOString()
+            expiresAt: baseExpiry.toISOString()
         });
 
     } catch (error) {
