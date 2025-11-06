@@ -453,17 +453,26 @@ function initializeApp() {
         }
         
         try {
-            initializeUserInDatabase(); // Инициализация пользователя в БД (если есть tg_id)
-            // Попытка зарегистрировать отложенный реферал после инициализации
-            finalizePendingReferral().catch(console.warn);
+            // ВАЖНО: сначала инициализируем пользователя чтобы создать user_token
+            initializeUserInDatabase()
+                .then(() => {
+                    console.log('✅ initializeUserInDatabase завершён');
+                    // Теперь обрабатываем реферальную ссылку (user_token уже будет доступен)
+                    return handleReferralLink();
+                })
+                .then(() => {
+                    console.log('✅ handleReferralLink завершён');
+                    // Если реферал был сохранён как pending, попробуем завершить
+                    return finalizePendingReferral();
+                })
+                .then(() => {
+                    console.log('✅ finalizePendingReferral завершён');
+                })
+                .catch(e => {
+                    console.error('❌ Ошибка цепочки инициализации:', e);
+                });
         } catch (e) {
-            console.error('❌ Ошибка initializeUserInDatabase:', e);
-        }
-        
-        try {
-            handleReferralLink(); // Обработка реферальной ссылки
-        } catch (e) {
-            console.error('❌ Ошибка handleReferralLink:', e);
+            console.error('❌ Ошибка запуска инициализации:', e);
         }
         
         try {
@@ -7229,6 +7238,8 @@ async function handleReferralLink() {
         // Проверяем есть ли start_param в Telegram WebApp
         let startParam = tg?.initDataUnsafe?.start_param;
         
+        console.log('[REFERRAL DEBUG] start_param из Telegram:', startParam);
+        
         // Если нет в Telegram, проверяем URL параметр (для перехода через бота)
         if (!startParam) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -7236,6 +7247,7 @@ async function handleReferralLink() {
             if (refParam) {
                 startParam = 'ref_' + refParam;
             }
+            console.log('[REFERRAL DEBUG] URL параметр ?ref=:', refParam, '→ startParam:', startParam);
         }
         
         if (!startParam || !startParam.startsWith('ref_')) {
@@ -7244,20 +7256,31 @@ async function handleReferralLink() {
         }
         
         const referrerId = startParam.replace('ref_', '');
-        const currentUserId = getCurrentUserId();
+        console.log('[REFERRAL DEBUG] referrerId извлечён:', referrerId);
         
-        if (!currentUserId || currentUserId.startsWith('web_')) {
-            console.log('⚠️ Пользователь не авторизован, реферал будет обработан позже');
+        const currentUserId = getCurrentUserId();
+        const currentUserToken = localStorage.getItem('user_token');
+        
+        console.log('[REFERRAL DEBUG] currentUserId:', currentUserId, 'user_token:', currentUserToken);
+        
+        // Если токена нет ИЛИ это веб-юзер без авторизации, сохраняем на потом
+        if (!currentUserToken && (!currentUserId || currentUserId.startsWith('web_'))) {
+            console.log('⚠️ Токен не создан, реферал будет обработан после инициализации');
             // Сохраняем реферала для последующей обработки
             localStorage.setItem('pending_referral', referrerId);
             return;
         }
         
-        safeLog('📨 Обработка реферальной ссылки');
+        console.log('📨 Обработка реферальной ссылки сейчас');
         
         // Определяем идентификатор нового пользователя: токен (предпочтительно) или tgId
-        const currentUserToken = localStorage.getItem('user_token');
         const newIdentifier = currentUserToken || currentUserId;
+        
+        console.log('[REFERRAL DEBUG] Отправка POST /api/referrals:', {
+            referrer_token: referrerId,
+            new_user_token: newIdentifier
+        });
+        
         // Отправляем на сервер (поддерживается токен или numeric tgId)
         const response = await fetch('/api/referrals', {
             method: 'POST',
@@ -7270,13 +7293,15 @@ async function handleReferralLink() {
         
         const data = await response.json();
         
+        console.log('[REFERRAL DEBUG] Ответ от сервера:', response.status, data);
+        
         if (response.ok && data.success) {
-            safeLog('✅ Реферал зарегистрирован');
+            console.log('✅ Реферал зарегистрирован');
             // Сохраняем что реферал обработан
             localStorage.setItem('referral_processed', 'true');
             localStorage.setItem('referrer_token', referrerId);
         } else {
-            console.log('ℹ️ Реферал не зарегистрирован:', data.message);
+            console.log('ℹ️ Реферал не зарегистрирован:', data.message || data.error);
         }
         
     } catch (error) {
@@ -7287,6 +7312,8 @@ async function handleReferralLink() {
 // Функция вызывается после создания анкеты для выдачи награды
 async function processReferralReward() {
     try {
+        console.log('[REWARD DEBUG] Начало processReferralReward');
+        
         // ЗАЩИТА: награда выдаётся строго один раз (даже если запрос упал)
         const alreadyProcessed = localStorage.getItem('referral_reward_processed');
         if (alreadyProcessed === 'true') {
@@ -7295,24 +7322,32 @@ async function processReferralReward() {
         }
 
         const referrerToken = localStorage.getItem('referrer_token');
+        const referralProcessed = localStorage.getItem('referral_processed');
+        
+        console.log('[REWARD DEBUG] referrer_token:', referrerToken, 'referral_processed:', referralProcessed);
         
         if (!referrerToken) {
+            console.log('[REWARD DEBUG] Нет referrer_token — пользователь пришел не по реферальной ссылке');
             return; // Пользователь пришел не по реферальной ссылке
         }
         
         const currentUserToken = localStorage.getItem('user_token');
         
+        console.log('[REWARD DEBUG] current user_token:', currentUserToken);
         console.log('🎁 Запрос на выдачу PRO для реферера');
+        
+        const payload = { new_user_token: currentUserToken };
+        console.log('[REWARD DEBUG] Отправка PUT /api/referrals:', payload);
         
         const response = await fetch('/api/referrals', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                new_user_token: currentUserToken
-            })
+            body: JSON.stringify(payload)
         });
         
         const data = await response.json();
+        
+        console.log('[REWARD DEBUG] Ответ от сервера:', response.status, data);
         
         if (response.ok) {
             if (data.success) {
@@ -7473,7 +7508,9 @@ window.addEventListener('click', (event) => {
 async function finalizePendingReferral() {
     try {
         const pending = localStorage.getItem('pending_referral');
+        console.log('[FINALIZE DEBUG] pending_referral:', pending);
         if (!pending) return;
+        
         const token = localStorage.getItem('user_token');
         let tgId = null;
         if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
@@ -7485,13 +7522,28 @@ async function finalizePendingReferral() {
             } catch {}
         }
         const newId = token || tgId;
-        if (!newId) return; // ещё нет идентификатора — попробуем позже
+        
+        console.log('[FINALIZE DEBUG] token:', token, 'tgId:', tgId, 'newId:', newId);
+        
+        if (!newId) {
+            console.log('[FINALIZE DEBUG] Идентификатор ещё не готов, попробуем позже');
+            return; // ещё нет идентификатора — попробуем позже
+        }
+        
+        console.log('[FINALIZE DEBUG] Отправка POST /api/referrals:', {
+            referrer_token: pending,
+            new_user_token: newId
+        });
+        
         const resp = await fetch('/api/referrals', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ referrer_token: pending, new_user_token: newId })
         });
         const data = await resp.json();
+        
+        console.log('[FINALIZE DEBUG] Ответ от сервера:', resp.status, data);
+        
         if (resp.ok && data?.success) {
             localStorage.setItem('referral_processed', 'true');
             localStorage.setItem('referrer_token', pending);
