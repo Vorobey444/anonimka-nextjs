@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
           UPDATE messages 
           SET read = true, delivered = true
           WHERE chat_id = ${chatId} 
-            AND receiver_id = ${userId}
+            AND receiver_id::text = ${String(userId)}
             AND read = false
         `;
         return NextResponse.json({ data: { success: true }, error: null });
@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
         await sql`
           UPDATE messages 
           SET delivered = true 
-          WHERE receiver_id = ${userId}
+          WHERE receiver_id::text = ${String(userId)}
             AND delivered = false
         `;
         return NextResponse.json({ data: { success: true }, error: null });
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
           SELECT COUNT(*) as count 
           FROM messages 
           WHERE chat_id = ${chatId} 
-            AND receiver_id = ${userId}
+            AND receiver_id::text = ${String(userId)}
             AND read = false
         `;
         return NextResponse.json({ 
@@ -277,13 +277,12 @@ export async function POST(request: NextRequest) {
       case 'total-unread': {
         const { userId } = params;
         
-        // receiver_id теперь хранит user_token (строка), а не числовой ID
-        // userId может быть как токеном, так и числовым ID (для обратной совместимости)
+        // receiver_id может быть как numeric (legacy), так и text (token). Сравниваем в текстовом виде.
         const result = await sql`
           SELECT COUNT(*) as count 
           FROM messages m
           JOIN private_chats pc ON m.chat_id = pc.id
-          WHERE m.receiver_id = ${userId}
+          WHERE m.receiver_id::text = ${String(userId)}
             AND m.read = false
             AND pc.accepted = true
             AND pc.blocked_by IS NULL
