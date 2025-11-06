@@ -1384,7 +1384,7 @@ function showMainMenu() {
 }
 
 function showCreateAd() {
-    if (!userLocation) {
+    if (!currentUserLocation) {
         tg.showAlert('Сначала выберите ваш город');
         showLocationSetup();
         return;
@@ -1413,9 +1413,9 @@ function showCreateAd() {
     showStep(1);
     
     // Автоматически заполняем локацию из настроек пользователя
-    formData.country = userLocation.country;
-    formData.region = userLocation.region;
-    formData.city = userLocation.city;
+    formData.country = currentUserLocation.country;
+    formData.region = currentUserLocation.region;
+    formData.city = currentUserLocation.city;
     
     // Отображаем локацию в форме
     updateFormLocationDisplay();
@@ -1423,8 +1423,8 @@ function showCreateAd() {
 
 // Обновить отображение локации в форме
 function updateFormLocationDisplay() {
-    if (userLocation) {
-        const locationText = `${locationData[userLocation.country].flag} ${userLocation.region}, ${userLocation.city}`;
+    if (currentUserLocation) {
+        const locationText = `${locationData[currentUserLocation.country].flag} ${currentUserLocation.region}, ${currentUserLocation.city}`;
         const formLocationDisplay = document.getElementById('formLocationDisplay');
         if (formLocationDisplay) {
             formLocationDisplay.textContent = locationText;
@@ -1437,8 +1437,8 @@ function showBrowseAds() {
     
     // Отображаем текущую локацию
     const browseLocationDisplay = document.getElementById('browseLocationDisplay');
-    if (userLocation && browseLocationDisplay) {
-        const locationText = `${locationData[userLocation.country].flag} ${userLocation.region}, ${userLocation.city}`;
+    if (currentUserLocation && browseLocationDisplay) {
+        const locationText = `${locationData[currentUserLocation.country].flag} ${currentUserLocation.region}, ${currentUserLocation.city}`;
         browseLocationDisplay.textContent = locationText;
     } else if (browseLocationDisplay) {
         browseLocationDisplay.textContent = 'Локация не установлена';
@@ -1446,9 +1446,9 @@ function showBrowseAds() {
     
     // Загружаем анкеты по локации пользователя
     setTimeout(() => {
-        if (userLocation) {
-            console.log('Загружаем анкеты по локации:', userLocation);
-            loadAdsByLocation(userLocation.country, userLocation.region, userLocation.city);
+        if (currentUserLocation) {
+            console.log('Загружаем анкеты по локации:', currentUserLocation);
+            loadAdsByLocation(currentUserLocation.country, currentUserLocation.region, currentUserLocation.city);
         } else {
             console.log('Локация не установлена, показываем все анкеты');
             loadAds();
