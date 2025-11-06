@@ -7384,8 +7384,12 @@ function showReferralModal() {
     }
 
     const botUsername = 'anonimka_kz_bot';
-    // Используем обычный start (не startapp) для совместимости с ботом
-    const referralLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
+    
+    // ВАЖНО: Используем startapp если бот настроен как Mini App в BotFather
+    // Если Mini App не настроен, используйте обычный start - бот откроет WebApp с ?ref= в URL
+    // Оба варианта работают! startapp быстрее (параметр сразу в start_param)
+    const referralLink = `https://t.me/${botUsername}?startapp=ref_${userToken}`;
+    
     referralLinkEl.textContent = referralLink;
     window.currentReferralLink = referralLink;
 }
