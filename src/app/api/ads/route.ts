@@ -146,12 +146,21 @@ export async function POST(req: NextRequest) {
     const numericTgId = resolveTgId(tgId);
     console.log('[ADS API] tgId incoming:', tgId, '-> numericTgId:', numericTgId);
 
-    // Генерируем user_token если не передан (используем crypto для безопасности)
+    // Генерируем user_token если не передан
+    // Если есть numericTgId — используем детерминированный HMAC, чтобы токен был одинаковым на всех устройствах
     let finalUserToken = user_token;
     if (!finalUserToken) {
-      // Генерируем криптографически безопасный случайный токен (32 байта = 64 hex символа)
       const crypto = require('crypto');
-      finalUserToken = crypto.randomBytes(32).toString('hex');
+      if (numericTgId !== null) {
+        const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET || 'dev-temp-secret';
+        const h = crypto.createHmac('sha256', secret);
+        h.update(String(numericTgId));
+        h.update(':v1');
+        finalUserToken = h.digest('hex');
+      } else {
+        // Веб-пользователь без tgId — криптографически случайный токен (32 байта = 64 hex символа)
+        finalUserToken = crypto.randomBytes(32).toString('hex');
+      }
     }
     
     // Безопасное логирование (без чувствительных данных)

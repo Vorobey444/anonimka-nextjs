@@ -1294,30 +1294,26 @@ function showReferralModal() {
     window.currentReferralLink = referralLink;
 }
 
-// Получить текущий ID пользователя (Telegram ID или локальный токен)
+// Получить текущий ID пользователя для серверных лимитов (предпочтительно Telegram ID)
 function getCurrentUserId() {
-    // 1) Явно заданный токен пользователя (из нашего приложения)
-    const userToken = localStorage.getItem('user_token');
-    if (userToken && userToken !== 'null' && userToken !== 'undefined') {
-        return userToken.toString();
+    // 1) Telegram WebApp user
+    if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+        return String(window.Telegram.WebApp.initDataUnsafe.user.id);
     }
-
     // 2) Telegram Login Widget сохранённый пользователь
     const savedUser = localStorage.getItem('telegram_user');
     if (savedUser) {
         try {
             const userData = JSON.parse(savedUser);
             if (userData?.id) {
-                return userData.id.toString();
+                return String(userData.id);
             }
         } catch (e) {
             console.error('Ошибка получения ID пользователя:', e);
         }
     }
-
-        // 3) Для веб-пользователей возвращаем null (сервер сам сгенерирует токен)
-        // Не отправляем web_* строки как tgId - это вызывает NaN при Number()
-        return null;
+    // 3) Для чисто веб-пользователей (без Telegram) возвращаем null — сервер будет работать по user_token
+    return null;
 }
 
 // Получить nickname текущего пользователя
@@ -2182,7 +2178,10 @@ async function submitAd() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(adData)
+            body: JSON.stringify({
+                ...adData,
+                user_token: localStorage.getItem('user_token') || null
+            })
         });
 
         if (!response.ok) {
