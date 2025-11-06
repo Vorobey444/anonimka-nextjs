@@ -215,7 +215,8 @@ async function initializeUserInDatabase() {
         }
         
         if (userId) {
-            const nickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname') || null;
+            // Не отправляем локальный никнейм на инициализации, чтобы не перезаписать серверный
+            const nickname = null;
             console.log('📤 Инициализируем пользователя в БД (анонимно)');
             
             const response = await fetch('/api/users', {

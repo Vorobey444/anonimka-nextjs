@@ -45,7 +45,11 @@ export async function POST(req: NextRequest) {
       INSERT INTO users (id, display_nickname, created_at, updated_at)
       VALUES (${tgId}, ${nickname || null}, NOW(), NOW())
       ON CONFLICT (id) DO UPDATE SET
-        display_nickname = COALESCE(EXCLUDED.display_nickname, users.display_nickname),
+        -- Не перезаписываем уже существующий никнейм на сервера локальным значением
+        display_nickname = CASE 
+          WHEN users.display_nickname IS NULL OR users.display_nickname = '' THEN COALESCE(EXCLUDED.display_nickname, users.display_nickname)
+          ELSE users.display_nickname
+        END,
         updated_at = NOW()
     `;
 
