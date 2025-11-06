@@ -215,7 +215,7 @@ async function initializeUserInDatabase() {
         }
         
         if (userId) {
-            const nickname = localStorage.getItem('userNickname') || null;
+            const nickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname') || null;
             console.log('📤 Инициализируем пользователя в БД (анонимно)');
             
             const response = await fetch('/api/users', {
@@ -232,6 +232,22 @@ async function initializeUserInDatabase() {
                 // Сохраняем токен в localStorage (вместо tg_id)
                 localStorage.setItem('user_token', result.userToken);
                 console.log('✅ Пользователь инициализирован, токен получен');
+
+                // Если локального никнейма нет — подтянем из БД и сохраним
+                const hasLocalNick = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname');
+                if (!hasLocalNick) {
+                    try {
+                        const resp2 = await fetch(`/api/users?tgId=${userId}`);
+                        const data2 = await resp2.json();
+                        if (data2?.success && data2.displayNickname) {
+                            localStorage.setItem('userNickname', data2.displayNickname);
+                            localStorage.setItem('user_nickname', data2.displayNickname);
+                            console.log('⬇️ Никнейм подтянут из БД:', data2.displayNickname);
+                        }
+                    } catch (e) {
+                        console.warn('Не удалось подтянуть никнейм из БД:', e);
+                    }
+                }
             } else {
                 console.warn('⚠️ Ошибка инициализации пользователя:', result.error);
             }
@@ -828,22 +844,32 @@ async function saveNicknamePage() {
             nickname = 'Аноним';
         }
         
-        // Сохраняем в localStorage
-        localStorage.setItem('user_nickname', nickname);
+    // Сохраняем в localStorage (оба ключа для совместимости)
+    localStorage.setItem('user_nickname', nickname);
+    localStorage.setItem('userNickname', nickname);
         console.log('✅ Никнейм сохранён:', nickname);
         
         // Обновляем nickname во всех анкетах пользователя
         const userId = getCurrentUserId();
-        if (userId && !userId.startsWith('web_')) {
+        const userToken = localStorage.getItem('user_token');
+        if (userId || userToken) {
             try {
+                // Формируем полезную нагрузку: если есть токен — отправляем его, если есть числовой tgId — тоже отправляем
+                const payload = {
+                    action: 'update-all-nicknames',
+                    nickname: nickname
+                };
+                if (userToken && userToken !== 'null' && userToken !== 'undefined') {
+                    payload.userToken = userToken;
+                }
+                if (userId && !isNaN(Number(userId))) {
+                    payload.tgId = Number(userId);
+                }
+
                 const response = await fetch('/api/ads', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'update-all-nicknames',
-                        tgId: userId,
-                        nickname: nickname
-                    })
+                    body: JSON.stringify(payload)
                 });
                 const result = await response.json();
                 if (result.success) {
@@ -1246,13 +1272,14 @@ function getCurrentUserId() {
 
 // Получить nickname текущего пользователя
 function getUserNickname() {
-    // Сначала пытаемся получить никнейм из localStorage (установленный в приложении)
-    const savedNickname = localStorage.getItem('userNickname');
+    // Сначала пытаемся получить никнейм из localStorage (оба возможных ключа)
+    const savedNickname1 = localStorage.getItem('userNickname');
+    const savedNickname2 = localStorage.getItem('user_nickname');
+    const savedNickname = savedNickname1 || savedNickname2;
     if (savedNickname && savedNickname !== 'null' && savedNickname !== 'undefined') {
         return savedNickname;
     }
-    
-    // Если никнейм не установлен, возвращаем "Аноним" (не используем Telegram username)
+    // Если никнейм не установлен, возвращаем "Аноним"
     return 'Аноним';
 }
 

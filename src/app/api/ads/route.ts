@@ -398,19 +398,12 @@ export async function PATCH(req: NextRequest) {
     console.log("[ADS API] Обновление объявления");
     
     const body = await req.json();
-    const { id, tgId, is_pinned, pinned_until, action, nickname } = body;
+  const { id, tgId, is_pinned, pinned_until, action, nickname, userToken } = body;
 
-    console.log("[ADS API] Данные для обновления:", { id, tgId, is_pinned, pinned_until, action, nickname });
+  console.log("[ADS API] Данные для обновления:", { id, tgId, is_pinned, pinned_until, action, nickname, hasUserToken: Boolean(userToken) });
 
     // Обработка массового обновления никнейма
     if (action === 'update-all-nicknames') {
-      if (!tgId) {
-        return NextResponse.json(
-          { success: false, error: "Требуется авторизация" },
-          { status: 401 }
-        );
-      }
-
       if (!nickname) {
         return NextResponse.json(
           { success: false, error: "Никнейм не указан" },
@@ -418,20 +411,54 @@ export async function PATCH(req: NextRequest) {
         );
       }
 
-      // Обновляем nickname во всех анкетах пользователя
-      const result = await sql`
-        UPDATE ads 
-        SET nickname = ${nickname}
-        WHERE tg_id = ${tgId}
-        RETURNING id
-      `;
+      // Поддерживаем два способа идентификации: через tgId или через userToken.
+      // Для обратной совместимости: если в tgId пришла 64-символьная hex-строка — считаем это токеном.
+      const isHex64 = (val: any) => typeof val === 'string' && /^[0-9a-f]{64}$/i.test(val);
 
-      console.log("[ADS API] Никнейм обновлен в анкетах, кол-во:", result.rows.length);
+      let updated;
+      if (userToken || isHex64(tgId)) {
+        const token = userToken || tgId; // tgId на самом деле содержит токен (исторически с фронта)
+        updated = await sql`
+          UPDATE ads
+          SET nickname = ${nickname}
+          WHERE user_token = ${token}
+          RETURNING id
+        `;
+        console.log("[ADS API] Никнейм обновлен по user_token, кол-во:", updated.rows.length);
+
+        // Также обновляем display_nickname в таблице users для связанного tg_id (если есть такие объявления)
+        await sql`
+          UPDATE users
+          SET display_nickname = ${nickname}, updated_at = NOW()
+          WHERE id IN (
+            SELECT tg_id FROM ads WHERE user_token = ${token} AND tg_id IS NOT NULL LIMIT 1
+          )
+        `;
+      } else if (tgId) {
+        updated = await sql`
+          UPDATE ads 
+          SET nickname = ${nickname}
+          WHERE tg_id = ${tgId}
+          RETURNING id
+        `;
+        console.log("[ADS API] Никнейм обновлен по tg_id, кол-во:", updated.rows.length);
+
+        await sql`
+          UPDATE users
+          SET display_nickname = ${nickname}, updated_at = NOW()
+          WHERE id = ${tgId}
+        `;
+      } else {
+        return NextResponse.json(
+          { success: false, error: "Требуется авторизация" },
+          { status: 401 }
+        );
+      }
 
       return NextResponse.json({
         success: true,
-        message: `Никнейм обновлен в ${result.rows.length} анкет(е/ах)`,
-        count: result.rows.length
+        message: `Никнейм обновлен в ${updated.rows.length} анкет(е/ах)`,
+        count: updated.rows.length
       });
     }
 

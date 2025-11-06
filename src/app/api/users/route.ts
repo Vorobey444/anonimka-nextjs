@@ -19,17 +19,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Проверяем, есть ли уже user_token для этого tg_id
+    // Проверяем, есть ли уже user_token для этого tg_id (берём из последнего объявления, если есть)
     const existingAd = await sql`
       SELECT user_token FROM ads WHERE tg_id = ${tgId} ORDER BY created_at DESC LIMIT 1
     `;
 
     let userToken = existingAd.rows[0]?.user_token;
 
-    // Если токена нет - генерируем новый
+    // Если токена нет — генерируем детерминированный токен на основе tgId и серверного секрета,
+    // чтобы он был одинаковым на всех устройствах до публикации первого объявления.
     if (!userToken) {
       const crypto = require('crypto');
-      userToken = crypto.randomBytes(32).toString('hex');
+      const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET;
+      if (!secret) {
+        console.warn('[USERS API] ВНИМАНИЕ: USER_TOKEN_SECRET не задан — используется временный dev-секрет. Задайте переменную окружения в проде.');
+      }
+      const hmac = crypto.createHmac('sha256', secret || 'dev-temp-secret');
+      hmac.update(String(tgId));
+      hmac.update(':v1'); // версия формулы на будущее
+      userToken = hmac.digest('hex');
     }
 
     // Создаём/обновляем запись в users
@@ -65,6 +73,55 @@ export async function POST(req: NextRequest) {
         success: false, 
         error: error?.message || 'Ошибка инициализации пользователя'
       },
+      { status: 500 }
+    );
+  }
+}
+
+// GET - получить публичные данные пользователя (например, display_nickname)
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const tgIdParam = searchParams.get('tgId');
+    const userToken = searchParams.get('userToken');
+
+    let displayNickname: string | null = null;
+
+    if (tgIdParam) {
+      const tgId = Number(tgIdParam);
+      if (!Number.isFinite(tgId)) {
+        return NextResponse.json(
+          { success: false, error: 'tgId должен быть числом' },
+          { status: 400 }
+        );
+      }
+
+      const res = await sql`
+        SELECT display_nickname FROM users WHERE id = ${tgId}
+      `;
+      displayNickname = res.rows[0]?.display_nickname || null;
+    } else if (userToken) {
+      // Ищем связанный tg_id через объявления
+      const res = await sql`
+        SELECT u.display_nickname
+        FROM users u
+        WHERE u.id IN (
+          SELECT tg_id FROM ads WHERE user_token = ${userToken} AND tg_id IS NOT NULL LIMIT 1
+        )
+      `;
+      displayNickname = res.rows[0]?.display_nickname || null;
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Укажите tgId или userToken' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ success: true, displayNickname });
+  } catch (error: any) {
+    console.error('[USERS API] Ошибка при получении данных пользователя:', error);
+    return NextResponse.json(
+      { success: false, error: error?.message || 'Ошибка получения данных пользователя' },
       { status: 500 }
     );
   }
