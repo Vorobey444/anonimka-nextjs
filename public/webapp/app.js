@@ -232,21 +232,28 @@ async function initializeUserInDatabase() {
                 // Сохраняем токен в localStorage (вместо tg_id)
                 localStorage.setItem('user_token', result.userToken);
                 console.log('✅ Пользователь инициализирован, токен получен');
-
-                // Если локального никнейма нет — подтянем из БД и сохраним
-                const hasLocalNick = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname');
-                if (!hasLocalNick) {
-                    try {
-                        const resp2 = await fetch(`/api/users?tgId=${userId}`);
-                        const data2 = await resp2.json();
-                        if (data2?.success && data2.displayNickname) {
+                
+                // Всегда подтягиваем никнейм из БД и, если он отличается, синхронизируем локально (сервер — источник истины)
+                try {
+                    const resp2 = await fetch(`/api/users?tgId=${userId}`);
+                    const data2 = await resp2.json();
+                    if (data2?.success && data2.displayNickname) {
+                        const local1 = localStorage.getItem('userNickname');
+                        const local2 = localStorage.getItem('user_nickname');
+                        const localNick = local1 || local2;
+                        if (localNick !== data2.displayNickname) {
                             localStorage.setItem('userNickname', data2.displayNickname);
                             localStorage.setItem('user_nickname', data2.displayNickname);
-                            console.log('⬇️ Никнейм подтянут из БД:', data2.displayNickname);
+                            console.log('🔄 Никнейм синхронизирован из БД:', data2.displayNickname);
+                            // Обновим UI, если открыта страница редактирования
+                            const currentNicknameDisplay = document.getElementById('currentNicknameDisplay');
+                            if (currentNicknameDisplay) currentNicknameDisplay.textContent = data2.displayNickname;
+                            const nicknameInputPage = document.getElementById('nicknameInputPage');
+                            if (nicknameInputPage) nicknameInputPage.value = data2.displayNickname;
                         }
-                    } catch (e) {
-                        console.warn('Не удалось подтянуть никнейм из БД:', e);
                     }
+                } catch (e) {
+                    console.warn('Не удалось подтянуть никнейм из БД:', e);
                 }
             } else {
                 console.warn('⚠️ Ошибка инициализации пользователя:', result.error);
