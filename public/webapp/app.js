@@ -7157,7 +7157,7 @@ function showReferralModal() {
     }
     
     // Генерируем реферальную ссылку
-    const botUsername = 'anonimka_dating_bot'; // Замените на реальное имя бота
+    const botUsername = 'anonimka_kz_bot';
     const referralLink = `https://t.me/${botUsername}?start=ref_${userId}`;
     
     referralLinkEl.textContent = referralLink;
