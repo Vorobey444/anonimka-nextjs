@@ -7126,6 +7126,13 @@ async function handleReferralLink() {
 // Функция вызывается после создания анкеты для выдачи награды
 async function processReferralReward() {
     try {
+        // ЗАЩИТА: награда выдаётся строго один раз (даже если запрос упал)
+        const alreadyProcessed = localStorage.getItem('referral_reward_processed');
+        if (alreadyProcessed === 'true') {
+            console.log('ℹ️ Реферальная награда уже была обработана ранее');
+            return;
+        }
+
         const referrerToken = localStorage.getItem('referrer_token');
         
         if (!referrerToken) {
@@ -7146,15 +7153,24 @@ async function processReferralReward() {
         
         const data = await response.json();
         
-        if (response.ok && data.success) {
-            console.log(`✅ PRO подписка выдана до ${data.expiresAt}`);
-            // Очищаем данные реферала
+        if (response.ok) {
+            if (data.success) {
+                console.log(`✅ PRO подписка выдана до ${data.expiresAt}`);
+            } else {
+                console.log('ℹ️ Награда уже была выдана ранее (сервер)');
+            }
+            // Отмечаем что попытка выдачи завершена (успешно или уже была)
+            localStorage.setItem('referral_reward_processed', 'true');
             localStorage.removeItem('referrer_token');
             localStorage.removeItem('pending_referral');
+        } else {
+            console.warn('⚠️ Сервер вернул ошибку при выдаче награды:', data.message || data.error);
+            // Не ставим флаг processed — retry при следующей попытке (если сеть упала)
         }
         
     } catch (error) {
         console.error('❌ Ошибка выдачи награды за реферала:', error);
+        // Не ставим флаг processed — retry при следующей попытке
     }
 }
 

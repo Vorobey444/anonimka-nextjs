@@ -128,25 +128,28 @@ export async function PUT(request: NextRequest) {
 
         const referral = referralResult.rows[0] as { id: number; referrer_id: number | null; referrer_token: string | null; reward_given: boolean };
 
+        // ЗАЩИТА: награда за этого конкретного реферала уже выдана — дубли не допускаются
         if (referral.reward_given) {
-            console.log('[REFERRAL REWARD] ℹ️ Награда уже была выдана ранее');
+            console.log('[REFERRAL REWARD] ℹ️ Награда за этого реферала уже была выдана ранее');
             return NextResponse.json(
                 { message: 'Награда уже была выдана' },
                 { status: 200 }
             );
         }
 
-        // Дата окончания (30 дней)
+        // Механика: каждый успешный реферал продлевает PRO реферера на +30 дней
+        // (но один реферал не может дать награду дважды — контролируется reward_given)
         const now = new Date();
         const baseExpiry = new Date(now);
         baseExpiry.setDate(baseExpiry.getDate() + 30);
         let newExpiresAt = baseExpiry;
 
-        // Если есть токен реферера — выдаём PRO по токену (premium_tokens)
+        // Если есть токен реферера — выдаём/продлеваем PRO по токену (premium_tokens)
         if (referral.referrer_token) {
             const existing = await sql`SELECT premium_until FROM premium_tokens WHERE user_token = ${referral.referrer_token} LIMIT 1`;
             if (existing.rows.length > 0 && existing.rows[0].premium_until) {
                 const currentExpiry = new Date(existing.rows[0].premium_until);
+                // Если подписка ещё активна — стекируем +30 дней от текущей даты окончания
                 if (currentExpiry > now) {
                     newExpiresAt = new Date(currentExpiry);
                     newExpiresAt.setDate(newExpiresAt.getDate() + 30);
@@ -168,12 +171,13 @@ export async function PUT(request: NextRequest) {
                       updated_at = NOW()
                 `;
             }
-            console.log('[REFERRAL REWARD] ✅ PRO (token) выдан до:', newExpiresAt.toISOString());
+            console.log('[REFERRAL REWARD] ✅ PRO (token) выдан/продлён до:', newExpiresAt.toISOString());
         } else if (referral.referrer_id) {
-            // Иначе есть только numeric (Telegram) — выдаём через таблицу users
+            // Иначе есть только numeric (Telegram) — выдаём/продлеваем через таблицу users
             const u = await sql`SELECT premium_until FROM users WHERE id = ${referral.referrer_id} LIMIT 1`;
             if (u.rows.length > 0 && u.rows[0].premium_until) {
                 const currentExpiry = new Date(u.rows[0].premium_until);
+                // Если подписка ещё активна — стекируем +30 дней от текущей даты окончания
                 if (currentExpiry > now) {
                     newExpiresAt = new Date(currentExpiry);
                     newExpiresAt.setDate(newExpiresAt.getDate() + 30);
@@ -186,7 +190,7 @@ export async function PUT(request: NextRequest) {
                     updated_at = NOW()
                 WHERE id = ${referral.referrer_id}
             `;
-            console.log('[REFERRAL REWARD] ✅ PRO (tg_id) выдан до:', newExpiresAt.toISOString());
+            console.log('[REFERRAL REWARD] ✅ PRO (tg_id) выдан/продлён до:', newExpiresAt.toISOString());
         } else {
             console.warn('[REFERRAL REWARD] ⚠️ Не найден валидный идентификатор реферера');
             return NextResponse.json({ message: 'Реферер не найден' }, { status: 404 });
