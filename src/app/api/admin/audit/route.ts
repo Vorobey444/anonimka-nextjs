@@ -19,8 +19,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const tokenFromQuery = url.searchParams.get("token");
     const tokenFromHeader = req.headers.get("x-admin-token");
-    // Temporary hardcoded token for audit - REMOVE AFTER USE
-    const adminToken = process.env.ADMIN_AUDIT_TOKEN || "dcfvgshj28y7et37628grfhj0sdyt75cdf2gh9803eu29718r6efdgwhq76w54e2rtgt!!2egqsdvhfdfghjhgfdsdfszadfsgdhyklukjhg";
+    const adminToken = process.env.ADMIN_AUDIT_TOKEN;
 
     if (!adminToken) {
       return unauthorized(
