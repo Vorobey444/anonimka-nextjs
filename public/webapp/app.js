@@ -454,6 +454,8 @@ function initializeApp() {
         
         try {
             initializeUserInDatabase(); // Инициализация пользователя в БД (если есть tg_id)
+            // Попытка зарегистрировать отложенный реферал после инициализации
+            finalizePendingReferral().catch(console.warn);
         } catch (e) {
             console.error('❌ Ошибка initializeUserInDatabase:', e);
         }
@@ -1289,7 +1291,8 @@ function showReferralModal() {
     }
     // Генерируем реферальную ссылку
     const botUsername = 'anonimka_kz_bot';
-    const referralLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
+    // Используем startapp, чтобы параметр попал в WebApp как start_param
+    const referralLink = `https://t.me/${botUsername}?startapp=ref_${userToken}`;
     referralLinkEl.textContent = referralLink;
     window.currentReferralLink = referralLink;
 }
@@ -7252,13 +7255,16 @@ async function handleReferralLink() {
         
         safeLog('📨 Обработка реферальной ссылки');
         
-        // Отправляем на сервер (используем токены вместо числовых ID)
+        // Определяем идентификатор нового пользователя: токен (предпочтительно) или tgId
+        const currentUserToken = localStorage.getItem('user_token');
+        const newIdentifier = currentUserToken || currentUserId;
+        // Отправляем на сервер (поддерживается токен или numeric tgId)
         const response = await fetch('/api/referrals', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 referrer_token: referrerId,
-                new_user_token: currentUserId
+                new_user_token: newIdentifier
             })
         });
         
@@ -7294,7 +7300,7 @@ async function processReferralReward() {
             return; // Пользователь пришел не по реферальной ссылке
         }
         
-        const currentUserToken = getCurrentUserId();
+        const currentUserToken = localStorage.getItem('user_token');
         
         console.log('🎁 Запрос на выдачу PRO для реферера');
         
@@ -7343,7 +7349,8 @@ function showReferralModal() {
     }
 
     const botUsername = 'anonimka_kz_bot';
-    const referralLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
+    // Используем startapp, чтобы параметр попал в WebApp initDataUnsafe.start_param
+    const referralLink = `https://t.me/${botUsername}?startapp=ref_${userToken}`;
     referralLinkEl.textContent = referralLink;
     window.currentReferralLink = referralLink;
 }
@@ -7461,6 +7468,42 @@ window.addEventListener('click', (event) => {
         customConfirmCancel();
     }
 });
+
+// Попытка завершить регистрацию отложенного реферала (когда появился user_token/tgId)
+async function finalizePendingReferral() {
+    try {
+        const pending = localStorage.getItem('pending_referral');
+        if (!pending) return;
+        const token = localStorage.getItem('user_token');
+        let tgId = null;
+        if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+            tgId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
+        } else {
+            try {
+                const u = JSON.parse(localStorage.getItem('telegram_user') || 'null');
+                if (u?.id) tgId = String(u.id);
+            } catch {}
+        }
+        const newId = token || tgId;
+        if (!newId) return; // ещё нет идентификатора — попробуем позже
+        const resp = await fetch('/api/referrals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ referrer_token: pending, new_user_token: newId })
+        });
+        const data = await resp.json();
+        if (resp.ok && data?.success) {
+            localStorage.setItem('referral_processed', 'true');
+            localStorage.setItem('referrer_token', pending);
+            localStorage.removeItem('pending_referral');
+            console.log('✅ Отложенный реферал зарегистрирован');
+        } else {
+            console.warn('⚠️ Не удалось зарегистрировать отложенный реферал:', data?.error || data?.message);
+        }
+    } catch (e) {
+        console.warn('Ошибка finalizePendingReferral:', e);
+    }
+}
 
 // ============= УПРАВЛЕНИЕ ЗАБЛОКИРОВАННЫМИ =============
 
