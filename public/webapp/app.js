@@ -2019,8 +2019,21 @@ async function submitAd() {
             submitBtn.textContent = '⏳ Публикуем...';
         }
 
-        // Отправляем в Supabase через наш API
-    // ...реализация через Neon API...
+        // Отправляем в API через POST запрос
+        const response = await fetch('/api/ads', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(adData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Ошибка при создании анкеты');
+        }
+
+        const result = await response.json();
         
         // Сохраняем user_token в localStorage
         if (result && result.ad && result.ad.user_token) {
