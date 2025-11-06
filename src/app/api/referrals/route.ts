@@ -6,6 +6,8 @@ export async function POST(request: NextRequest) {
     try {
         const { referrer_token, new_user_token } = await request.json();
         
+        console.log('[REFERRAL] Регистрация:', { referrer_token, new_user_token });
+        
         if (!referrer_token || !new_user_token) {
             return NextResponse.json(
                 { error: 'referrer_token и new_user_token обязательны' },
@@ -15,6 +17,7 @@ export async function POST(request: NextRequest) {
         
         // Проверяем что пользователь не приглашает сам себя
         if (referrer_token === new_user_token) {
+            console.log('[REFERRAL] ❌ Попытка пригласить самого себя');
             return NextResponse.json(
                 { error: 'Нельзя пригласить самого себя' },
                 { status: 400 }
@@ -27,6 +30,7 @@ export async function POST(request: NextRequest) {
         `;
         
         if (existingReferral.rows.length > 0) {
+            console.log('[REFERRAL] ℹ️ Пользователь уже был приглашен ранее');
             return NextResponse.json(
                 { message: 'Пользователь уже был приглашен ранее' },
                 { status: 200 }
@@ -38,6 +42,8 @@ export async function POST(request: NextRequest) {
             INSERT INTO referrals (referrer_id, referred_id, user_token)
             VALUES (${referrer_token}, ${new_user_token}, ${new_user_token})
         `;
+        
+        console.log('[REFERRAL] ✅ Реферал успешно зарегистрирован');
         
         return NextResponse.json({ 
             success: true,
@@ -58,6 +64,8 @@ export async function PUT(request: NextRequest) {
     try {
         const { new_user_token } = await request.json();
         
+        console.log('[REFERRAL REWARD] Запрос награды для:', new_user_token);
+        
         if (!new_user_token) {
             return NextResponse.json(
                 { error: 'new_user_token обязателен' },
@@ -74,6 +82,7 @@ export async function PUT(request: NextRequest) {
         `;
         
         if (referralResult.rows.length === 0) {
+            console.log('[REFERRAL REWARD] ℹ️ Реферал не найден - пользователь пришел не по реферальной ссылке');
             return NextResponse.json(
                 { message: 'Реферал не найден' },
                 { status: 404 }
@@ -83,11 +92,14 @@ export async function PUT(request: NextRequest) {
         const referral = referralResult.rows[0];
         
         if (referral.reward_given) {
+            console.log('[REFERRAL REWARD] ℹ️ Награда уже была выдана ранее');
             return NextResponse.json(
                 { message: 'Награда уже была выдана' },
                 { status: 200 }
             );
         }
+        
+        console.log('[REFERRAL REWARD] 🎁 Выдаем PRO реферу:', referral.referrer_id);
         
         const referrer_token = referral.referrer_id;
         
@@ -114,11 +126,14 @@ export async function PUT(request: NextRequest) {
         }
         
         // Обновляем PRO статус
-        await sql`
+        const updateResult = await sql`
             UPDATE ads 
             SET premium_until = ${newExpiresAt.toISOString()}
             WHERE user_token = ${String(referrer_token)}
+            RETURNING id
         `;
+        
+        console.log('[REFERRAL REWARD] ✅ PRO обновлен, затронуто строк:', updateResult.rowCount);
         
         // Отмечаем что награда выдана
         await sql`
@@ -128,6 +143,8 @@ export async function PUT(request: NextRequest) {
             WHERE user_token = ${new_user_token}
         `;
         
+        console.log('[REFERRAL REWARD] 🎉 Награда успешно выдана до:', newExpiresAt.toISOString());
+        
         return NextResponse.json({ 
             success: true,
             message: 'PRO подписка выдана',
@@ -136,7 +153,7 @@ export async function PUT(request: NextRequest) {
         });
         
     } catch (error) {
-        console.error('Ошибка выдачи награды:', error);
+        console.error('[REFERRAL REWARD] ❌ Критическая ошибка при выдаче награды:', error);
         return NextResponse.json(
             { error: 'Ошибка сервера' },
             { status: 500 }
