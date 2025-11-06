@@ -7384,8 +7384,8 @@ function showReferralModal() {
     }
 
     const botUsername = 'anonimka_kz_bot';
-    // Используем startapp, чтобы параметр попал в WebApp initDataUnsafe.start_param
-    const referralLink = `https://t.me/${botUsername}?startapp=ref_${userToken}`;
+    // Используем обычный start (не startapp) для совместимости с ботом
+    const referralLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
     referralLinkEl.textContent = referralLink;
     window.currentReferralLink = referralLink;
 }
