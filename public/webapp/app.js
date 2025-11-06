@@ -179,6 +179,32 @@ if (isTelegramWebApp) {
     tg.expand();
     tg.ready();
     
+    // Инициализируем пользователя в БД при входе (если есть Telegram ID)
+    (async function initializeUser() {
+        try {
+            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+            if (tgUser && tgUser.id) {
+                const nickname = localStorage.getItem('userNickname') || null;
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tgId: tgUser.id,
+                        nickname: nickname
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    console.log('✅ Пользователь инициализирован в БД');
+                } else {
+                    console.warn('⚠️ Ошибка инициализации пользователя:', result.error);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Ошибка инициализации пользователя:', error);
+        }
+    })();
+    
     // Блокировка вертикальных свайпов для предотвращения скриншотов
     tg.disableVerticalSwipes();
     console.log('🔒 Вертикальные свайпы отключены');

@@ -177,19 +177,32 @@ export async function POST(req: NextRequest) {
     if (numericTgId !== null) {
       const userId = numericTgId;
       
-      // Создаём/обновляем пользователя (сохраняем никнейм если передан)
-      await sql`
-        INSERT INTO users (id, display_nickname, created_at, updated_at)
-        VALUES (${userId}, ${nickname || null}, NOW(), NOW())
-        ON CONFLICT (id) DO UPDATE SET
-          display_nickname = COALESCE(EXCLUDED.display_nickname, users.display_nickname),
-          updated_at = NOW()
-      `;
-      
-      // Получаем статус Premium и лимиты
+      // Получаем статус Premium и лимиты (пользователь должен быть уже инициализирован через /api/users)
       const userResult = await sql`
         SELECT is_premium FROM users WHERE id = ${userId}
       `;
+      
+      // Если пользователя нет в БД (не прошёл инициализацию) — создаём запись
+      if (userResult.rows.length === 0) {
+        console.warn('[ADS API] Пользователь не найден, создаём запись (fallback)');
+        await sql`
+          INSERT INTO users (id, display_nickname, created_at, updated_at)
+          VALUES (${userId}, ${nickname || null}, NOW(), NOW())
+          ON CONFLICT (id) DO NOTHING
+        `;
+        await sql`
+          INSERT INTO user_limits (user_id)
+          VALUES (${userId})
+          ON CONFLICT (user_id) DO NOTHING
+        `;
+      } else if (nickname) {
+        // Обновляем никнейм если передан (но только если пользователь уже есть)
+        await sql`
+          UPDATE users
+          SET display_nickname = ${nickname}, updated_at = NOW()
+          WHERE id = ${userId}
+        `;
+      }
       
       const limitsResult = await sql`
         SELECT ads_created_today, ads_last_reset FROM user_limits WHERE user_id = ${userId}
