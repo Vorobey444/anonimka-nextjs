@@ -1138,7 +1138,7 @@ function showReferralModal() {
         return;
     }
     // Генерируем реферальную ссылку
-    const botUsername = 'anonimka_dating_bot'; // Замените на реальное имя бота
+    const botUsername = 'anonimka_kz_bot';
     const referralLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
     referralLinkEl.textContent = referralLink;
     window.currentReferralLink = referralLink;
@@ -7053,7 +7053,16 @@ function resetFilters() {
 async function handleReferralLink() {
     try {
         // Проверяем есть ли start_param в Telegram WebApp
-        const startParam = tg?.initDataUnsafe?.start_param;
+        let startParam = tg?.initDataUnsafe?.start_param;
+        
+        // Если нет в Telegram, проверяем URL параметр (для перехода через бота)
+        if (!startParam) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const refParam = urlParams.get('ref');
+            if (refParam) {
+                startParam = 'ref_' + refParam;
+            }
+        }
         
         if (!startParam || !startParam.startsWith('ref_')) {
             console.log('ℹ️ Реферальный параметр не найден');
@@ -7072,13 +7081,13 @@ async function handleReferralLink() {
         
         safeLog('📨 Обработка реферальной ссылки');
         
-        // Отправляем на сервер
+        // Отправляем на сервер (используем токены вместо числовых ID)
         const response = await fetch('/api/referrals', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                referrerId: parseInt(referrerId),
-                newUserId: parseInt(currentUserId)
+                referrer_token: referrerId,
+                new_user_token: currentUserId
             })
         });
         
@@ -7088,7 +7097,7 @@ async function handleReferralLink() {
             safeLog('✅ Реферал зарегистрирован');
             // Сохраняем что реферал обработан
             localStorage.setItem('referral_processed', 'true');
-            localStorage.setItem('referrer_id', referrerId);
+            localStorage.setItem('referrer_token', referrerId);
         } else {
             console.log('ℹ️ Реферал не зарегистрирован:', data.message);
         }
@@ -7101,30 +7110,30 @@ async function handleReferralLink() {
 // Функция вызывается после создания анкеты для выдачи награды
 async function processReferralReward() {
     try {
-        const referrerId = localStorage.getItem('referrer_id');
+        const referrerToken = localStorage.getItem('referrer_token');
         
-        if (!referrerId) {
+        if (!referrerToken) {
             return; // Пользователь пришел не по реферальной ссылке
         }
         
-        const currentUserId = getCurrentUserId();
+        const currentUserToken = getCurrentUserId();
         
-        console.log(`🎁 Запрос на выдачу PRO для реферера ${referrerId}`);
+        console.log('🎁 Запрос на выдачу PRO для реферера');
         
         const response = await fetch('/api/referrals', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                newUserId: parseInt(currentUserId)
+                new_user_token: currentUserToken
             })
         });
         
         const data = await response.json();
         
         if (response.ok && data.success) {
-            console.log(`✅ PRO подписка выдана пользователю ${data.referrerId} до ${data.expiresAt}`);
+            console.log(`✅ PRO подписка выдана до ${data.expiresAt}`);
             // Очищаем данные реферала
-            localStorage.removeItem('referrer_id');
+            localStorage.removeItem('referrer_token');
             localStorage.removeItem('pending_referral');
         }
         
