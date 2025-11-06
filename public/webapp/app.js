@@ -1616,10 +1616,11 @@ async function loadMyAds() {
     `;
     
     try {
-        const userId = getCurrentUserId();
-        safeLog('📋 Загрузка анкет для пользователя:', userId);
-        
-        if (userId.startsWith('web_')) {
+        const userId = getCurrentUserId(); // предпочтительно tgId
+        const userToken = localStorage.getItem('user_token');
+        safeLog('📋 Загрузка анкет для пользователя:', userId || '(нет tgId)', ' token:', Boolean(userToken));
+
+        if (!userId && !userToken) {
             myAdsList.innerHTML = `
                 <div class="no-ads">
                     <div class="neon-icon">🔐</div>
@@ -1635,8 +1636,15 @@ async function loadMyAds() {
         
         const ads = await getAllAds();
         console.log('📋 Всего анкет:', ads.length);
-        
-        const myAds = ads.filter(ad => ad.tg_id === userId);
+
+        // Фильтруем по user_token (безопасно и кросс-девайс); если по какой-то причине токена нет — пробуем по tg_id
+        let myAds = [];
+        if (userToken) {
+            myAds = ads.filter(ad => ad.user_token === userToken);
+        } else if (userId) {
+            // На случай, если бэкенд начнёт возвращать tg_id в будущем; сейчас tg_id не приходит, поэтому результат может быть пуст
+            myAds = ads.filter(ad => String(ad.tg_id) === String(userId));
+        }
         console.log('📋 Мои анкеты:', myAds.length);
         
         if (myAds.length === 0) {
