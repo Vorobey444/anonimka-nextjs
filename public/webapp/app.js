@@ -1179,8 +1179,9 @@ function getCurrentUserId() {
         }
     }
 
-    // 3) Fallback - временный ID для веба
-    return 'web_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        // 3) Для веб-пользователей возвращаем null (сервер сам сгенерирует токен)
+        // Не отправляем web_* строки как tgId - это вызывает NaN при Number()
+        return null;
 }
 
 // Получить nickname текущего пользователя
