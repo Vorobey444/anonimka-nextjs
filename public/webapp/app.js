@@ -7177,14 +7177,30 @@ async function copyReferralLink() {
         return;
     }
     
+    // Рандомные тексты для реферальной ссылки
+    const referralTexts = [
+        "Хочешь кому-то понравиться, но без неловких взглядов?\nЗдесь никому не нужно быть \"красивым\".\nТолько честным. Анонимно.\n\n",
+        "Один клик — и ты в мире, где никто не знает, кто ты, но все хотят узнать.\nЗайди. Напиши. Проверь, кто ответит.\n\n",
+        "Тут не спрашивают, откуда ты и сколько тебе лет.\nТолько одно важно — что ты скажешь первым.\n\n",
+        "Зайди, если хочешь почувствовать хоть что-то настоящее.\nИногда даже одно сообщение может поменять день.\nИли ночь.\n\n",
+        "Ты ведь всё равно проверишь, кто там пишет.\nПросто сделай это сразу.\nРегистрация в один клик.\n\n",
+        "Никаких подписок, никаких лиц.\nТолько ты и чужое сообщение, которое почему-то задело.\n\n",
+        "Место, где неловкость — валюта, а молчание — способ флирта.\nПрисоединяйся, если готов к кринжу… и кому-то новому.\n\n",
+        "Зайди просто из любопытства.\nВсе с этого начинают.\nА потом остаются.\n\n"
+    ];
+    
+    // Выбираем рандомный текст
+    const randomText = referralTexts[Math.floor(Math.random() * referralTexts.length)];
+    const textToCopy = randomText + link;
+    
     try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(link);
-            tg.showAlert('✅ Ссылка скопирована!');
+            await navigator.clipboard.writeText(textToCopy);
+            tg.showAlert('✅ Ссылка с текстом скопирована!');
         } else {
             // Fallback для старых браузеров
             const textArea = document.createElement('textarea');
-            textArea.value = link;
+            textArea.value = textToCopy;
             textArea.style.position = 'fixed';
             textArea.style.left = '-999999px';
             document.body.appendChild(textArea);
@@ -7193,7 +7209,7 @@ async function copyReferralLink() {
             
             try {
                 document.execCommand('copy');
-                tg.showAlert('✅ Ссылка скопирована!');
+                tg.showAlert('✅ Ссылка с текстом скопирована!');
             } catch (err) {
                 tg.showAlert('Не удалось скопировать. Скопируйте вручную.');
             }
