@@ -117,6 +117,19 @@ export async function POST(req: NextRequest) {
       user_token
     } = body;
 
+    // Helpers to safely coerce values coming from the client
+    const parseOptionalInt = (v: any): number | null => {
+      if (v === null || v === undefined) return null;
+      if (typeof v === 'number') return Number.isFinite(v) ? Math.trunc(v) : null;
+      if (typeof v === 'string') {
+        const s = v.trim();
+        if (s === '' || s.toLowerCase() === 'nan') return null;
+        if (/^\d+$/.test(s)) return parseInt(s, 10);
+        return null;
+      }
+      return null;
+    };
+
     // Генерируем user_token если не передан (используем crypto для безопасности)
     let finalUserToken = user_token;
     if (!finalUserToken) {
@@ -189,10 +202,11 @@ export async function POST(req: NextRequest) {
     // tg_id должен быть числом или NULL (не строка)
     const resolveTgId = (val: any): number | null => {
       if (val === null || val === undefined) return null;
-      if (typeof val === 'number' && Number.isInteger(val)) return val;
+      if (typeof val === 'number') return Number.isFinite(val) ? Math.trunc(val) : null;
       if (typeof val === 'string') {
-        // Только чисто цифровые строки считаем валидными tg_id
-        if (/^\d+$/.test(val)) return parseInt(val, 10);
+        const s = val.trim();
+        if (s === '' || s.toLowerCase() === 'nan') return null;
+        if (/^\d+$/.test(s)) return parseInt(s, 10);
         return null;
       }
       return null;
@@ -209,9 +223,9 @@ export async function POST(req: NextRequest) {
       )
       VALUES (
         ${gender}, ${target}, ${goal}, 
-        ${ageFrom ? parseInt(ageFrom) : null}, 
-        ${ageTo ? parseInt(ageTo) : null}, 
-        ${myAge ? parseInt(myAge) : null},
+        ${parseOptionalInt(ageFrom)}, 
+        ${parseOptionalInt(ageTo)}, 
+        ${parseOptionalInt(myAge)},
         ${bodyType || null}, ${text}, ${nickname || 'Аноним'},
         ${country || 'Россия'}, ${region || ''}, ${city}, 
         ${numericTgId}, ${finalUserToken}, NOW()
