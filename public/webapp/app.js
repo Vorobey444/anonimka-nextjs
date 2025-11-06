@@ -145,6 +145,20 @@ tg.showConfirm = tg.showConfirm || function(message, callback) {
     }
 };
 
+// Helper: безопасная проверка поддержки CloudStorage с учетом версии WebApp
+function supportsCloudStorage() {
+    try {
+        if (!tg || !tg.CloudStorage) return false;
+        if (typeof tg.isVersionAtLeast === 'function') {
+            return tg.isVersionAtLeast('6.9');
+        }
+        const v = parseFloat(tg.version || '0');
+        return v >= 6.9;
+    } catch (e) {
+        return false;
+    }
+}
+
 // Проверка, запущено ли приложение в Telegram
 // Проверяем не только наличие объекта Telegram.WebApp, но и что есть платформа или initData
 const isTelegramWebApp = !!(
@@ -2797,7 +2811,7 @@ function checkUserLocation() {
     console.log('checkUserLocation вызвана');
     // Попробуем получить локацию из Telegram Web App Storage
     try {
-        if (tg.CloudStorage) {
+        if (supportsCloudStorage()) {
             console.log('Используем Telegram Cloud Storage');
             tg.CloudStorage.getItem('userLocation', function(err, value) {
                 console.log('CloudStorage результат:', {err, value});
@@ -3476,7 +3490,7 @@ function saveUserLocation(country, region, city) {
     };
     
     try {
-        if (tg.CloudStorage) {
+        if (supportsCloudStorage()) {
             tg.CloudStorage.setItem('userLocation', JSON.stringify(userLocation), function(err) {
                 if (!err) {
                     console.log('Локация сохранена в Telegram Cloud Storage');
@@ -3520,7 +3534,7 @@ function showManualLocationSetup() {
     // Показываем кнопку "Назад" если локация уже была установлена
     const locationBackBtn = document.getElementById('locationBackBtn');
     if (locationBackBtn) {
-        const hasLocation = localStorage.getItem('userLocation') || (tg.CloudStorage && userLocation);
+        const hasLocation = localStorage.getItem('userLocation') || (supportsCloudStorage() && userLocation);
         locationBackBtn.style.display = hasLocation ? 'block' : 'none';
     }
 }
