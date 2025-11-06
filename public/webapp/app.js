@@ -430,6 +430,9 @@ const totalSteps = 7; // Убрали шаг с никнеймом - тепер�
 // Функция инициализации, которая вызывается когда DOM готов
 function initializeApp() {
     console.log('🚀 Начало инициализации приложения');
+    console.log('🚀 [INIT] URL:', window.location.href);
+    console.log('🚀 [INIT] URL params:', new URLSearchParams(window.location.search).toString());
+    console.log('🚀 [INIT] isTelegramWebApp:', isTelegramWebApp);
     
     try {
         initializeTelegramWebApp();
@@ -594,6 +597,16 @@ if (document.readyState === 'loading') {
 }
 
 function initializeTelegramWebApp() {
+    console.log('🚀 [INIT] initializeTelegramWebApp started');
+    console.log('🚀 [INIT] Telegram WebApp data:', {
+        platform: tg?.platform,
+        version: tg?.version,
+        initData: !!tg?.initData,
+        initDataUnsafe: tg?.initDataUnsafe,
+        start_param: tg?.initDataUnsafe?.start_param,
+        user: tg?.initDataUnsafe?.user
+    });
+    
     // Настройка темы
     tg.setHeaderColor('#0a0a0f');
     tg.setBackgroundColor('#0a0a0f');
