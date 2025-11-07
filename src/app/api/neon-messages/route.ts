@@ -13,7 +13,17 @@ export async function POST(request: NextRequest) {
       case 'get-messages': {
         const { chatId } = params;
         const result = await sql`
-          SELECT m.*, 
+          SELECT 
+            m.id,
+            m.chat_id,
+            m.sender_token,
+            m.message,
+            m.sender_nickname,
+            m.photo_url,
+            m.telegram_file_id,
+            m.read,
+            m.delivered,
+            m.created_at,
             pc.user_token_1, 
             pc.user_token_2,
             pc.ad_id
