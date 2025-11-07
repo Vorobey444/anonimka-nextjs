@@ -7851,9 +7851,9 @@ async function checkBlockStatus(chatId) {
                 blockMenuText.textContent = isUserBlocked ? '✅ Разблокировать собеседника' : '🚫 Заблокировать собеседника';
             }
             
-            // Показываем предупреждение ТОЛЬКО если собеседник заблокировал МЕНЯ (не я его)
-            if (blockedByOther && !isUserBlocked) {
-                showBlockWarning(true);
+            // Показываем предупреждение если ЛЮБАЯ из сторон заблокировала
+            if (blockedByOther || isUserBlocked) {
+                showBlockWarning(true, isUserBlocked ? 'self' : 'other');
             } else {
                 showBlockWarning(false);
             }
@@ -7873,7 +7873,7 @@ async function checkBlockStatus(chatId) {
 }
 
 // Показать/скрыть предупреждение о блокировке
-function showBlockWarning(show) {
+function showBlockWarning(show, type = 'other') {
     const warning = document.getElementById('blockWarning');
     const messageInput = document.getElementById('messageInput');
     const photoInput = document.getElementById('photoInput');
@@ -7881,6 +7881,12 @@ function showBlockWarning(show) {
     const attachBtn = document.querySelector('.attach-photo-button');
     
     if (show) {
+        // Текст в зависимости от того, кто заблокировал
+        if (type === 'self') {
+            warning.textContent = '🚫 Вы заблокировали этого собеседника';
+        } else {
+            warning.textContent = '⚠️ Собеседник внес вас в черный список';
+        }
         warning.style.display = 'block';
         messageInput.disabled = true;
         messageInput.placeholder = 'Сообщения заблокированы';
