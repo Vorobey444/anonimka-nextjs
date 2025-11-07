@@ -112,14 +112,14 @@ export async function POST(request: NextRequest) {
         // Используем переданный nickname или дефолтный
         const nickname = senderNickname || 'Анонимный';
         
-        // Сохраняем сообщение с nickname и фото (используем sender_token вместо sender_id)
+        // Сохраняем сообщение с nickname и фото (используем sender_token и receiver_token)
         const result = await sql`
           INSERT INTO messages (
-            chat_id, sender_token, receiver_id, message, sender_nickname, 
+            chat_id, sender_token, message, sender_nickname, 
             photo_url, telegram_file_id, created_at
           )
           VALUES (
-            ${chatId}, ${senderId}, ${receiverToken}, ${messageText || ''}, ${nickname},
+            ${chatId}, ${senderId}, ${messageText || ''}, ${nickname},
             ${photoUrl || null}, ${telegramFileId || null}, NOW()
           )
           RETURNING *
