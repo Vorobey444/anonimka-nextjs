@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
+import { ENV } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs'; // Ensure Node.js runtime for env vars
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const botToken = ENV.TELEGRAM_BOT_TOKEN;
     
     if (!botToken) {
       return NextResponse.json(
@@ -70,24 +71,13 @@ export async function POST(request: NextRequest) {
     });
     
     // РЕШЕНИЕ: Используем служебный канал для хранения фото
-    // Создайте приватный канал в Telegram, добавьте туда бота как админа
-    // И укажите ID канала в переменной окружения TELEGRAM_STORAGE_CHANNEL
+    // ID канала берётся из ENV конфига (с fallback на hardcoded значение)
+    const storageChannel = ENV.TELEGRAM_STORAGE_CHANNEL;
     
-    // ВРЕМЕННЫЙ FIX: Hardcode пока Vercel не подхватывает env
-    const storageChannel = process.env.TELEGRAM_STORAGE_CHANNEL || '-1003288731647';
-    
-    console.log('🔍 Проверка TELEGRAM_STORAGE_CHANNEL:', {
-      exists: !!storageChannel,
-      value: storageChannel ? storageChannel.substring(0, 10) + '...' : 'undefined',
-      allEnvKeys: Object.keys(process.env).filter(k => k.includes('TELEGRAM')),
-      hardcoded: !process.env.TELEGRAM_STORAGE_CHANNEL
+    console.log('🔍 Storage channel:', {
+      value: storageChannel.substring(0, 10) + '...',
+      fromEnv: !!process.env.TELEGRAM_STORAGE_CHANNEL
     });
-    
-    // Убираем проверку - используем hardcoded значение
-    // if (!storageChannel) {
-    //   console.error('❌ TELEGRAM_STORAGE_CHANNEL не настроен!');
-    //   ...
-    // }
     
     const telegramFormData = new FormData();
     telegramFormData.append('chat_id', storageChannel); // Отправляем в канал-хранилище
