@@ -1727,6 +1727,7 @@ async function loadMyAds() {
                 ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
                 <div class="ad-header">
                     <h3>${authorIcon} ${authorGender}, ${ad.my_age || '?'} лет</h3>
+                    <div class="created-at"><span class="icon">⏰</span> <span class="label">Создано:</span> <span class="value">${formatCreatedAt(ad.created_at)}</span></div>
                 </div>
                 <div class="ad-info">
                     <div class="ad-field">
@@ -2463,6 +2464,7 @@ function displayAds(ads, city = null) {
             ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
             <div class="ad-header">
                 <h3>👤 ${nickname}</h3>
+                <div class="created-at"><span class="icon">⏰</span> <span class="label">Создано:</span> <span class="value">${formatCreatedAt(ad.created_at)}</span></div>
             </div>
             <div class="ad-info">
                 <div class="ad-field">
@@ -6620,6 +6622,16 @@ function formatChatTime(dateString) {
 function formatMessageTime(dateString) {
     const date = new Date(dateString);
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Форматирование даты создания анкеты (день.месяц.год, часы:минуты)
+function formatCreatedAt(dateString) {
+    if (!dateString) return '—';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '—';
+    const datePart = d.toLocaleDateString('ru-RU'); // уже в формате DD.MM.YYYY
+    const timePart = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    return `${datePart}, ${timePart}`;
 }
 
 // Экранирование HTML
