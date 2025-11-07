@@ -92,7 +92,7 @@ tg.showPopup = function(params, callback) {
 // Кастомные функции для confirm модального окна
 let customConfirmCallback = null;
 
-function customConfirmOk() {
+window.customConfirmOk = function customConfirmOk() {
     const modal = document.getElementById('customConfirmModal');
     modal.style.display = 'none';
     if (customConfirmCallback) {
@@ -101,7 +101,7 @@ function customConfirmOk() {
     }
 }
 
-function customConfirmCancel() {
+window.customConfirmCancel = function customConfirmCancel() {
     const modal = document.getElementById('customConfirmModal');
     modal.style.display = 'none';
     if (customConfirmCallback) {
@@ -2257,6 +2257,14 @@ async function submitAd() {
         
         // Обновляем статус Premium (лимиты изменились)
         await loadPremiumStatus();
+        
+        console.log('[CREATE AD] Анкета создана, проверяем реферальную награду...');
+        console.log('[CREATE AD] localStorage перед processReferralReward:', {
+            referrer_token: localStorage.getItem('referrer_token'),
+            referral_processed: localStorage.getItem('referral_processed'),
+            referral_reward_processed: localStorage.getItem('referral_reward_processed'),
+            user_token: localStorage.getItem('user_token')
+        });
         
         // Обрабатываем реферальную награду (если пользователь пришел по реферальной ссылке)
         try {
@@ -8033,6 +8041,10 @@ async function handleReferralLink() {
             // Сохраняем что реферал обработан
             localStorage.setItem('referral_processed', 'true');
             localStorage.setItem('referrer_token', referrerId);
+            console.log('[REFERRAL DEBUG] Сохранено в localStorage:', {
+                referral_processed: localStorage.getItem('referral_processed'),
+                referrer_token: localStorage.getItem('referrer_token')
+            });
         } else {
             console.log('ℹ️ Реферал не зарегистрирован:', data.message || data.error);
         }
