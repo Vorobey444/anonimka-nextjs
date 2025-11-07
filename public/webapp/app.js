@@ -7488,27 +7488,15 @@ function showReferralModal() {
         return;
     }
 
-    const botUsername = 'anonimka_kz_bot';
-    
-    // ВАЖНО: Предоставляем ДВА варианта ссылки
-    // 1. Для Telegram (через бота)
-    const telegramLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
-    // 2. Прямая веб-ссылка (работает всегда!)
+    // Прямая веб-ссылка (работает всегда, из любого места)
     const webLink = `https://anonimka.kz/webapp?ref=${userToken}`;
     
-    // Показываем веб-ссылку (самый надёжный вариант)
+    // Показываем только веб-ссылку (самый надёжный и универсальный вариант)
     referralLinkEl.innerHTML = `
-        <div style="margin-bottom: 8px;">
-            <span style="font-size: 11px; color: var(--neon-cyan);">💡 Рекомендуем этот вариант:</span><br>
-            <span style="font-size: 12px; word-break: break-all; color: var(--text-gray);">${webLink}</span>
-        </div>
-        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(131,56,236,0.2);">
-            <span style="font-size: 11px; color: var(--text-gray);">Для Telegram:</span><br>
-            <span style="font-size: 11px; word-break: break-all; color: var(--text-gray); opacity: 0.7;">${telegramLink}</span>
-        </div>
+        <span style="font-size: 12px; word-break: break-all; color: var(--text-gray);">${webLink}</span>
     `;
     
-    // Для копирования используем веб-ссылку (она надёжнее)
+    // Для копирования используем веб-ссылку
     window.currentReferralLink = webLink;
 }
 
