@@ -13,6 +13,16 @@ async function detectUserBlocksSchema() {
   };
 }
 
+// Helper to detect private_chats blocked_by_token support
+async function detectPrivateChatsSchema() {
+  const res = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'private_chats'`;
+  const cols = new Set(res.rows.map((r: any) => r.column_name));
+  return {
+    hasBlockedByToken: cols.has('blocked_by_token'),
+    hasBlockedBy: cols.has('blocked_by')
+  };
+}
+
 // Resolve tg_id numeric ID from token (returns null if not found)
 async function resolveTgId(token: string): Promise<number | null> {
   const res = await sql`SELECT tg_id FROM ads WHERE user_token = ${token} ORDER BY created_at DESC LIMIT 1`;
@@ -63,12 +73,39 @@ export async function POST(request: NextRequest) {
           }, { status: 500 });
         }
 
-        await sql`
-          UPDATE private_chats
-          SET blocked_by = ${blocker_token}
-          WHERE (user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
-             OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token})
-        `;
+        // Update private_chats blocked state using numeric id if available, otherwise token column
+        const chatSchema = await detectPrivateChatsSchema();
+        if (chatSchema.hasBlockedByToken || chatSchema.hasBlockedBy) {
+          if (blockerId && chatSchema.hasBlockedBy) {
+            // We have numeric id, store both (if token column exists)
+            if (chatSchema.hasBlockedByToken) {
+              await sql`
+                UPDATE private_chats
+                SET blocked_by = ${blockerId}, blocked_by_token = ${blocker_token}
+                WHERE (user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
+                   OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token})
+              `;
+            } else {
+              await sql`
+                UPDATE private_chats
+                SET blocked_by = ${blockerId}
+                WHERE (user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
+                   OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token})
+              `;
+            }
+          } else if (chatSchema.hasBlockedByToken) {
+            // Only token available – store token, leave numeric NULL (avoid bigint syntax errors)
+            await sql`
+              UPDATE private_chats
+              SET blocked_by = NULL, blocked_by_token = ${blocker_token}
+              WHERE (user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
+                 OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token})
+            `;
+          } else {
+            // Neither suitable column to store token-only block – skip silently
+            console.warn('[BLOCKS API] private_chats schema lacks blocked_by_token; apply migration 014 to support token-only blocking');
+          }
+        }
 
         return NextResponse.json({ data: result.rows[0] || { success: true }, error: null });
       }
@@ -100,13 +137,38 @@ export async function POST(request: NextRequest) {
           deletedRows.push(...delIds.rows);
         }
 
-        await sql`
-          UPDATE private_chats
-          SET blocked_by = NULL
-          WHERE blocked_by = ${blocker_token}
-            AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
-              OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
-        `;
+        // Clear blocked flags in private_chats (handle both numeric and token columns)
+        const chatSchema = await detectPrivateChatsSchema();
+        if (chatSchema.hasBlockedByToken || chatSchema.hasBlockedBy) {
+          if (chatSchema.hasBlockedByToken && chatSchema.hasBlockedBy) {
+            await sql`
+              UPDATE private_chats
+              SET blocked_by = NULL, blocked_by_token = NULL
+              WHERE (
+                (blocked_by_token = ${blocker_token})
+                OR (${blockerId} IS NOT NULL AND blocked_by = ${blockerId})
+              )
+              AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
+                OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
+            `;
+          } else if (chatSchema.hasBlockedByToken) {
+            await sql`
+              UPDATE private_chats
+              SET blocked_by_token = NULL
+              WHERE blocked_by_token = ${blocker_token}
+                AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
+                  OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
+            `;
+          } else if (chatSchema.hasBlockedBy && blockerId) {
+            await sql`
+              UPDATE private_chats
+              SET blocked_by = NULL
+              WHERE blocked_by = ${blockerId}
+                AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
+                  OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
+            `;
+          }
+        }
 
         return NextResponse.json({ data: deletedRows[0] || { success: true }, error: null });
       }

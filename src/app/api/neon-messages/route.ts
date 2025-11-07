@@ -100,13 +100,12 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        // Проверяем что чат принят и не заблокирован
-        const chatCheck = await sql`
-          SELECT * FROM private_chats 
-          WHERE id = ${chatId} 
-            AND accepted = true 
-            AND blocked_by IS NULL
-        `;
+        // Проверяем что чат принят и не заблокирован (учитываем blocked_by_token если есть)
+        const schemaCols = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'private_chats'`;
+        const hasBlockedByToken = schemaCols.rows.some((r: any) => r.column_name === 'blocked_by_token');
+        const chatCheck = hasBlockedByToken
+          ? await sql`SELECT * FROM private_chats WHERE id = ${chatId} AND accepted = true AND blocked_by IS NULL AND blocked_by_token IS NULL`
+          : await sql`SELECT * FROM private_chats WHERE id = ${chatId} AND accepted = true AND blocked_by IS NULL`;
         
         if (chatCheck.rows.length === 0) {
           return NextResponse.json({ 
@@ -333,16 +332,11 @@ export async function POST(request: NextRequest) {
         console.log('[TOTAL-UNREAD] userId:', userId);
         
         // Считаем сообщения в чатах где я участник, но не отправитель сообщения
-        const result = await sql`
-          SELECT COUNT(*) as count 
-          FROM messages m
-          JOIN private_chats pc ON m.chat_id = pc.id
-          WHERE m.sender_token != ${userId}
-            AND (pc.user_token_1 = ${userId} OR pc.user_token_2 = ${userId})
-            AND m.read = false
-            AND pc.accepted = true
-            AND pc.blocked_by IS NULL
-        `;
+        const schemaCols2 = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'private_chats'`;
+        const hasBlockedByToken2 = schemaCols2.rows.some((r: any) => r.column_name === 'blocked_by_token');
+        const result = hasBlockedByToken2
+          ? await sql`SELECT COUNT(*) as count FROM messages m JOIN private_chats pc ON m.chat_id = pc.id WHERE m.sender_token != ${userId} AND (pc.user_token_1 = ${userId} OR pc.user_token_2 = ${userId}) AND m.read = false AND pc.accepted = true AND pc.blocked_by IS NULL AND pc.blocked_by_token IS NULL`
+          : await sql`SELECT COUNT(*) as count FROM messages m JOIN private_chats pc ON m.chat_id = pc.id WHERE m.sender_token != ${userId} AND (pc.user_token_1 = ${userId} OR pc.user_token_2 = ${userId}) AND m.read = false AND pc.accepted = true AND pc.blocked_by IS NULL`;
         
         const count = parseInt(result.rows[0].count);
         console.log('[TOTAL-UNREAD] Result:', count);

@@ -11,12 +11,12 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'check-existing': {
         const { user1_token, user2_token, adId } = params;
-        const result = await sql`
-          SELECT id, accepted, blocked_by 
-          FROM private_chats 
-          WHERE user_token_1 = ${user1_token} AND user_token_2 = ${user2_token} AND ad_id = ${adId}
-          LIMIT 1
-        `;
+        // Учитываем возможный столбец blocked_by_token
+        const cols = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'private_chats'`;
+        const hasBlockedByToken = cols.rows.some((r: any) => r.column_name === 'blocked_by_token');
+        const result = hasBlockedByToken
+          ? await sql`SELECT id, accepted, blocked_by, blocked_by_token FROM private_chats WHERE user_token_1 = ${user1_token} AND user_token_2 = ${user2_token} AND ad_id = ${adId} LIMIT 1`
+          : await sql`SELECT id, accepted, blocked_by FROM private_chats WHERE user_token_1 = ${user1_token} AND user_token_2 = ${user2_token} AND ad_id = ${adId} LIMIT 1`;
         return NextResponse.json({ data: result.rows[0] || null, error: null });
       }
 
@@ -65,22 +65,42 @@ export async function POST(request: NextRequest) {
         
         console.log('[GET-ACTIVE] userId:', userId.substring(0, 10) + '...');
         
-        const result = await sql`
-          SELECT pc.*,
-            (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message,
-            (SELECT created_at FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
-            (SELECT COUNT(*) FROM messages WHERE chat_id = pc.id AND sender_token != ${userId} AND read = false) as unread_count,
-            CASE WHEN ${userId} = pc.user_token_1 THEN 'user1' ELSE 'user2' END as my_role,
-            CASE 
-              WHEN ${userId} = pc.user_token_1 THEN pc.user_token_2
-              ELSE pc.user_token_1
-            END as opponent_token
-          FROM private_chats pc
-          WHERE (user_token_1 = ${userId} OR user_token_2 = ${userId})
-            AND accepted = true
-            AND blocked_by IS NULL
-          ORDER BY pc.created_at DESC
-        `;
+        const cols2 = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'private_chats'`;
+        const hasBlockedByToken2 = cols2.rows.some((r: any) => r.column_name === 'blocked_by_token');
+        const result = hasBlockedByToken2
+          ? await sql`
+              SELECT pc.*,
+                (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message,
+                (SELECT created_at FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
+                (SELECT COUNT(*) FROM messages WHERE chat_id = pc.id AND sender_token != ${userId} AND read = false) as unread_count,
+                CASE WHEN ${userId} = pc.user_token_1 THEN 'user1' ELSE 'user2' END as my_role,
+                CASE 
+                  WHEN ${userId} = pc.user_token_1 THEN pc.user_token_2
+                  ELSE pc.user_token_1
+                END as opponent_token
+              FROM private_chats pc
+              WHERE (user_token_1 = ${userId} OR user_token_2 = ${userId})
+                AND accepted = true
+                AND pc.blocked_by IS NULL
+                AND pc.blocked_by_token IS NULL
+              ORDER BY pc.created_at DESC
+            `
+          : await sql`
+              SELECT pc.*,
+                (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message,
+                (SELECT created_at FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
+                (SELECT COUNT(*) FROM messages WHERE chat_id = pc.id AND sender_token != ${userId} AND read = false) as unread_count,
+                CASE WHEN ${userId} = pc.user_token_1 THEN 'user1' ELSE 'user2' END as my_role,
+                CASE 
+                  WHEN ${userId} = pc.user_token_1 THEN pc.user_token_2
+                  ELSE pc.user_token_1
+                END as opponent_token
+              FROM private_chats pc
+              WHERE (user_token_1 = ${userId} OR user_token_2 = ${userId})
+                AND accepted = true
+                AND blocked_by IS NULL
+              ORDER BY pc.created_at DESC
+            `;
         
         console.log('[GET-ACTIVE] Found chats:', result.rows.length);
         
@@ -136,13 +156,11 @@ export async function POST(request: NextRequest) {
 
       case 'count-requests': {
         const { userId } = params;
-        const result = await sql`
-          SELECT COUNT(*) as count 
-          FROM private_chats 
-          WHERE user_token_2 = ${userId} 
-            AND accepted = false 
-            AND blocked_by IS NULL
-        `;
+        const cols3 = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'private_chats'`;
+        const hasBlockedByToken3 = cols3.rows.some((r: any) => r.column_name === 'blocked_by_token');
+        const result = hasBlockedByToken3
+          ? await sql`SELECT COUNT(*) as count FROM private_chats WHERE user_token_2 = ${userId} AND accepted = false AND blocked_by IS NULL AND blocked_by_token IS NULL`
+          : await sql`SELECT COUNT(*) as count FROM private_chats WHERE user_token_2 = ${userId} AND accepted = false AND blocked_by IS NULL`;
         return NextResponse.json({ data: { count: parseInt(result.rows[0].count) }, error: null });
       }
 

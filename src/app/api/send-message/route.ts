@@ -30,11 +30,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Создаём запись в private_chats
-    const { rows: createdChatRows } = await sql`
-      INSERT INTO private_chats (ad_id, user_token, user_token_2, accepted, initial_message, blocked_by)
-      VALUES (${adId}, ${sender_token}, ${receiver_token}, false, ${messageText}, NULL)
-      RETURNING *;
-    `;
+    const cols = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'private_chats'`;
+    const hasBlockedByToken = cols.rows.some((r: any) => r.column_name === 'blocked_by_token');
+    const { rows: createdChatRows } = hasBlockedByToken
+      ? await sql`
+          INSERT INTO private_chats (ad_id, user_token, user_token_2, accepted, initial_message, blocked_by, blocked_by_token)
+          VALUES (${adId}, ${sender_token}, ${receiver_token}, false, ${messageText}, NULL, NULL)
+          RETURNING *;
+        `
+      : await sql`
+          INSERT INTO private_chats (ad_id, user_token, user_token_2, accepted, initial_message, blocked_by)
+          VALUES (${adId}, ${sender_token}, ${receiver_token}, false, ${messageText}, NULL)
+          RETURNING *;
+        `;
     const createdChat = createdChatRows[0];
 
     // Сохраняем сообщение

@@ -5597,8 +5597,11 @@ async function loadMyChats() {
                 
                 // Проверяем блокировку
                 let blockStatus = '';
-                if (chat.blocked_by) {
-                    const isBlockedByMe = chat.blocked_by == userId;
+                const hasBlockedBy = !!chat.blocked_by;
+                const hasBlockedByToken = !!chat.blocked_by_token;
+                if (hasBlockedBy || hasBlockedByToken) {
+                    const isBlockedByMe = (hasBlockedBy && String(chat.blocked_by) == String(userId))
+                        || (hasBlockedByToken && String(chat.blocked_by_token) === String(userId));
                     if (isBlockedByMe) {
                         blockStatus = '<span style="color: var(--neon-orange); font-size: 0.8rem;">🚫 Вы заблокировали</span>';
                     } else {

@@ -31,6 +31,7 @@ const LocalChatStorage = {
             ad_id: adId,
             accepted: false,
             blocked_by: null,
+            blocked_by_token: null,
             created_at: new Date().toISOString()
         };
         chats.push(newChat);
@@ -44,7 +45,7 @@ const LocalChatStorage = {
         return chats.filter(chat => 
             chat.user2 === userId && 
             chat.accepted === false && 
-            chat.blocked_by === null
+            (chat.blocked_by === null && (chat.blocked_by_token === null || chat.blocked_by_token === undefined))
         );
     },
 
@@ -54,7 +55,7 @@ const LocalChatStorage = {
         return chats.filter(chat => 
             (chat.user1 === userId || chat.user2 === userId) && 
             chat.accepted === true && 
-            chat.blocked_by === null
+            (chat.blocked_by === null && (chat.blocked_by_token === null || chat.blocked_by_token === undefined))
         );
     },
 
