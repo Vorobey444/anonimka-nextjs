@@ -65,6 +65,33 @@ export async function POST(request: NextRequest) {
         
         console.log('[GET-ACTIVE] userId:', userId);
         
+        // ДИАГНОСТИКА - проверяем сообщения в чате #3 ПЕРЕД основным запросом
+        const diagnosticMessages = await sql`
+          SELECT id, chat_id, sender_token, message, read, delivered, created_at
+          FROM messages
+          WHERE chat_id = 3
+          ORDER BY created_at DESC
+          LIMIT 10
+        `;
+        console.log('[GET-ACTIVE DIAGNOSTIC] All messages in chat #3:', diagnosticMessages.rows.map(m => ({
+          id: m.id,
+          sender: m.sender_token?.substring(0, 10),
+          read: m.read,
+          delivered: m.delivered,
+          msg: m.message?.substring(0, 20),
+          time: m.created_at
+        })));
+        
+        // Проверяем: какие сообщения должны считаться непрочитанными
+        const shouldBeUnread = await sql`
+          SELECT COUNT(*) as count
+          FROM messages
+          WHERE chat_id = 3
+            AND sender_token != ${userId}
+            AND read = false
+        `;
+        console.log('[GET-ACTIVE DIAGNOSTIC] Messages that should be unread for userId', userId.substring(0, 10), ':', shouldBeUnread.rows[0].count);
+        
         const result = await sql`
           SELECT pc.*,
             (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message,
