@@ -2804,10 +2804,23 @@ async function pinMyAd(adId, shouldPin) {
         console.error('Error pinning ad:', error);
         
         // Проверяем ошибку лимита
-        if (error.message && error.message.includes('лимит')) {
+        if (error.message && error.message.includes('Закрепление доступно через')) {
+            // Извлекаем время из сообщения (например "через 71ч")
+            const match = error.message.match(/через (\d+)ч/);
+            const hours = match ? match[1] : '72';
+            
+            const message = `⏰ Следующее закрепление доступно через ${hours} часов\n\n💎 С PRO подпиской:\n• 3 закрепления в день\n• По 1 часу каждое\n• Значок PRO в анкетах\n\nПодключить PRO?`;
+            
+            tg.showConfirm(
+                message,
+                (confirmed) => {
+                    if (confirmed) showPremiumModal();
+                }
+            );
+        } else if (error.message && error.message.includes('лимит')) {
             if (error.message.includes('PRO')) {
                 tg.showConfirm(
-                    error.message,
+                    error.message + '\n\nПодключить PRO сейчас?',
                     (confirmed) => {
                         if (confirmed) showPremiumModal();
                     }
