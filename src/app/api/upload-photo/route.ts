@@ -61,20 +61,36 @@ export async function POST(request: NextRequest) {
     // Конвертируем File в Buffer
     const buffer = Buffer.from(await photo.arrayBuffer());
     
-    // Создаём FormData для Telegram API
-    const telegramFormData = new FormData();
-    telegramFormData.append('chat_id', telegramUserId);
-    telegramFormData.append('photo', new Blob([buffer]), 'photo.jpg');
-    telegramFormData.append('caption', '📸 Фото через Anonimka');
-    
-    console.log('📤 Загрузка фото в Telegram:', {
+    console.log('📤 Загрузка фото через Telegram Bot API:', {
       userId: userId.substring(0, 10) + '...',
       tg_id: telegramUserId,
       photoSize: buffer.length,
       photoType: photo.type
     });
     
-    // Отправляем фото через Telegram Bot API
+    // РЕШЕНИЕ: Используем служебный канал для хранения фото
+    // Создайте приватный канал в Telegram, добавьте туда бота как админа
+    // И укажите ID канала в переменной окружения TELEGRAM_STORAGE_CHANNEL
+    const storageChannel = process.env.TELEGRAM_STORAGE_CHANNEL;
+    
+    if (!storageChannel) {
+      console.error('❌ TELEGRAM_STORAGE_CHANNEL не настроен!');
+      console.log('💡 Создайте приватный канал, добавьте бота @anonimka_kz_bot как админа');
+      console.log('💡 Отправьте любое сообщение в канал и перешлите боту @userinfobot чтобы получить chat_id');
+      console.log('💡 Добавьте TELEGRAM_STORAGE_CHANNEL=-100xxxxxxxxx в Vercel Environment Variables');
+      
+      return NextResponse.json(
+        { error: { message: 'Хранилище фото не настроено. Обратитесь к администратору.' } },
+        { status: 503 }
+      );
+    }
+    
+    const telegramFormData = new FormData();
+    telegramFormData.append('chat_id', storageChannel); // Отправляем в канал-хранилище
+    telegramFormData.append('photo', new Blob([buffer], { type: photo.type }), 'photo.jpg');
+    telegramFormData.append('caption', `📸 User: ${telegramUserId}`);
+    
+    // Отправляем фото в канал-хранилище
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
       method: 'POST',
       body: telegramFormData
@@ -85,12 +101,12 @@ export async function POST(request: NextRequest) {
     if (!result.ok) {
       console.error('❌ Telegram API error:', result);
       return NextResponse.json(
-        { error: { message: result.description || 'Failed to upload photo to Telegram' } },
+        { error: { message: result.description || 'Failed to upload photo' } },
         { status: 500 }
       );
     }
     
-    console.log('✅ Фото загружено в Telegram:', result);
+    console.log('✅ Фото загружено в канал-хранилище');
     
     // Получаем file_id и URL фото
     const photoData = result.result.photo[result.result.photo.length - 1]; // Берём самое большое фото
