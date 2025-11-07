@@ -5654,7 +5654,13 @@ async function rejectChatRequest(chatId) {
 // Обновить счетчик новых запросов и непрочитанных сообщений на кнопке "Мои чаты"
 async function updateChatBadge() {
     try {
-        const userId = getCurrentUserId();
+        // Получаем user_token (основной идентификатор)
+        let userId = localStorage.getItem('user_token');
+        
+        // Fallback на Telegram ID если токена нет
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            userId = getCurrentUserId();
+        }
         
         if (!userId || userId.startsWith('web_')) {
             return; // Не показываем счетчик для неавторизованных
