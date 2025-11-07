@@ -7149,6 +7149,16 @@ function updatePremiumUI() {
     // Убираем активные классы
     freeBtn.classList.remove('active', 'free');
     proBtn.classList.remove('active', 'pro');
+    // Блокируем явное переключение тарифов в верхнем тоггле
+    freeBtn.disabled = true; // FREE всегда по умолчанию без PRO
+    proBtn.disabled = !userPremiumStatus.isPremium; // PRO недоступен, если не PRO
+    if (!userPremiumStatus.isPremium) {
+        proBtn.classList.add('locked');
+        proBtn.title = 'PRO доступен через приглашение друга';
+    } else {
+        proBtn.classList.remove('locked');
+        proBtn.title = '';
+    }
     
     if (userPremiumStatus.isPremium) {
         // PRO активен
@@ -7268,42 +7278,53 @@ function closePremiumModal() {
 function updatePremiumModalButtons() {
     const freeBtn = document.querySelector('.pricing-card:not(.featured) .pricing-btn');
     const proBtn = document.getElementById('activatePremiumBtn');
+    const referralInfo = document.getElementById('referralInfo');
     
     if (userPremiumStatus.isPremium) {
         // Пользователь PRO
         if (freeBtn) {
-            freeBtn.textContent = 'Понизить до FREE';
-            freeBtn.disabled = false;
-            freeBtn.onclick = () => selectPlan('free');
+            freeBtn.textContent = '✅ FREE недоступен';
+            freeBtn.disabled = true;
+            freeBtn.classList.add('disabled');
         }
         if (proBtn) {
-            proBtn.textContent = '✅ Активен';
+            proBtn.textContent = '✅ PRO активен';
             proBtn.disabled = true;
+            proBtn.classList.add('active');
         }
+        if (referralInfo) referralInfo.style.display = 'none';
     } else {
         // Пользователь FREE
         if (freeBtn) {
-            freeBtn.textContent = 'Текущий план';
+            freeBtn.textContent = 'Текущий план (FREE)';
             freeBtn.disabled = true;
+            freeBtn.classList.add('active');
         }
         if (proBtn) {
-            proBtn.textContent = 'Оформить PRO';
-            proBtn.disabled = false;
+            proBtn.textContent = '🔒 PRO через реферал';
+            proBtn.disabled = true;
+            proBtn.classList.add('locked');
+            proBtn.title = 'Пригласи друга: он создаёт анкету → ты получаешь PRO';
         }
+        if (referralInfo) referralInfo.style.display = 'block';
     }
 }
 
 // Выбор тарифа FREE (для теста - переключение обратно)
 async function selectPlan(plan) {
     if (plan === 'free' && userPremiumStatus.isPremium) {
-        // Отключаем Premium (только для теста)
-        await activatePremium(); // Переключает статус
+        tg.showAlert('Переход на FREE недоступен: FREE включается автоматически когда заканчивается PRO');
     }
 }
 
 // Активировать Premium (для теста - переключение)
 async function activatePremium() {
     try {
+        // Блокируем прямую активацию: только реферал
+        if (!userPremiumStatus.isPremium) {
+            tg.showAlert('🔒 PRO пока доступен только через приглашение друга.\n\n1) Скопируйте реферальную ссылку\n2) Друг создаёт анкету\n3) Вам автоматически выдаётся PRO на 30 дней');
+            return;
+        }
         const userId = getCurrentUserId();
         if (!userId || userId.startsWith('web_')) {
             tg.showAlert('Необходима авторизация через Telegram');
