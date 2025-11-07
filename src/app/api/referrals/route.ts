@@ -40,8 +40,13 @@ export async function POST(request: NextRequest) {
         // Если реферер прислал токен, попробуем найти его tg_id для совместимости (не обязательно)
         let refTgId: number | null = null;
         if (refIsToken) {
-            const r = await sql`SELECT tg_id FROM ads WHERE user_token = ${referrer_token} ORDER BY created_at DESC LIMIT 1`;
-            refTgId = r.rows[0]?.tg_id ?? null;
+            try {
+                const r = await sql`SELECT tg_id FROM ads WHERE user_token = ${referrer_token} ORDER BY created_at DESC LIMIT 1`;
+                refTgId = r.rows[0]?.tg_id ?? null;
+                console.log('[REFERRAL] refTgId найден:', refTgId);
+            } catch (err) {
+                console.error('[REFERRAL] Ошибка поиска refTgId:', err);
+            }
         } else if (isDigits(referrer_token)) {
             refTgId = Number(referrer_token);
         }
@@ -79,10 +84,12 @@ export async function POST(request: NextRequest) {
             message: 'Реферал зарегистрирован' 
         });
 
-    } catch (error) {
-        console.error('Ошибка регистрации реферала:', error);
+    } catch (error: any) {
+        console.error('[REFERRAL] ❌ Критическая ошибка регистрации:', error);
+        console.error('[REFERRAL] Stack:', error?.stack);
+        console.error('[REFERRAL] Message:', error?.message);
         return NextResponse.json(
-            { error: 'Ошибка сервера' },
+            { error: error?.message || 'Ошибка сервера' },
             { status: 500 }
         );
     }
