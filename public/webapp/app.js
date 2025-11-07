@@ -5852,7 +5852,13 @@ async function loadChatMessages(chatId, silent = false) {
             return;
         }
 
-        const userId = getCurrentUserId();
+        // Получаем user_token для сравнения (основной идентификатор)
+        let myUserId = localStorage.getItem('user_token');
+        
+        // Fallback на Telegram ID если токена нет
+        if (!myUserId || myUserId === 'null' || myUserId === 'undefined') {
+            myUserId = getCurrentUserId();
+        }
         
         // Проверяем, нужно ли обновлять (есть ли новые сообщения)
         const currentMessagesCount = messagesContainer.querySelectorAll('.message').length;
@@ -5867,7 +5873,8 @@ async function loadChatMessages(chatId, silent = false) {
             true; // При первой загрузке всегда скроллим вниз
         
         messagesContainer.innerHTML = messages.map(msg => {
-            const isMine = msg.sender_id == userId;
+            // Сравниваем sender_token с моим токеном/ID
+            const isMine = msg.sender_token == myUserId;
             const messageClass = isMine ? 'sent' : 'received';
             const time = formatMessageTime(msg.created_at);
             
