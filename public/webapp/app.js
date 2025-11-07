@@ -2302,9 +2302,11 @@ async function loadAds(filters = {}) {
         // Показываем индикатор загрузки
         const adsList = document.getElementById('adsList');
         if (adsList) {
+            const compact = window.localStorage.getItem('ads_compact') === '1';
+            adsList.classList.toggle('compact', compact);
             adsList.innerHTML = `
                 <div class="loading-spinner"></div>
-                <p>Загружаем анкеты...</p>
+                <p>Загружаем анкеты${compact ? ' (компактно)' : ''}...</p>
             `;
         }
 
@@ -2331,12 +2333,14 @@ async function loadAds(filters = {}) {
         console.error('❌ Ошибка загрузки анкет:', error);
         const adsList = document.getElementById('adsList');
         if (adsList) {
+            const compact = window.localStorage.getItem('ads_compact') === '1';
+            adsList.classList.toggle('compact', compact);
             adsList.innerHTML = `
                 <div class="no-ads">
                     <div class="neon-icon">⚠️</div>
                     <h3>Ошибка загрузки</h3>
                     <p>${error.message}</p>
-                    <button class="neon-button" onclick="loadAds()">🔄 Попробовать снова</button>
+                    <button class="neon-button" onclick="loadAds()">🔄 Повторить</button>
                 </div>
             `;
         }
@@ -2451,6 +2455,13 @@ function displayAds(ads, city = null) {
         return new Date(b.created_at) - new Date(a.created_at);
     });
 
+    const compact = window.localStorage.getItem('ads_compact') === '1';
+    if (compact) {
+        adsList.classList.add('compact');
+    } else {
+        adsList.classList.remove('compact');
+    }
+
     adsList.innerHTML = filteredAds.map((ad, index) => {
         // Supabase возвращает поля с подчёркиваниями (age_from, my_age и т.д.)
         const myAge = ad.my_age || ad.myAge || '?';
@@ -2460,13 +2471,21 @@ function displayAds(ads, city = null) {
         const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > now);
         
         return `
-        <div class="ad-card" onclick="showAdDetails(${index})">
+        <div class="ad-card ${compact ? 'compact' : ''}" onclick="showAdDetails(${index})">
             ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
             <div class="ad-header">
                 <h3>👤 ${nickname}</h3>
                 <div class="created-at"><span class="icon">⏰</span> <span class="label">Создано:</span> <span class="value">${formatCreatedAt(ad.created_at)}</span></div>
             </div>
             <div class="ad-info">
+                ${compact ? `
+                <div class="ad-field"><span class="icon">🏙</span>${ad.city}</div>
+                <div class="ad-field"><span class="icon">👤</span>${formatGender(ad.gender)}</div>
+                <div class="ad-field"><span class="icon">🔍</span>${formatTarget(ad.target)}</div>
+                <div class="ad-field"><span class="icon">🎯</span>${formatGoals(ad.goal)}</div>
+                <div class="ad-field"><span class="icon">🎂</span>${myAge}л</div>
+                <div class="ad-field"><span class="icon">📅</span>${ageFrom}-${ageTo}</div>
+                ` : `
                 <div class="ad-field">
                     <span class="icon">🏙</span>
                     <span class="label">Город:</span>
@@ -2497,10 +2516,9 @@ function displayAds(ads, city = null) {
                     <span class="label">Возраст партнера:</span>
                     <span class="value">${ageFrom} - ${ageTo} лет</span>
                 </div>
+                `}
             </div>
-            <div class="ad-text">
-                "${ad.text.substring(0, 100)}${ad.text.length > 100 ? '...' : ''}"
-            </div>
+            <div class="ad-text">"${compact ? ad.text.substring(0, 70) : ad.text.substring(0, 100)}${ad.text.length > (compact ? 70 : 100) ? '...' : ''}"</div>
         </div>
     `;
     }).join('');
@@ -2593,6 +2611,19 @@ function showAdDetails(index) {
     }
     
     showScreen('adDetails');
+}
+
+// Переключение компактного режима списка анкет
+function toggleAdsCompact() {
+    const current = window.localStorage.getItem('ads_compact') === '1';
+    window.localStorage.setItem('ads_compact', current ? '0' : '1');
+    // Перезагружаем список с текущими фильтрами (используя уже отфильтрованные данные из памяти если есть)
+    if (typeof loadAndRenderAds === 'function') {
+        loadAndRenderAds();
+    } else {
+        // Фоллбек: пробуем перезагрузить по городу активному
+        refreshAds();
+    }
 }
 
 // Написать автору анкеты
