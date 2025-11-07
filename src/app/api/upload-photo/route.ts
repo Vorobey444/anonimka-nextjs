@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs'; // Ensure Node.js runtime for env vars
 
 export async function POST(request: NextRequest) {
   try {
