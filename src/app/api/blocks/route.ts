@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
         await sql`
           UPDATE private_chats
           SET blocked_by = ${blocker_token}
-          WHERE (user1 = ${blocker_token} AND user2 = ${blocked_token})
-             OR (user1 = ${blocked_token} AND user2 = ${blocker_token})
+          WHERE (user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
+             OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token})
         `;
         console.log('[BLOCKS API] Блокировка добавлена');
         return NextResponse.json({ 
@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
           UPDATE private_chats
           SET blocked_by = NULL
           WHERE blocked_by = ${blocker_token}
-            AND ((user1 = ${blocker_token} AND user2 = ${blocked_token})
-                OR (user1 = ${blocked_token} AND user2 = ${blocker_token}))
+            AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
+                OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
         `;
         console.log('[BLOCKS API] Блокировка удалена');
         return NextResponse.json({ 
