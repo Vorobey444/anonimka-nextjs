@@ -6343,6 +6343,15 @@ async function sendMessage() {
                 }
             })
         });
+        
+        // Проверяем что ответ валидный JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('❌ Не JSON ответ:', text.substring(0, 200));
+            throw new Error('Сервер вернул ошибку. Попробуйте ещё раз.');
+        }
+        
         const result = await response.json();
 
         if (result.error) {
