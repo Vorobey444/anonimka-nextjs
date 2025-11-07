@@ -95,9 +95,10 @@ export async function POST(request: NextRequest) {
             }
           } else if (chatSchema.hasBlockedByToken) {
             // Only token available – store token, leave numeric NULL (avoid bigint syntax errors)
+            // Явно приводим NULL к типу bigint
             await sql`
               UPDATE private_chats
-              SET blocked_by = NULL, blocked_by_token = ${blocker_token}
+              SET blocked_by = NULL::bigint, blocked_by_token = ${blocker_token}
               WHERE (user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
                  OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token})
             `;
@@ -143,7 +144,7 @@ export async function POST(request: NextRequest) {
           if (blockerId) {
             await sql`
               UPDATE private_chats
-              SET blocked_by = NULL, blocked_by_token = NULL
+              SET blocked_by = NULL::bigint, blocked_by_token = NULL::text
               WHERE ((blocked_by = ${blockerId}) OR (blocked_by_token = ${blocker_token}))
                 AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
                   OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
           } else {
             await sql`
               UPDATE private_chats
-              SET blocked_by = NULL, blocked_by_token = NULL
+              SET blocked_by = NULL::bigint, blocked_by_token = NULL::text
               WHERE blocked_by_token = ${blocker_token}
                 AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
                   OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
@@ -160,7 +161,7 @@ export async function POST(request: NextRequest) {
         } else if (chatSchema.hasBlockedByToken) {
           await sql`
             UPDATE private_chats
-            SET blocked_by_token = NULL
+            SET blocked_by_token = NULL::text
             WHERE blocked_by_token = ${blocker_token}
               AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
                 OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
@@ -168,7 +169,7 @@ export async function POST(request: NextRequest) {
         } else if (chatSchema.hasBlockedBy && blockerId) {
           await sql`
             UPDATE private_chats
-            SET blocked_by = NULL
+            SET blocked_by = NULL::bigint
             WHERE blocked_by = ${blockerId}
               AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
                 OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
