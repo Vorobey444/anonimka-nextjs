@@ -6020,17 +6020,21 @@ function closePhotoSourceMenu() {
 // Открыть камеру
 function openCamera() {
     closePhotoSourceMenu();
-    const input = document.getElementById('photoInput');
-    input.setAttribute('capture', 'environment'); // Задняя камера
-    input.click();
+    const cameraInput = document.getElementById('cameraInput');
+    // Очищаем предыдущее значение
+    cameraInput.value = '';
+    // Принудительно используем capture для камеры
+    cameraInput.click();
 }
 
 // Открыть галерею
 function openGallery() {
     closePhotoSourceMenu();
-    const input = document.getElementById('photoInput');
-    input.removeAttribute('capture'); // Убираем capture для галереи
-    input.click();
+    const galleryInput = document.getElementById('photoInput');
+    // Очищаем предыдущее значение
+    galleryInput.value = '';
+    // Используем обычный input без capture
+    galleryInput.click();
 }
 
 function handlePhotoSelect(event) {
