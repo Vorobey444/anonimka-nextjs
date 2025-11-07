@@ -5479,8 +5479,24 @@ async function loadMyChats() {
             return;
         }
 
-        const acceptedChats = acceptedResult.data || [];
-        const pendingRequests = pendingResult.data || [];
+        let acceptedChats = acceptedResult.data || [];
+        let pendingRequests = pendingResult.data || [];
+
+        // Сортировка: самые свежие сверху
+        const parseTs = (ts) => {
+            if (!ts) return 0;
+            try { return new Date(ts).getTime() || 0; } catch { return 0; }
+        };
+        acceptedChats = acceptedChats.sort((a, b) => {
+            const tb = parseTs(b.last_message_time || b.updated_at || b.created_at);
+            const ta = parseTs(a.last_message_time || a.updated_at || a.created_at);
+            return tb - ta;
+        });
+        pendingRequests = pendingRequests.sort((a, b) => {
+            const tb = parseTs(b.created_at || b.last_message_time || b.updated_at);
+            const ta = parseTs(a.created_at || a.last_message_time || a.updated_at);
+            return tb - ta;
+        });
 
         console.log('📊 Принятые чаты:', acceptedChats.length);
         console.log('📊 Входящие запросы:', pendingRequests.length);
