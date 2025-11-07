@@ -1716,7 +1716,7 @@ async function loadMyAds() {
             const targetLower = ad.target?.toLowerCase();
             if (targetLower === 'male' || targetLower === 'мужчину') {
                 targetIcon = '♂️';
-            } else if (targetLower === 'female' || targetLower === 'женщину') {
+            } else if (targetLower === 'female' || targetLower === 'женщину' || targetLower === 'девушку') {
                 targetIcon = '♀️';
             } else if (targetLower === 'couple' || targetLower === 'пару') {
                 targetIcon = '♂️♀️'; // Два смайла для пары
@@ -2395,7 +2395,7 @@ function displayAds(ads, city = null) {
             if (adsFilters.gender === 'male' && genderLower !== 'male' && genderLower !== 'мужчина') {
                 return false;
             }
-            if (adsFilters.gender === 'female' && genderLower !== 'female' && genderLower !== 'женщина') {
+            if (adsFilters.gender === 'female' && genderLower !== 'female' && genderLower !== 'женщина' && genderLower !== 'девушка') {
                 return false;
             }
         }
@@ -2406,7 +2406,7 @@ function displayAds(ads, city = null) {
             if (adsFilters.target === 'male' && targetLower !== 'male' && targetLower !== 'мужчину') {
                 return false;
             }
-            if (adsFilters.target === 'female' && targetLower !== 'female' && targetLower !== 'женщину') {
+            if (adsFilters.target === 'female' && targetLower !== 'female' && targetLower !== 'женщину' && targetLower !== 'девушку') {
                 return false;
             }
             if (adsFilters.target === 'couple' && targetLower !== 'couple' && targetLower !== 'пару') {
@@ -6633,9 +6633,9 @@ function escapeHtml(text) {
 function formatGender(gender) {
     const genderMap = {
         'male': 'Мужчина',
-        'female': 'Женщина',
+        'female': 'Девушка',
         'мужчина': 'Мужчина',
-        'женщина': 'Женщина'
+        'девушка': 'Девушка'
     };
     return genderMap[gender?.toLowerCase()] || gender || 'Не указан';
 }
@@ -6644,10 +6644,10 @@ function formatGender(gender) {
 function formatTarget(target) {
     const targetMap = {
         'male': 'Мужчину',
-        'female': 'Женщину',
+        'female': 'Девушку',
         'any': 'Не важно',
         'мужчину': 'Мужчину',
-        'женщину': 'Женщину'
+        'девушку': 'Девушку'
     };
     return targetMap[target?.toLowerCase()] || target || 'Не важно';
 }
