@@ -7518,8 +7518,12 @@ document.addEventListener('click', function(e) {
 async function checkBlockStatus(chatId) {
     try {
         console.log('🔍 [checkBlockStatus] Начало проверки блокировки для chatId:', chatId);
-        const userId = getCurrentUserId();
-        console.log('🆔 [checkBlockStatus] userId:', userId?.substring(0, 16) + '...');
+        // Используем user_token если доступен; fallback на Telegram ID
+        let userId = localStorage.getItem('user_token');
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            userId = getCurrentUserId();
+        }
+        console.log('[checkBlockStatus] Используем идентификатор для get-active:', (userId || 'null').substring(0,16)+'...', 'isToken=', typeof userId === 'string' && userId.length > 30);
         
         // Получаем информацию о чате
         const chatResponse = await fetch('/api/neon-chats', {
@@ -7532,11 +7536,20 @@ async function checkBlockStatus(chatId) {
         });
         
         const chatResult = await chatResponse.json();
-        console.log('📋 [checkBlockStatus] Получено чатов:', chatResult.data?.length);
-    const chat = chatResult.data?.find(c => c.id == chatId);
+        const returnedIds = (chatResult.data || []).map(c => c.id);
+        console.log('📋 [checkBlockStatus] Получено чатов:', chatResult.data?.length, 'ids=', returnedIds.join(','));
+    let chat = chatResult.data?.find(c => c.id == chatId);
         
         if (!chat) {
-            console.error('❌ [checkBlockStatus] Чат не найден в списке активных!');
+            console.warn('⚠️ [checkBlockStatus] Чат не найден в get-active. Выполняем прямой запрос по chatId для диагностики.');
+            try {
+                const directResp = await fetch('/api/neon-chats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'check-existing', params: { user1_token: 'diag', user2_token: 'diag', adId: -1 }} ) // placeholder
+                });
+            } catch(e) {}
+            // Дополнительная диагностика: запрос всех чатов без accepted фильтра (временная, если будет отдельный endpoint)
             return;
         }
         

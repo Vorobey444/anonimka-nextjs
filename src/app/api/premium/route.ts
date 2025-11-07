@@ -168,8 +168,26 @@ export async function POST(request: NextRequest) {
         }
         
         const userData = user.rows[0];
-        const limitsData = limits.rows[0];
+        let limitsData = limits.rows[0];
         const isPremium = userData.is_premium || false;
+        
+        // Проверяем и сбрасываем счетчик объявлений если новый день
+        const lastResetDate = limitsData.ads_last_reset ? new Date(limitsData.ads_last_reset).toISOString().split('T')[0] : null;
+        const currentDate = new Date().toISOString().split('T')[0];
+        
+        if (lastResetDate !== currentDate) {
+          console.log('[PREMIUM API] Сброс счетчика объявлений (новый день):', { userId: numericUserId, lastResetDate, currentDate });
+          await sql`
+            UPDATE user_limits
+            SET ads_created_today = 0,
+                ads_last_reset = CURRENT_DATE,
+                updated_at = NOW()
+            WHERE user_id = ${numericUserId}
+          `;
+          // Перезагружаем актуальные данные
+          limits = await sql`SELECT * FROM user_limits WHERE user_id = ${numericUserId}`;
+          limitsData = limits.rows[0];
+        }
         
         return NextResponse.json({
           data: {
