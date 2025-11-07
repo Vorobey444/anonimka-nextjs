@@ -5355,11 +5355,32 @@ ${emailData.message}
 let currentChatId = null;
 let currentAdId = null;
 let chatPollingInterval = null;
+let myChatsPollingInterval = null;
 
 // Показать список чатов
 async function showMyChats() {
     showScreen('myChats');
     await loadMyChats();
+    
+    // Запускаем автообновление списка чатов каждые 5 секунд
+    if (myChatsPollingInterval) {
+        clearInterval(myChatsPollingInterval);
+    }
+    
+    myChatsPollingInterval = setInterval(async () => {
+        // Проверяем что пользователь все еще на экране "Мои чаты"
+        const myChatsScreen = document.getElementById('myChats');
+        if (myChatsScreen && myChatsScreen.classList.contains('active')) {
+            console.log('🔄 Автообновление списка чатов...');
+            await loadMyChats();
+            await updateChatBadge(); // Обновляем счетчик на кнопке
+        } else {
+            // Если ушел с экрана - останавливаем обновление
+            console.log('⏸️ Остановка автообновления (ушли с экрана чатов)');
+            clearInterval(myChatsPollingInterval);
+            myChatsPollingInterval = null;
+        }
+    }, 5000); // Каждые 5 секунд
 }
 
 // Переключение вкладок
