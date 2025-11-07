@@ -2694,8 +2694,8 @@ async function contactAuthor(adIndex) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        receiverTgId: ad.tg_id,
-                        senderTgId: currentUserId,
+                        receiverToken: authorToken, // Токен автора анкеты
+                        receiverTgId: ad.tg_id, // Fallback на tg_id если есть
                         adId: ad.id,
                         messageText: message.trim()
                     })
