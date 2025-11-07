@@ -72,25 +72,22 @@ export async function POST(request: NextRequest) {
     // РЕШЕНИЕ: Используем служебный канал для хранения фото
     // Создайте приватный канал в Telegram, добавьте туда бота как админа
     // И укажите ID канала в переменной окружения TELEGRAM_STORAGE_CHANNEL
-    const storageChannel = process.env.TELEGRAM_STORAGE_CHANNEL;
+    
+    // ВРЕМЕННЫЙ FIX: Hardcode пока Vercel не подхватывает env
+    const storageChannel = process.env.TELEGRAM_STORAGE_CHANNEL || '-1003288731647';
     
     console.log('🔍 Проверка TELEGRAM_STORAGE_CHANNEL:', {
       exists: !!storageChannel,
       value: storageChannel ? storageChannel.substring(0, 10) + '...' : 'undefined',
-      allEnvKeys: Object.keys(process.env).filter(k => k.includes('TELEGRAM'))
+      allEnvKeys: Object.keys(process.env).filter(k => k.includes('TELEGRAM')),
+      hardcoded: !process.env.TELEGRAM_STORAGE_CHANNEL
     });
     
-    if (!storageChannel) {
-      console.error('❌ TELEGRAM_STORAGE_CHANNEL не настроен!');
-      console.log('💡 Создайте приватный канал, добавьте бота @anonimka_kz_bot как админа');
-      console.log('💡 Отправьте любое сообщение в канал и перешлите боту @userinfobot чтобы получить chat_id');
-      console.log('💡 Добавьте TELEGRAM_STORAGE_CHANNEL=-100xxxxxxxxx в Vercel Environment Variables');
-      
-      return NextResponse.json(
-        { error: { message: 'Хранилище фото не настроено. Обратитесь к администратору.' } },
-        { status: 503 }
-      );
-    }
+    // Убираем проверку - используем hardcoded значение
+    // if (!storageChannel) {
+    //   console.error('❌ TELEGRAM_STORAGE_CHANNEL не настроен!');
+    //   ...
+    // }
     
     const telegramFormData = new FormData();
     telegramFormData.append('chat_id', storageChannel); // Отправляем в канал-хранилище
