@@ -1585,7 +1585,7 @@ function showMainMenu() {
     showScreen('mainMenu');
     resetForm();
     updateChatBadge(); // Обновляем счетчик запросов
-    updateAdLimitBadge(); // Обновляем лимиты анкет
+    loadPremiumStatus(); // Принудительно обновляем статус и лимиты с сервера
 }
 
 function showCreateAd() {
@@ -7060,7 +7060,12 @@ async function loadPremiumStatus() {
         const antiCache = Date.now();
         const response = await fetch(`/api/premium?ts=${antiCache}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            },
             body: JSON.stringify({
                 action: 'get-user-status',
                 params: { userId }
