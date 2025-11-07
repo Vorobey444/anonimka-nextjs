@@ -5464,6 +5464,7 @@ async function loadMyChats() {
         console.log('📊 Принятые чаты:', acceptedChats.length);
         console.log('📊 Входящие запросы:', pendingRequests.length);
         console.log('📋 Детали запросов:', pendingRequests);
+        console.log('📋 Детали принятых чатов:', acceptedChats);
 
         // Обновляем счетчики
         document.getElementById('activeChatsCount').textContent = acceptedChats.length;
@@ -5483,8 +5484,10 @@ async function loadMyChats() {
                 const lastMessageTime = chat.last_message_time ? formatChatTime(chat.last_message_time) : (chat.updated_at ? formatChatTime(chat.updated_at) : '');
                 const lastMessage = chat.last_message || 'Нажмите для открытия чата';
                 const lastMessagePreview = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
-                const unreadCount = chat.unread_count || 0;
+                const unreadCount = parseInt(chat.unread_count) || 0;
                 const unreadBadge = unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : '';
+                
+                console.log(`📧 Чат #${chat.id}: unread_count = ${chat.unread_count}, parsed = ${unreadCount}, badge = "${unreadBadge}"`);
                 
                 // Проверяем блокировку
                 let blockStatus = '';
