@@ -514,16 +514,34 @@ export async function PATCH(req: NextRequest) {
     if (is_pinned) {
       const userId = Number(tgId);
       
-      // Получаем статус Premium и лимиты
+      // Получаем статус Premium из обеих таблиц
       const userResult = await sql`
         SELECT is_premium FROM users WHERE id = ${userId}
       `;
+      
+      // ПРИОРИТЕТ: проверяем premium_tokens по user_token
+      const adTokenResult = await sql`
+        SELECT user_token FROM ads WHERE id = ${id} LIMIT 1
+      `;
+      const userToken = adTokenResult.rows[0]?.user_token;
+      
+      let isPremium = userResult.rows[0]?.is_premium || false;
+      
+      // Если есть токен, проверяем premium_tokens (приоритет над users.is_premium)
+      if (userToken) {
+        const premiumTokenResult = await sql`
+          SELECT is_premium FROM premium_tokens WHERE user_token = ${userToken} LIMIT 1
+        `;
+        if (premiumTokenResult.rows.length > 0) {
+          isPremium = premiumTokenResult.rows[0].is_premium || false;
+          console.log('[ADS API] PRO проверен через premium_tokens:', isPremium);
+        }
+      }
       
       const limitsResult = await sql`
         SELECT pin_uses_today, pin_last_reset, last_pin_time FROM user_limits WHERE user_id = ${userId}
       `;
       
-      const isPremium = userResult.rows[0]?.is_premium || false;
       const pinUsesToday = limitsResult.rows[0]?.pin_uses_today || 0;
       const lastPinTime = limitsResult.rows[0]?.last_pin_time;
       
