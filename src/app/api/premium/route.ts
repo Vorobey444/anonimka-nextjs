@@ -42,14 +42,19 @@ export async function POST(request: NextRequest) {
         
         // ПРИОРИТЕТ 1: Проверяем premium_tokens для пользователей с токеном
         if (isToken) {
+          console.log('[PREMIUM API] Проверка premium_tokens для токена:', userId.substring(0, 16) + '...');
           const prem = await sql`
             SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${userId} LIMIT 1
           `;
+          console.log('[PREMIUM API] Результат premium_tokens:', prem.rows);
           const isPremiumToken = prem.rows[0]?.is_premium || false;
           const premiumUntilToken = prem.rows[0]?.premium_until || null;
 
+          console.log('[PREMIUM API] isPremiumToken:', isPremiumToken, 'premiumUntil:', premiumUntilToken);
+
           // Если есть PRO по токену, используем его независимо от наличия tg_id
           if (isPremiumToken) {
+            console.log('[PREMIUM API] ✅ PRO найден в premium_tokens, возвращаем PRO статус');
             // Считаем объявления по токену за сегодня
             const countRes = await sql`
               SELECT COUNT(*)::int AS c
