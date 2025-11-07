@@ -7469,7 +7469,9 @@ document.addEventListener('click', function(e) {
 // Проверить статус блокировки для чата
 async function checkBlockStatus(chatId) {
     try {
+        console.log('🔍 [checkBlockStatus] Начало проверки блокировки для chatId:', chatId);
         const userId = getCurrentUserId();
+        console.log('🆔 [checkBlockStatus] userId:', userId?.substring(0, 16) + '...');
         
         // Получаем информацию о чате
         const chatResponse = await fetch('/api/neon-chats', {
@@ -7482,9 +7484,20 @@ async function checkBlockStatus(chatId) {
         });
         
         const chatResult = await chatResponse.json();
+        console.log('📋 [checkBlockStatus] Получено чатов:', chatResult.data?.length);
     const chat = chatResult.data?.find(c => c.id == chatId);
         
-        if (!chat) return;
+        if (!chat) {
+            console.error('❌ [checkBlockStatus] Чат не найден в списке активных!');
+            return;
+        }
+        
+        console.log('💬 [checkBlockStatus] Чат найден:', {
+            id: chat.id,
+            user_token_1: chat.user_token_1?.substring(0, 16) + '...',
+            user_token_2: chat.user_token_2?.substring(0, 16) + '...',
+            opponent_token: chat.opponent_token?.substring(0, 16) + '...'
+        });
         
         // Определяем ID собеседника
     // В ответе get-active присутствуют user_token_1, user_token_2 и opponent_token
@@ -7497,8 +7510,19 @@ async function checkBlockStatus(chatId) {
         window.currentOpponentToken = `tg_${currentOpponentId}`;
     }
         
+        console.log('👤 [checkBlockStatus] Определен собеседник:', {
+            isUser1,
+            currentOpponentId: currentOpponentId?.substring(0, 16) + '...',
+            opponentToken: window.currentOpponentToken?.substring(0, 16) + '...'
+        });
+        
         // Проверяем блокировку
         const userToken = localStorage.getItem('user_token') || userId;
+        console.log('🔐 [checkBlockStatus] Проверяем блокировку между:', {
+            user1_token: userToken?.substring(0, 16) + '...',
+            user2_token: (window.currentOpponentToken || currentOpponentId)?.substring(0, 16) + '...'
+        });
+        
         const blockResponse = await fetch('/api/blocks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -7509,10 +7533,16 @@ async function checkBlockStatus(chatId) {
         });
         
         const blockResult = await blockResponse.json();
+        console.log('🚫 [checkBlockStatus] Результат проверки блокировки:', blockResult);
         
         if (blockResult.data && blockResult.data.isBlocked) {
             isUserBlocked = blockResult.data.blockedByCurrentUser;
             const blockedByOther = blockResult.data.blockedByOther;
+            
+            console.log('⚠️ [checkBlockStatus] Блокировка обнаружена:', {
+                blockedByMe: isUserBlocked,
+                blockedByOther
+            });
             
             // Обновляем текст кнопки
             const blockMenuText = document.getElementById('blockMenuText');
@@ -7527,6 +7557,7 @@ async function checkBlockStatus(chatId) {
                 showBlockWarning(false);
             }
         } else {
+            console.log('✅ [checkBlockStatus] Блокировок не обнаружено');
             isUserBlocked = false;
             showBlockWarning(false);
             const blockMenuText = document.getElementById('blockMenuText');
@@ -7536,7 +7567,7 @@ async function checkBlockStatus(chatId) {
         }
         
     } catch (error) {
-        console.error('Ошибка проверки блокировки:', error);
+        console.error('❌ [checkBlockStatus] Ошибка проверки блокировки:', error);
     }
 }
 
@@ -7570,10 +7601,17 @@ function updateBlockUI() {
 
 // Заблокировать/разблокировать пользователя
 async function toggleBlockUser() {
+    console.log('🚫 [toggleBlockUser] Начало блокировки/разблокировки');
     const menu = document.getElementById('chatMenu');
     menu.style.display = 'none';
     
+    console.log('🔍 [toggleBlockUser] Проверяем идентификаторы:', {
+        currentOpponentId: currentOpponentId?.substring(0, 16) + '...',
+        currentOpponentToken: window.currentOpponentToken?.substring(0, 16) + '...'
+    });
+    
     if (!currentOpponentId && !window.currentOpponentToken) {
+        console.error('❌ [toggleBlockUser] ID собеседника не найден!');
         tg.showAlert('Ошибка: ID собеседника не найден');
         return;
     }
@@ -7584,11 +7622,29 @@ async function toggleBlockUser() {
         ? 'Разблокировать собеседника?' 
         : 'Заблокировать собеседника? Он не сможет отправлять вам сообщения.';
     
+    console.log('📝 [toggleBlockUser] Подготовка к действию:', {
+        action,
+        isCurrentlyBlocked: isUserBlocked,
+        userId: userId?.substring(0, 16) + '...'
+    });
+    
     tg.showConfirm(confirmText, async (confirmed) => {
-        if (!confirmed) return;
+        if (!confirmed) {
+            console.log('⏹️ [toggleBlockUser] Пользователь отменил действие');
+            return;
+        }
         
         try {
             const blockerToken = localStorage.getItem('user_token') || userId;
+            const targetToken = window.currentOpponentToken || currentOpponentId;
+            
+            console.log('📤 [toggleBlockUser] Отправляем запрос блокировки:', {
+                action,
+                blocker_token: blockerToken?.substring(0, 16) + '...',
+                blocked_token: targetToken?.substring(0, 16) + '...',
+                chat_id: currentChatId
+            });
+            
             const response = await fetch('/api/blocks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -7596,21 +7652,25 @@ async function toggleBlockUser() {
                     action: action,
                     params: { 
                         blocker_token: blockerToken, 
-                        blocked_token: (window.currentOpponentToken || currentOpponentId),
+                        blocked_token: targetToken,
                         chat_id: currentChatId || null
                     }
                 })
             });
             
             const result = await response.json();
+            console.log('📥 [toggleBlockUser] Ответ сервера:', result);
             
             if (result.error) {
+                console.error('❌ [toggleBlockUser] Ошибка от сервера:', result.error.message);
                 tg.showAlert('Ошибка: ' + result.error.message);
                 return;
             }
             
             // Обновляем статус
             isUserBlocked = !isUserBlocked;
+            console.log('✅ [toggleBlockUser] Статус блокировки изменен:', { isUserBlocked });
+            
             const blockMenuText = document.getElementById('blockMenuText');
             if (blockMenuText) {
                 blockMenuText.textContent = isUserBlocked ? '✅ Разблокировать собеседника' : '🚫 Заблокировать собеседника';
@@ -7622,7 +7682,7 @@ async function toggleBlockUser() {
             tg.showAlert(isUserBlocked ? 'Пользователь заблокирован' : 'Пользователь разблокирован');
             
         } catch (error) {
-            console.error('Ошибка блокировки:', error);
+            console.error('❌ [toggleBlockUser] Ошибка при выполнении блокировки:', error);
             tg.showAlert('Ошибка при выполнении действия');
         }
     });
