@@ -856,8 +856,8 @@
             </div>
 
             <div class="chat-input-container">
-                <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoSelect(event)" />
-                <button class="attach-photo-button" onclick="document.getElementById('photoInput').click()" title="Прикрепить фото">
+                <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoSelect(event)" />
+                <button class="attach-photo-button" onclick="showPhotoSourceMenu()" title="Прикрепить фото">
                     <span>📷</span>
                 </button>
                 <div id="photoPreview" class="photo-preview" style="display: none;">

@@ -5977,13 +5977,69 @@ async function loadChatMessages(chatId, silent = false) {
 let selectedPhoto = null;
 
 // Обработка выбора фото
+// Показать меню выбора источника фото
+function showPhotoSourceMenu() {
+    if (!window.Telegram || !window.Telegram.WebApp) {
+        // Если не в Telegram WebApp, просто открываем выбор файла
+        document.getElementById('photoInput').click();
+        return;
+    }
+    
+    const tg = window.Telegram.WebApp;
+    
+    // Создаем меню с выбором
+    const menu = document.createElement('div');
+    menu.className = 'photo-source-menu';
+    menu.innerHTML = `
+        <div class="photo-source-overlay" onclick="closePhotoSourceMenu()"></div>
+        <div class="photo-source-content">
+            <h3 style="margin-top: 0; color: var(--neon-cyan);">📷 Выберите источник</h3>
+            <button class="source-btn" onclick="openCamera()">
+                <span style="font-size: 24px;">📸</span>
+                <span>Сделать фото</span>
+            </button>
+            <button class="source-btn" onclick="openGallery()">
+                <span style="font-size: 24px;">🖼️</span>
+                <span>Выбрать из галереи</span>
+            </button>
+            <button class="source-btn cancel" onclick="closePhotoSourceMenu()">
+                <span>❌</span>
+                <span>Отмена</span>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(menu);
+}
+
+// Закрыть меню выбора источника
+function closePhotoSourceMenu() {
+    const menu = document.querySelector('.photo-source-menu');
+    if (menu) menu.remove();
+}
+
+// Открыть камеру
+function openCamera() {
+    closePhotoSourceMenu();
+    const input = document.getElementById('photoInput');
+    input.setAttribute('capture', 'environment'); // Задняя камера
+    input.click();
+}
+
+// Открыть галерею
+function openGallery() {
+    closePhotoSourceMenu();
+    const input = document.getElementById('photoInput');
+    input.removeAttribute('capture'); // Убираем capture для галереи
+    input.click();
+}
+
 function handlePhotoSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Проверка размера (макс 5 МБ)
-    if (file.size > 5 * 1024 * 1024) {
-        tg.showAlert('Файл слишком большой! Максимум 5 МБ');
+    // Проверка размера (макс 20 МБ - Telegram сожмет автоматически)
+    if (file.size > 20 * 1024 * 1024) {
+        tg.showAlert('Файл слишком большой! Максимум 20 МБ');
         event.target.value = '';
         return;
     }
