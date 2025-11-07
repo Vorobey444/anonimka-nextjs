@@ -6170,6 +6170,12 @@ function handlePhotoSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
+    console.log('📷 Выбран файл:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+    });
+    
     // Проверка размера (макс 20 МБ - Telegram сожмет автоматически)
     if (file.size > 20 * 1024 * 1024) {
         tg.showAlert('Файл слишком большой! Максимум 20 МБ');
@@ -6184,8 +6190,18 @@ function handlePhotoSelect(event) {
         return;
     }
     
-    // Проверка типа
-    if (!file.type.startsWith('image/')) {
+    // Проверка типа - принимаем изображения и HEIC (Live Photos с iPhone)
+    const isImage = file.type.startsWith('image/');
+    const isHEIC = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+    const isVideo = file.type.startsWith('video/');
+    
+    if (isVideo) {
+        tg.showAlert('❌ Видео не поддерживаются!\n\nЕсли это Live Photo, откройте его в Фото → Изменить → снимите галочку "Live" → Сохранить. Затем выберите статичное фото.');
+        event.target.value = '';
+        return;
+    }
+    
+    if (!isImage && !isHEIC) {
         tg.showAlert('Можно прикрепить только изображения!');
         event.target.value = '';
         return;
