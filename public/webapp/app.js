@@ -2265,10 +2265,14 @@ async function submitAd() {
         console.error('Ошибка создания анкеты:', error);
         
         // Проверяем ошибку лимита
-        if (error.message && error.message.includes('лимит')) {
-            if (error.message.includes('PRO')) {
+        if (error.message && error.message.includes('создали 3 объявления сегодня')) {
+            // PRO пользователь исчерпал дневной лимит - НЕ предлагаем купить PRO
+            tg.showAlert('⏰ Вы создали все 3 анкеты сегодня (лимит PRO)\n\nСледующая анкета будет доступна завтра!');
+        } else if (error.message && error.message.includes('лимит')) {
+            // FREE пользователь или другие лимиты - предлагаем PRO
+            if (error.message.includes('PRO') || error.message.includes('Оформите')) {
                 tg.showConfirm(
-                    error.message,
+                    error.message + '\n\nПодключить PRO сейчас?',
                     (confirmed) => {
                         if (confirmed) showPremiumModal();
                     }
@@ -2805,7 +2809,7 @@ async function pinMyAd(adId, shouldPin) {
         
         // Проверяем ошибку лимита
         if (error.message && error.message.includes('Закрепление доступно через')) {
-            // Извлекаем время из сообщения (например "через 71ч")
+            // FREE пользователь - можно раз в 3 дня
             const match = error.message.match(/через (\d+)ч/);
             const hours = match ? match[1] : '72';
             
@@ -2817,8 +2821,12 @@ async function pinMyAd(adId, shouldPin) {
                     if (confirmed) showPremiumModal();
                 }
             );
+        } else if (error.message && error.message.includes('использовали 3 закрепления сегодня')) {
+            // PRO пользователь исчерпал дневной лимит - НЕ предлагаем купить PRO
+            tg.showAlert('⏰ Вы использовали все 3 закрепления сегодня (лимит PRO)\n\nСледующее закрепление будет доступно завтра!');
         } else if (error.message && error.message.includes('лимит')) {
-            if (error.message.includes('PRO')) {
+            // Другие лимиты - предлагаем PRO
+            if (error.message.includes('PRO') || error.message.includes('Оформите')) {
                 tg.showConfirm(
                     error.message + '\n\nПодключить PRO сейчас?',
                     (confirmed) => {
