@@ -213,9 +213,30 @@ export async function POST(req: NextRequest) {
         `;
       }
       
-      const limitsResult = await sql`
+      let limitsResult = await sql`
         SELECT ads_created_today, ads_last_reset FROM user_limits WHERE user_id = ${userId}
       `;
+      
+      // Проверяем и сбрасываем счетчик если новый день (АЛМАТЫ UTC+5)
+      const nowUTC = new Date();
+      const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+      const currentDate = almatyDate.toISOString().split('T')[0];
+      const lastResetDate = limitsResult.rows[0]?.ads_last_reset ? new Date(limitsResult.rows[0].ads_last_reset).toISOString().split('T')[0] : null;
+      
+      if (lastResetDate !== currentDate) {
+        console.log('[ADS API] Сброс счетчика объявлений (новый день):', { userId, lastResetDate, currentDate });
+        await sql`
+          UPDATE user_limits
+          SET ads_created_today = 0,
+              ads_last_reset = ${currentDate}::date,
+              updated_at = NOW()
+          WHERE user_id = ${userId}
+        `;
+        // Перезагружаем актуальные данные после сброса
+        limitsResult = await sql`
+          SELECT ads_created_today, ads_last_reset FROM user_limits WHERE user_id = ${userId}
+        `;
+      }
       
       let isPremium = userResult.rows[0]?.is_premium || false;
       
