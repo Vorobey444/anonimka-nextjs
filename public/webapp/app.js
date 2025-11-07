@@ -6706,7 +6706,8 @@ function formatTarget(target) {
         'female': 'Девушку',
         'any': 'Не важно',
         'мужчину': 'Мужчину',
-        'девушку': 'Девушку'
+        'девушку': 'Девушку',
+        'женщину': 'Девушку'
     };
     return targetMap[target?.toLowerCase()] || target || 'Не важно';
 }
