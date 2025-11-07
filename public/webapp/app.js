@@ -3014,7 +3014,7 @@ const locationData = {
         flag: '🇰🇿',
         regions: {
             'Алматинская область': ['Алматы', 'Талдыкорган', 'Капчагай', 'Текели', 'Жаркент'],
-            'Нур-Султан': ['Нур-Султан (Астана)'],
+            'Акмолинская область': ['Астана', 'Кокшетау', 'Степногорск'],
             'Шымкент': ['Шымкент'],
             'Актюбинская область': ['Актобе', 'Хромтау', 'Алга', 'Темир'],
             'Атырауская область': ['Атырау', 'Кульсары', 'Жылыой'],
@@ -3266,11 +3266,11 @@ function showPopularLocations() {
                     </div>
                 </button>
                 
-                <button class="location-option kazakhstan" onclick="selectPopularLocation('kazakhstan', 'Нур-Султан', 'Нур-Султан (Астана)')">
+                <button class="location-option kazakhstan" onclick="selectPopularLocation('kazakhstan', 'Акмолинская область', 'Астана')">
                     <span class="flag">🇰🇿</span>
                     <div class="location-details">
                         <strong>Казахстан</strong>
-                        <span>Нур-Султан</span>
+                        <span>Астана</span>
                     </div>
                 </button>
             </div>
@@ -6082,6 +6082,16 @@ async function openCamera() {
                     gap: 15px;
                     margin-top: 20px;
                 ">
+                    <button onclick="switchCamera()" style="
+                        background: rgba(131, 56, 236, 0.2);
+                        border: 2px solid var(--neon-purple);
+                        border-radius: 50%;
+                        width: 70px;
+                        height: 70px;
+                        font-size: 32px;
+                        cursor: pointer;
+                        box-shadow: 0 0 20px rgba(131, 56, 236, 0.4);
+                    ">🔄</button>
                     <button onclick="capturePhoto()" style="
                         background: rgba(0, 217, 255, 0.2);
                         border: 2px solid var(--neon-cyan);
@@ -6108,10 +6118,13 @@ async function openCamera() {
         `;
         document.body.appendChild(cameraModal);
         
+        // Изначально задняя камера
+        window.currentFacingMode = 'environment';
+        
         // Запускаем камеру
         const stream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
-                facingMode: 'environment' // Задняя камера
+                facingMode: window.currentFacingMode
             } 
         });
         
@@ -6177,6 +6190,36 @@ function closeCameraModal() {
     // Удаляем модальное окно
     const modal = document.getElementById('cameraModal');
     if (modal) modal.remove();
+}
+
+// Переключить камеру (селфи/задняя)
+async function switchCamera() {
+    try {
+        // Останавливаем текущий поток
+        if (window.currentCameraStream) {
+            window.currentCameraStream.getTracks().forEach(track => track.stop());
+        }
+        
+        // Переключаем режим
+        window.currentFacingMode = window.currentFacingMode === 'user' ? 'environment' : 'user';
+        
+        // Запускаем камеру с новым режимом
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: window.currentFacingMode
+            } 
+        });
+        
+        const video = document.getElementById('cameraPreview');
+        video.srcObject = stream;
+        window.currentCameraStream = stream;
+        
+        console.log('📷 Камера переключена:', window.currentFacingMode === 'user' ? 'Селфи' : 'Задняя');
+        
+    } catch (error) {
+        console.error('Ошибка переключения камеры:', error);
+        tg.showAlert('Не удалось переключить камеру');
+    }
 }
 
 // Открыть галерею
