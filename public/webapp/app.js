@@ -5588,7 +5588,13 @@ async function acceptChatRequest(chatId) {
     try {
         console.log('✅ Принимаем запрос на чат:', chatId);
         
-        const userId = getCurrentUserId();
+        // Получаем user_token (основной идентификатор)
+        let userId = localStorage.getItem('user_token');
+        
+        // Fallback на Telegram ID если токена нет
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            userId = getCurrentUserId();
+        }
         
         // Используем Neon API
         const response = await fetch('/api/neon-chats', {
@@ -5622,7 +5628,13 @@ async function rejectChatRequest(chatId) {
     try {
         console.log('❌ Отклоняем запрос на чат:', chatId);
         
-        const userId = getCurrentUserId();
+        // Получаем user_token (основной идентификатор)
+        let userId = localStorage.getItem('user_token');
+        
+        // Fallback на Telegram ID если токена нет
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            userId = getCurrentUserId();
+        }
         
         // Используем Neon API
         const response = await fetch('/api/neon-chats', {
