@@ -5506,6 +5506,27 @@ async function loadMyChats() {
                 opponent_token: chat.opponent_token?.substring(0, 10)
             });
         });
+        
+        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА - загружаем сообщения из чата #3 для диагностики
+        if (acceptedChats.some(c => c.id == 3)) {
+            fetch('/api/neon-messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'get-messages',
+                    params: { chatId: 3 }
+                })
+            })
+            .then(r => r.json())
+            .then(result => {
+                if (result.data) {
+                    console.log('💬 Последние 5 сообщений из чата #3:');
+                    result.data.slice(-5).forEach(msg => {
+                        console.log(`  - ID=${msg.id}, sender=${msg.sender_token?.substring(0, 10)}, read=${msg.read}, msg="${msg.message?.substring(0, 30)}", time=${new Date(msg.created_at).toLocaleTimeString()}`);
+                    });
+                }
+            });
+        }
 
         // Обновляем счетчики
         document.getElementById('activeChatsCount').textContent = acceptedChats.length;
