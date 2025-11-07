@@ -7442,12 +7442,26 @@ function showReferralModal() {
 
     const botUsername = 'anonimka_kz_bot';
     
-    // ВАЖНО: Используем обычный start (не startapp) чтобы бот обработал параметр
-    // и добавил ?ref= в URL при открытии WebApp. Иначе параметр теряется!
-    const referralLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
+    // ВАЖНО: Предоставляем ДВА варианта ссылки
+    // 1. Для Telegram (через бота)
+    const telegramLink = `https://t.me/${botUsername}?start=ref_${userToken}`;
+    // 2. Прямая веб-ссылка (работает всегда!)
+    const webLink = `https://anonimka.kz/webapp?ref=${userToken}`;
     
-    referralLinkEl.textContent = referralLink;
-    window.currentReferralLink = referralLink;
+    // Показываем оба варианта
+    referralLinkEl.innerHTML = `
+        <div style="margin-bottom: 10px;">
+            <strong>📱 Telegram:</strong><br>
+            <span style="font-size: 12px; word-break: break-all;">${telegramLink}</span>
+        </div>
+        <div>
+            <strong>🌐 Веб (работает всегда):</strong><br>
+            <span style="font-size: 12px; word-break: break-all;">${webLink}</span>
+        </div>
+    `;
+    
+    // Для копирования используем веб-ссылку (она надёжнее)
+    window.currentReferralLink = webLink;
 }
 
 function closeReferralModal() {
