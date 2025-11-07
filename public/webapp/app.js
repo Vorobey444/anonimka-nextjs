@@ -6018,13 +6018,142 @@ function closePhotoSourceMenu() {
 }
 
 // Открыть камеру
-function openCamera() {
+async function openCamera() {
     closePhotoSourceMenu();
-    const cameraInput = document.getElementById('cameraInput');
-    // Очищаем предыдущее значение
-    cameraInput.value = '';
-    // Принудительно используем capture для камеры
-    cameraInput.click();
+    
+    // Проверяем поддержку getUserMedia
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        // Fallback на обычный input с capture
+        const cameraInput = document.getElementById('cameraInput');
+        cameraInput.value = '';
+        cameraInput.click();
+        return;
+    }
+    
+    try {
+        // Создаем модальное окно с камерой
+        const cameraModal = document.createElement('div');
+        cameraModal.id = 'cameraModal';
+        cameraModal.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.95);
+                z-index: 10000;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            ">
+                <video id="cameraPreview" autoplay playsinline style="
+                    max-width: 100%;
+                    max-height: 70vh;
+                    border-radius: 12px;
+                    box-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
+                "></video>
+                <div style="
+                    display: flex;
+                    gap: 15px;
+                    margin-top: 20px;
+                ">
+                    <button onclick="capturePhoto()" style="
+                        background: rgba(0, 217, 255, 0.2);
+                        border: 2px solid var(--neon-cyan);
+                        border-radius: 50%;
+                        width: 70px;
+                        height: 70px;
+                        font-size: 32px;
+                        cursor: pointer;
+                        box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+                    ">📸</button>
+                    <button onclick="closeCameraModal()" style="
+                        background: rgba(255, 0, 110, 0.2);
+                        border: 2px solid var(--neon-pink);
+                        border-radius: 50%;
+                        width: 70px;
+                        height: 70px;
+                        font-size: 32px;
+                        cursor: pointer;
+                        box-shadow: 0 0 20px rgba(255, 0, 110, 0.4);
+                    ">❌</button>
+                </div>
+                <canvas id="cameraCanvas" style="display: none;"></canvas>
+            </div>
+        `;
+        document.body.appendChild(cameraModal);
+        
+        // Запускаем камеру
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment' // Задняя камера
+            } 
+        });
+        
+        const video = document.getElementById('cameraPreview');
+        video.srcObject = stream;
+        window.currentCameraStream = stream;
+        
+    } catch (error) {
+        console.error('Ошибка доступа к камере:', error);
+        tg.showAlert('Не удалось получить доступ к камере. Попробуйте выбрать фото из галереи.');
+        // Fallback на input
+        const cameraInput = document.getElementById('cameraInput');
+        cameraInput.value = '';
+        cameraInput.click();
+    }
+}
+
+// Сделать снимок
+function capturePhoto() {
+    const video = document.getElementById('cameraPreview');
+    const canvas = document.getElementById('cameraCanvas');
+    
+    // Устанавливаем размер canvas равный видео
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Рисуем кадр с видео на canvas
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    
+    // Конвертируем canvas в blob
+    canvas.toBlob((blob) => {
+        // Создаем File из blob
+        const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+        
+        // Закрываем камеру
+        closeCameraModal();
+        
+        // Обрабатываем как обычное фото
+        selectedPhoto = file;
+        
+        // Показываем превью
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const preview = document.getElementById('photoPreview');
+            const img = document.getElementById('photoPreviewImage');
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+        
+    }, 'image/jpeg', 0.9);
+}
+
+// Закрыть модальное окно камеры
+function closeCameraModal() {
+    // Останавливаем поток камеры
+    if (window.currentCameraStream) {
+        window.currentCameraStream.getTracks().forEach(track => track.stop());
+        window.currentCameraStream = null;
+    }
+    
+    // Удаляем модальное окно
+    const modal = document.getElementById('cameraModal');
+    if (modal) modal.remove();
 }
 
 // Открыть галерею
