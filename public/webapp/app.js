@@ -503,7 +503,19 @@ function initializeApp() {
         }
         
         try {
-            loadPremiumStatus(); // Загружаем Premium статус при старте
+            // Принудительно сбрасываем локальный кэш тарифов перед первой загрузкой, чтобы сразу увидеть обновления
+            const cachedKeyPrefix = 'premium_status_';
+            const userTokenForPurge = localStorage.getItem('user_token');
+            if (userTokenForPurge) {
+                try {
+                    localStorage.removeItem(`${cachedKeyPrefix}${userTokenForPurge}`);
+                    localStorage.removeItem(`premium_version_${userTokenForPurge}`);
+                    console.log('🧹 Сброшен локальный кэш тарифов перед начальной загрузкой');
+                } catch (clearErr) {
+                    console.warn('⚠️ Не удалось очистить кэш тарифов:', clearErr);
+                }
+            }
+            loadPremiumStatus(); // Загружаем Premium статус при старте (после очистки)
         } catch (e) {
             console.error('❌ Ошибка loadPremiumStatus:', e);
         }
@@ -6940,8 +6952,9 @@ async function loadPremiumStatus() {
         
         safeLog('💎 Загружаем Premium статус для:', userId.substring(0, 16) + '...');
         
-        // Сначала загружаем с сервера (источник истины)
-        const response = await fetch('/api/premium', {
+        // Анти-кэш: добавляем уникальный параметр запроса
+        const antiCache = Date.now();
+        const response = await fetch(`/api/premium?ts=${antiCache}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -6958,6 +6971,11 @@ async function loadPremiumStatus() {
         }
         
         userPremiumStatus = result.data;
+        // Принудительно пересчитываем лимиты, если структура изменилась
+        if (!userPremiumStatus.limits || typeof userPremiumStatus.limits.ads !== 'object') {
+            console.warn('⚠️ Структура limits изменилась или отсутствует, задаю безопасный дефолт');
+            userPremiumStatus.limits = { ads: { used: 0, max: 1, remaining: 1 } };
+        }
         
         console.log('✅ Premium статус загружен с сервера:', {
             isPremium: userPremiumStatus.isPremium,
@@ -6966,7 +6984,10 @@ async function loadPremiumStatus() {
         });
         
         // Сохраняем в localStorage для следующей загрузки
-        localStorage.setItem(`premium_status_${userId}`, JSON.stringify(userPremiumStatus));
+    // Сбрасываем локальный кэш если версия тарифов изменилась
+    const serverVersion = userPremiumStatus.version || antiCache;
+    localStorage.setItem(`premium_status_${userId}`, JSON.stringify(userPremiumStatus));
+    localStorage.setItem(`premium_version_${userId}`, serverVersion);
         
         updatePremiumUI();
         updateAdLimitBadge();
@@ -7016,6 +7037,9 @@ function updateAdLimitBadge() {
         // Ещё не создано анкет
         badge.style.display = 'none';
     }
+
+    // Добавляем всплывающую подсказку с деталями лимита
+    badge.title = `Использовано: ${used} / ${max}. Осталось: ${remaining}`;
 }
 
 // Функция для расчета времени до полуночи (обновления лимитов)
@@ -7462,10 +7486,15 @@ async function checkBlockStatus(chatId) {
         if (!chat) return;
         
         // Определяем ID собеседника
-    const isUser1 = chat.user1 == userId;
-    currentOpponentId = isUser1 ? chat.user2 : chat.user1;
-    // Сохраняем токен собеседника, если сервер его вернул
-    window.currentOpponentToken = chat.opponent_token || null;
+    // В ответе get-active присутствуют user_token_1, user_token_2 и opponent_token
+    const isUser1 = String(chat.user_token_1) === String(userId);
+    currentOpponentId = isUser1 ? chat.user_token_2 : chat.user_token_1;
+    // Сохраняем токен собеседника (источник истины)
+    window.currentOpponentToken = chat.opponent_token || currentOpponentId || null;
+    if (!window.currentOpponentToken && currentOpponentId) {
+        // Если токен отсутствует, но есть числовой ID — формируем surrogate
+        window.currentOpponentToken = `tg_${currentOpponentId}`;
+    }
         
         // Проверяем блокировку
         const userToken = localStorage.getItem('user_token') || userId;
@@ -7543,7 +7572,7 @@ async function toggleBlockUser() {
     const menu = document.getElementById('chatMenu');
     menu.style.display = 'none';
     
-    if (!currentOpponentId) {
+    if (!currentOpponentId && !window.currentOpponentToken) {
         tg.showAlert('Ошибка: ID собеседника не найден');
         return;
     }
@@ -7566,7 +7595,8 @@ async function toggleBlockUser() {
                     action: action,
                     params: { 
                         blocker_token: blockerToken, 
-                        blocked_token: (window.currentOpponentToken || currentOpponentId)
+                        blocked_token: (window.currentOpponentToken || currentOpponentId),
+                        chat_id: currentChatId || null
                     }
                 })
             });
