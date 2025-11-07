@@ -6467,13 +6467,16 @@ let userPremiumStatus = {
 // Загрузить статус Premium при запуске приложения
 async function loadPremiumStatus() {
     try {
-        const userId = getCurrentUserId();
+        // ПРИОРИТЕТ: используем user_token (для проверки premium_tokens)
+        const userToken = localStorage.getItem('user_token');
+        const userId = userToken || getCurrentUserId();
+        
         if (!userId || userId.startsWith('web_')) {
             console.log('⚠️ Пользователь не авторизован, Premium статус недоступен');
             return;
         }
         
-        safeLog('💎 Загружаем Premium статус');
+        safeLog('💎 Загружаем Premium статус для:', userId.substring(0, 16) + '...');
         
         // Сначала загружаем с сервера (источник истины)
         const response = await fetch('/api/premium', {
