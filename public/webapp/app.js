@@ -5906,10 +5906,17 @@ async function loadChatMessages(chatId, silent = false) {
                 nicknameHtml = `<div class="message-nickname">${escapeHtml(nickname)}</div>`;
             }
             
-            // Фото если есть
+            // Фото или видео если есть
             let photoHtml = '';
             if (msg.photo_url) {
-                photoHtml = `<img src="${escapeHtml(msg.photo_url)}" class="message-photo" alt="Фото" onclick="showPhotoModal('${escapeHtml(msg.photo_url)}')" />`;
+                // Определяем тип файла по расширению
+                const isVideo = msg.photo_url.includes('.mp4') || msg.photo_url.includes('.mov') || msg.photo_url.includes('video');
+                
+                if (isVideo) {
+                    photoHtml = `<video src="${escapeHtml(msg.photo_url)}" class="message-photo" controls playsinline></video>`;
+                } else {
+                    photoHtml = `<img src="${escapeHtml(msg.photo_url)}" class="message-photo" alt="Фото" onclick="showPhotoModal('${escapeHtml(msg.photo_url)}')" />`;
+                }
             }
             
             // Текст сообщения (если есть)
@@ -6176,7 +6183,7 @@ function handlePhotoSelect(event) {
         size: file.size
     });
     
-    // Проверка размера (макс 20 МБ - Telegram сожмет автоматически)
+    // Проверка размера (макс 20 МБ)
     if (file.size > 20 * 1024 * 1024) {
         tg.showAlert('Файл слишком большой! Максимум 20 МБ');
         event.target.value = '';
@@ -6190,19 +6197,14 @@ function handlePhotoSelect(event) {
         return;
     }
     
-    // Проверка типа - принимаем изображения и HEIC (Live Photos с iPhone)
-    const isImage = file.type.startsWith('image/');
-    const isHEIC = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
-    const isVideo = file.type.startsWith('video/');
+    // Принимаем изображения, видео и HEIC (Live Photos, анимации)
+    const isMedia = file.type.startsWith('image/') || 
+                    file.type.startsWith('video/') ||
+                    file.name.toLowerCase().endsWith('.heic') || 
+                    file.name.toLowerCase().endsWith('.heif');
     
-    if (isVideo) {
-        tg.showAlert('❌ Видео не поддерживаются!\n\nЕсли это Live Photo, откройте его в Фото → Изменить → снимите галочку "Live" → Сохранить. Затем выберите статичное фото.');
-        event.target.value = '';
-        return;
-    }
-    
-    if (!isImage && !isHEIC) {
-        tg.showAlert('Можно прикрепить только изображения!');
+    if (!isMedia) {
+        tg.showAlert('Можно прикрепить только фото или видео!');
         event.target.value = '';
         return;
     }
@@ -6214,7 +6216,14 @@ function handlePhotoSelect(event) {
     reader.onload = (e) => {
         const preview = document.getElementById('photoPreview');
         const img = document.getElementById('photoPreviewImage');
-        img.src = e.target.result;
+        
+        // Для видео показываем иконку, для фото - превью
+        if (file.type.startsWith('video/')) {
+            img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-size="50">🎥</text></svg>';
+        } else {
+            img.src = e.target.result;
+        }
+        
         preview.style.display = 'block';
     };
     reader.readAsDataURL(file);

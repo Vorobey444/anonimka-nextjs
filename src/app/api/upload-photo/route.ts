@@ -79,13 +79,18 @@ export async function POST(request: NextRequest) {
       fromEnv: !!process.env.TELEGRAM_STORAGE_CHANNEL
     });
     
+    // Определяем тип медиа (фото или видео)
+    const isVideo = photo.type.startsWith('video/');
+    const endpoint = isVideo ? 'sendVideo' : 'sendPhoto';
+    const fieldName = isVideo ? 'video' : 'photo';
+    
     const telegramFormData = new FormData();
     telegramFormData.append('chat_id', storageChannel); // Отправляем в канал-хранилище
-    telegramFormData.append('photo', new Blob([buffer], { type: photo.type }), 'photo.jpg');
-    telegramFormData.append('caption', `📸 User: ${telegramUserId}`);
+    telegramFormData.append(fieldName, new Blob([buffer], { type: photo.type }), isVideo ? 'video.mp4' : 'photo.jpg');
+    telegramFormData.append('caption', `${isVideo ? '🎥' : '📸'} User: ${telegramUserId}`);
     
-    // Отправляем фото в канал-хранилище
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+    // Отправляем медиа в канал-хранилище
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/${endpoint}`, {
       method: 'POST',
       body: telegramFormData
     });
@@ -95,16 +100,24 @@ export async function POST(request: NextRequest) {
     if (!result.ok) {
       console.error('❌ Telegram API error:', result);
       return NextResponse.json(
-        { error: { message: result.description || 'Failed to upload photo' } },
+        { error: { message: result.description || 'Failed to upload media' } },
         { status: 500 }
       );
     }
     
-    console.log('✅ Фото загружено в канал-хранилище');
+    console.log(`✅ ${isVideo ? 'Видео' : 'Фото'} загружено в канал-хранилище`);
     
-    // Получаем file_id и URL фото
-    const photoData = result.result.photo[result.result.photo.length - 1]; // Берём самое большое фото
-    const fileId = photoData.file_id;
+    // Получаем file_id и URL
+    let fileId, fileData;
+    
+    if (isVideo) {
+      fileData = result.result.video;
+      fileId = fileData.file_id;
+    } else {
+      const photoArray = result.result.photo;
+      fileData = photoArray[photoArray.length - 1]; // Берём самое большое фото
+      fileId = fileData.file_id;
+    }
     
     // Получаем file_path для построения URL
     const fileResponse = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
@@ -121,12 +134,13 @@ export async function POST(request: NextRequest) {
     const filePath = fileResult.result.file_path;
     const photoUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
     
-    console.log('✅ Photo URL:', photoUrl);
+    console.log(`✅ ${isVideo ? 'Video' : 'Photo'} URL:`, photoUrl);
     
     return NextResponse.json({
       data: {
         file_id: fileId,
-        photo_url: photoUrl
+        photo_url: photoUrl,
+        is_video: isVideo
       },
       error: null
     });
