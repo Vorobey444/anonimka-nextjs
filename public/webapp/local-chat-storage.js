@@ -54,8 +54,7 @@ const LocalChatStorage = {
         const chats = this.getAllChats();
         return chats.filter(chat => 
             (chat.user1 === userId || chat.user2 === userId) && 
-            chat.accepted === true && 
-            (chat.blocked_by === null && (chat.blocked_by_token === null || chat.blocked_by_token === undefined))
+            chat.accepted === true
         );
     },
 

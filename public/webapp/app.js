@@ -5603,9 +5603,9 @@ async function loadMyChats() {
                     const isBlockedByMe = (hasBlockedBy && String(chat.blocked_by) == String(userId))
                         || (hasBlockedByToken && String(chat.blocked_by_token) === String(userId));
                     if (isBlockedByMe) {
-                        blockStatus = '<span style="color: var(--neon-orange); font-size: 0.8rem;">🚫 Вы заблокировали</span>';
+                        blockStatus = '<span style="color: var(--neon-orange); font-size: 0.8rem;">🚫 (Чат заблокирован вами) – кнопка "Разблокировать" доступна внутри</span>';
                     } else {
-                        blockStatus = '<span style="color: var(--neon-pink); font-size: 0.8rem;">🚫 Вы заблокированы</span>';
+                        blockStatus = '<span style="color: var(--neon-pink); font-size: 0.8rem;">🚫 (Вы заблокированы) – история доступна, отправка запрещена</span>';
                     }
                 }
                 

@@ -81,8 +81,6 @@ export async function POST(request: NextRequest) {
               FROM private_chats pc
               WHERE (user_token_1 = ${userId} OR user_token_2 = ${userId})
                 AND accepted = true
-                AND pc.blocked_by IS NULL
-                AND pc.blocked_by_token IS NULL
               ORDER BY pc.created_at DESC
             `
           : await sql`
@@ -98,7 +96,6 @@ export async function POST(request: NextRequest) {
               FROM private_chats pc
               WHERE (user_token_1 = ${userId} OR user_token_2 = ${userId})
                 AND accepted = true
-                AND blocked_by IS NULL
               ORDER BY pc.created_at DESC
             `;
         
