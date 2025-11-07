@@ -217,7 +217,19 @@ export async function POST(req: NextRequest) {
         SELECT ads_created_today, ads_last_reset FROM user_limits WHERE user_id = ${userId}
       `;
       
-      const isPremium = userResult.rows[0]?.is_premium || false;
+      let isPremium = userResult.rows[0]?.is_premium || false;
+      
+      // ПРИОРИТЕТ: проверяем premium_tokens если есть user_token
+      if (finalUserToken) {
+        const premiumTokenResult = await sql`
+          SELECT is_premium FROM premium_tokens WHERE user_token = ${finalUserToken} LIMIT 1
+        `;
+        if (premiumTokenResult.rows.length > 0) {
+          isPremium = premiumTokenResult.rows[0].is_premium || false;
+          console.log('[ADS API] PRO проверен через premium_tokens:', isPremium);
+        }
+      }
+      
       const adsToday = limitsResult.rows[0]?.ads_created_today || 0;
       const maxAds = isPremium ? 3 : 1;
       
