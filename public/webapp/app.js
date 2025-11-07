@@ -2298,6 +2298,10 @@ async function submitAd() {
 async function loadAds(filters = {}) {
     try {
         console.log('🔄 Загрузка анкет с фильтрами:', filters);
+        // По умолчанию включаем компактный режим, если не задано ранее
+        if (window.localStorage.getItem('ads_compact') === null) {
+            window.localStorage.setItem('ads_compact', '1');
+        }
         
         // Показываем индикатор загрузки
         const adsList = document.getElementById('adsList');

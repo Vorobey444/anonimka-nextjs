@@ -496,9 +496,9 @@ h3 {
 .menu-buttons {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    max-width: 280px;
-    margin: 0 auto;
+    gap: 8px;
+    max-width: 260px;
+    margin: 5px auto 0;
 }
 
 /* Форма */
@@ -803,12 +803,12 @@ h3 {
 /* Список анкет */
 /* Фильтры */
 .filters-container {
-    margin: 15px 0;
+    margin: 10px 0;
 }
 
 .filter-toggle-btn {
     width: 100%;
-    padding: 12px;
+    padding: 9px;
     background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(131, 56, 236, 0.15));
     border: 1px solid var(--neon-cyan);
     border-radius: 10px;
@@ -838,8 +838,8 @@ h3 {
 }
 
 .filters-panel {
-    margin-top: 10px;
-    padding: 15px;
+    margin-top: 6px;
+    padding: 12px;
     background: rgba(10, 10, 15, 0.8);
     border: 1px solid rgba(0, 217, 255, 0.3);
     border-radius: 10px;
@@ -858,7 +858,7 @@ h3 {
 }
 
 .filter-group {
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .filter-group:last-of-type {
@@ -868,8 +868,8 @@ h3 {
 .filter-group label {
     display: block;
     color: var(--text-gray);
-    font-size: 0.9rem;
-    margin-bottom: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
     font-weight: 600;
 }
 
@@ -958,12 +958,12 @@ h3 {
 }
 
 .ad-card {
-    background: linear-gradient(135deg, var(--bg-card), #2a2a3e);
-    border: 2px solid var(--neon-purple);
-    border-radius: 20px;
-    padding: 20px;
+    background: linear-gradient(135deg, var(--bg-card), #262636);
+    border: 1px solid var(--neon-purple);
+    border-radius: 16px;
+    padding: 16px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
     position: relative;
     overflow: hidden;
 }
@@ -1062,18 +1062,18 @@ h3 {
 
 .ad-info {
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .ad-field {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 14px;
+    gap: 6px;
+    font-size: 13px;
 }
 
 .ad-field .icon {
-    font-size: 16px;
+    font-size: 15px;
 }
 
 .ad-field .label {
@@ -1090,10 +1090,10 @@ h3 {
 .ad-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid rgba(255, 0, 110, 0.2);
+    align-items: flex-start;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 0, 110, 0.15);
 }
 
 .ad-header h3 {
