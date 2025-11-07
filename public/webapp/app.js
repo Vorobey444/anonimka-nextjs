@@ -5745,7 +5745,13 @@ async function openChat(chatId) {
     
     // Загружаем информацию о чате через Neon API
     try {
-        const userId = getCurrentUserId();
+        // Получаем user_token (основной идентификатор)
+        let userId = localStorage.getItem('user_token');
+        
+        // Fallback на Telegram ID если токена нет
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            userId = getCurrentUserId();
+        }
         
         // Отмечаем пользователя как активного в этом чате
         await markUserActive(userId, chatId);
@@ -6040,7 +6046,14 @@ async function sendMessage() {
     // Блокируем кнопку отправки чтобы избежать дубликатов
     if (sendButton.disabled) return;
 
-    const userId = getCurrentUserId();
+    // Получаем user_token (основной идентификатор)
+    let userId = localStorage.getItem('user_token');
+    
+    // Fallback на Telegram ID если токена нет
+    if (!userId || userId === 'null' || userId === 'undefined') {
+        userId = getCurrentUserId();
+    }
+    
     if (!userId || userId.startsWith('web_')) {
         tg.showAlert('Ошибка: необходима авторизация');
         return;
@@ -6166,7 +6179,14 @@ async function sendMessage() {
 // Пометить сообщения как прочитанные
 async function markMessagesAsRead(chatId) {
     try {
-        const userId = getCurrentUserId();
+        // Получаем user_token (основной идентификатор)
+        let userId = localStorage.getItem('user_token');
+        
+        // Fallback на Telegram ID если токена нет
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            userId = getCurrentUserId();
+        }
+        
         const response = await fetch('/api/neon-messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
