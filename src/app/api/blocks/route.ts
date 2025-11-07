@@ -139,35 +139,40 @@ export async function POST(request: NextRequest) {
 
         // Clear blocked flags in private_chats (handle both numeric and token columns)
         const chatSchema = await detectPrivateChatsSchema();
-        if (chatSchema.hasBlockedByToken || chatSchema.hasBlockedBy) {
-          if (chatSchema.hasBlockedByToken && chatSchema.hasBlockedBy) {
+        if (chatSchema.hasBlockedByToken && chatSchema.hasBlockedBy) {
+          if (blockerId) {
             await sql`
               UPDATE private_chats
               SET blocked_by = NULL, blocked_by_token = NULL
-              WHERE (
-                (blocked_by_token = ${blocker_token})
-                OR (${blockerId} IS NOT NULL AND blocked_by = ${blockerId})
-              )
-              AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
-                OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
+              WHERE ((blocked_by = ${blockerId}) OR (blocked_by_token = ${blocker_token}))
+                AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
+                  OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
             `;
-          } else if (chatSchema.hasBlockedByToken) {
+          } else {
             await sql`
               UPDATE private_chats
-              SET blocked_by_token = NULL
+              SET blocked_by = NULL, blocked_by_token = NULL
               WHERE blocked_by_token = ${blocker_token}
                 AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
                   OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
             `;
-          } else if (chatSchema.hasBlockedBy && blockerId) {
-            await sql`
-              UPDATE private_chats
-              SET blocked_by = NULL
-              WHERE blocked_by = ${blockerId}
-                AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
-                  OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
-            `;
           }
+        } else if (chatSchema.hasBlockedByToken) {
+          await sql`
+            UPDATE private_chats
+            SET blocked_by_token = NULL
+            WHERE blocked_by_token = ${blocker_token}
+              AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
+                OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
+          `;
+        } else if (chatSchema.hasBlockedBy && blockerId) {
+          await sql`
+            UPDATE private_chats
+            SET blocked_by = NULL
+            WHERE blocked_by = ${blockerId}
+              AND ((user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
+                OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token}))
+          `;
         }
 
         return NextResponse.json({ data: deletedRows[0] || { success: true }, error: null });
