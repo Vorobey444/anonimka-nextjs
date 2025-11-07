@@ -5384,28 +5384,34 @@ async function loadMyChats() {
     const chatRequests = document.getElementById('chatRequests');
     
     try {
-        // Пытаемся получить userId из Telegram или localStorage
-        let userId = tg.initDataUnsafe?.user?.id;
+        // Получаем user_token (основной идентификатор в новой системе)
+        let userId = localStorage.getItem('user_token');
         
-        if (!userId) {
-            // Пробуем получить из сохраненных данных
-            const savedUser = localStorage.getItem('telegram_user');
-            if (savedUser) {
-                const userData = JSON.parse(savedUser);
-                userId = userData.id;
-                safeLog('✅ User ID получен из localStorage');
+        // Fallback на Telegram ID если токена нет (для старых пользователей)
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            userId = tg.initDataUnsafe?.user?.id;
+            
+            if (!userId) {
+                const savedUser = localStorage.getItem('telegram_user');
+                if (savedUser) {
+                    const userData = JSON.parse(savedUser);
+                    userId = userData.id;
+                    safeLog('✅ User ID получен из localStorage (fallback)');
+                }
+            } else {
+                safeLog('✅ User ID получен из Telegram (fallback)');
             }
         } else {
-            safeLog('✅ User ID получен из Telegram');
+            safeLog('✅ User token получен из localStorage');
         }
         
         if (!userId) {
-            console.error('❌ User ID не найден');
+            console.error('❌ User token/ID не найден');
             const errorHTML = `
                 <div class="empty-chats">
                     <div class="neon-icon">🔒</div>
                     <h3>Необходима авторизация</h3>
-                    <p>Для доступа к чатам откройте приложение через Telegram бота</p>
+                    <p>Для доступа к чатам создайте анкету или авторизуйтесь</p>
                 </div>
             `;
             activeChats.innerHTML = errorHTML;
@@ -5413,7 +5419,7 @@ async function loadMyChats() {
             return;
         }
 
-        safeLog('📡 Загружаем чаты для пользователя');
+        safeLog('📡 Загружаем чаты для пользователя:', userId.substring(0, 10) + '...');
 
         // Получаем принятые чаты через Neon API
         const acceptedResponse = await fetch('/api/neon-chats', {

@@ -104,11 +104,19 @@ export async function POST(request: NextRequest) {
       notificationText += `${targetEmoji} Ищет: ${adInfo.target === 'male' ? 'Парня' : adInfo.target === 'female' ? 'Девушку' : 'Любого'}\n`;
       
       if (adInfo.goal) {
-        const goalText = adInfo.goal === 'friendship' ? 'Дружба' : 
-                        adInfo.goal === 'relationship' ? 'Отношения' : 
-                        adInfo.goal === 'dating' ? 'Свидания' : 
-                        adInfo.goal === 'chat' ? 'Общение' : adInfo.goal;
-        notificationText += `🎯 Цель: ${goalText}\n`;
+        // goal может быть строкой или массивом
+        const goalArray = Array.isArray(adInfo.goal) ? adInfo.goal : [adInfo.goal];
+        const goalTexts = goalArray.map((g: string) => {
+          switch(g) {
+            case 'friendship': return 'Дружба';
+            case 'relationship': return 'Отношения';
+            case 'dating': return 'Свидания';
+            case 'flirting': return 'Флирт';
+            case 'chat': return 'Общение';
+            default: return g;
+          }
+        });
+        notificationText += `🎯 Цель: ${goalTexts.join(', ')}\n`;
       }
       
       if (adInfo.age_from || adInfo.age_to) {
