@@ -250,13 +250,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Ограничение на количество объявлений для веб-пользователей (без tgId)
+    // Ограничение на количество объявлений для веб-пользователей (без tgId) - АЛМАТЫ UTC+5
     if (numericTgId === null) {
+      // Получаем текущую дату по Алматы (UTC+5)
+      const nowUTC = new Date();
+      const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+      const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+      
       const countRes = await sql`
         SELECT COUNT(*)::int AS c
         FROM ads
         WHERE user_token = ${finalUserToken}
-          AND DATE(created_at) = CURRENT_DATE
+          AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Almaty') = ${currentAlmatyDate}::date
       `;
       const used = countRes.rows[0]?.c ?? 0;
       const maxAds = 1; // FREE для веб-пользователей
@@ -294,18 +299,23 @@ export async function POST(req: NextRequest) {
 
     const newAd = result.rows[0];
     
-    // Увеличиваем счётчик объявлений (только для валидного userId)
+    // Увеличиваем счётчик объявлений (только для валидного userId) - АЛМАТЫ UTC+5
     if (numericTgId !== null) {
       const userId = numericTgId;
+      // Получаем текущую дату по Алматы (UTC+5)
+      const nowUTC = new Date();
+      const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+      const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+      
       await sql`
         INSERT INTO user_limits (user_id, ads_created_today, ads_last_reset)
-        VALUES (${userId}, 1, CURRENT_DATE)
+        VALUES (${userId}, 1, ${currentAlmatyDate}::date)
         ON CONFLICT (user_id) DO UPDATE
         SET ads_created_today = CASE
-            WHEN user_limits.ads_last_reset < CURRENT_DATE THEN 1
+            WHEN user_limits.ads_last_reset::text < ${currentAlmatyDate} THEN 1
             ELSE user_limits.ads_created_today + 1
           END,
-          ads_last_reset = CURRENT_DATE,
+          ads_last_reset = ${currentAlmatyDate}::date,
           updated_at = NOW()
       `;
     }

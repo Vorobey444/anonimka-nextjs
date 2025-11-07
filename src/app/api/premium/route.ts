@@ -55,12 +55,16 @@ export async function POST(request: NextRequest) {
           // Если есть PRO по токену, используем его независимо от наличия tg_id
           if (isPremiumToken) {
             console.log('[PREMIUM API] ✅ PRO найден в premium_tokens, возвращаем PRO статус');
-            // Считаем объявления по токену за сегодня
+            // Считаем объявления по токену за сегодня (АЛМАТЫ UTC+5)
+            const nowUTC = new Date();
+            const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+            const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+            
             const countRes = await sql`
               SELECT COUNT(*)::int AS c
               FROM ads
               WHERE user_token = ${userId}
-                AND DATE(created_at) = CURRENT_DATE
+                AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Almaty') = ${currentAlmatyDate}::date
             `;
             const used = countRes.rows[0]?.c ?? 0;
 
@@ -99,12 +103,16 @@ export async function POST(request: NextRequest) {
           const tgId = adResult.rows[0]?.tg_id as number | null | undefined;
 
           if (!tgId) {
-            // Веб-пользователь без PRO и без tg_id
+            // Веб-пользователь без PRO и без tg_id (АЛМАТЫ UTC+5)
+            const nowUTC = new Date();
+            const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+            const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+            
             const countRes = await sql`
               SELECT COUNT(*)::int AS c
               FROM ads
               WHERE user_token = ${userId}
-                AND DATE(created_at) = CURRENT_DATE
+                AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Almaty') = ${currentAlmatyDate}::date
             `;
             const used = countRes.rows[0]?.c ?? 0;
 
@@ -171,16 +179,19 @@ export async function POST(request: NextRequest) {
         let limitsData = limits.rows[0];
         const isPremium = userData.is_premium || false;
         
-        // Проверяем и сбрасываем счетчик объявлений если новый день
+        // Проверяем и сбрасываем счетчик объявлений если новый день (АЛМАТЫ UTC+5)
+        const nowUTC = new Date();
+        const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000)); // +5 часов
+        const currentDate = almatyDate.toISOString().split('T')[0];
+        
         const lastResetDate = limitsData.ads_last_reset ? new Date(limitsData.ads_last_reset).toISOString().split('T')[0] : null;
-        const currentDate = new Date().toISOString().split('T')[0];
         
         if (lastResetDate !== currentDate) {
-          console.log('[PREMIUM API] Сброс счетчика объявлений (новый день):', { userId: numericUserId, lastResetDate, currentDate });
+          console.log('[PREMIUM API] Сброс счетчика объявлений (новый день по Алматы UTC+5):', { userId: numericUserId, lastResetDate, currentDate });
           await sql`
             UPDATE user_limits
             SET ads_created_today = 0,
-                ads_last_reset = CURRENT_DATE,
+                ads_last_reset = ${currentDate}::date,
                 updated_at = NOW()
             WHERE user_id = ${numericUserId}
           `;
