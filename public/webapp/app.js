@@ -5453,13 +5453,6 @@ async function loadMyChats() {
         });
         const acceptedResult = await acceptedResponse.json();
         
-        console.log('📥 RAW ответ от get-active:', JSON.stringify(acceptedResult, null, 2));
-        console.log('📥 Получен ответ от get-active:', {
-            success: !acceptedResult.error,
-            chatsCount: acceptedResult.data?.length || 0,
-            timestamp: new Date().toLocaleTimeString()
-        });
-        
         // Получаем входящие запросы через Neon API
         const pendingResponse = await fetch('/api/neon-chats', {
             method: 'POST',
@@ -5491,42 +5484,6 @@ async function loadMyChats() {
 
         console.log('📊 Принятые чаты:', acceptedChats.length);
         console.log('📊 Входящие запросы:', pendingRequests.length);
-        console.log('📋 Детали запросов:', pendingRequests);
-        console.log('📋 Детали принятых чатов:', acceptedChats);
-        
-        // ДЕТАЛЬНАЯ ПРОВЕРКА - выводим каждый чат с его unread_count
-        acceptedChats.forEach(chat => {
-            console.log(`🔍 Чат ID=${chat.id}, ad_id=${chat.ad_id}:`, {
-                unread_count: chat.unread_count,
-                unread_type: typeof chat.unread_count,
-                last_message: chat.last_message?.substring(0, 30),
-                user_token_1: chat.user_token_1?.substring(0, 10),
-                user_token_2: chat.user_token_2?.substring(0, 10),
-                my_role: chat.my_role,
-                opponent_token: chat.opponent_token?.substring(0, 10)
-            });
-        });
-        
-        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА - загружаем сообщения из чата #3 для диагностики
-        if (acceptedChats.some(c => c.id == 3)) {
-            fetch('/api/neon-messages', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'get-messages',
-                    params: { chatId: 3 }
-                })
-            })
-            .then(r => r.json())
-            .then(result => {
-                if (result.data) {
-                    console.log('💬 Последние 5 сообщений из чата #3:');
-                    result.data.slice(-5).forEach(msg => {
-                        console.log(`  - ID=${msg.id}, sender=${msg.sender_token?.substring(0, 10)}, read=${msg.read}, msg="${msg.message?.substring(0, 30)}", time=${new Date(msg.created_at).toLocaleTimeString()}`);
-                    });
-                }
-            });
-        }
 
         // Обновляем счетчики
         document.getElementById('activeChatsCount').textContent = acceptedChats.length;
@@ -5548,8 +5505,6 @@ async function loadMyChats() {
                 const lastMessagePreview = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
                 const unreadCount = parseInt(chat.unread_count) || 0;
                 const unreadBadge = unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : '';
-                
-                console.log(`📧 Чат #${chat.id}: unread_count = ${chat.unread_count}, parsed = ${unreadCount}, badge = "${unreadBadge}"`);
                 
                 // Проверяем блокировку
                 let blockStatus = '';
