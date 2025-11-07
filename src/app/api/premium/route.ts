@@ -38,18 +38,19 @@ export async function POST(request: NextRequest) {
         
         // Определяем, это токен или числовой ID
         const isToken = userId && typeof userId === 'string' && userId.length > 20;
-        let numericUserId: number;
+        let numericUserId: number | null = null;
         
+        // ПРИОРИТЕТ 1: Проверяем premium_tokens для пользователей с токеном
         if (isToken) {
-          // Получаем tg_id из ads по user_token (может быть NULL для веб-пользователей)
-          const adResult = await sql`
-            SELECT tg_id FROM ads WHERE user_token = ${userId} ORDER BY created_at DESC LIMIT 1
+          const prem = await sql`
+            SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${userId} LIMIT 1
           `;
+          const isPremiumToken = prem.rows[0]?.is_premium || false;
+          const premiumUntilToken = prem.rows[0]?.premium_until || null;
 
-          const tgId = adResult.rows[0]?.tg_id as number | null | undefined;
-
-          if (!tgId) {
-            // Веб-пользователь без числового ID: считаем объявления по токену за сегодня
+          // Если есть PRO по токену, используем его независимо от наличия tg_id
+          if (isPremiumToken) {
+            // Считаем объявления по токену за сегодня
             const countRes = await sql`
               SELECT COUNT(*)::int AS c
               FROM ads
@@ -58,32 +59,69 @@ export async function POST(request: NextRequest) {
             `;
             const used = countRes.rows[0]?.c ?? 0;
 
-            // Проверяем PRO по token (premium_tokens)
-            const prem = await sql`
-              SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${userId} LIMIT 1
-            `;
-            const isPremiumToken = prem.rows[0]?.is_premium || false;
-            const premiumUntilToken = prem.rows[0]?.premium_until || null;
-
             return NextResponse.json({
               data: {
-                isPremium: isPremiumToken,
+                isPremium: true,
                 premiumUntil: premiumUntilToken,
                 country: 'KZ',
                 limits: {
                   photos: {
                     used: 0,
-                    max: isPremiumToken ? LIMITS.PRO.photos_per_day : LIMITS.FREE.photos_per_day,
-                    remaining: isPremiumToken ? 999999 : LIMITS.FREE.photos_per_day
+                    max: LIMITS.PRO.photos_per_day,
+                    remaining: 999999
                   },
                   ads: {
                     used,
-                    max: isPremiumToken ? LIMITS.PRO.ads_per_day : LIMITS.FREE.ads_per_day,
-                    remaining: Math.max(0, (isPremiumToken ? LIMITS.PRO.ads_per_day : LIMITS.FREE.ads_per_day) - used)
+                    max: LIMITS.PRO.ads_per_day,
+                    remaining: Math.max(0, LIMITS.PRO.ads_per_day - used)
                   },
                   pin: {
                     used: 0,
-                    max: isPremiumToken ? LIMITS.PRO.pin_per_day : LIMITS.FREE.pin_per_3days,
+                    max: LIMITS.PRO.pin_per_day,
+                    canUse: true
+                  }
+                }
+              },
+              error: null
+            });
+          }
+
+          // Получаем tg_id для проверки в users (если нет PRO по токену)
+          const adResult = await sql`
+            SELECT tg_id FROM ads WHERE user_token = ${userId} ORDER BY created_at DESC LIMIT 1
+          `;
+
+          const tgId = adResult.rows[0]?.tg_id as number | null | undefined;
+
+          if (!tgId) {
+            // Веб-пользователь без PRO и без tg_id
+            const countRes = await sql`
+              SELECT COUNT(*)::int AS c
+              FROM ads
+              WHERE user_token = ${userId}
+                AND DATE(created_at) = CURRENT_DATE
+            `;
+            const used = countRes.rows[0]?.c ?? 0;
+
+            return NextResponse.json({
+              data: {
+                isPremium: false,
+                premiumUntil: null,
+                country: 'KZ',
+                limits: {
+                  photos: {
+                    used: 0,
+                    max: LIMITS.FREE.photos_per_day,
+                    remaining: LIMITS.FREE.photos_per_day
+                  },
+                  ads: {
+                    used,
+                    max: LIMITS.FREE.ads_per_day,
+                    remaining: Math.max(0, LIMITS.FREE.ads_per_day - used)
+                  },
+                  pin: {
+                    used: 0,
+                    max: LIMITS.FREE.pin_per_3days,
                     canUse: true
                   }
                 }
