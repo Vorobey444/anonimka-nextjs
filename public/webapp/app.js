@@ -6177,6 +6177,13 @@ function handlePhotoSelect(event) {
         return;
     }
     
+    // Проверка что файл не пустой (Stories имеют size = 0)
+    if (file.size === 0) {
+        tg.showAlert('❌ Stories и временные файлы не поддерживаются!\n\nСохраните фото в галерею и выберите его оттуда.');
+        event.target.value = '';
+        return;
+    }
+    
     // Проверка типа
     if (!file.type.startsWith('image/')) {
         tg.showAlert('Можно прикрепить только изображения!');
