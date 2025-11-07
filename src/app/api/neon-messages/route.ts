@@ -53,7 +53,19 @@ export async function POST(request: NextRequest) {
           const userResult = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
           const limitsResult = await sql`SELECT photos_sent_today FROM user_limits WHERE user_id = ${numericUserId}`;
           
-          const isPremium = userResult.rows[0]?.is_premium || false;
+          let isPremium = userResult.rows[0]?.is_premium || false;
+          
+          // ПРИОРИТЕТ: проверяем premium_tokens если отправитель использует токен
+          if (isToken && senderId) {
+            const premiumTokenResult = await sql`
+              SELECT is_premium FROM premium_tokens WHERE user_token = ${senderId} LIMIT 1
+            `;
+            if (premiumTokenResult.rows.length > 0) {
+              isPremium = premiumTokenResult.rows[0].is_premium || false;
+              console.log('[MESSAGES API] PRO проверен через premium_tokens:', isPremium);
+            }
+          }
+          
           const photosToday = limitsResult.rows[0]?.photos_sent_today || 0;
           const maxPhotos = isPremium ? 999999 : 5;
           

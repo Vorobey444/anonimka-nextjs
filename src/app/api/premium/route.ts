@@ -227,7 +227,18 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ data: { canSend: true }, error: null });
         }
         
-        const isPremium = user.rows[0].is_premium;
+        let isPremium = user.rows[0].is_premium;
+        
+        // ПРИОРИТЕТ: проверяем premium_tokens если userId - это токен
+        if (isToken) {
+          const premiumTokenResult = await sql`
+            SELECT is_premium FROM premium_tokens WHERE user_token = ${userId} LIMIT 1
+          `;
+          if (premiumTokenResult.rows.length > 0) {
+            isPremium = premiumTokenResult.rows[0].is_premium || false;
+          }
+        }
+        
         const photosToday = limits.rows[0].photos_sent_today || 0;
         
         const canSend = isPremium || photosToday < LIMITS.FREE.photos_per_day;
