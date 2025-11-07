@@ -5453,6 +5453,13 @@ async function loadMyChats() {
         });
         const acceptedResult = await acceptedResponse.json();
         
+        console.log('📥 RAW ответ от get-active:', JSON.stringify(acceptedResult, null, 2));
+        console.log('📥 Получен ответ от get-active:', {
+            success: !acceptedResult.error,
+            chatsCount: acceptedResult.data?.length || 0,
+            timestamp: new Date().toLocaleTimeString()
+        });
+        
         // Получаем входящие запросы через Neon API
         const pendingResponse = await fetch('/api/neon-chats', {
             method: 'POST',
@@ -5486,6 +5493,19 @@ async function loadMyChats() {
         console.log('📊 Входящие запросы:', pendingRequests.length);
         console.log('📋 Детали запросов:', pendingRequests);
         console.log('📋 Детали принятых чатов:', acceptedChats);
+        
+        // ДЕТАЛЬНАЯ ПРОВЕРКА - выводим каждый чат с его unread_count
+        acceptedChats.forEach(chat => {
+            console.log(`🔍 Чат ID=${chat.id}, ad_id=${chat.ad_id}:`, {
+                unread_count: chat.unread_count,
+                unread_type: typeof chat.unread_count,
+                last_message: chat.last_message?.substring(0, 30),
+                user_token_1: chat.user_token_1?.substring(0, 10),
+                user_token_2: chat.user_token_2?.substring(0, 10),
+                my_role: chat.my_role,
+                opponent_token: chat.opponent_token?.substring(0, 10)
+            });
+        });
 
         // Обновляем счетчики
         document.getElementById('activeChatsCount').textContent = acceptedChats.length;
