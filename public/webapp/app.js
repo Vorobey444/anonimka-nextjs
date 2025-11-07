@@ -6263,12 +6263,31 @@ async function uploadPhotoToTelegram(file, userId) {
         formData.append('photo', file);
         formData.append('userId', userId);
         
+        console.log('📤 Отправка файла:', {
+            name: file.name,
+            type: file.type,
+            size: file.size
+        });
+        
         const response = await fetch('/api/upload-photo', {
             method: 'POST',
             body: formData
         });
         
+        console.log('📨 Response status:', response.status);
+        
+        // Проверяем что ответ валидный JSON
+        const contentType = response.headers.get('content-type');
+        console.log('📨 Content-Type:', contentType);
+        
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('❌ Не JSON ответ от upload-photo:', text.substring(0, 500));
+            throw new Error('Ошибка загрузки. Попробуйте другое фото.');
+        }
+        
         const result = await response.json();
+        console.log('📨 Upload result:', result);
         
         if (result.error) {
             throw new Error(result.error.message);
