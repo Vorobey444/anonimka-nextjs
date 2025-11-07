@@ -2758,25 +2758,30 @@ async function pinMyAd(adId, shouldPin) {
         
         // Отправляем запрос на сервер
         const userId = getCurrentUserId();
-        const userToken = localStorage.getItem('user_token') || userId;
+        
+        if (!userId || userId.startsWith('web_')) {
+            tg.showAlert('❌ Требуется авторизация через Telegram');
+            return;
+        }
+        
+        // Рассчитываем время закрепления (1 час)
+        const pinnedUntil = shouldPin ? new Date(Date.now() + 60 * 60 * 1000).toISOString() : null;
         
         const response = await fetch('/api/ads', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'pin-ad',
-                params: {
-                    adId,
-                    shouldPin,
-                    userId: userToken
-                }
+                id: adId,
+                tgId: userId,
+                is_pinned: shouldPin,
+                pinned_until: pinnedUntil
             })
         });
         
         const result = await response.json();
         
         if (result.error) {
-            throw new Error(result.error.message || 'Ошибка сервера');
+            throw new Error(result.error || 'Ошибка сервера');
         }
         
         const pinned = result.success;
