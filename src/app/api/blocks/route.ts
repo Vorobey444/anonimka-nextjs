@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
         }
         // Добавляем блокировку
         const result = await sql`
-          INSERT INTO user_blocks (user_token, blocked_id, created_at)
+          INSERT INTO user_blocks (blocker_token, blocked_token, created_at)
           VALUES (${blocker_token}, ${blocked_token}, NOW())
-          ON CONFLICT (user_token, blocked_id) DO NOTHING
+          ON CONFLICT (blocker_token, blocked_token) DO NOTHING
           RETURNING *
         `;
         // Обновляем чаты, помечаем как заблокированные
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         // Удаляем блокировку
         const result = await sql`
           DELETE FROM user_blocks
-          WHERE user_token = ${blocker_token} AND blocked_id = ${blocked_token}
+          WHERE blocker_token = ${blocker_token} AND blocked_token = ${blocked_token}
           RETURNING *
         `;
         // Убираем отметку blocked_by из чатов
@@ -74,10 +74,10 @@ export async function POST(request: NextRequest) {
         }
         // Проверяем блокировку в обе стороны
         const result = await sql`
-          SELECT user_token, blocked_id
+          SELECT blocker_token, blocked_token
           FROM user_blocks
-          WHERE (user_token = ${user1_token} AND blocked_id = ${user2_token})
-             OR (user_token = ${user2_token} AND blocked_id = ${user1_token})
+          WHERE (blocker_token = ${user1_token} AND blocked_token = ${user2_token})
+             OR (blocker_token = ${user2_token} AND blocked_token = ${user1_token})
           LIMIT 1
         `;
         const blockData = result.rows[0];
@@ -85,10 +85,10 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ 
             data: {
               isBlocked: true,
-              blockedByCurrentUser: blockData.user_token == user1_token,
-              blockedByOther: blockData.user_token == user2_token,
-              blocker_token: blockData.user_token,
-              blocked_token: blockData.blocked_id
+              blockedByCurrentUser: blockData.blocker_token == user1_token,
+              blockedByOther: blockData.blocker_token == user2_token,
+              blocker_token: blockData.blocker_token,
+              blocked_token: blockData.blocked_token
             },
             error: null 
           });
@@ -112,9 +112,9 @@ export async function POST(request: NextRequest) {
         try {
           // Получаем список заблокированных пользователей
           const blockedList = await sql`
-            SELECT blocked_id, created_at as blocked_at
+            SELECT blocked_token, created_at as blocked_at
             FROM user_blocks
-            WHERE user_token = ${user_token}
+            WHERE blocker_token = ${user_token}
             ORDER BY created_at DESC
           `;
 
@@ -125,19 +125,19 @@ export async function POST(request: NextRequest) {
                 const nicknameResult = await sql`
                   SELECT nickname
                   FROM ads
-                  WHERE user_token = ${String(block.blocked_id)}
+                  WHERE user_token = ${String(block.blocked_token)}
                   ORDER BY created_at DESC
                   LIMIT 1
                 `;
                 
                 return {
-                  blocked_id: block.blocked_id,
+                  blocked_token: block.blocked_token,
                   blocked_at: block.blocked_at,
                   nickname: nicknameResult.rows[0]?.nickname || 'Собеседник'
                 };
               } catch (err) {
                 return {
-                  blocked_id: block.blocked_id,
+                  blocked_token: block.blocked_token,
                   blocked_at: block.blocked_at,
                   nickname: 'Собеседник'
                 };
