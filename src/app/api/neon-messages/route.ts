@@ -33,53 +33,53 @@ export async function POST(request: NextRequest) {
         if (photoUrl || telegramFileId) {
           // senderId может быть токеном, получаем числовой tg_id
           const isToken = senderId && typeof senderId === 'string' && senderId.length > 20;
-          let numericUserId: number;
+          let numericUserId: number | null = null;
           
           if (isToken) {
             const senderInfo = await sql`
               SELECT tg_id FROM ads WHERE user_token = ${senderId} ORDER BY created_at DESC LIMIT 1
             `;
-            if (senderInfo.rows.length === 0) {
-              return NextResponse.json({ 
-                data: null, 
-                error: { message: 'Sender not found' } 
-              }, { status: 404 });
+            if (senderInfo.rows.length > 0 && senderInfo.rows[0].tg_id) {
+              numericUserId = Number(senderInfo.rows[0].tg_id);
             }
-            numericUserId = Number(senderInfo.rows[0].tg_id);
+            // Если tg_id нет - пользователь без Telegram, пропускаем проверку лимитов
           } else {
             numericUserId = Number(senderId);
           }
           
-          const userResult = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
-          const limitsResult = await sql`SELECT photos_sent_today FROM user_limits WHERE user_id = ${numericUserId}`;
-          
-          let isPremium = userResult.rows[0]?.is_premium || false;
-          
-          // ПРИОРИТЕТ: проверяем premium_tokens если отправитель использует токен
-          if (isToken && senderId) {
-            const premiumTokenResult = await sql`
-              SELECT is_premium FROM premium_tokens WHERE user_token = ${senderId} LIMIT 1
-            `;
-            if (premiumTokenResult.rows.length > 0) {
-              isPremium = premiumTokenResult.rows[0].is_premium || false;
-              console.log('[MESSAGES API] PRO проверен через premium_tokens:', isPremium);
+          // Проверяем лимиты только если есть числовой ID
+          if (numericUserId && numericUserId > 0) {
+            const userResult = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
+            const limitsResult = await sql`SELECT photos_sent_today FROM user_limits WHERE user_id = ${numericUserId}`;
+            
+            let isPremium = userResult.rows[0]?.is_premium || false;
+            
+            // ПРИОРИТЕТ: проверяем premium_tokens если отправитель использует токен
+            if (isToken && senderId) {
+              const premiumTokenResult = await sql`
+                SELECT is_premium FROM premium_tokens WHERE user_token = ${senderId} LIMIT 1
+              `;
+              if (premiumTokenResult.rows.length > 0) {
+                isPremium = premiumTokenResult.rows[0].is_premium || false;
+                console.log('[MESSAGES API] PRO проверен через premium_tokens:', isPremium);
+              }
             }
-          }
-          
-          const photosToday = limitsResult.rows[0]?.photos_sent_today || 0;
-          const maxPhotos = isPremium ? 999999 : 5;
-          
-          if (photosToday >= maxPhotos) {
-            return NextResponse.json({ 
-              data: null, 
-              error: { 
-                message: isPremium 
-                  ? 'Технический лимит превышен' 
-                  : 'Вы уже отправили 5 фото сегодня. Оформите PRO для безлимита!',
-                limit: true,
-                isPremium
-              } 
-            }, { status: 429 });
+            
+            const photosToday = limitsResult.rows[0]?.photos_sent_today || 0;
+            const maxPhotos = isPremium ? 999999 : 5;
+            
+            if (photosToday >= maxPhotos) {
+              return NextResponse.json({ 
+                data: null, 
+                error: { 
+                  message: isPremium 
+                    ? 'Технический лимит превышен' 
+                    : 'Вы уже отправили 5 фото сегодня. Оформите PRO для безлимита!',
+                  limit: true,
+                  isPremium
+                } 
+              }, { status: 429 });
+            }
           }
         }
         
@@ -129,18 +129,21 @@ export async function POST(request: NextRequest) {
         if (photoUrl || telegramFileId) {
             // Получаем числовой ID для лимитов (senderId может быть токеном)
             const isToken = senderId && typeof senderId === 'string' && senderId.length > 20;
-            let numericUserId: number;
+            let numericUserId: number | null = null;
           
             if (isToken) {
               const senderInfo = await sql`
                 SELECT tg_id FROM ads WHERE user_token = ${senderId} ORDER BY created_at DESC LIMIT 1
               `;
-              numericUserId = senderInfo.rows.length > 0 ? Number(senderInfo.rows[0].tg_id) : 0;
+              if (senderInfo.rows.length > 0 && senderInfo.rows[0].tg_id) {
+                numericUserId = Number(senderInfo.rows[0].tg_id);
+              }
             } else {
               numericUserId = Number(senderId);
             }
           
-            if (numericUserId > 0) {
+            // Обновляем счетчик только если есть числовой ID
+            if (numericUserId && numericUserId > 0) {
               await sql`
                 INSERT INTO user_limits (user_id, photos_sent_today, photos_last_reset)
                 VALUES (${numericUserId}, 1, CURRENT_DATE)
