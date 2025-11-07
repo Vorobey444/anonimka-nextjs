@@ -206,30 +206,22 @@ export async function POST(request: NextRequest) {
         
         // Определяем, это токен или числовой ID
         const isToken = userId && typeof userId === 'string' && userId.length > 20;
-        let numericUserId: number;
+        let numericUserId: number | null = null;
+        let isPremium = false;
+        let photosToday = 0;
         
         if (isToken) {
           const adResult = await sql`
             SELECT tg_id FROM ads WHERE user_token = ${userId} LIMIT 1
           `;
-          if (adResult.rows.length === 0) {
-            return NextResponse.json({ data: { canSend: true }, error: null });
+          if (adResult.rows.length > 0 && adResult.rows[0].tg_id) {
+            numericUserId = Number(adResult.rows[0].tg_id);
           }
-          numericUserId = Number(adResult.rows[0].tg_id);
         } else {
           numericUserId = Number(userId);
         }
         
-        const user = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
-        const limits = await sql`SELECT * FROM user_limits WHERE user_id = ${numericUserId}`;
-        
-        if (user.rows.length === 0 || limits.rows.length === 0) {
-          return NextResponse.json({ data: { canSend: true }, error: null });
-        }
-        
-        let isPremium = user.rows[0].is_premium;
-        
-        // ПРИОРИТЕТ: проверяем premium_tokens если userId - это токен
+        // Проверяем premium статус
         if (isToken) {
           const premiumTokenResult = await sql`
             SELECT is_premium FROM premium_tokens WHERE user_token = ${userId} LIMIT 1
@@ -237,9 +229,21 @@ export async function POST(request: NextRequest) {
           if (premiumTokenResult.rows.length > 0) {
             isPremium = premiumTokenResult.rows[0].is_premium || false;
           }
+        } else if (numericUserId && numericUserId > 0) {
+          const user = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
+          isPremium = user.rows[0]?.is_premium || false;
         }
         
-        const photosToday = limits.rows[0].photos_sent_today || 0;
+        // Получаем счетчик фото
+        if (numericUserId && numericUserId > 0) {
+          // Telegram пользователь
+          const limits = await sql`SELECT photos_sent_today FROM user_limits WHERE user_id = ${numericUserId}`;
+          photosToday = limits.rows[0]?.photos_sent_today || 0;
+        } else if (isToken) {
+          // Веб-пользователь
+          const webLimits = await sql`SELECT photos_sent_today FROM web_user_limits WHERE user_token = ${userId}`;
+          photosToday = webLimits.rows[0]?.photos_sent_today || 0;
+        }
         
         const canSend = isPremium || photosToday < LIMITS.FREE.photos_per_day;
         

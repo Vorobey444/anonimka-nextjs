@@ -44,6 +44,8 @@ export async function POST(request: NextRequest) {
           // senderId может быть токеном, получаем числовой tg_id
           const isToken = senderId && typeof senderId === 'string' && senderId.length > 20;
           let numericUserId: number | null = null;
+          let isPremium = false;
+          let photosToday = 0;
           
           if (isToken) {
             const senderInfo = await sql`
@@ -52,44 +54,49 @@ export async function POST(request: NextRequest) {
             if (senderInfo.rows.length > 0 && senderInfo.rows[0].tg_id) {
               numericUserId = Number(senderInfo.rows[0].tg_id);
             }
-            // Если tg_id нет - пользователь без Telegram, пропускаем проверку лимитов
           } else {
             numericUserId = Number(senderId);
           }
           
-          // Проверяем лимиты только если есть числовой ID
-          if (numericUserId && numericUserId > 0) {
+          // Проверяем premium статус
+          if (isToken && senderId) {
+            const premiumTokenResult = await sql`
+              SELECT is_premium FROM premium_tokens WHERE user_token = ${senderId} LIMIT 1
+            `;
+            if (premiumTokenResult.rows.length > 0) {
+              isPremium = premiumTokenResult.rows[0].is_premium || false;
+              console.log('[MESSAGES API] PRO проверен через premium_tokens:', isPremium);
+            }
+          } else if (numericUserId && numericUserId > 0) {
             const userResult = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
+            isPremium = userResult.rows[0]?.is_premium || false;
+          }
+          
+          // Получаем счетчик фото в зависимости от типа пользователя
+          if (numericUserId && numericUserId > 0) {
+            // Telegram пользователь - проверяем user_limits
             const limitsResult = await sql`SELECT photos_sent_today FROM user_limits WHERE user_id = ${numericUserId}`;
-            
-            let isPremium = userResult.rows[0]?.is_premium || false;
-            
-            // ПРИОРИТЕТ: проверяем premium_tokens если отправитель использует токен
-            if (isToken && senderId) {
-              const premiumTokenResult = await sql`
-                SELECT is_premium FROM premium_tokens WHERE user_token = ${senderId} LIMIT 1
-              `;
-              if (premiumTokenResult.rows.length > 0) {
-                isPremium = premiumTokenResult.rows[0].is_premium || false;
-                console.log('[MESSAGES API] PRO проверен через premium_tokens:', isPremium);
-              }
-            }
-            
-            const photosToday = limitsResult.rows[0]?.photos_sent_today || 0;
-            const maxPhotos = isPremium ? 999999 : 5;
-            
-            if (photosToday >= maxPhotos) {
-              return NextResponse.json({ 
-                data: null, 
-                error: { 
-                  message: isPremium 
-                    ? 'Технический лимит превышен' 
-                    : 'Вы уже отправили 5 фото сегодня. Оформите PRO для безлимита!',
-                  limit: true,
-                  isPremium
-                } 
-              }, { status: 429 });
-            }
+            photosToday = limitsResult.rows[0]?.photos_sent_today || 0;
+          } else if (isToken && senderId) {
+            // Веб-пользователь - проверяем web_user_limits
+            const webLimitsResult = await sql`SELECT photos_sent_today FROM web_user_limits WHERE user_token = ${senderId}`;
+            photosToday = webLimitsResult.rows[0]?.photos_sent_today || 0;
+            console.log('[MESSAGES API] Веб-пользователь, фото сегодня:', photosToday);
+          }
+          
+          const maxPhotos = isPremium ? 999999 : 5;
+          
+          if (photosToday >= maxPhotos) {
+            return NextResponse.json({ 
+              data: null, 
+              error: { 
+                message: isPremium 
+                  ? 'Технический лимит превышен' 
+                  : 'Вы уже отправили 5 фото сегодня. Оформите PRO для безлимита!',
+                limit: true,
+                isPremium
+              } 
+            }, { status: 429 });
           }
         }
         
@@ -152,8 +159,9 @@ export async function POST(request: NextRequest) {
               numericUserId = Number(senderId);
             }
           
-            // Обновляем счетчик только если есть числовой ID
+            // Обновляем счетчик в зависимости от типа пользователя
             if (numericUserId && numericUserId > 0) {
+              // Telegram пользователь - обновляем user_limits
               await sql`
                 INSERT INTO user_limits (user_id, photos_sent_today, photos_last_reset)
                 VALUES (${numericUserId}, 1, CURRENT_DATE)
@@ -165,6 +173,20 @@ export async function POST(request: NextRequest) {
                   photos_last_reset = CURRENT_DATE,
                   updated_at = NOW()
               `;
+            } else if (isToken && senderId) {
+              // Веб-пользователь без tg_id - обновляем web_user_limits
+              await sql`
+                INSERT INTO web_user_limits (user_token, photos_sent_today, photos_last_reset)
+                VALUES (${senderId}, 1, CURRENT_DATE)
+                ON CONFLICT (user_token) DO UPDATE
+                SET photos_sent_today = CASE
+                    WHEN web_user_limits.photos_last_reset < CURRENT_DATE THEN 1
+                    ELSE web_user_limits.photos_sent_today + 1
+                  END,
+                  photos_last_reset = CURRENT_DATE,
+                  updated_at = NOW()
+              `;
+              console.log('[MESSAGES API] Счетчик фото обновлен для веб-пользователя:', senderId?.substring(0, 16) + '...');
             }
         }
         
