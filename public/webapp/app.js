@@ -7607,13 +7607,79 @@ async function toggleBlockUser() {
     
     console.log('🔍 [toggleBlockUser] Проверяем идентификаторы:', {
         currentOpponentId: currentOpponentId?.substring(0, 16) + '...',
-        currentOpponentToken: window.currentOpponentToken?.substring(0, 16) + '...'
+        currentOpponentToken: window.currentOpponentToken?.substring(0, 16) + '...',
+        currentChatId
     });
     
+    // Если идентификаторы не установлены, пытаемся получить их из чата
     if (!currentOpponentId && !window.currentOpponentToken) {
-        console.error('❌ [toggleBlockUser] ID собеседника не найден!');
-        tg.showAlert('Ошибка: ID собеседника не найден');
-        return;
+        console.log('⚠️ [toggleBlockUser] Идентификаторы не найдены, пытаемся получить из чата...');
+        
+        if (!currentChatId) {
+            console.error('❌ [toggleBlockUser] Нет ни идентификаторов, ни ID чата!');
+            tg.showAlert('Ошибка: ID собеседника не найден');
+            return;
+        }
+        
+        try {
+            // Получаем user_token (основной идентификатор)
+            let userId = localStorage.getItem('user_token');
+            
+            // Fallback на Telegram ID если токена нет
+            if (!userId || userId === 'null' || userId === 'undefined') {
+                userId = getCurrentUserId();
+            }
+            
+            console.log('🔄 [toggleBlockUser] Запрашиваем информацию о чате:', currentChatId);
+            
+            const response = await fetch('/api/neon-chats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'get-active',
+                    params: { userId }
+                })
+            });
+            const result = await response.json();
+            
+            if (result.error || !result.data) {
+                console.error('❌ [toggleBlockUser] Ошибка получения чатов:', result.error);
+                tg.showAlert('Ошибка загрузки информации о чате');
+                return;
+            }
+            
+            // Находим нужный чат
+            const chat = result.data.find(c => c.id == currentChatId);
+            
+            if (!chat) {
+                console.error('❌ [toggleBlockUser] Чат не найден в списке активных');
+                tg.showAlert('Чат не найден');
+                return;
+            }
+            
+            console.log('📋 [toggleBlockUser] Найден чат:', {
+                id: chat.id,
+                user_token_1: chat.user_token_1?.substring(0, 16) + '...',
+                user_token_2: chat.user_token_2?.substring(0, 16) + '...',
+                opponent_token: chat.opponent_token?.substring(0, 16) + '...'
+            });
+            
+            // Устанавливаем opponent_token из чата
+            if (chat.opponent_token) {
+                window.currentOpponentToken = chat.opponent_token;
+                currentOpponentId = chat.opponent_token;
+                console.log('✅ [toggleBlockUser] Идентификатор оппонента восстановлен из чата');
+            } else {
+                console.error('❌ [toggleBlockUser] opponent_token отсутствует в данных чата');
+                tg.showAlert('Ошибка: не удалось определить собеседника');
+                return;
+            }
+            
+        } catch (error) {
+            console.error('❌ [toggleBlockUser] Ошибка при получении информации о чате:', error);
+            tg.showAlert('Ошибка загрузки информации о чате');
+            return;
+        }
     }
     
     const userId = getCurrentUserId();
