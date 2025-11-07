@@ -7591,11 +7591,65 @@ async function handleReferralLink() {
             const urlParams = new URLSearchParams(window.location.search);
             const refParam = urlParams.get('ref');
             if (refParam) {
-                startParam = 'ref_' + refParam;
+                // АВТОМАТИЧЕСКИЙ РЕДИРЕКТ В TELEGRAM!
+                console.log('[REFERRAL] Обнаружен web-переход с ?ref=, редиректим в Telegram');
+                const botUsername = 'anonimka_kz_bot'; // Замените на имя вашего бота
+                const telegramLink = `https://t.me/${botUsername}?startapp=ref_${refParam}`;
+                
+                // Показываем сообщение и редиректим
+                document.body.innerHTML = `
+                    <div style="
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 100vh;
+                        background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+                        padding: 20px;
+                        text-align: center;
+                    ">
+                        <div style="
+                            background: rgba(0, 217, 255, 0.1);
+                            border: 2px solid var(--neon-cyan);
+                            border-radius: 20px;
+                            padding: 30px;
+                            max-width: 400px;
+                            box-shadow: 0 0 30px rgba(0, 217, 255, 0.3);
+                        ">
+                            <div style="font-size: 64px; margin-bottom: 20px;">✈️</div>
+                            <h2 style="color: var(--neon-cyan); margin-bottom: 15px;">Переход в Telegram</h2>
+                            <p style="color: var(--text-gray); margin-bottom: 25px;">
+                                Вас пригласили в Anonimka!<br>
+                                Открываем приложение в Telegram...
+                            </p>
+                            <a href="${telegramLink}" style="
+                                display: inline-block;
+                                background: rgba(0, 217, 255, 0.2);
+                                border: 2px solid var(--neon-cyan);
+                                border-radius: 12px;
+                                padding: 15px 30px;
+                                color: var(--text-light);
+                                text-decoration: none;
+                                font-weight: 600;
+                                box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+                            ">
+                                🚀 Открыть в Telegram
+                            </a>
+                        </div>
+                    </div>
+                `;
+                
+                // Автоматический редирект через 1 секунду
+                setTimeout(() => {
+                    window.location.href = telegramLink;
+                }, 1000);
+                
+                return; // Останавливаем дальнейшую обработку
             }
-            console.log('[REFERRAL DEBUG] URL параметр ?ref=:', refParam, '→ startParam:', startParam);
+            console.log('[REFERRAL DEBUG] URL параметр ?ref= не найден');
         } else {
             console.log('[REFERRAL DEBUG] Используем start_param из Telegram WebApp');
+            startParam = startParam; // Уже есть из Telegram
         }
         
         if (!startParam || !startParam.startsWith('ref_')) {
