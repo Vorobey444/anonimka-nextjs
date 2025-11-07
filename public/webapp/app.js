@@ -6259,14 +6259,22 @@ function closePhotoModal() {
 // Загрузить фото в Telegram и получить file_id
 async function uploadPhotoToTelegram(file, userId) {
     try {
+        // Сжимаем изображение если оно слишком большое (макс 4MB для Vercel)
+        let fileToUpload = file;
+        if (file.type.startsWith('image/') && file.size > 4 * 1024 * 1024) {
+            console.log('🗜️ Файл больше 4MB, сжимаем...');
+            fileToUpload = await compressImage(file, 4);
+        }
+        
         const formData = new FormData();
-        formData.append('photo', file);
+        formData.append('photo', fileToUpload);
         formData.append('userId', userId);
         
         console.log('📤 Отправка файла:', {
-            name: file.name,
-            type: file.type,
-            size: file.size
+            name: fileToUpload.name,
+            type: fileToUpload.type,
+            size: fileToUpload.size,
+            originalSize: file.size
         });
         
         const response = await fetch('/api/upload-photo', {

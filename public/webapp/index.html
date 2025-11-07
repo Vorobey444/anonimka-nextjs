@@ -1130,6 +1130,13 @@
     <script>
         // Принудительная очистка кеша
         const timestamp = Date.now();
+        
+            // Подключаем скрипт сжатия изображений
+            const compressScript = document.createElement('script');
+            compressScript.src = `/webapp/compress-image.js?v=${timestamp}`;
+            document.body.appendChild(compressScript);
+        
+            // Затем основной скрипт
         const script = document.createElement('script');
         script.src = `/webapp/app.js?v=${timestamp}`;
         document.body.appendChild(script);
