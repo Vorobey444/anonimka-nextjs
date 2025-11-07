@@ -2756,14 +2756,37 @@ async function pinMyAd(adId, shouldPin) {
             }
         }
         
-    // ...реализация через Neon API...
+        // Отправляем запрос на сервер
+        const userId = getCurrentUserId();
+        const userToken = localStorage.getItem('user_token') || userId;
+        
+        const response = await fetch('/api/ads', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'pin-ad',
+                params: {
+                    adId,
+                    shouldPin,
+                    userId: userToken
+                }
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            throw new Error(result.error.message || 'Ошибка сервера');
+        }
+        
+        const pinned = result.success;
         
         if (pinned) {
             if (shouldPin) {
                 // Обновляем статус Premium (лимиты изменились)
                 await loadPremiumStatus();
                 
-                tg.showAlert('✅ Функция успешно оплачена и включена!\n\nВаша анкета будет закреплено поверх других на 1 час.');
+                tg.showAlert('✅ Функция успешно оплачена и включена!\n\nВаша анкета будет закреплена поверх других на 1 час.');
             } else {
                 tg.showAlert('✅ Анкета откреплена');
             }
