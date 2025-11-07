@@ -295,6 +295,8 @@ export async function POST(request: NextRequest) {
       case 'total-unread': {
         const { userId } = params;
         
+        console.log('[TOTAL-UNREAD] userId:', userId);
+        
         // Считаем сообщения в чатах где я участник, но не отправитель сообщения
         const result = await sql`
           SELECT COUNT(*) as count 
@@ -306,8 +308,12 @@ export async function POST(request: NextRequest) {
             AND pc.accepted = true
             AND pc.blocked_by IS NULL
         `;
+        
+        const count = parseInt(result.rows[0].count);
+        console.log('[TOTAL-UNREAD] Result:', count);
+        
         return NextResponse.json({ 
-          data: { count: parseInt(result.rows[0].count) }, 
+          data: { count }, 
           error: null 
         });
       }

@@ -62,6 +62,9 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
+        
+        console.log('[GET-ACTIVE] userId:', userId);
+        
         const result = await sql`
           SELECT pc.*,
             (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message,
@@ -78,6 +81,12 @@ export async function POST(request: NextRequest) {
             AND blocked_by IS NULL
           ORDER BY pc.created_at DESC
         `;
+        
+        console.log('[GET-ACTIVE] Found chats:', result.rows.length);
+        result.rows.forEach((chat, idx) => {
+          console.log(`[GET-ACTIVE] Chat ${idx}: id=${chat.id}, unread=${chat.unread_count}, user1=${chat.user_token_1?.substring(0, 10)}, user2=${chat.user_token_2?.substring(0, 10)}`);
+        });
+        
         return NextResponse.json({ data: result.rows, error: null });
       }
 
