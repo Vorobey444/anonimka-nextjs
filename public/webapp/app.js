@@ -6491,10 +6491,17 @@ async function showAdModal(adId) {
         const goalsFormatted = formatGoals(ad.goal);
         
         const bodyLabels = {
+            // Английские варианты (старые)
             slim: 'Худощавое',
             athletic: 'Спортивное',
             average: 'Среднее',
-            curvy: 'Полное'
+            curvy: 'Полное',
+            // Русские варианты (новые)
+            'Стройное': 'Стройное',
+            'Обычное': 'Обычное',
+            'Плотное': 'Плотное',
+            'Спортивное': 'Спортивное',
+            'Другое': 'Другое'
         };
         
         const genderLower = ad.gender?.toLowerCase();
