@@ -83,9 +83,25 @@ export async function POST(request: NextRequest) {
         `;
         
         console.log('[GET-ACTIVE] Found chats:', result.rows.length);
-        result.rows.forEach((chat, idx) => {
-          console.log(`[GET-ACTIVE] Chat ${idx}: id=${chat.id}, unread=${chat.unread_count}, user1=${chat.user_token_1?.substring(0, 10)}, user2=${chat.user_token_2?.substring(0, 10)}`);
-        });
+        
+        // Для каждого чата проверяем детали непрочитанных
+        for (const chat of result.rows) {
+          const debugMessages = await sql`
+            SELECT id, sender_token, message, read, created_at
+            FROM messages 
+            WHERE chat_id = ${chat.id}
+            ORDER BY created_at DESC
+            LIMIT 3
+          `;
+          console.log(`[GET-ACTIVE] Chat ${chat.id}: unread=${chat.unread_count}, messages:`, 
+            debugMessages.rows.map(m => ({
+              id: m.id,
+              sender: m.sender_token?.substring(0, 10),
+              read: m.read,
+              msg: m.message?.substring(0, 20)
+            }))
+          );
+        }
         
         return NextResponse.json({ data: result.rows, error: null });
       }
