@@ -1110,17 +1110,41 @@
     <div id="customConfirmModal" class="modal" style="display: none;">
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
-                <h2>Уведомление от сайта anonimka.kz</h2>
+                <h2>Подтверждение</h2>
             </div>
             <div class="modal-body" style="padding: 20px;">
-                <p id="customConfirmMessage" style="color: var(--text-light); font-size: 1rem; line-height: 1.5; margin: 0;"></p>
+                <p id="customConfirmMessage" style="color: var(--text-light); font-size: 1rem; line-height: 1.5; margin: 0; white-space: pre-line;"></p>
             </div>
-            <div style="display: flex; gap: 10px; padding: 0 20px 20px 20px;">
-                <button class="neon-button primary" onclick="customConfirmOk()" style="flex: 1;">
-                    Да
+            <div class="confirm-buttons" style="display: flex; gap: 10px; padding: 0 20px 20px 20px;">
+                <button id="confirmYesBtn" onclick="customConfirmOk()" style="
+                    flex: 1;
+                    background: linear-gradient(45deg, #00d9ff, #8338ec);
+                    border: 2px solid var(--neon-cyan);
+                    color: white;
+                    padding: 14px 20px;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: 600;
+                    box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+                    transition: all 0.3s ease;
+                ">
+                    ✓ Да
                 </button>
-                <button class="neon-button" onclick="customConfirmCancel()" style="flex: 1; background: rgba(255,0,110,0.2); border-color: var(--neon-pink);">
-                    Нет
+                <button id="confirmNoBtn" onclick="customConfirmCancel()" style="
+                    flex: 1;
+                    background: rgba(255, 0, 110, 0.2);
+                    border: 2px solid var(--neon-pink);
+                    color: white;
+                    padding: 14px 20px;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: 600;
+                    box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+                    transition: all 0.3s ease;
+                ">
+                    ✗ Нет
                 </button>
             </div>
         </div>

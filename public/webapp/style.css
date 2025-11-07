@@ -2885,6 +2885,28 @@ h3 {
     transform: rotate(90deg);
 }
 
+/* Кнопки подтверждения в модальном окне */
+.confirm-buttons {
+    display: flex !important;
+    gap: 10px;
+    padding: 0 20px 20px 20px;
+}
+
+#confirmYesBtn:hover,
+#confirmNoBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 30px rgba(0, 217, 255, 0.6);
+}
+
+#confirmNoBtn:hover {
+    box-shadow: 0 5px 30px rgba(255, 0, 110, 0.6);
+}
+
+#confirmYesBtn:active,
+#confirmNoBtn:active {
+    transform: translateY(0);
+}
+
 .modal-body {
     padding: 25px;
 }
