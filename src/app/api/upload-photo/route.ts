@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sql } from '@vercel/postgres';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,17 +32,44 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Получаем tg_id пользователя (userId может быть токеном)
+    const isToken = userId && typeof userId === 'string' && userId.length > 20;
+    let telegramUserId: string | null = null;
+    
+    if (isToken) {
+      // Ищем tg_id по токену
+      const userInfo = await sql`
+        SELECT tg_id FROM ads WHERE user_token = ${userId} ORDER BY created_at DESC LIMIT 1
+      `;
+      if (userInfo.rows.length > 0 && userInfo.rows[0].tg_id) {
+        telegramUserId = userInfo.rows[0].tg_id.toString();
+      }
+    } else {
+      telegramUserId = userId;
+    }
+    
+    if (!telegramUserId) {
+      console.log('⚠️ Uploading photo without sending to Telegram (no tg_id found)');
+      // Для web-only пользователей: просто сохраняем файл локально
+      // TODO: implement file storage (e.g., Vercel Blob, AWS S3)
+      return NextResponse.json(
+        { error: { message: 'Photo upload for web-only users not yet implemented' } },
+        { status: 501 }
+      );
+    }
+    
     // Конвертируем File в Buffer
     const buffer = Buffer.from(await photo.arrayBuffer());
     
     // Создаём FormData для Telegram API
     const telegramFormData = new FormData();
-    telegramFormData.append('chat_id', userId);
+    telegramFormData.append('chat_id', telegramUserId);
     telegramFormData.append('photo', new Blob([buffer]), 'photo.jpg');
-    telegramFormData.append('caption', '📸 Фото отправлено через Anonimka');
+    telegramFormData.append('caption', '📸 Фото через Anonimka');
     
     console.log('📤 Загрузка фото в Telegram:', {
-      userId,
+      userId: userId.substring(0, 10) + '...',
+      tg_id: telegramUserId,
       photoSize: buffer.length,
       photoType: photo.type
     });
@@ -57,7 +85,7 @@ export async function POST(request: NextRequest) {
     if (!result.ok) {
       console.error('❌ Telegram API error:', result);
       return NextResponse.json(
-        { error: { message: 'Failed to upload photo to Telegram' } },
+        { error: { message: result.description || 'Failed to upload photo to Telegram' } },
         { status: 500 }
       );
     }
