@@ -66,18 +66,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Вставка с учётом доступных идентификаторов
+        // Вставка: referred_id будет NULL для новых пользователей (заполнится позже при создании анкеты)
         await sql`
             INSERT INTO referrals (referrer_id, referred_id, referrer_token, referred_token)
             VALUES (
                 ${refTgId},
-                ${!newIsToken && isDigits(new_user_token) ? Number(new_user_token) : null},
+                NULL,
                 ${refIsToken ? referrer_token : null},
                 ${newIsToken ? new_user_token : null}
             )
         `;
 
-        console.log('[REFERRAL] ✅ Реферал успешно зарегистрирован');
+        console.log('[REFERRAL] ✅ Реферал успешно зарегистрирован (referred_id заполнится при создании анкеты)');
 
         return NextResponse.json({ 
             success: true,
@@ -117,7 +117,7 @@ export async function PUT(request: NextRequest) {
 
         // Находим реферала: по referred_token (веб) или по referred_id (telegram)
         const referralResult = await sql`
-            SELECT id, referrer_id, referrer_token, reward_given 
+            SELECT id, referrer_id, referrer_token, reward_given, referred_id
             FROM referrals 
             WHERE (referred_token = ${new_user_token})
                OR (${tgId !== null} AND referred_id = ${tgId})
@@ -133,7 +133,13 @@ export async function PUT(request: NextRequest) {
             );
         }
 
-        const referral = referralResult.rows[0] as { id: number; referrer_id: number | null; referrer_token: string | null; reward_given: boolean };
+        const referral = referralResult.rows[0] as { id: number; referrer_id: number | null; referrer_token: string | null; reward_given: boolean; referred_id: number | null };
+
+        // Обновляем referred_id если он пустой и теперь известен tg_id
+        if (tgId !== null && referral.referred_id === null) {
+            await sql`UPDATE referrals SET referred_id = ${tgId} WHERE id = ${referral.id}`;
+            console.log('[REFERRAL REWARD] ✅ Обновлен referred_id =', tgId);
+        }
 
         // ЗАЩИТА: награда за этого конкретного реферала уже выдана — дубли не допускаются
         if (referral.reward_given) {
