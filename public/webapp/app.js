@@ -7448,15 +7448,15 @@ function showReferralModal() {
     // 2. Прямая веб-ссылка (работает всегда!)
     const webLink = `https://anonimka.kz/webapp?ref=${userToken}`;
     
-    // Показываем оба варианта
+    // Показываем веб-ссылку (самый надёжный вариант)
     referralLinkEl.innerHTML = `
-        <div style="margin-bottom: 10px;">
-            <strong>📱 Telegram:</strong><br>
-            <span style="font-size: 12px; word-break: break-all;">${telegramLink}</span>
+        <div style="margin-bottom: 8px;">
+            <span style="font-size: 11px; color: var(--neon-cyan);">💡 Рекомендуем этот вариант:</span><br>
+            <span style="font-size: 12px; word-break: break-all; color: var(--text-gray);">${webLink}</span>
         </div>
-        <div>
-            <strong>🌐 Веб (работает всегда):</strong><br>
-            <span style="font-size: 12px; word-break: break-all;">${webLink}</span>
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(131,56,236,0.2);">
+            <span style="font-size: 11px; color: var(--text-gray);">Для Telegram:</span><br>
+            <span style="font-size: 11px; word-break: break-all; color: var(--text-gray); opacity: 0.7;">${telegramLink}</span>
         </div>
     `;
     
