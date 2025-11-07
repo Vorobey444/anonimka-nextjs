@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
           SELECT pc.*,
             (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message,
             (SELECT created_at FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
+            (SELECT COUNT(*) FROM messages WHERE chat_id = pc.id AND sender_token != ${userId} AND read = false) as unread_count,
             CASE WHEN ${userId} = pc.user_token_1 THEN 'user1' ELSE 'user2' END as my_role,
             CASE 
               WHEN ${userId} = pc.user_token_1 THEN pc.user_token_2

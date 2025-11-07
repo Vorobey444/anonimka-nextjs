@@ -247,11 +247,12 @@ export async function POST(request: NextRequest) {
       // Пометить сообщения как прочитанные
       case 'mark-read': {
         const { chatId, userId } = params;
+        // Определяем какие сообщения читать: где sender_token != userId
         await sql`
           UPDATE messages 
           SET read = true, delivered = true
           WHERE chat_id = ${chatId} 
-            AND receiver_id::text = ${String(userId)}
+            AND sender_token != ${userId}
             AND read = false
         `;
         return NextResponse.json({ data: { success: true }, error: null });
@@ -260,11 +261,15 @@ export async function POST(request: NextRequest) {
       // Пометить сообщения как доставленные (но не прочитанные)
       case 'mark-delivered': {
         const { userId } = params;
+        // Помечаем доставленными все сообщения где я получатель (sender != я)
         await sql`
-          UPDATE messages 
+          UPDATE messages m
           SET delivered = true 
-          WHERE receiver_id::text = ${String(userId)}
-            AND delivered = false
+          FROM private_chats pc
+          WHERE m.chat_id = pc.id
+            AND m.sender_token != ${userId}
+            AND (pc.user_token_1 = ${userId} OR pc.user_token_2 = ${userId})
+            AND m.delivered = false
         `;
         return NextResponse.json({ data: { success: true }, error: null });
       }
@@ -272,11 +277,12 @@ export async function POST(request: NextRequest) {
       // Получить количество непрочитанных сообщений
       case 'unread-count': {
         const { chatId, userId } = params;
+        // Считаем сообщения где sender != userId
         const result = await sql`
           SELECT COUNT(*) as count 
           FROM messages 
           WHERE chat_id = ${chatId} 
-            AND receiver_id::text = ${String(userId)}
+            AND sender_token != ${userId}
             AND read = false
         `;
         return NextResponse.json({ 
@@ -289,12 +295,13 @@ export async function POST(request: NextRequest) {
       case 'total-unread': {
         const { userId } = params;
         
-        // receiver_id может быть как numeric (legacy), так и text (token). Сравниваем в текстовом виде.
+        // Считаем сообщения в чатах где я участник, но не отправитель сообщения
         const result = await sql`
           SELECT COUNT(*) as count 
           FROM messages m
           JOIN private_chats pc ON m.chat_id = pc.id
-          WHERE m.receiver_id::text = ${String(userId)}
+          WHERE m.sender_token != ${userId}
+            AND (pc.user_token_1 = ${userId} OR pc.user_token_2 = ${userId})
             AND m.read = false
             AND pc.accepted = true
             AND pc.blocked_by IS NULL
