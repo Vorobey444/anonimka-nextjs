@@ -2826,8 +2826,36 @@ async function deleteMyAd(adId) {
     }
     
     try {
-    // ...реализация через Neon API...
-        
+        // Определяем текущего пользователя (предпочтительно Telegram ID)
+        const userId = getCurrentUserId();
+        const userToken = localStorage.getItem('user_token');
+
+        if ((!userId || userId.startsWith('web_')) && !userToken) {
+            tg.showAlert('❌ Требуется авторизация через Telegram');
+            return;
+        }
+
+        // Отправляем запрос на сервер для удаления
+        const response = await fetch('/api/ads', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: adId,
+                tgId: (!userId || userId.startsWith('web_')) ? undefined : userId,
+                // Передаем user_token как дополнительную проверку владения (если есть)
+                user_token: userToken || undefined
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.error) {
+            throw new Error(result.error.message || result.error || 'Ошибка сервера');
+        }
+
+        // API возвращает success=true если запись удалена
+        const deleted = result.success === true || result.deleted === true;
+
         if (deleted) {
             const deleteMessages = [
                 '🗑️ Анкета удалена успешно!\n\nНе переживай, можно создать новую 💪',
@@ -2839,6 +2867,8 @@ async function deleteMyAd(adId) {
             tg.showAlert(randomDelete);
             // Перезагружаем список
             loadMyAds();
+            // Обновляем лимиты (used/remaining) после удаления
+            await loadPremiumStatus();
         } else {
             tg.showAlert('❌ Не удалось удалить анкету\n\nПопробуй ещё раз, БРО 🤷');
         }
@@ -7213,9 +7243,9 @@ function updatePremiumUI() {
     // Убираем активные классы
     freeBtn.classList.remove('active', 'free');
     proBtn.classList.remove('active', 'pro');
-    // Блокируем явное переключение тарифов в верхнем тоггле
-    freeBtn.disabled = true; // FREE всегда по умолчанию без PRO
-    proBtn.disabled = !userPremiumStatus.isPremium; // PRO недоступен, если не PRO
+    // Переключатель вверху всегда кликабельный: открывает модалку тарифов
+    freeBtn.disabled = false;
+    proBtn.disabled = false;
     if (!userPremiumStatus.isPremium) {
         proBtn.classList.add('locked');
         proBtn.title = 'PRO доступен через приглашение друга';
@@ -7343,6 +7373,7 @@ function updatePremiumModalButtons() {
     const freeBtn = document.querySelector('.pricing-card:not(.featured) .pricing-btn');
     const proBtn = document.getElementById('activatePremiumBtn');
     const referralInfo = document.getElementById('referralInfo');
+    const trialBtn = document.getElementById('trialBtn');
     
     if (userPremiumStatus.isPremium) {
         // Пользователь PRO
@@ -7352,9 +7383,26 @@ function updatePremiumModalButtons() {
             freeBtn.classList.add('disabled');
         }
         if (proBtn) {
-            proBtn.textContent = '✅ PRO активен';
+            if (userPremiumStatus.trial) {
+                const until = userPremiumStatus.premiumUntil ? new Date(userPremiumStatus.premiumUntil) : null;
+                let timeLeft = '';
+                if (until) {
+                    const diff = until.getTime() - Date.now();
+                    if (diff > 0) {
+                        const hours = Math.floor(diff / (1000*60*60));
+                        const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
+                        timeLeft = ` ⏳ ${hours}ч ${mins}м`; 
+                    }
+                }
+                proBtn.textContent = '✅ PRO триал активен' + timeLeft;
+            } else {
+                proBtn.textContent = '✅ PRO активен';
+            }
             proBtn.disabled = true;
             proBtn.classList.add('active');
+        }
+        if (trialBtn) {
+            trialBtn.style.display = 'none'; // Скрываем кнопку триала если уже активен PRO
         }
         if (referralInfo) referralInfo.style.display = 'none';
     } else {
@@ -7365,10 +7413,14 @@ function updatePremiumModalButtons() {
             freeBtn.classList.add('active');
         }
         if (proBtn) {
-            proBtn.textContent = '🔒 PRO через реферал';
-            proBtn.disabled = true;
+            // Делаем кнопку кликабельной, но помечаем, что активация через реферал
+            proBtn.textContent = 'Оформить PRO (реферал)';
+            proBtn.disabled = false;
             proBtn.classList.add('locked');
             proBtn.title = 'Пригласи друга: он создаёт анкету → ты получаешь PRO';
+        }
+        if (trialBtn) {
+            trialBtn.style.display = 'inline-block';
         }
         if (referralInfo) referralInfo.style.display = 'block';
     }
@@ -7403,9 +7455,16 @@ async function activatePremium() {
                             '⚡️ PLOT TWIST!\n\nДенег не надо, друзей надо! 🤝\n\nРеферальная программа — твой ключ к PRO! 🗝️'
                         ];
                         const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-                        tg.showAlert(randomMsg, () => {
-                            // Автоматически открываем реферальное модальное окно
-                            showReferralModal();
+                        tg.showAlert(randomMsg + '\n\n🎃 Но могу дать тебе троллинг-TRIAL: 7 часов PRO, потом превратится в тыкву и снова нужен друг. Хочешь?', () => {
+                            // Второй шаг: предлагаем 7-часовой trial
+                            tg.showConfirm('🔥 Врубить 7 часов PRO сейчас? Потом всё исчезнет как карета в 00:00!', (trialConfirm) => {
+                                if (trialConfirm) {
+                                    activatePremiumTrial7h();
+                                } else {
+                                    // Показываем окно реферала если отказался от trial
+                                    showReferralModal();
+                                }
+                            });
                         });
                     } else {
                         // Если отказался - кринжовая подначка
@@ -7521,6 +7580,102 @@ async function activatePremium() {
         }
     }
 }
+
+// Отдельная кнопка «Кринжовые ответы» в модалке PRO
+function showCringeAnswers() {
+    const phrases = [
+        '😂 Ну тогда пригласи друга, БРО!\n\n📲 Твоя реферальная ссылка ждёт в разделе "Реферальная программа"',
+        '🤣 Ахаха! Думал будет кнопка "Купить"?\n\nНЕТ, БРО! Только через друга! 💪',
+        '😏 Хитрый план не прокатил!\n\nPRO = приглашение друга, вот и вся магия ✨',
+        '🎭 Сюрприз! Халявы нет!\n\nНо есть БЕСПЛАТНЫЙ PRO через реферала!',
+        '💡 PRO дают за друзей, а не за кнопки! \n\nВперёд приглашать! 🚀',
+        '🎪 Билет = 1 друг = 1 месяц PRO 🎟️',
+        '🧠 200 IQ? Тогда зови кореша! 💪',
+        '⚡️ Денег не надо — друзей надо! 🤝'
+    ];
+    const random = phrases[Math.floor(Math.random() * phrases.length)];
+    if (typeof tg !== 'undefined' && tg && tg.showAlert) {
+        tg.showAlert(random);
+    } else {
+        alert(random);
+    }
+}
+
+// Показ предложения триала (отдельная кнопка)
+function showTrialOffer() {
+    if (userPremiumStatus.isPremium) {
+        if (tg && tg.showAlert) tg.showAlert('Уже активен PRO, триал недоступен.');
+        return;
+    }
+    const pitch = '🎃 Могу дать тебе 7 часов PRO.' +
+                  '\n📢 До 3 анкет' +
+                  '\n📸 Безлимит фото' +
+                  '\n📌 3 закрепления' +
+                  '\n\nПотом превратится в тыкву и снова нужен друг 👻' +
+                  '\n\nВключить сейчас?';
+    if (tg && tg.showConfirm) {
+        tg.showConfirm(pitch, (ok) => {
+            if (ok) activatePremiumTrial7h();
+        });
+    } else {
+        if (confirm(pitch.replace(/\n/g,'\n'))) activatePremiumTrial7h();
+    }
+}
+
+// Активировать 7-часовой TRIAL (клиент вызывает toggle-premium с флагом)
+async function activatePremiumTrial7h() {
+    try {
+        const userId = getCurrentUserId();
+        if (!userId || userId.startsWith('web_')) {
+            tg.showAlert('Нужна авторизация через Telegram');
+            return;
+        }
+        const btn = document.getElementById('activatePremiumBtn');
+        if (btn) { btn.textContent = '⏳ Триал...'; btn.disabled = true; }
+        const response = await fetch('/api/premium', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'toggle-premium', params: { userId, trial7h: true } })
+        });
+        const result = await response.json();
+        if (result.error) throw new Error(result.error.message);
+        await loadPremiumStatus();
+        const until = new Date(result.data.premiumUntil);
+        const hh = until.getHours().toString().padStart(2,'0');
+        const mm = until.getMinutes().toString().padStart(2,'0');
+        tg.showAlert('🎉 7 ЧАСОВ PRO активированы! До: ' + hh + ':' + mm + '\n\nПосле этого вернёшься в FREE. Чтобы получить месяц — пригласи друга!');
+        setTimeout(() => closePremiumModal(), 1200);
+        // Локальный таймер обратного отсчёта (опционально можно в UI)
+        window.proTrialEndsAt = until.getTime();
+    } catch (e) {
+        console.error('Ошибка trial7h:', e);
+        tg.showAlert('Ошибка триала: ' + e.message);
+        const btn = document.getElementById('activatePremiumBtn');
+        if (btn) { btn.textContent = 'Оформить PRO'; btn.disabled = false; }
+    }
+}
+
+// Проверка истечения 7-часового trial (каждые 60 сек)
+setInterval(() => {
+    if (window.proTrialEndsAt && userPremiumStatus.isPremium) {
+        const now = Date.now();
+        if (now >= window.proTrialEndsAt) {
+            // Авто-откат через toggle-premium (выключаем PRO)
+            const userId = getCurrentUserId();
+            fetch('/api/premium', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'toggle-premium', params: { userId } })
+            }).then(r => r.json()).then(async (res) => {
+                await loadPremiumStatus();
+                if (tg && tg.showAlert) {
+                    tg.showAlert('🎃 Триал закончился! PRO превратился в тыкву. Пригласи друга для месяца PRO.');
+                }
+                window.proTrialEndsAt = null;
+            }).catch(err => console.error('Auto trial revert error:', err));
+        }
+    }
+}, 60000);
 
 // Проверить лимит фото перед отправкой
 async function checkPhotoLimit() {

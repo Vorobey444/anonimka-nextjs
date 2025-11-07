@@ -344,9 +344,13 @@ export async function POST(request: NextRequest) {
         const user = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
         const currentStatus = user.rows[0]?.is_premium || false;
         
-        const premiumUntil = !currentStatus ? 
-          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : // +30 дней
-          null;
+        // Добавляем поддержку короткого троллинг-триала (7 часов), если передан флаг trial7h
+        const trialFlag = params?.trial7h === true || params?.trial7h === 'true';
+        let premiumUntil: string | null = null;
+        if (!currentStatus) {
+          const durationMs = trialFlag ? (7 * 60 * 60 * 1000) : (30 * 24 * 60 * 60 * 1000); // 7 часов или 30 дней
+          premiumUntil = new Date(Date.now() + durationMs).toISOString();
+        }
         
         await sql`
           UPDATE users
@@ -359,7 +363,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           data: {
             isPremium: !currentStatus,
-            premiumUntil
+            premiumUntil,
+            trial: trialFlag
           },
           error: null
         });

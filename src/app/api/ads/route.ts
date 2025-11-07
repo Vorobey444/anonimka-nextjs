@@ -376,9 +376,9 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Проверяем, что объявление принадлежит пользователю
+    // Проверяем, что объявление принадлежит пользователю и забираем дату создания для коррекции лимитов
     const checkResult = await sql`
-      SELECT tg_id FROM ads WHERE id = ${id}
+      SELECT tg_id, created_at FROM ads WHERE id = ${id}
     `;
 
     if (checkResult.rows.length === 0) {
@@ -402,6 +402,33 @@ export async function DELETE(req: NextRequest) {
 
     // Удаляем из Neon PostgreSQL
     await sql`DELETE FROM ads WHERE id = ${id}`;
+
+    // Если объявление было создано сегодня (по времени Алматы UTC+5), уменьшаем счётчик объявлений за день
+    try {
+      const createdAt: any = checkResult.rows[0]?.created_at;
+      if (createdAt) {
+        // Определяем текущую дату и дату создания в часовом поясе Алматы (UTC+5)
+        const nowUTC = new Date();
+        const almatyNow = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+        const currentAlmatyDate = almatyNow.toISOString().split('T')[0];
+
+        const createdUTC = new Date(createdAt);
+        const createdAlmaty = new Date(createdUTC.getTime() + (5 * 60 * 60 * 1000));
+        const createdAlmatyDate = createdAlmaty.toISOString().split('T')[0];
+
+        if (createdAlmatyDate === currentAlmatyDate) {
+          await sql`
+            UPDATE user_limits
+            SET ads_created_today = GREATEST(0, COALESCE(ads_created_today, 0) - 1),
+                updated_at = NOW()
+            WHERE user_id = ${requesterId}
+          `;
+          console.log('[ADS API] Декремент счётчика объявлений за сегодня для пользователя', requesterId);
+        }
+      }
+    } catch (decErr) {
+      console.warn('[ADS API] Не удалось декрементировать счётчик объявлений:', decErr);
+    }
 
     console.log("[ADS API] Объявление успешно удалено:", id);
     
