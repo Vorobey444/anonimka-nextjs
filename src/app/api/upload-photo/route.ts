@@ -73,6 +73,12 @@ export async function POST(request: NextRequest) {
     // И укажите ID канала в переменной окружения TELEGRAM_STORAGE_CHANNEL
     const storageChannel = process.env.TELEGRAM_STORAGE_CHANNEL;
     
+    console.log('🔍 Проверка TELEGRAM_STORAGE_CHANNEL:', {
+      exists: !!storageChannel,
+      value: storageChannel ? storageChannel.substring(0, 10) + '...' : 'undefined',
+      allEnvKeys: Object.keys(process.env).filter(k => k.includes('TELEGRAM'))
+    });
+    
     if (!storageChannel) {
       console.error('❌ TELEGRAM_STORAGE_CHANNEL не настроен!');
       console.log('💡 Создайте приватный канал, добавьте бота @anonimka_kz_bot как админа');
