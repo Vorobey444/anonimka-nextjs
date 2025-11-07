@@ -93,18 +93,26 @@ tg.showPopup = function(params, callback) {
 let customConfirmCallback = null;
 
 window.customConfirmOk = function customConfirmOk() {
+    console.log('[CONFIRM] Нажата кнопка ДА (подтверждение)');
     const modal = document.getElementById('customConfirmModal');
-    modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'none';
+    }
     if (customConfirmCallback) {
+        console.log('[CONFIRM] Вызываем callback с true');
         customConfirmCallback(true);
         customConfirmCallback = null;
     }
 }
 
 window.customConfirmCancel = function customConfirmCancel() {
+    console.log('[CONFIRM] Нажата кнопка НЕТ (отмена)');
     const modal = document.getElementById('customConfirmModal');
-    modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'none';
+    }
     if (customConfirmCallback) {
+        console.log('[CONFIRM] Вызываем callback с false');
         customConfirmCallback(false);
         customConfirmCallback = null;
     }
@@ -112,6 +120,8 @@ window.customConfirmCancel = function customConfirmCancel() {
 
 // Fallback для showConfirm в браузерной версии
 tg.showConfirm = tg.showConfirm || function(message, callback) {
+    console.log('[CONFIRM] showConfirm вызван с сообщением:', message);
+    
     // ТОЛЬКО для Telegram WebApp используем нативный метод
     const isRealTelegram = !!(
         window.Telegram?.WebApp?.platform && 
@@ -119,24 +129,30 @@ tg.showConfirm = tg.showConfirm || function(message, callback) {
         window.Telegram.WebApp.initData
     );
     
+    console.log('[CONFIRM] isRealTelegram:', isRealTelegram);
+    
     if (isRealTelegram && window.Telegram?.WebApp?.showConfirm) {
         try {
+            console.log('[CONFIRM] Используем Telegram.WebApp.showConfirm');
             window.Telegram.WebApp.showConfirm(message, callback);
             return;
         } catch (e) {
-            console.warn('showConfirm failed:', e.message);
+            console.warn('[CONFIRM] showConfirm failed:', e.message);
         }
     }
     
     // В браузерной версии используем кастомное модальное окно
+    console.log('[CONFIRM] Используем кастомное модальное окно');
     const modal = document.getElementById('customConfirmModal');
     const messageEl = document.getElementById('customConfirmMessage');
     
     if (modal && messageEl) {
+        console.log('[CONFIRM] Модальное окно найдено, показываем');
         messageEl.textContent = message;
         modal.style.display = 'flex';
         customConfirmCallback = callback;
     } else {
+        console.warn('[CONFIRM] Модальное окно не найдено, используем confirm()');
         // Если модалка не найдена, fallback на обычный confirm
         const result = confirm(message);
         if (callback) {
