@@ -9046,7 +9046,7 @@ async function showBlockedUsers() {
                         <div class="blocked-user-date">Заблокирован ${formatChatTime(user.blocked_at)}</div>
                     </div>
                 </div>
-                <button class="unblock-btn" onclick="unblockUserFromList('${user.blocked_id}')" title="Разблокировать">
+                <button class="unblock-btn" onclick="unblockUserFromList('${user.blocked_token}')" title="Разблокировать">
                     ×
                 </button>
             </div>
