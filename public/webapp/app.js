@@ -3714,42 +3714,85 @@ function processIPLocation(data) {
     
     // Поиск региона
     if (regionName) {
+        console.log('🔍 Ищем регион:', regionName);
+        
+        // Сначала пробуем точное совпадение
         for (const region in countryData.regions) {
-            if (region.toLowerCase().includes(regionName.toLowerCase()) || 
-                regionName.toLowerCase().includes(region.toLowerCase())) {
+            if (region.toLowerCase() === regionName.toLowerCase()) {
                 foundRegion = region;
+                console.log('✅ Найден регион (точное совпадение):', foundRegion);
                 break;
             }
+        }
+        
+        // Если не нашли точное, пробуем fuzzy search
+        if (!foundRegion) {
+            for (const region in countryData.regions) {
+                if (region.toLowerCase().includes(regionName.toLowerCase()) || 
+                    regionName.toLowerCase().includes(region.toLowerCase())) {
+                    foundRegion = region;
+                    console.log('✅ Найден регион (частичное совпадение):', foundRegion);
+                    break;
+                }
+            }
+        }
+        
+        if (!foundRegion) {
+            console.log('❌ Регион не найден в базе:', regionName);
         }
     }
     
     // Поиск города
     if (cityName && foundRegion) {
+        console.log('🔍 Ищем город:', cityName, 'в регионе:', foundRegion);
         const cities = countryData.regions[foundRegion];
-        foundCity = cities.find(city => 
-            city.toLowerCase().includes(cityName.toLowerCase()) ||
-            cityName.toLowerCase().includes(city.toLowerCase())
-        );
+        
+        // Сначала точное совпадение
+        foundCity = cities.find(city => city.toLowerCase() === cityName.toLowerCase());
+        
+        // Потом fuzzy search
+        if (!foundCity) {
+            foundCity = cities.find(city => 
+                city.toLowerCase().includes(cityName.toLowerCase()) ||
+                cityName.toLowerCase().includes(city.toLowerCase())
+            );
+        }
+        
+        if (foundCity) {
+            console.log('✅ Найден город в регионе:', foundCity);
+        } else {
+            console.log('❌ Город не найден в регионе:', foundRegion);
+        }
     }
     
     // Если город не найден в определенном регионе, ищем по всем регионам
     if (cityName && !foundCity) {
+        console.log('🔍 Ищем город по всем регионам:', cityName);
         for (const region in countryData.regions) {
             const cities = countryData.regions[region];
-            const city = cities.find(city => 
-                city.toLowerCase().includes(cityName.toLowerCase()) ||
-                cityName.toLowerCase().includes(city.toLowerCase())
-            );
+            
+            // Сначала точное совпадение
+            let city = cities.find(city => city.toLowerCase() === cityName.toLowerCase());
+            
+            // Потом fuzzy search
+            if (!city) {
+                city = cities.find(city => 
+                    city.toLowerCase().includes(cityName.toLowerCase()) ||
+                    cityName.toLowerCase().includes(city.toLowerCase())
+                );
+            }
+            
             if (city) {
                 foundRegion = region;
                 foundCity = city;
+                console.log('✅ Найден город в другом регионе:', city, '→', region);
                 break;
             }
         }
     }
     
     // Возвращаем найденную локацию или базовую для страны
-    return {
+    const result = {
         country: mappedCountry,
         region: foundRegion || Object.keys(countryData.regions)[0],
         city: foundCity || countryData.regions[foundRegion || Object.keys(countryData.regions)[0]][0],
@@ -3759,6 +3802,13 @@ function processIPLocation(data) {
             city: cityName
         }
     };
+    
+    console.log('📍 Итоговая локация:', result);
+    if (!foundRegion || !foundCity) {
+        console.warn('⚠️ Использованы значения по умолчанию!', {foundRegion, foundCity});
+    }
+    
+    return result;
 }
 
 // Показать результат определения локации
