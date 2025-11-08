@@ -55,16 +55,47 @@ function safeLog(...args) {
     console.log(...safeArgs);
 }
 
-// Безопасная обертка для showAlert с fallback на alert()
+// Безопасная обертка для showAlert с fallback на модальное окно
 // Сохраняем оригинальные методы
 const originalShowAlert = tg.showAlert ? tg.showAlert.bind(tg) : null;
 const originalShowPopup = tg.showPopup ? tg.showPopup.bind(tg) : null;
+
+// Функция для показа кастомного alert
+function showCustomAlert(message, callback) {
+    const modal = document.getElementById('customAlertModal');
+    const messageEl = document.getElementById('customAlertMessage');
+    const btn = document.getElementById('customAlertBtn');
+    
+    if (modal && messageEl && btn) {
+        messageEl.textContent = message;
+        modal.style.display = 'flex';
+        
+        // Удаляем предыдущие обработчики
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        // Добавляем новый обработчик
+        newBtn.onclick = function() {
+            modal.style.display = 'none';
+            if (callback) setTimeout(callback, 0);
+        };
+    } else {
+        alert(message);
+        if (callback) setTimeout(callback, 0);
+    }
+}
 
 // Безопасная обертка для showPopup с fallback на showAlert
 tg.showPopup = function(params, callback) {
     // Проверяем версию и наличие метода
     const version = parseFloat(tg.version || '6.0');
-    if (version >= 6.2 && originalShowPopup) {
+    const isRealTelegram = !!(
+        window.Telegram?.WebApp?.platform && 
+        window.Telegram.WebApp.platform !== 'unknown' &&
+        window.Telegram.WebApp.initData
+    );
+    
+    if (isRealTelegram && version >= 6.2 && originalShowPopup) {
         try {
             originalShowPopup(params, callback);
             return;
@@ -73,67 +104,120 @@ tg.showPopup = function(params, callback) {
         }
     }
     
-    // Fallback: используем оригинальный showAlert напрямую
+    // Fallback: используем кастомный alert
     const message = params.message || params.title || 'Уведомление';
-    if (originalShowAlert) {
-        try {
-            originalShowAlert(message, callback);
-        } catch (e) {
-            alert(message);
-            if (callback) setTimeout(callback, 0);
-        }
-    } else {
-        alert(message);
-        if (callback) setTimeout(callback, 0);
-    }
+    showCustomAlert(message, callback);
 };
 
-// Безопасная обертка для showConfirm с fallback на confirm()
-// Кастомные функции для confirm модального окна
-let customConfirmCallback = null;
-
-window.customConfirmOk = function customConfirmOk() {
-    console.log('[CONFIRM] Нажата кнопка ДА (подтверждение)');
-    const modal = document.getElementById('customConfirmModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-    if (customConfirmCallback) {
-        console.log('[CONFIRM] Вызываем callback с true');
-        customConfirmCallback(true);
-        customConfirmCallback = null;
-    }
-}
-
-window.customConfirmCancel = function customConfirmCancel() {
-    console.log('[CONFIRM] Нажата кнопка НЕТ (отмена)');
-    const modal = document.getElementById('customConfirmModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-    if (customConfirmCallback) {
-        console.log('[CONFIRM] Вызываем callback с false');
-        customConfirmCallback(false);
-        customConfirmCallback = null;
-    }
-}
-
-// Fallback для showConfirm в браузерной версии
-tg.showConfirm = tg.showConfirm || function(message, callback) {
-    console.log('[CONFIRM] showConfirm вызван с сообщением:', message);
-    
-    // ТОЛЬКО для Telegram WebApp используем нативный метод
+// Переопределяем tg.showAlert для использования модального окна в браузере
+tg.showAlert = function(message, callback) {
     const isRealTelegram = !!(
         window.Telegram?.WebApp?.platform && 
         window.Telegram.WebApp.platform !== 'unknown' &&
         window.Telegram.WebApp.initData
     );
     
-    console.log('[CONFIRM] isRealTelegram:', isRealTelegram);
+    if (isRealTelegram && originalShowAlert) {
+        try {
+            originalShowAlert(message, callback);
+            return;
+        } catch (e) {
+            console.warn('showAlert failed:', e.message);
+        }
+    }
+    
+    // В браузере используем кастомное модальное окно
+    showCustomAlert(message, callback);
+};
+
+// Функция для показа кастомного confirm
+function showCustomConfirm(message, callback) {
+    const modal = document.getElementById('customConfirmModal');
+    const messageEl = document.getElementById('customConfirmMessage');
+    const yesBtn = document.getElementById('customConfirmYes');
+    const noBtn = document.getElementById('customConfirmNo');
+    
+    if (modal && messageEl && yesBtn && noBtn) {
+        messageEl.textContent = message;
+        modal.style.display = 'flex';
+        
+        // Удаляем предыдущие обработчики
+        const newYesBtn = yesBtn.cloneNode(true);
+        const newNoBtn = noBtn.cloneNode(true);
+        yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+        noBtn.parentNode.replaceChild(newNoBtn, noBtn);
+        
+        // Добавляем новые обработчики
+        newYesBtn.onclick = function() {
+            modal.style.display = 'none';
+            if (callback) setTimeout(() => callback(true), 0);
+        };
+        
+        newNoBtn.onclick = function() {
+            modal.style.display = 'none';
+            if (callback) setTimeout(() => callback(false), 0);
+        };
+    } else {
+        const result = confirm(message);
+        if (callback) setTimeout(() => callback(result), 0);
+    }
+}
+
+// Функция для показа кастомного prompt
+function showCustomPrompt(message, callback) {
+    const modal = document.getElementById('customPromptModal');
+    const messageEl = document.getElementById('customPromptMessage');
+    const input = document.getElementById('customPromptInput');
+    const okBtn = document.getElementById('customPromptOk');
+    const cancelBtn = document.getElementById('customPromptCancel');
+    
+    if (modal && messageEl && input && okBtn && cancelBtn) {
+        messageEl.textContent = message;
+        input.value = '';
+        modal.style.display = 'flex';
+        setTimeout(() => input.focus(), 100);
+        
+        // Удаляем предыдущие обработчики
+        const newOkBtn = okBtn.cloneNode(true);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        
+        // Добавляем новые обработчики
+        newOkBtn.onclick = function() {
+            const value = input.value;
+            modal.style.display = 'none';
+            if (callback) setTimeout(() => callback(value), 0);
+        };
+        
+        newCancelBtn.onclick = function() {
+            modal.style.display = 'none';
+            if (callback) setTimeout(() => callback(null), 0);
+        };
+        
+        // Enter для отправки
+        input.onkeydown = function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                newOkBtn.click();
+            }
+        };
+    } else {
+        const result = prompt(message);
+        if (callback) setTimeout(() => callback(result), 0);
+    }
+}
+
+// Переопределяем tg.showConfirm
+tg.showConfirm = function(message, callback) {
+    const isRealTelegram = !!(
+        window.Telegram?.WebApp?.platform && 
+        window.Telegram.WebApp.platform !== 'unknown' &&
+        window.Telegram.WebApp.initData
+    );
     
     if (isRealTelegram && window.Telegram?.WebApp?.showConfirm) {
         try {
-            console.log('[CONFIRM] Используем Telegram.WebApp.showConfirm');
             window.Telegram.WebApp.showConfirm(message, callback);
             return;
         } catch (e) {
@@ -141,25 +225,60 @@ tg.showConfirm = tg.showConfirm || function(message, callback) {
         }
     }
     
-    // В браузерной версии используем кастомное модальное окно
-    console.log('[CONFIRM] Используем кастомное модальное окно');
-    const modal = document.getElementById('customConfirmModal');
-    const messageEl = document.getElementById('customConfirmMessage');
-    
-    if (modal && messageEl) {
-        console.log('[CONFIRM] Модальное окно найдено, показываем');
-        messageEl.textContent = message;
-        modal.style.display = 'flex';
-        customConfirmCallback = callback;
-    } else {
-        console.warn('[CONFIRM] Модальное окно не найдено, используем confirm()');
-        // Если модалка не найдена, fallback на обычный confirm
-        const result = confirm(message);
-        if (callback) {
-            setTimeout(() => callback(result), 0);
-        }
-    }
+    // В браузере используем кастомное модальное окно
+    showCustomConfirm(message, callback);
 };
+
+// Переопределяем глобальные alert, confirm, prompt для браузера
+if (typeof window !== 'undefined') {
+    const originalAlert = window.alert;
+    const originalConfirm = window.confirm;
+    const originalPrompt = window.prompt;
+    
+    window.alert = function(message) {
+        const isRealTelegram = !!(
+            window.Telegram?.WebApp?.platform && 
+            window.Telegram.WebApp.platform !== 'unknown' &&
+            window.Telegram.WebApp.initData
+        );
+        
+        if (isRealTelegram) {
+            return originalAlert.call(window, message);
+        }
+        
+        showCustomAlert(message);
+    };
+    
+    window.confirm = function(message) {
+        const isRealTelegram = !!(
+            window.Telegram?.WebApp?.platform && 
+            window.Telegram.WebApp.platform !== 'unknown' &&
+            window.Telegram.WebApp.initData
+        );
+        
+        if (isRealTelegram) {
+            return originalConfirm.call(window, message);
+        }
+        
+        // Синхронный вызов для браузера (fallback на старый confirm)
+        return originalConfirm.call(window, message);
+    };
+    
+    window.prompt = function(message, defaultValue) {
+        const isRealTelegram = !!(
+            window.Telegram?.WebApp?.platform && 
+            window.Telegram.WebApp.platform !== 'unknown' &&
+            window.Telegram.WebApp.initData
+        );
+        
+        if (isRealTelegram) {
+            return originalPrompt.call(window, message, defaultValue);
+        }
+        
+        // Синхронный вызов для браузера (fallback на старый prompt)
+        return originalPrompt.call(window, message, defaultValue);
+    };
+}
 
 // Helper: безопасная проверка поддержки CloudStorage с учетом версии WebApp
 function supportsCloudStorage() {
@@ -617,13 +736,13 @@ function initializeApp() {
             }
             
             // Показываем уведомление
-            alert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${event.data.user.first_name}!`);
-            
-            // Обновляем кнопку выхода
-            updateLogoutButtonVisibility();
-            
-            // Перезагружаем страницу
-            location.reload();
+            tg.showAlert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${event.data.user.first_name}!`, () => {
+                // Обновляем кнопку выхода
+                updateLogoutButtonVisibility();
+                
+                // Перезагружаем страницу
+                location.reload();
+            });
         }
     });
 }
@@ -1083,7 +1202,7 @@ function showTelegramAuthModal() {
         console.error('❌ Модальное окно авторизации не найдено!');
         
         // Создаем временное уведомление если модалка не найдена
-        alert('⚠️ Ошибка: Модальное окно авторизации не найдено в DOM!\n\nПопробуйте перезагрузить страницу.');
+        tg.showAlert('⚠️ Ошибка: Модальное окно авторизации не найдено в DOM!\n\nПопробуйте перезагрузить страницу.');
         return;
     }
     
@@ -1111,7 +1230,7 @@ function showTelegramAuthModal() {
     if (overlay) {
         overlay.onclick = (e) => {
             e.stopPropagation();
-            alert('⚠️ Для продолжения необходимо авторизоваться через Telegram');
+            tg.showAlert('⚠️ Для продолжения необходимо авторизоваться через Telegram');
         };
     }
     
@@ -1120,7 +1239,7 @@ function showTelegramAuthModal() {
     if (closeBtn) {
         closeBtn.onclick = (e) => {
             e.preventDefault();
-            alert('⚠️ Для продолжения необходимо авторизоваться через Telegram');
+            tg.showAlert('⚠️ Для продолжения необходимо авторизоваться через Telegram');
             return false;
         };
     }
@@ -1280,7 +1399,7 @@ function generateTelegramQR(authToken) {
 function closeTelegramAuthModal() {
     const savedUser = localStorage.getItem('telegram_user');
     if (!savedUser) {
-        alert('Для продолжения использования сайта необходимо авторизоваться через Telegram');
+        tg.showAlert('Для продолжения использования сайта необходимо авторизоваться через Telegram');
         return;
     }
     
@@ -1331,7 +1450,7 @@ window.onTelegramAuth = function(user) {
     }
     
     // Показываем уведомление
-    alert(`✅ Вы успешно авторизованы!\n\nДобро пожаловать, ${user.first_name}!\n\nТеперь вы можете создавать анкеты и получать уведомления.`);
+    tg.showAlert(`✅ Вы успешно авторизованы!\n\nДобро пожаловать, ${user.first_name}!\n\nТеперь вы можете создавать анкеты и получать уведомления.`);
     
     // Обновляем кнопку выхода
     updateLogoutButtonVisibility();
@@ -2118,7 +2237,7 @@ function validateCurrentStep() {
             const hasGoals = formData.goals && formData.goals.length > 0;
             console.log(`Шаг 3 (Цель): ${hasGoals ? '✅' : '❌'}`, formData.goals);
             if (!hasGoals) {
-                alert('Выберите хотя бы одну цель знакомства');
+                tg.showAlert('Выберите хотя бы одну цель знакомства');
                 return false;
             }
             // Обновляем formData.goal для обратной совместимости
@@ -2627,7 +2746,7 @@ function showAdDetails(index) {
     const ad = window.currentAds?.[index];
     
     if (!ad) {
-        alert('Анкета не найдена');
+        tg.showAlert('Анкета не найдена');
         return;
     }
     
@@ -2711,37 +2830,47 @@ async function contactAuthor(adIndex) {
     const ad = window.currentAds?.[adIndex];
     
     if (!ad) {
-        alert('Анкета не найдена');
+        tg.showAlert('Анкета не найдена');
         return;
     }
     
     // Проверяем авторизацию и получаем токен текущего пользователя
     const currentUserToken = localStorage.getItem('user_token');
     if (!currentUserToken || currentUserToken === 'null' || currentUserToken === 'undefined') {
-        alert('⚠️ Сначала создайте анкету или авторизуйтесь');
+        tg.showAlert('⚠️ Сначала создайте анкету или авторизуйтесь');
         return;
     }
 
     // Получаем токен автора объявления (user_token из ads)
     const authorToken = ad.user_token;
     if (!authorToken) {
-        alert('⚠️ Не удалось определить автора анкеты');
+        tg.showAlert('⚠️ Не удалось определить автора анкеты');
         return;
     }
     
     // Проверяем, не пытается ли пользователь написать самому себе
     if (currentUserToken === authorToken) {
-        alert('Вы не можете отправить сообщение на свою анкету');
+        tg.showAlert('Вы не можете отправить сообщение на свою анкету');
         return;
     }
     
-    // Запрашиваем текст сообщения
-    const message = prompt('Введите сообщение автору анкеты:');
-    
-    if (!message || message.trim() === '') {
-        return;
-    }
-    
+    // Запрашиваем текст сообщения через кастомное модальное окно
+    showCustomPrompt('Введите сообщение автору анкеты:', async (message) => {
+        if (!message || message.trim() === '') {
+            return;
+        }
+        
+        try {
+            await sendContactMessage(ad, authorToken, currentUserToken, message);
+        } catch (error) {
+            console.error('Error sending message:', error);
+            tg.showAlert('❌ Ошибка при отправке сообщения: ' + error.message);
+        }
+    });
+}
+
+// Вспомогательная функция для отправки сообщения
+async function sendContactMessage(ad, authorToken, currentUserToken, message) {
     try {
         // Проверяем, существует ли уже чат (используем токены)
         const checkResponse = await fetch('/api/neon-chats', {
@@ -2757,7 +2886,7 @@ async function contactAuthor(adIndex) {
 
         if (checkResult.error) {
             console.error('Error checking existing chat:', checkResult.error);
-            alert('❌ Ошибка при проверке чата. Попробуйте позже.');
+            tg.showAlert('❌ Ошибка при проверке чата. Попробуйте позже.');
             return;
         }
 
@@ -2765,14 +2894,14 @@ async function contactAuthor(adIndex) {
 
         if (existingChat) {
             if (existingChat.blocked_by) {
-                alert('❌ Чат заблокирован');
+                tg.showAlert('❌ Чат заблокирован');
                 return;
             }
             if (existingChat.accepted) {
-                alert('✅ Чат уже существует! Откройте раздел "Мои чаты"');
+                tg.showAlert('✅ Чат уже существует! Откройте раздел "Мои чаты"');
                 return;
             } else {
-                alert('✅ Запрос уже отправлен! Ожидайте ответа от автора.');
+                tg.showAlert('✅ Запрос уже отправлен! Ожидайте ответа от автора.');
                 return;
             }
         }
@@ -2796,7 +2925,7 @@ async function contactAuthor(adIndex) {
 
         if (createResult.error) {
             console.error('Error creating chat request:', createResult.error);
-            alert('❌ Ошибка при создании запроса на чат: ' + createResult.error.message);
+            tg.showAlert('❌ Ошибка при создании запроса на чат: ' + createResult.error.message);
             return;
         }
 
@@ -2818,21 +2947,24 @@ async function contactAuthor(adIndex) {
                 // Не прерываем выполнение, чат уже создан
             }
 
-            alert('✅ Запрос на чат отправлен!\n\nАвтор анкеты получит уведомление и сможет принять ваш запрос.');
+            tg.showAlert('✅ Запрос на чат отправлен!\n\nАвтор анкеты получит уведомление и сможет принять ваш запрос.');
         }
         
     } catch (error) {
         console.error('Error sending message:', error);
-        alert('❌ Ошибка при отправке сообщения. Попробуйте позже.');
+        tg.showAlert('❌ Ошибка при отправке сообщения. Попробуйте позже.');
     }
 }
 
 // Удалить мою анкету
 async function deleteMyAd(adId) {
-    if (!confirm('Вы уверены, что хотите удалить эту анкету?')) {
-        return;
-    }
-    
+    tg.showConfirm('Вы уверены, что хотите удалить эту анкету?', async (confirmed) => {
+        if (!confirmed) return;
+        await performDeleteAd(adId);
+    });
+}
+
+async function performDeleteAd(adId) {
     try {
         // Определяем текущего пользователя (предпочтительно Telegram ID)
         const userId = getCurrentUserId();
@@ -5403,7 +5535,7 @@ window.handleEmailSubmit = async function(event) {
     
     if (!senderEmail || !subject || !message) {
         console.error('❌ Не найдены элементы формы!');
-        alert('Ошибка: элементы формы не найдены');
+        tg.showAlert('Ошибка: элементы формы не найдены');
         return;
     }
     
