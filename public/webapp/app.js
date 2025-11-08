@@ -8451,6 +8451,8 @@ async function deleteChat() {
     try {
         const userId = getCurrentUserId();
         
+        console.log('🗑️ [deleteChat] Удаляем чат:', { chatId: currentChatId, userId });
+        
         const response = await fetch('/api/neon-chats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -8459,6 +8461,15 @@ async function deleteChat() {
                 params: { chatId: currentChatId, userId }
             })
         });
+        
+        console.log('🗑️ [deleteChat] Response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('🗑️ [deleteChat] Ошибка HTTP:', response.status, errorText);
+            tg.showAlert(`Ошибка HTTP ${response.status}: ${errorText}`);
+            return;
+        }
         
         const result = await response.json();
         
