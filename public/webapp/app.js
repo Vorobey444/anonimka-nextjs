@@ -2480,7 +2480,7 @@ function displayAds(ads, city = null) {
             if (adsFilters.gender === 'male' && genderLower !== 'male' && genderLower !== 'мужчина') {
                 return false;
             }
-            if (adsFilters.gender === 'female' && genderLower !== 'female' && genderLower !== 'женщина' && genderLower !== 'девушка') {
+            if (adsFilters.gender === 'female' && genderLower !== 'female' && genderLower !== 'девушка') {
                 return false;
             }
         }
