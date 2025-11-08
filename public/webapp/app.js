@@ -8449,16 +8449,25 @@ async function deleteChat() {
     }
     
     try {
-        const userId = getCurrentUserId();
+        // Используем user_token вместо telegram ID для проверки доступа
+        const userToken = localStorage.getItem('user_token');
         
-        console.log('🗑️ [deleteChat] Удаляем чат:', { chatId: currentChatId, userId });
+        if (!userToken) {
+            tg.showAlert('Ошибка: токен пользователя не найден');
+            return;
+        }
+        
+        console.log('🗑️ [deleteChat] Удаляем чат:', { 
+            chatId: currentChatId, 
+            userId: userToken.substring(0, 16) + '...' 
+        });
         
         const response = await fetch('/api/neon-chats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'delete-chat',
-                params: { chatId: currentChatId, userId }
+                params: { chatId: currentChatId, userId: userToken }
             })
         });
         
