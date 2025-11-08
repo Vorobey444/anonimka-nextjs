@@ -3636,6 +3636,11 @@ function processIPLocation(data) {
         'Tolyatti': 'Тольятти',
         'Togliatti': 'Тольятти',
         'Stavropol': 'Ставрополь',
+        'Pyatigorsk': 'Пятигорск',
+        'Kislovodsk': 'Кисловодск',
+        'Nevinnomyssk': 'Невинномысск',
+        'Essentuki': 'Ессентуки',
+        'Yessentuki': 'Ессентуки',
         'Izhevsk': 'Ижевск',
         'Ulyanovsk': 'Ульяновск',
         'Simbirsk': 'Ульяновск',
@@ -3683,7 +3688,152 @@ function processIPLocation(data) {
         'Yakutsk': 'Якутск',
         'Blagoveshchensk': 'Благовещенск',
         'Belogorsk': 'Белогорск',
-        'Svobodny': 'Свободный'
+        'Svobodny': 'Свободный',
+        
+        // Краснодарский край
+        'Novorossiysk': 'Новороссийск',
+        'Novorossiisk': 'Новороссийск',
+        'Armavir': 'Армавир',
+        'Gelendzhik': 'Геленджик',
+        'Anapa': 'Анапа',
+        
+        // Красноярский край
+        'Norilsk': 'Норильск',
+        'Achinsk': 'Ачинск',
+        'Kansk': 'Канск',
+        'Minusinsk': 'Минусинск',
+        
+        // Приморский край
+        'Nakhodka': 'Находка',
+        'Ussuriysk': 'Уссурийск',
+        'Artem': 'Артём',
+        'Artyom': 'Артём',
+        'Dalnegorsk': 'Дальнегорск',
+        
+        // Хабаровский край
+        'Komsomolsk-on-Amur': 'Комсомольск-на-Амуре',
+        'Komsomolsk-na-Amure': 'Комсомольск-на-Амуре',
+        'Amursk': 'Амурск',
+        'Sovetskaya Gavan': 'Советская Гавань',
+        
+        // Алтайский край
+        'Biysk': 'Бийск',
+        'Rubtsovsk': 'Рубцовск',
+        'Novoaltaysk': 'Новоалтайск',
+        
+        // Забайкальский край
+        'Krasnokamensk': 'Краснокаменск',
+        'Borzya': 'Борзя',
+        'Petrovsk-Zabaykalsky': 'Петровск-Забайкальский',
+        
+        // Камчатский край
+        'Petropavlovsk-Kamchatsky': 'Петропавловск-Камчатский',
+        'Elizovo': 'Елизово',
+        'Vilyuchinsk': 'Вилючинск',
+        
+        // Татарстан
+        'Nizhnekamsk': 'Нижнекамск',
+        'Almetyevsk': 'Альметьевск',
+        'Zelenodolsk': 'Зеленодольск',
+        
+        // Башкортостан
+        'Sterlitamak': 'Стерлитамак',
+        'Salavat': 'Салават',
+        'Neftekamsk': 'Нефтекамск',
+        'Oktyabrsky': 'Октябрьский',
+        
+        // Дагестан
+        'Khasavyurt': 'Хасавюрт',
+        'Derbent': 'Дербент',
+        'Kaspiysk': 'Каспийск',
+        'Buynaksk': 'Буйнакск',
+        
+        // Якутия
+        'Neryungri': 'Нерюнгри',
+        'Mirny': 'Мирный',
+        'Lensk': 'Ленск',
+        
+        // Бурятия
+        'Severobaykalsk': 'Северобайкальск',
+        'Gusinoozersk': 'Гусиноозерск',
+        
+        // Чувашия
+        'Cheboksary': 'Чебоксары',
+        'Novocheboksarsk': 'Новочебоксарск',
+        'Kanash': 'Канаш',
+        'Alatyr': 'Алатырь',
+        
+        // Удмуртия
+        'Sarapul': 'Сарапул',
+        'Votkinsk': 'Воткинск',
+        'Glazov': 'Глазов',
+        
+        // Мордовия
+        'Saransk': 'Саранск',
+        'Ruzayevka': 'Рузаевка',
+        'Kovylkino': 'Ковылкино',
+        'Temnikov': 'Темников',
+        
+        // Марий Эл
+        'Yoshkar-Ola': 'Йошкар-Ола',
+        'Volzhsk': 'Волжск',
+        'Kozmodemyansk': 'Козьмодемьянск',
+        
+        // Коми
+        'Syktyvkar': 'Сыктывкар',
+        'Ukhta': 'Ухта',
+        'Vorkuta': 'Воркута',
+        'Pechora': 'Печора',
+        
+        // Карелия
+        'Petrozavodsk': 'Петрозаводск',
+        'Kondopoga': 'Кондопога',
+        'Kostomuksha': 'Костомукша',
+        'Segezha': 'Сегежа',
+        
+        // Алтай (республика)
+        'Gorno-Altaysk': 'Горно-Алтайск',
+        'Kosh-Agach': 'Кош-Агач',
+        'Mayma': 'Майма',
+        
+        // Хакасия
+        'Abakan': 'Абакан',
+        'Chernogorsk': 'Черногорск',
+        'Sayanogorsk': 'Саяногорск',
+        'Abaza': 'Абаза',
+        
+        // Тыва
+        'Kyzyl': 'Кызыл',
+        'Ak-Dovurak': 'Ак-Довурак',
+        'Shagonar': 'Шагонар',
+        
+        // Кабардино-Балкария
+        'Nalchik': 'Нальчик',
+        'Prokhladny': 'Прохладный',
+        'Baksan': 'Баксан',
+        'Maysky': 'Майский',
+        
+        // Карачаево-Черкесия
+        'Cherkessk': 'Черкесск',
+        'Karachayevsk': 'Карачаевск',
+        'Ust-Dzheguta': 'Усть-Джегута',
+        
+        // Северная Осетия
+        'Beslan': 'Беслан',
+        'Ardon': 'Ардон',
+        'Mozdok': 'Моздок',
+        
+        // Чечня
+        'Grozny': 'Грозный',
+        'Argun': 'Аргун',
+        'Gudermes': 'Гудермес',
+        'Shali': 'Шали',
+        
+        // Ингушетия
+        'Magas': 'Магас',
+        'Nazran': 'Назрань',
+        'Karabulak': 'Карабулак',
+        'Malgobek': 'Малгобек'
     };
     
     // Нормализуем название города если оно в английском формате
