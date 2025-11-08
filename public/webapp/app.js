@@ -8200,9 +8200,11 @@ async function checkBlockStatus(chatId) {
                 blockMenuText.textContent = isUserBlocked ? '✅ Разблокировать собеседника' : '🚫 Заблокировать собеседника';
             }
             
-            // Показываем предупреждение если ЛЮБАЯ из сторон заблокировала
-            if (blockedByOther || isUserBlocked) {
-                showBlockWarning(true, isUserBlocked ? 'self' : 'other');
+            // Показываем предупреждение: приоритет у "я заблокировал"
+            if (isUserBlocked) {
+                showBlockWarning(true, 'self');
+            } else if (blockedByOther) {
+                showBlockWarning(true, 'other');
             } else {
                 showBlockWarning(false);
             }
