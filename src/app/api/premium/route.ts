@@ -216,6 +216,7 @@ export async function POST(request: NextRequest) {
           data: {
             isPremium,
             premiumUntil: userData.premium_until,
+            trial7h_used: userData.trial7h_used || false,
             country: userData.country || 'KZ',
             limits: {
               photos: {
@@ -353,30 +354,52 @@ export async function POST(request: NextRequest) {
           numericUserId = Number(userId);
         }
         
-        const user = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
+        const user = await sql`SELECT is_premium, trial7h_used FROM users WHERE id = ${numericUserId}`;
         const currentStatus = user.rows[0]?.is_premium || false;
+        const trial7hUsed = user.rows[0]?.trial7h_used || false;
         
         // Добавляем поддержку короткого троллинг-триала (7 часов), если передан флаг trial7h
         const trialFlag = params?.trial7h === true || params?.trial7h === 'true';
         let premiumUntil: string | null = null;
+        
+        // Если пользователь хочет активировать триал, проверяем, не использовал ли он его уже
+        if (trialFlag && trial7hUsed) {
+          return NextResponse.json({
+            error: { message: 'Триал уже был использован' }
+          }, { status: 400 });
+        }
+        
         if (!currentStatus) {
           const durationMs = trialFlag ? (7 * 60 * 60 * 1000) : (30 * 24 * 60 * 60 * 1000); // 7 часов или 30 дней
           premiumUntil = new Date(Date.now() + durationMs).toISOString();
         }
         
-        await sql`
-          UPDATE users
-          SET is_premium = ${!currentStatus},
-              premium_until = ${premiumUntil},
-              updated_at = NOW()
-          WHERE id = ${numericUserId}
-        `;
+        // Если активируем триал, отмечаем что он использован
+        if (trialFlag && !currentStatus) {
+          await sql`
+            UPDATE users
+            SET is_premium = true,
+                premium_until = ${premiumUntil},
+                trial7h_used = true,
+                updated_at = NOW()
+            WHERE id = ${numericUserId}
+          `;
+        } else {
+          await sql`
+            UPDATE users
+            SET is_premium = ${!currentStatus},
+                premium_until = ${premiumUntil},
+                updated_at = NOW()
+            WHERE id = ${numericUserId}
+          `;
+        }
         
         return NextResponse.json({
           data: {
             isPremium: !currentStatus,
             premiumUntil,
-            trial: trialFlag
+            trial: trialFlag,
+            trial7h_used: trialFlag ? true : trial7hUsed
           },
           error: null
         });

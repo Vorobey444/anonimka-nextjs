@@ -7730,7 +7730,7 @@ function updatePremiumModalButtons() {
     const trialBtn = document.getElementById('trialBtn');
     
     if (userPremiumStatus.isPremium) {
-        // Пользователь PRO
+        // Пользователь PRO - показываем статус
         if (freeBtn) {
             freeBtn.textContent = '✅ FREE недоступен';
             freeBtn.disabled = true;
@@ -7755,27 +7755,24 @@ function updatePremiumModalButtons() {
             proBtn.disabled = true;
             proBtn.classList.add('active');
         }
-        if (trialBtn) {
-            trialBtn.style.display = 'none'; // Скрываем кнопку триала если уже активен PRO
-        }
+        // Скрываем кнопку триала и реферальную инфу
+        if (trialBtn) trialBtn.style.display = 'none';
         if (referralInfo) referralInfo.style.display = 'none';
     } else {
-        // Пользователь FREE
+        // Пользователь FREE - показываем ОДНУ кнопку "Оформить PRO"
         if (freeBtn) {
             freeBtn.textContent = 'Текущий план (FREE)';
             freeBtn.disabled = true;
             freeBtn.classList.add('active');
         }
         if (proBtn) {
-            // Делаем кнопку кликабельной, но помечаем, что активация через реферал
-            proBtn.textContent = 'Оформить PRO (реферал)';
+            proBtn.textContent = '🔥 Оформить PRO';
             proBtn.disabled = false;
-            proBtn.classList.add('locked');
-            proBtn.title = 'Пригласи друга: он создаёт анкету → ты получаешь PRO';
+            proBtn.classList.remove('locked', 'active');
+            proBtn.title = 'Не всё можно купить за деньги... но попробуй 😏';
         }
-        if (trialBtn) {
-            trialBtn.style.display = 'inline-block';
-        }
+        // Скрываем отдельную кнопку триала - он будет предложен в диалоге
+        if (trialBtn) trialBtn.style.display = 'none';
         if (referralInfo) referralInfo.style.display = 'block';
     }
 }
@@ -7809,17 +7806,34 @@ async function activatePremium() {
                             '⚡️ PLOT TWIST!\n\nДенег не надо, друзей надо! 🤝\n\nРеферальная программа — твой ключ к PRO! 🗝️'
                         ];
                         const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-                        tg.showAlert(randomMsg + '\n\n🎃 Но могу дать тебе троллинг-TRIAL: 7 часов PRO, потом превратится в тыкву и снова нужен друг. Хочешь?', () => {
-                            // Второй шаг: предлагаем 7-часовой trial
-                            tg.showConfirm('🔥 Врубить 7 часов PRO сейчас? Потом всё исчезнет как карета в 00:00!', (trialConfirm) => {
-                                if (trialConfirm) {
-                                    activatePremiumTrial7h();
-                                } else {
-                                    // Показываем окно реферала если отказался от trial
-                                    showReferralModal();
-                                }
+                        
+                        // Проверяем, использовал ли уже 7-часовой триал
+                        const trial7hUsed = userPremiumStatus.trial7h_used || false;
+                        
+                        if (!trial7hUsed) {
+                            // Предлагаем 7 часов PRO (только один раз)
+                            tg.showAlert(randomMsg + '\n\n🎃 Но могу дать тебе троллинг-TRIAL: 7 часов PRO, потом превратится в тыкву и снова нужен друг. Хочешь?', () => {
+                                tg.showConfirm('🔥 Врубить 7 часов PRO сейчас? Потом всё исчезнет как карета в 00:00!', (trialConfirm) => {
+                                    if (trialConfirm) {
+                                        activatePremiumTrial7h();
+                                    } else {
+                                        showReferralModal();
+                                    }
+                                });
                             });
-                        });
+                        } else {
+                            // Триал уже использован - только реферал
+                            const usedTrialMessages = [
+                                '😏 Триал уже использовал, помнишь?\n\nТеперь только реферал работает!',
+                                '🤷‍♂️ 7 часов уже было, больше не дам!\n\nХочешь PRO? Зови друга!',
+                                '🎭 Второй раз фокус не сработает!\n\nРеферальная программа — твой единственный путь!',
+                                '😎 Триал был разовой акцией!\n\nТеперь только друзья дают PRO!'
+                            ];
+                            const randomUsedMsg = usedTrialMessages[Math.floor(Math.random() * usedTrialMessages.length)];
+                            tg.showAlert(randomMsg + '\n\n' + randomUsedMsg, () => {
+                                showReferralModal();
+                            });
+                        }
                     } else {
                         // Если отказался - кринжовая подначка
                         const rejectMessages = [
@@ -7973,7 +7987,11 @@ async function activatePremiumTrial7h() {
         });
         const result = await response.json();
         if (result.error) throw new Error(result.error.message);
+        
+        // Обновляем статус и отмечаем что триал использован
         await loadPremiumStatus();
+        userPremiumStatus.trial7h_used = true;
+        
         const until = new Date(result.data.premiumUntil);
         const hh = until.getHours().toString().padStart(2,'0');
         const mm = until.getMinutes().toString().padStart(2,'0');
