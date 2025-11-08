@@ -1653,7 +1653,11 @@ function showCreateAd() {
 // Обновить отображение локации в форме
 function updateFormLocationDisplay() {
     if (currentUserLocation) {
-        const locationText = `${locationData[currentUserLocation.country].flag} ${currentUserLocation.region}, ${currentUserLocation.city}`;
+        // Избегаем дублирования если регион = город
+        const locationPart = currentUserLocation.region === currentUserLocation.city 
+            ? currentUserLocation.city 
+            : `${currentUserLocation.region}, ${currentUserLocation.city}`;
+        const locationText = `${locationData[currentUserLocation.country].flag} ${locationPart}`;
         const formLocationDisplay = document.getElementById('formLocationDisplay');
         if (formLocationDisplay) {
             formLocationDisplay.textContent = locationText;
@@ -1667,7 +1671,11 @@ function showBrowseAds() {
     // Отображаем текущую локацию
     const browseLocationDisplay = document.getElementById('browseLocationDisplay');
     if (currentUserLocation && browseLocationDisplay) {
-        const locationText = `${locationData[currentUserLocation.country].flag} ${currentUserLocation.region}, ${currentUserLocation.city}`;
+        // Избегаем дублирования если регион = город
+        const locationPart = currentUserLocation.region === currentUserLocation.city 
+            ? currentUserLocation.city 
+            : `${currentUserLocation.region}, ${currentUserLocation.city}`;
+        const locationText = `${locationData[currentUserLocation.country].flag} ${locationPart}`;
         browseLocationDisplay.textContent = locationText;
     } else if (browseLocationDisplay) {
         browseLocationDisplay.textContent = 'Локация не установлена';
@@ -1797,7 +1805,7 @@ async function loadMyAds() {
                     </div>
                     <div class="ad-field">
                         <span class="icon">📍</span>
-                        <span>${locationData[ad.country]?.flag || '🌍'} ${ad.region}, ${ad.city}</span>
+                        <span>${locationData[ad.country]?.flag || '🌍'} ${ad.region === ad.city ? ad.city : `${ad.region}, ${ad.city}`}</span>
                     </div>
                     ${ad.text ? `<div class="ad-field full-width">
                         <span class="icon">💬</span>
@@ -3762,6 +3770,11 @@ function showDetectedLocationResult(detectedLocation) {
     // Скрываем анимацию
     animationDiv.style.display = 'none';
     
+    // Формируем текст локации (избегаем дублирования если регион = город)
+    const locationText = detectedLocation.region === detectedLocation.city 
+        ? detectedLocation.city 
+        : `${detectedLocation.region}, ${detectedLocation.city}`;
+    
     // Показываем результат с предупреждением о точности
     const sourceText = detectedLocation.source || 'IP-адрес';
     resultDiv.innerHTML = `
@@ -3770,7 +3783,7 @@ function showDetectedLocationResult(detectedLocation) {
             <h3>Проверьте определённое местоположение</h3>
             <div class="location-info">
                 <span class="location-flag">${countryFlag}</span>
-                <span class="location-text">${detectedLocation.region}, ${detectedLocation.city}</span>
+                <span class="location-text">${locationText}</span>
             </div>
             <p class="detection-note">⚠️ Автоопределение может быть неточным</p>
             <p class="detection-source">Источник: ${detectedLocation.detected.country}${detectedLocation.detected.region ? ', ' + detectedLocation.detected.region : ''}${detectedLocation.detected.city ? ', ' + detectedLocation.detected.city : ''}</p>
@@ -3853,7 +3866,11 @@ function resetAndDetectLocation() {
 // Отображение текущей локации пользователя
 function displayUserLocation() {
     if (currentUserLocation) {
-        const locationText = `${locationData[currentUserLocation.country].flag} ${currentUserLocation.region}, ${currentUserLocation.city}`;
+        // Избегаем дублирования если регион = город (например, Москва Москва)
+        const locationPart = currentUserLocation.region === currentUserLocation.city 
+            ? currentUserLocation.city 
+            : `${currentUserLocation.region}, ${currentUserLocation.city}`;
+        const locationText = `${locationData[currentUserLocation.country].flag} ${locationPart}`;
         const locationDisplay = document.getElementById('userLocationDisplay');
         if (locationDisplay) {
             locationDisplay.textContent = locationText;
