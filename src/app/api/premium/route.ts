@@ -177,7 +177,19 @@ export async function POST(request: NextRequest) {
         
         const userData = user.rows[0];
         let limitsData = limits.rows[0];
-        const isPremium = userData.is_premium || false;
+        let isPremium = userData.is_premium || false;
+        // Автоотключение PRO, если premium_until истекло
+        if (isPremium && userData.premium_until) {
+          const now = new Date();
+          const until = new Date(userData.premium_until);
+          if (now > until) {
+            // Сбросить PRO
+            await sql`
+              UPDATE users SET is_premium = false, premium_until = NULL WHERE id = ${numericUserId}
+            `;
+            isPremium = false;
+          }
+        }
         
         // Проверяем и сбрасываем счетчик объявлений если новый день (АЛМАТЫ UTC+5)
         const nowUTC = new Date();
