@@ -2355,16 +2355,22 @@ function selectGoal(goal) {
 }
 
 function selectBody(body) {
-    document.querySelectorAll('.body-btn').forEach(btn => btn.classList.remove('selected'));
-    document.querySelector(`[data-body="${body}"]`).classList.add('selected');
-    formData.body = body;
+    document.querySelectorAll('[data-body]').forEach(btn => btn.classList.remove('selected'));
+    const selectedBtn = document.querySelector(`[data-body="${body}"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('selected');
+        formData.body = body;
+    }
 }
 
 function selectOrientation(orientation) {
     document.querySelectorAll('[data-orientation]').forEach(btn => btn.classList.remove('selected'));
-    document.querySelector(`[data-orientation="${orientation}"]`).classList.add('selected');
-    formData.orientation = orientation;
-    console.log('Выбрана ориентация:', orientation);
+    const selectedBtn = document.querySelector(`[data-orientation="${orientation}"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('selected');
+        formData.orientation = orientation;
+        console.log('Выбрана ориентация:', orientation);
+    }
 }
 
 // Отправка анкеты
