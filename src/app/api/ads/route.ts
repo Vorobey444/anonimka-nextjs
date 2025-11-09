@@ -344,6 +344,28 @@ export async function POST(req: NextRequest) {
     
     console.log("[ADS API] Объявление создано, ID:", newAd.id);
     
+    // Проверяем реферальную программу — выдаём награду если пользователь пришёл по реферальной ссылке
+    if (finalUserToken) {
+      try {
+        console.log('[ADS API] Проверка рефералки для user_token:', finalUserToken);
+        const referralResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://anonimka-nextjs.vercel.app'}/api/referrals`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ new_user_token: finalUserToken })
+        });
+        
+        if (referralResponse.ok) {
+          const refData = await referralResponse.json();
+          console.log('[ADS API] Результат проверки рефералки:', refData);
+        } else {
+          console.log('[ADS API] Рефералка не найдена или уже обработана');
+        }
+      } catch (refError) {
+        console.error('[ADS API] Ошибка при проверке рефералки:', refError);
+        // Не прерываем создание анкеты если рефералка не сработала
+      }
+    }
+    
     return NextResponse.json({
       success: true,
       message: "Объявление успешно опубликовано!",
