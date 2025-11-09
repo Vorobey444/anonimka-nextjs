@@ -1633,7 +1633,16 @@ function setupEventListeners() {
 
     // Кнопки выбора ориентации
     document.querySelectorAll('.orientation-btn').forEach(btn => {
-        btn.addEventListener('click', () => selectOrientation(btn.dataset.orientation));
+        btn.addEventListener('click', (e) => {
+            // Если клик по info-icon, показываем тултип
+            if (e.target.classList.contains('info-icon')) {
+                e.stopPropagation();
+                showOrientationTooltip(e.target, btn.dataset.desc);
+                return;
+            }
+            // Иначе выбираем ориентацию
+            selectOrientation(btn.dataset.orientation);
+        });
     });
 
     // Кастомный город
@@ -2365,6 +2374,55 @@ function selectOrientation(orientation) {
     document.querySelector(`[data-orientation="${orientation}"]`).classList.add('selected');
     formData.orientation = orientation;
     console.log('Выбрана ориентация:', orientation);
+}
+
+let tooltipTimeout;
+
+function showOrientationTooltip(icon, description) {
+    const tooltip = document.getElementById('orientationTooltip');
+    if (!tooltip) return;
+
+    // Очищаем предыдущий таймаут
+    if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+    }
+
+    // Устанавливаем текст
+    tooltip.textContent = description;
+    
+    // Позиционируем тултип
+    const rect = icon.getBoundingClientRect();
+    const tooltipWidth = 280;
+    const tooltipHeight = 60; // примерная высота
+    
+    let left = rect.left + window.scrollX - tooltipWidth / 2 + rect.width / 2;
+    let top = rect.bottom + window.scrollY + 8;
+    
+    // Проверяем выход за границы экрана
+    if (left < 10) left = 10;
+    if (left + tooltipWidth > window.innerWidth - 10) {
+        left = window.innerWidth - tooltipWidth - 10;
+    }
+    
+    // Если тултип выходит снизу, показываем сверху
+    if (top + tooltipHeight > window.innerHeight + window.scrollY) {
+        top = rect.top + window.scrollY - tooltipHeight - 8;
+    }
+    
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+    
+    // Показываем
+    tooltip.classList.remove('fade-out');
+    tooltip.classList.add('show');
+    
+    // Автоматически скрываем через 3 секунды
+    tooltipTimeout = setTimeout(() => {
+        tooltip.classList.add('fade-out');
+        setTimeout(() => {
+            tooltip.classList.remove('show', 'fade-out');
+        }, 300);
+    }, 3000);
 }
 
 // Отправка анкеты
