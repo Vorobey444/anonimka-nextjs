@@ -1917,7 +1917,7 @@ async function loadMyAds() {
                     </div>
                     ${ad.orientation ? `<div class="ad-field">
                         <span class="icon">💗</span>
-                        <span><strong>Ориентация:</strong> ${{ 'hetero': 'Гетеро', 'gay': 'Гей/Лесбиянка', 'bi': 'Би', 'pan': 'Пансексуал', 'ace': 'Асексуал', 'demi': 'Демисексуал', 'queer': 'Квир', 'grey': 'Грейсексуал', 'sever': 'Север' }[ad.orientation] || ad.orientation}</span>
+                        <span><strong>Ориентация:</strong> ${formatOrientation(ad.orientation)}</span>
                     </div>` : ''}
                     <div class="ad-field">
                         <span class="icon">🎯</span>
@@ -2731,6 +2731,7 @@ function displayAds(ads, city = null) {
                 <div class="ad-field"><span class="icon">🎯</span>${formatGoals(ad.goal)}</div>
                 <div class="ad-field"><span class="icon">🎂</span>${myAge}л</div>
                 <div class="ad-field"><span class="icon">📅</span>${ageFrom}-${ageTo}</div>
+                ${ad.orientation ? `<div class="ad-field"><span class="icon">💗</span>${formatOrientation(ad.orientation)}</div>` : ''}
                 ` : `
                 <div class="ad-field">
                     <span class="icon">🏙</span>
@@ -2762,6 +2763,13 @@ function displayAds(ads, city = null) {
                     <span class="label">Возраст партнера:</span>
                     <span class="value">${ageFrom} - ${ageTo} лет</span>
                 </div>
+                ${ad.orientation ? `
+                <div class="ad-field">
+                    <span class="icon">💗</span>
+                    <span class="label">Ориентация:</span>
+                    <span class="value">${formatOrientation(ad.orientation)}</span>
+                </div>
+                ` : ''}
                 `}
             </div>
             <div class="ad-text">"${compact ? ad.text.substring(0, 70) : ad.text.substring(0, 100)}${ad.text.length > (compact ? 70 : 100) ? '...' : ''}"</div>
@@ -2838,6 +2846,12 @@ function showAdDetails(index) {
                         <span class="param-icon">🎯</span>
                         <span>${formatGoals(ad.goal)}</span>
                     </div>
+                    ${ad.orientation ? `
+                    <div class="param-item">
+                        <span class="param-icon">💗</span>
+                        <span>${formatOrientation(ad.orientation)}</span>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
             
@@ -7241,6 +7255,24 @@ function formatGoals(goals) {
     
     // Одна цель
     return goalMap[goals?.toLowerCase()] || goals;
+}
+
+function formatOrientation(orientation) {
+    if (!orientation) return 'Не указано';
+    
+    const orientationMap = {
+        'hetero': 'Гетеро',
+        'gay': 'Гей / Лесбиянка',
+        'bi': 'Би',
+        'pan': 'Пансексуал',
+        'ace': 'Асексуал',
+        'demi': 'Демисексуал',
+        'queer': 'Квир',
+        'grey': 'Грейсексуал',
+        'sever': 'Север'
+    };
+    
+    return orientationMap[orientation?.toLowerCase()] || orientation;
 }
 
 // Обработчик нажатия Enter в поле ввода
