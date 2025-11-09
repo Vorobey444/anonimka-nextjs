@@ -559,7 +559,7 @@ function createDebugButton() {
 // Данные формы
 let formData = {};
 let currentStep = 1;
-const totalSteps = 7; // Убрали шаг с никнеймом - теперь он на главной странице
+const totalSteps = 8; // Шаги: пол, кого ищете, цель, возраст партнёра, ваш возраст, телосложение, ориентация, текст
 
 // Инициализация приложения
 // Функция инициализации, которая вызывается когда DOM готов
@@ -1631,6 +1631,11 @@ function setupEventListeners() {
         btn.addEventListener('click', () => selectBody(btn.dataset.body));
     });
 
+    // Кнопки выбора ориентации
+    document.querySelectorAll('.orientation-btn').forEach(btn => {
+        btn.addEventListener('click', () => selectOrientation(btn.dataset.orientation));
+    });
+
     // Кастомный город
     document.getElementById('customCity').addEventListener('input', function() {
         if (this.value.trim()) {
@@ -1913,6 +1918,10 @@ async function loadMyAds() {
                         <span class="icon">💪</span>
                         <span><strong>Телосложение:</strong> ${ad.body_type || 'не указано'}</span>
                     </div>
+                    ${ad.orientation ? `<div class="ad-field">
+                        <span class="icon">💗</span>
+                        <span><strong>Ориентация:</strong> ${{ 'hetero': 'Гетеро', 'gay': 'Гей/Лесбиянка', 'bi': 'Би', 'pan': 'Пансексуал', 'ace': 'Асексуал', 'demi': 'Демисексуал', 'queer': 'Квир', 'grey': 'Грейсексуал', 'sever': 'Север' }[ad.orientation] || ad.orientation}</span>
+                    </div>` : ''}
                     <div class="ad-field">
                         <span class="icon">🎯</span>
                         <span class="label">Цель:</span>
@@ -1978,7 +1987,7 @@ function showStep(step) {
     // Показываем/скрываем контейнер textarea
     const textareaContainer = document.getElementById('textareaContainer');
     if (textareaContainer) {
-        if (step === 7) {
+        if (step === 8) {
             textareaContainer.style.display = 'block';
             console.log('✅ Показали контейнер textarea');
             
@@ -2290,16 +2299,20 @@ function validateCurrentStep() {
             const hasBody = !!formData.body;
             console.log(`Шаг 6 (Телосложение): ${hasBody ? '✅' : '❌'}`, formData.body);
             return hasBody;
-        case 7: // Текст анкеты
+        case 7: // Ориентация
+            const hasOrientation = !!formData.orientation;
+            console.log(`Шаг 7 (Ориентация): ${hasOrientation ? '✅' : '❌'}`, formData.orientation);
+            return hasOrientation;
+        case 8: // Текст анкеты
             const adText = document.getElementById('adText')?.value.trim();
-            console.log(`Шаг 7 (Текст): textarea элемент:`, document.getElementById('adText'));
-            console.log(`Шаг 7 (Текст): значение:`, adText);
+            console.log(`Шаг 8 (Текст): textarea элемент:`, document.getElementById('adText'));
+            console.log(`Шаг 8 (Текст): значение:`, adText);
             if (adText && adText.length >= 10) {
                 formData.text = adText;
-                console.log(`Шаг 7 (Текст): ✅ ${adText.length} символов`);
+                console.log(`Шаг 8 (Текст): ✅ ${adText.length} символов`);
                 return true;
             }
-            console.log(`Шаг 7 (Текст): ❌ слишком короткий текст`);
+            console.log(`Шаг 8 (Текст): ❌ слишком короткий текст`);
             tg.showAlert('Пожалуйста, введите текст анкеты (минимум 10 символов)');
             return false;
     }
@@ -2347,6 +2360,13 @@ function selectBody(body) {
     formData.body = body;
 }
 
+function selectOrientation(orientation) {
+    document.querySelectorAll('.orientation-btn').forEach(btn => btn.classList.remove('selected'));
+    document.querySelector(`[data-orientation="${orientation}"]`).classList.add('selected');
+    formData.orientation = orientation;
+    console.log('Выбрана ориентация:', orientation);
+}
+
 // Отправка анкеты
 async function submitAd() {
     if (!validateCurrentStep()) {
@@ -2378,6 +2398,7 @@ async function submitAd() {
             ageTo: formData.ageTo,
             myAge: formData.myAge,
             body: formData.body,
+            orientation: formData.orientation, // Добавляем ориентацию
             text: adText,
             nickname: nickname, // Добавляем никнейм
             country: formData.country || 'Россия',
@@ -7335,12 +7356,27 @@ async function showAdModal(adId) {
         const genderLower = ad.gender?.toLowerCase();
         const genderIcon = (genderLower === 'male' || genderLower === 'мужчина') ? '♂️' : '♀️';
         
+        // Маппинг ориентации на читаемые лейблы с эмодзи
+        const orientationLabels = {
+            'hetero': '💏 Гетеро',
+            'gay': '🔥 Гей/Лесбиянка',
+            'bi': '😈 Би',
+            'pan': '⚡ Пансексуал',
+            'ace': '😅 Асексуал',
+            'demi': '💫 Демисексуал',
+            'queer': '🌪 Квир',
+            'grey': '📶 Грейсексуал',
+            'sever': '🎤 Север'
+        };
+        const orientationDisplay = ad.orientation ? orientationLabels[ad.orientation] || ad.orientation : null;
+        
         // Отображаем анкету
         modalBody.innerHTML = `
             <div class="ad-detail-view" style="padding: 12px; max-width: 380px; font-size: 13px;">
                 <h3 style="margin-top: 0; margin-bottom: 10px; color: var(--neon-cyan); font-size: 16px;">${genderIcon} ${genderFormatted}, ${ad.my_age || '?'} лет</h3>
                 <div style="margin-bottom: 10px; line-height: 1.6;">
                     <div style="margin-bottom: 4px;">💪 <strong>Телосложение:</strong> ${bodyLabels[ad.body_type] || 'Не указано'}</div>
+                    ${orientationDisplay ? `<div style="margin-bottom: 4px;">💗 <strong>Ориентация:</strong> ${orientationDisplay}</div>` : ''}
                     <div style="margin-bottom: 4px;">🎯 <strong>Цель:</strong> ${goalsFormatted}</div>
                     <div style="margin-bottom: 4px;">🔍 <strong>Ищу:</strong> ${targetFormatted}, ${ad.age_from || '18'}-${ad.age_to || '99'} лет</div>
                     <div style="margin-bottom: 4px;">📍 <strong>Город:</strong> ${ad.city || 'Не указан'}</div>

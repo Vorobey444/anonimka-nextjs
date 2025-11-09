@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       // Получение конкретной анкеты по ID
       result = await sql`
         SELECT id, gender, target, goal, age_from, age_to, my_age, 
-               body_type, text, nickname, country, region, city, 
+               body_type, orientation, text, nickname, country, region, city, 
                is_pinned, pinned_until, created_at, user_token
         FROM ads
         WHERE id = ${parseInt(id)}
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     } else if (city && country) {
       result = await sql`
         SELECT id, gender, target, goal, age_from, age_to, my_age, 
-               body_type, text, nickname, country, region, city, 
+               body_type, orientation, text, nickname, country, region, city, 
                is_pinned, pinned_until, created_at, user_token
         FROM ads
         WHERE city = ${city} AND country = ${country}
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     } else if (city) {
       result = await sql`
         SELECT id, gender, target, goal, age_from, age_to, my_age, 
-               body_type, text, nickname, country, region, city, 
+               body_type, orientation, text, nickname, country, region, city, 
                is_pinned, pinned_until, created_at, user_token
         FROM ads
         WHERE city = ${city}
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     } else if (country) {
       result = await sql`
         SELECT id, gender, target, goal, age_from, age_to, my_age, 
-               body_type, text, nickname, country, region, city, 
+               body_type, orientation, text, nickname, country, region, city, 
                is_pinned, pinned_until, created_at, user_token
         FROM ads
         WHERE country = ${country}
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     } else {
       result = await sql`
         SELECT id, gender, target, goal, age_from, age_to, my_age, 
-               body_type, text, nickname, country, region, city, 
+               body_type, orientation, text, nickname, country, region, city, 
                is_pinned, pinned_until, created_at, user_token
         FROM ads
         ORDER BY 
@@ -107,7 +107,8 @@ export async function POST(req: NextRequest) {
       ageFrom, 
       ageTo, 
       myAge, 
-      body: bodyType, 
+      body: bodyType,
+      orientation,
       text,
       nickname,
       country,
@@ -304,18 +305,18 @@ export async function POST(req: NextRequest) {
     const result = await sql`
       INSERT INTO ads (
         gender, target, goal, age_from, age_to, my_age, 
-        body_type, text, nickname, country, region, city, tg_id, user_token, created_at
+        body_type, orientation, text, nickname, country, region, city, tg_id, user_token, created_at
       )
       VALUES (
         ${gender}, ${target}, ${goal}, 
         ${parseOptionalInt(ageFrom)}, 
         ${parseOptionalInt(ageTo)}, 
         ${parseOptionalInt(myAge)},
-        ${bodyType || null}, ${text}, ${nickname || 'Аноним'},
+        ${bodyType || null}, ${orientation || null}, ${text}, ${nickname || 'Аноним'},
         ${country || 'Россия'}, ${region || ''}, ${city}, 
         ${numericTgId}, ${finalUserToken}, NOW()
       )
-      RETURNING id, nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, text
+      RETURNING id, nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text
     `;
 
     const newAd = result.rows[0];
