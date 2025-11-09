@@ -1632,8 +1632,13 @@ function setupEventListeners() {
     });
 
     // Кнопки выбора ориентации
-    document.querySelectorAll('[data-orientation]').forEach(btn => {
-        btn.addEventListener('click', () => selectOrientation(btn.dataset.orientation));
+    const orientationBtns = document.querySelectorAll('[data-orientation]');
+    console.log('Найдено кнопок ориентации:', orientationBtns.length);
+    orientationBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            console.log('Клик по ориентации:', btn.dataset.orientation);
+            selectOrientation(btn.dataset.orientation);
+        });
     });
 
     // Кастомный город
