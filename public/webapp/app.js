@@ -2368,12 +2368,16 @@ function selectBody(body) {
 }
 
 function selectOrientation(orientation) {
+    console.log('selectOrientation вызвана с:', orientation);
     document.querySelectorAll('[data-orientation]').forEach(btn => btn.classList.remove('selected'));
     const selectedBtn = document.querySelector(`[data-orientation="${orientation}"]`);
+    console.log('Найдена кнопка:', selectedBtn);
     if (selectedBtn) {
         selectedBtn.classList.add('selected');
         formData.orientation = orientation;
-        console.log('Выбрана ориентация:', orientation);
+        console.log('✅ Ориентация сохранена:', orientation, 'formData:', formData);
+    } else {
+        console.error('❌ Кнопка не найдена для ориентации:', orientation);
     }
 }
 
