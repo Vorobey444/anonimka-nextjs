@@ -1631,14 +1631,7 @@ function setupEventListeners() {
         btn.addEventListener('click', () => selectBody(btn.dataset.body));
     });
 
-    // Кнопки выбора ориентации (делегирование событий)
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-orientation]');
-        if (btn) {
-            console.log('Клик по ориентации:', btn.dataset.orientation);
-            selectOrientation(btn.dataset.orientation);
-        }
-    });
+    // Кнопки выбора ориентации инициализируются в showStep(7)
 
     // Кастомный город
     document.getElementById('customCity').addEventListener('input', function() {
@@ -2068,6 +2061,25 @@ function showStep(step) {
         } else {
             textareaContainer.style.display = 'none';
         }
+    }
+    
+    // Инициализируем кнопки ориентации для шага 7
+    if (step === 7) {
+        console.log('🎯 Инициализируем кнопки ориентации');
+        const orientationBtns = document.querySelectorAll('#step7 [data-orientation]');
+        console.log('Найдено кнопок ориентации:', orientationBtns.length);
+        orientationBtns.forEach((btn, index) => {
+            // Удаляем старые обработчики (если есть)
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            // Добавляем новый обработчик
+            newBtn.addEventListener('click', function() {
+                const orientation = this.dataset.orientation;
+                console.log(`🔥 Прямой клик по кнопке ${index + 1}:`, orientation);
+                selectOrientation(orientation);
+            });
+        });
     }
     
     // Обновляем кнопки навигации
