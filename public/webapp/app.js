@@ -7710,6 +7710,17 @@ function updatePremiumUI() {
         // PRO активен
         proBtn.classList.add('active', 'pro');
         
+        // Показываем дату окончания PRO
+        if (userPremiumStatus.premiumUntil) {
+            const expiryDate = new Date(userPremiumStatus.premiumUntil);
+            const formattedDate = expiryDate.toLocaleDateString('ru-RU', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric' 
+            });
+            proBtn.title = `PRO до ${formattedDate}`;
+        }
+        
         // Скрываем реферальную кнопку для PRO пользователей
         if (referralBtn) {
             referralBtn.style.display = 'none';
@@ -7765,6 +7776,22 @@ async function showPremiumModal() {
     // Обновляем цену и валюту в PRO тарифе
     document.getElementById('proPriceAmount').textContent = proPrice;
     document.getElementById('proPriceCurrency').textContent = currency;
+    
+    // Если пользователь PRO - показываем дату окончания
+    const proPricePeriod = document.getElementById('proPricePeriod');
+    if (userPremiumStatus.isPremium && userPremiumStatus.premiumUntil && proPricePeriod) {
+        const expiryDate = new Date(userPremiumStatus.premiumUntil);
+        const formattedDate = expiryDate.toLocaleDateString('ru-RU', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric' 
+        });
+        proPricePeriod.textContent = `активен до ${formattedDate}`;
+        proPricePeriod.style.color = 'var(--neon-cyan)';
+    } else if (proPricePeriod) {
+        proPricePeriod.textContent = 'в месяц';
+        proPricePeriod.style.color = '';
+    }
     
     // Обновляем кнопки в зависимости от текущего статуса
     updatePremiumModalButtons();
@@ -7835,8 +7862,14 @@ function updatePremiumModalButtons() {
             freeBtn.classList.add('disabled');
         }
         if (proBtn) {
+            const until = userPremiumStatus.premiumUntil ? new Date(userPremiumStatus.premiumUntil) : null;
+            const formattedDate = until ? until.toLocaleDateString('ru-RU', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric' 
+            }) : '';
+            
             if (userPremiumStatus.trial) {
-                const until = userPremiumStatus.premiumUntil ? new Date(userPremiumStatus.premiumUntil) : null;
                 let timeLeft = '';
                 if (until) {
                     const diff = until.getTime() - Date.now();
@@ -7846,9 +7879,9 @@ function updatePremiumModalButtons() {
                         timeLeft = ` ⏳ ${hours}ч ${mins}м`; 
                     }
                 }
-                proBtn.textContent = '✅ PRO триал активен' + timeLeft;
+                proBtn.textContent = '✅ PRO триал активен' + timeLeft + (formattedDate ? `\nдо ${formattedDate}` : '');
             } else {
-                proBtn.textContent = '✅ PRO активен';
+                proBtn.textContent = '✅ PRO активен' + (formattedDate ? `\nдо ${formattedDate}` : '');
             }
             proBtn.disabled = true;
             proBtn.classList.add('active');
