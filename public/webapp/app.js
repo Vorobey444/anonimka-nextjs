@@ -1633,16 +1633,29 @@ function setupEventListeners() {
 
     // Кнопки выбора ориентации
     document.querySelectorAll('.orientation-btn').forEach(btn => {
+        // Основной клик по кнопке
         btn.addEventListener('click', (e) => {
-            // Если клик по info-icon, показываем тултип
-            if (e.target.classList.contains('info-icon')) {
+            // Проверяем, клик по info-icon или его содержимому
+            if (e.target.classList.contains('info-icon') || e.target.closest('.info-icon')) {
                 e.stopPropagation();
-                showOrientationTooltip(e.target, btn.dataset.desc);
+                e.preventDefault();
+                const icon = e.target.classList.contains('info-icon') ? e.target : e.target.closest('.info-icon');
+                showOrientationTooltip(icon, btn.dataset.desc);
                 return;
             }
             // Иначе выбираем ориентацию
             selectOrientation(btn.dataset.orientation);
         });
+        
+        // Отдельный обработчик для info-icon (дополнительная защита)
+        const infoIcon = btn.querySelector('.info-icon');
+        if (infoIcon) {
+            infoIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                showOrientationTooltip(infoIcon, btn.dataset.desc);
+            });
+        }
     });
 
     // Кастомный город
