@@ -8726,8 +8726,13 @@ async function handleReferralLink() {
             const urlParams = new URLSearchParams(window.location.search);
             const refParam = urlParams.get('ref');
             if (refParam) {
+                // Сохраняем реферальный токен В ЛОКАЛЬНОМ ХРАНИЛИЩЕ до редиректа
+                console.log('[REFERRAL] Обнаружен web-переход с ?ref=, сохраняем в localStorage');
+                localStorage.setItem('pending_referral', refParam);
+                localStorage.setItem('pending_referral_timestamp', Date.now().toString());
+                
                 // АВТОМАТИЧЕСКИЙ РЕДИРЕКТ В TELEGRAM!
-                console.log('[REFERRAL] Обнаружен web-переход с ?ref=, редиректим в Telegram');
+                console.log('[REFERRAL] Редиректим в Telegram с ref_' + refParam);
                 const botUsername = 'anonimka_kz_bot'; // Замените на имя вашего бота
                 const telegramLink = `https://t.me/${botUsername}?startapp=ref_${refParam}`;
                 
@@ -8785,6 +8790,27 @@ async function handleReferralLink() {
         } else {
             console.log('[REFERRAL DEBUG] Используем start_param из Telegram WebApp');
             startParam = startParam; // Уже есть из Telegram
+        }
+        
+        // Если start_param нет, проверяем сохранённый реферал из localStorage
+        if (!startParam || !startParam.startsWith('ref_')) {
+            const savedReferral = localStorage.getItem('pending_referral');
+            const savedTimestamp = localStorage.getItem('pending_referral_timestamp');
+            
+            // Проверяем что сохранённый реферал не старше 10 минут
+            if (savedReferral && savedTimestamp) {
+                const age = Date.now() - parseInt(savedTimestamp);
+                if (age < 10 * 60 * 1000) { // 10 минут
+                    console.log('[REFERRAL DEBUG] Используем сохранённый реферал из localStorage');
+                    startParam = 'ref_' + savedReferral;
+                    // Очищаем сохранённые данные
+                    localStorage.removeItem('pending_referral_timestamp');
+                } else {
+                    console.log('[REFERRAL DEBUG] Сохранённый реферал устарел (>10 мин), игнорируем');
+                    localStorage.removeItem('pending_referral');
+                    localStorage.removeItem('pending_referral_timestamp');
+                }
+            }
         }
         
         if (!startParam || !startParam.startsWith('ref_')) {
