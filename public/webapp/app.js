@@ -1631,14 +1631,13 @@ function setupEventListeners() {
         btn.addEventListener('click', () => selectBody(btn.dataset.body));
     });
 
-    // Кнопки выбора ориентации
-    const orientationBtns = document.querySelectorAll('[data-orientation]');
-    console.log('Найдено кнопок ориентации:', orientationBtns.length);
-    orientationBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
+    // Кнопки выбора ориентации (делегирование событий)
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-orientation]');
+        if (btn) {
             console.log('Клик по ориентации:', btn.dataset.orientation);
             selectOrientation(btn.dataset.orientation);
-        });
+        }
     });
 
     // Кастомный город
