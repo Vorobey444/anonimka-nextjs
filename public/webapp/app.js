@@ -1195,6 +1195,199 @@ function useDefaultNickname() {
     }
 }
 
+// ============= ONBOARDING СИСТЕМА =============
+
+let nicknameCheckTimeout = null;
+
+// Показать onboarding экран
+function showOnboardingScreen() {
+    showScreen('onboardingScreen');
+    
+    const nicknameInput = document.getElementById('onboardingNicknameInput');
+    const continueBtn = document.getElementById('onboardingContinue');
+    const agreeCheckbox = document.getElementById('agreeTerms');
+    
+    // Заполняем текущий никнейм если есть
+    const currentNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname') || '';
+    if (currentNickname && nicknameInput) {
+        nicknameInput.value = currentNickname;
+        checkNicknameAvailability(currentNickname);
+    }
+    
+    // Обработчик ввода никнейма
+    if (nicknameInput) {
+        nicknameInput.addEventListener('input', function() {
+            const nickname = this.value.trim();
+            clearTimeout(nicknameCheckTimeout);
+            
+            if (nickname.length < 3) {
+                showNicknameStatus('', '');
+                updateContinueButton();
+                return;
+            }
+            
+            showNicknameStatus('checking', '⏳ Проверяем...');
+            
+            nicknameCheckTimeout = setTimeout(() => {
+                checkNicknameAvailability(nickname);
+            }, 500);
+        });
+    }
+    
+    // Обработчик чекбокса
+    if (agreeCheckbox) {
+        agreeCheckbox.addEventListener('change', updateContinueButton);
+    }
+    
+    updateContinueButton();
+}
+
+// Проверка доступности никнейма
+async function checkNicknameAvailability(nickname) {
+    try {
+        const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
+        const data = await response.json();
+        
+        if (data.available) {
+            showNicknameStatus('available', '✅ Доступен');
+        } else {
+            showNicknameStatus('taken', '❌ Уже занят');
+        }
+        
+        updateContinueButton();
+    } catch (error) {
+        console.error('Ошибка проверки никнейма:', error);
+        showNicknameStatus('', '');
+    }
+}
+
+// Показать статус никнейма
+function showNicknameStatus(type, message) {
+    const statusEl = document.getElementById('nicknameStatus');
+    if (!statusEl) return;
+    
+    statusEl.className = 'nickname-status';
+    if (type) {
+        statusEl.classList.add(type);
+        statusEl.textContent = message;
+    } else {
+        statusEl.textContent = '';
+    }
+}
+
+// Обновить состояние кнопки "Продолжить"
+function updateContinueButton() {
+    const nicknameInput = document.getElementById('onboardingNicknameInput');
+    const agreeCheckbox = document.getElementById('agreeTerms');
+    const continueBtn = document.getElementById('onboardingContinue');
+    const statusEl = document.getElementById('nicknameStatus');
+    
+    if (!continueBtn) return;
+    
+    const nickname = nicknameInput?.value.trim() || '';
+    const agreed = agreeCheckbox?.checked || false;
+    const nicknameAvailable = statusEl?.classList.contains('available');
+    
+    const canContinue = nickname.length >= 3 && nicknameAvailable && agreed;
+    
+    continueBtn.disabled = !canContinue;
+    continueBtn.textContent = canContinue ? '🚀 Продолжить' : '⏳ Сохраняем...';
+}
+
+// Завершить onboarding
+async function completeOnboarding() {
+    const nicknameInput = document.getElementById('onboardingNicknameInput');
+    const agreeCheckbox = document.getElementById('agreeTerms');
+    const continueBtn = document.getElementById('onboardingContinue');
+    
+    const nickname = nicknameInput?.value.trim();
+    const agreed = agreeCheckbox?.checked;
+    
+    if (!nickname || nickname.length < 3) {
+        tg.showAlert('Введите никнейм (минимум 3 символа)');
+        return;
+    }
+    
+    if (!agreed) {
+        tg.showAlert('Необходимо согласиться с условиями');
+        return;
+    }
+    
+    // Блокируем кнопку
+    const originalText = continueBtn.textContent;
+    continueBtn.disabled = true;
+    continueBtn.textContent = '⏳ Сохраняем...';
+    
+    try {
+        const userId = getCurrentUserId();
+        
+        // 1. Сохраняем никнейм
+        const nicknameResponse = await fetch('/api/nickname', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userToken: localStorage.getItem('user_token'),
+                nickname: nickname
+            })
+        });
+        
+        const nicknameData = await nicknameResponse.json();
+        if (!nicknameData.success) {
+            throw new Error(nicknameData.error || 'Ошибка сохранения никнейма');
+        }
+        
+        // 2. Сохраняем согласие с условиями
+        const agreeResponse = await fetch('/api/onboarding', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                tgId: userId,
+                agreed: true
+            })
+        });
+        
+        const agreeData = await agreeResponse.json();
+        if (!agreeData.success) {
+            console.warn('Ошибка сохранения согласия:', agreeData.error);
+        }
+        
+        // 3. Сохраняем локально
+        localStorage.setItem('userNickname', nickname);
+        localStorage.setItem('user_nickname', nickname);
+        localStorage.setItem('onboardingCompleted', 'true');
+        
+        console.log('✅ Onboarding завершён:', nickname);
+        
+        // 4. Переходим в главное меню
+        displayUserLocation();
+        updateFormLocationDisplay();
+        showMainMenu();
+        
+    } catch (error) {
+        console.error('Ошибка завершения onboarding:', error);
+        tg.showAlert('Ошибка: ' + error.message);
+        continueBtn.textContent = originalText;
+        continueBtn.disabled = false;
+    }
+}
+
+// Модальные окна правил/политики
+function showRulesModal() {
+    document.getElementById('rulesModal').style.display = 'flex';
+}
+
+function closeRulesModal() {
+    document.getElementById('rulesModal').style.display = 'none';
+}
+
+function showPrivacyModal() {
+    document.getElementById('privacyModal').style.display = 'flex';
+}
+
+function closePrivacyModal() {
+    document.getElementById('privacyModal').style.display = 'none';
+}
+
 // Показать модальное окно авторизации
 function showTelegramAuthModal() {
     console.log('📱 Показываем модальное окно авторизации');
@@ -3399,19 +3592,19 @@ let filterSelectedRegion = null;
 let filterSelectedCity = null;
 
 // Проверка сохраненной локации пользователя
-function checkUserLocation() {
+async function checkUserLocation() {
     console.log('checkUserLocation вызвана');
     // Попробуем получить локацию из Telegram Web App Storage
     try {
         if (supportsCloudStorage()) {
             console.log('Используем Telegram Cloud Storage');
-            tg.CloudStorage.getItem('userLocation', function(err, value) {
+            tg.CloudStorage.getItem('userLocation', async function(err, value) {
                 console.log('CloudStorage результат:', {err, value});
                 if (!err && value) {
                     currentUserLocation = JSON.parse(value);
                     console.log('Найдена сохраненная локация:', currentUserLocation);
                     displayUserLocation();
-                    showMainMenu();
+                    await checkOnboardingStatus();
                 } else {
                     console.log('Сохраненной локации нет, запускаем автоопределение');
                     // Автоматически определяем по IP
@@ -3427,7 +3620,7 @@ function checkUserLocation() {
                 currentUserLocation = JSON.parse(savedLocation);
                 console.log('Найдена сохраненная локация в localStorage:', currentUserLocation);
                 displayUserLocation();
-                showMainMenu();
+                await checkOnboardingStatus();
             } else {
                 console.log('Сохраненной локации нет, запускаем автоопределение');
                 // Автоматически определяем по IP
@@ -3437,6 +3630,32 @@ function checkUserLocation() {
     } catch (error) {
         console.error('Ошибка при получении локации:', error);
         showAutoLocationDetection();
+    }
+}
+
+// Проверяем статус онбординга пользователя
+async function checkOnboardingStatus() {
+    console.log('checkOnboardingStatus вызвана');
+    try {
+        // Проверяем, есть ли у пользователя никнейм в БД
+        const response = await fetch(`/api/nickname?tgId=${tgId}`);
+        const data = await response.json();
+        
+        console.log('Статус никнейма:', data);
+        
+        if (data.nickname && data.nickname.trim() !== '') {
+            // Пользователь уже прошёл онбординг
+            console.log('Пользователь уже прошёл онбординг, показываем меню');
+            showMainMenu();
+        } else {
+            // Показываем экран онбординга
+            console.log('Пользователь не прошёл онбординг, показываем экран');
+            showOnboardingScreen();
+        }
+    } catch (error) {
+        console.error('Ошибка при проверке статуса онбординга:', error);
+        // В случае ошибки показываем онбординг для безопасности
+        showOnboardingScreen();
     }
 }
 
@@ -4226,12 +4445,12 @@ function showIPDetectionError() {
 }
 
 // Подтвердить определенную локацию
-function confirmDetectedLocation(country, region, city) {
+async function confirmDetectedLocation(country, region, city) {
     console.log('Подтверждение автоматической локации:', {country, region, city});
     saveUserLocation(country, region, city);
     displayUserLocation();
     updateFormLocationDisplay();
-    showMainMenu();
+    await checkOnboardingStatus();
 }
 
 // Сбросить сохраненную локацию и запустить автоопределение
@@ -4346,12 +4565,12 @@ function showLocationSetup() {
 }
 
 // Сохранить локацию и перейти к главному меню
-function saveLocationAndContinue() {
+async function saveLocationAndContinue() {
     if (setupSelectedCountry && setupSelectedRegion && setupSelectedCity) {
         saveUserLocation(setupSelectedCountry, setupSelectedRegion, setupSelectedCity);
         displayUserLocation();
         updateFormLocationDisplay();
-        showMainMenu();
+        await checkOnboardingStatus();
     } else {
         tg.showAlert('Пожалуйста, выберите страну, регион и город');
     }

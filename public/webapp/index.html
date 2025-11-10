@@ -194,6 +194,55 @@
             </div>
         </div>
 
+        <!-- Onboarding экран -->
+        <div id="onboardingScreen" class="screen onboarding-screen">
+            <div class="onboarding-content">
+                <div class="onboarding-logo">
+                    <div class="logo-circle">🎭</div>
+                </div>
+                
+                <h1 class="onboarding-title">Добро пожаловать!</h1>
+                <p class="onboarding-subtitle">Анонимные знакомства без фильтров</p>
+                
+                <div class="onboarding-card">
+                    <!-- Шаг 1: Никнейм -->
+                    <div class="onboarding-step">
+                        <div class="step-number">1</div>
+                        <h3>Придумайте никнейм</h3>
+                        <p class="step-description">Это ваше уникальное имя в приложении</p>
+                        
+                        <div class="nickname-input-group">
+                            <input type="text" 
+                                   id="onboardingNicknameInput" 
+                                   class="onboarding-input" 
+                                   placeholder="Введите никнейм" 
+                                   maxlength="30">
+                            <div id="nicknameStatus" class="nickname-status"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Шаг 2: Согласие -->
+                    <div class="onboarding-step">
+                        <div class="step-number">2</div>
+                        <h3>Примите условия</h3>
+                        
+                        <label class="onboarding-checkbox">
+                            <input type="checkbox" id="agreeTerms">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">
+                                Согласен с <a href="#" onclick="showRulesModal(); return false;">правилами</a> 
+                                и <a href="#" onclick="showPrivacyModal(); return false;">политикой</a>
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <button id="onboardingContinue" class="onboarding-button" onclick="completeOnboarding()">
+                        ⏳ Сохраняем...
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Гамбургер меню -->
         <div id="hamburgerMenuOverlay" class="hamburger-overlay">
             <div class="hamburger-menu-content">
@@ -1221,6 +1270,59 @@
                     font-weight: 600;
                     transition: all 0.3s ease;
                 ">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальные окна правил и политики -->
+    <div id="rulesModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeRulesModal()">&times;</span>
+            <h2>📋 Правила использования</h2>
+            <div class="modal-text">
+                <p><strong>1. Уважение к другим пользователям</strong></p>
+                <p>Запрещены оскорбления, угрозы, домогательства и любые формы дискриминации.</p>
+                
+                <p><strong>2. Запрещенный контент</strong></p>
+                <p>Нельзя публиковать порнографию, экстремистские материалы, пропаганду насилия.</p>
+                
+                <p><strong>3. Конфиденциальность</strong></p>
+                <p>Не распространяйте личную информацию других пользователей без их согласия.</p>
+                
+                <p><strong>4. Спам и мошенничество</strong></p>
+                <p>Запрещены массовые рассылки, реклама без согласования, мошеннические схемы.</p>
+                
+                <p><strong>5. Ответственность</strong></p>
+                <p>Вы несете ответственность за свои сообщения и объявления.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="privacyModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closePrivacyModal()">&times;</span>
+            <h2>🔒 Политика конфиденциальности</h2>
+            <div class="modal-text">
+                <p><strong>Какие данные мы собираем:</strong></p>
+                <ul>
+                    <li>Telegram ID для идентификации</li>
+                    <li>Выбранный никнейм</li>
+                    <li>Ваше местоположение (город/регион)</li>
+                    <li>Опубликованные объявления и сообщения</li>
+                </ul>
+                
+                <p><strong>Как мы используем данные:</strong></p>
+                <ul>
+                    <li>Для работы функционала приложения</li>
+                    <li>Для модерации контента</li>
+                    <li>Для предотвращения злоупотреблений</li>
+                </ul>
+                
+                <p><strong>Безопасность:</strong></p>
+                <p>Мы используем современные методы шифрования и защиты данных. Ваши личные сообщения остаются конфиденциальными.</p>
+                
+                <p><strong>Ваши права:</strong></p>
+                <p>Вы можете в любой момент удалить свой аккаунт и все связанные данные.</p>
             </div>
         </div>
     </div>
