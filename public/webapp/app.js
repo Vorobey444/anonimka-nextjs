@@ -949,10 +949,12 @@ function showNicknameEditorScreen() {
     closeHamburgerMenu();
     showScreen('nicknameEditScreen');
     
-    // Обновляем отображение текущего никнейма
+    // Обновляем отображение текущего никнейма (проверяем оба варианта ключа)
     const currentNicknameDisplay = document.getElementById('currentNicknameDisplay');
     const nicknameInputPage = document.getElementById('nicknameInputPage');
-    const savedNickname = localStorage.getItem('user_nickname') || 'Аноним';
+    const savedNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname') || 'Аноним';
+    
+    console.log('📝 Показываем редактор никнейма, текущий никнейм:', savedNickname);
     
     if (currentNicknameDisplay) {
         currentNicknameDisplay.textContent = savedNickname;
