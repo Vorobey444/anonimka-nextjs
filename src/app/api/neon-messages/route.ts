@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
       // Отправить сообщение
       case 'send-message': {
-        const { chatId, senderId, messageText, senderNickname, skipNotification, photoUrl, telegramFileId } = params;
+        const { chatId, senderId, messageText, senderNickname, skipNotification, photoUrl, telegramFileId, replyToMessageId } = params;
         
         // Проверяем лимит фото (если отправляется фото)
         if (photoUrl || telegramFileId) {
@@ -132,11 +132,11 @@ export async function POST(request: NextRequest) {
         const result = await sql`
           INSERT INTO messages (
             chat_id, sender_token, message, sender_nickname, 
-            photo_url, telegram_file_id, created_at
+            photo_url, telegram_file_id, reply_to_message_id, created_at
           )
           VALUES (
             ${chatId}, ${senderId}, ${messageText || ''}, ${nickname},
-            ${photoUrl || null}, ${telegramFileId || null}, NOW()
+            ${photoUrl || null}, ${telegramFileId || null}, ${replyToMessageId || null}, NOW()
           )
           RETURNING *
         `;

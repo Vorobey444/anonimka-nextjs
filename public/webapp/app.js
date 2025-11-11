@@ -1418,6 +1418,22 @@ function closePrivacyModal() {
     document.getElementById('privacyModal').style.display = 'none';
 }
 
+// Показать FAQ Мир чата
+function showWorldChatFAQ() {
+    const modal = document.getElementById('worldChatFAQModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// Закрыть FAQ Мир чата
+function closeWorldChatFAQ() {
+    const modal = document.getElementById('worldChatFAQModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 // Показать модальное окно авторизации
 function showTelegramAuthModal() {
     console.log('📱 Показываем модальное окно авторизации');
@@ -6695,6 +6711,9 @@ async function openChat(chatId) {
         // Загружаем сообщения
         await loadChatMessages(chatId);
         
+        // Применяем сохраненный размер шрифта
+        applyChatFontSize();
+        
         // Проверяем статус блокировки
         await checkBlockStatus(chatId);
         
@@ -6781,6 +6800,26 @@ async function loadChatMessages(chatId, silent = false) {
             const messageClass = isMine ? 'sent' : 'received';
             const time = formatMessageTime(msg.created_at);
             
+            // Индикатор ответа (если это ответ на другое сообщение)
+            let replyIndicatorHtml = '';
+            if (msg.reply_to_message_id) {
+                // Находим оригинальное сообщение для отображения превью
+                const originalMsg = messages.find(m => m.id == msg.reply_to_message_id);
+                const replyToNickname = originalMsg?.sender_nickname || 'Собеседник';
+                const replyToText = originalMsg?.message || '📸 Фото';
+                const replyPreviewText = replyToText.length > 30 ? replyToText.substring(0, 30) + '...' : replyToText;
+                
+                replyIndicatorHtml = `
+                    <div class="message-reply-indicator" onclick="scrollToMessage(${msg.reply_to_message_id})">
+                        <div class="reply-indicator-line"></div>
+                        <div class="reply-indicator-content">
+                            <div class="reply-indicator-nickname">${escapeHtml(replyToNickname)}</div>
+                            <div class="reply-indicator-text">${escapeHtml(replyPreviewText)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
             // Ник для входящих сообщений из базы данных
             let nicknameHtml = '';
             if (!isMine) {
@@ -6835,11 +6874,15 @@ async function loadChatMessages(chatId, silent = false) {
                 }
             }
             
+            const nickname = msg.sender_nickname || 'Собеседник';
+            
             return `
                 <div class="message ${messageClass}" 
                      data-message-id="${msg.id}" 
+                     data-nickname="${escapeHtml(nickname)}"
                      data-is-mine="${isMine}"
                      ${isMine ? 'oncontextmenu="return showDeleteMessageMenu(event, ' + msg.id + ')"' : ''}>
+                    ${replyIndicatorHtml}
                     ${nicknameHtml}
                     ${photoHtml}
                     ${messageTextHtml}
@@ -6871,6 +6914,9 @@ async function loadChatMessages(chatId, silent = false) {
                 scrollContainer.scrollTop = scrollContainer.scrollHeight;
             }, 300);
         }
+        
+        // Добавляем свайп-обработчики к сообщениям
+        setupMessageSwipeHandlers();
 
     } catch (error) {
         console.error('Ошибка:', error);
@@ -6878,6 +6924,76 @@ async function loadChatMessages(chatId, silent = false) {
             messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Ошибка загрузки</p>';
         }
     }
+}
+
+// Настройка свайпа для ответа на сообщения
+function setupMessageSwipeHandlers() {
+    const messages = document.querySelectorAll('.message');
+    
+    messages.forEach(msg => {
+        let startX = 0;
+        let currentX = 0;
+        let isDragging = false;
+        
+        const handleStart = (e) => {
+            startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            isDragging = true;
+            msg.style.transition = 'none';
+        };
+        
+        const handleMove = (e) => {
+            if (!isDragging) return;
+            
+            currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            const diff = currentX - startX;
+            
+            // Свайп только влево (для всех сообщений)
+            if (diff < 0 && diff > -150) {
+                msg.style.transform = `translateX(${diff}px)`;
+            }
+        };
+        
+        const handleEnd = (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            const diff = currentX - startX;
+            msg.style.transition = 'transform 0.2s ease';
+            msg.style.transform = '';
+            
+            // Если свайпнули достаточно влево (-80px), показываем ответ
+            if (diff < -80) {
+                const messageId = msg.getAttribute('data-message-id');
+                const nickname = msg.getAttribute('data-nickname');
+                const messageText = msg.querySelector('.message-text')?.textContent || '';
+                
+                if (messageId && nickname) {
+                    // Вибрация
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    }
+                    replyToMsg(messageId, nickname, messageText);
+                }
+            }
+        };
+        
+        // Touch events
+        msg.addEventListener('touchstart', handleStart, { passive: true });
+        msg.addEventListener('touchmove', handleMove, { passive: true });
+        msg.addEventListener('touchend', handleEnd, { passive: true });
+        
+        // Mouse events для десктопа
+        msg.addEventListener('mousedown', handleStart);
+        msg.addEventListener('mousemove', handleMove);
+        msg.addEventListener('mouseup', handleEnd);
+        msg.addEventListener('mouseleave', () => {
+            if (isDragging) {
+                isDragging = false;
+                msg.style.transition = 'transform 0.2s ease';
+                msg.style.transform = '';
+            }
+        });
+    });
 }
 
 // Отправить сообщение
@@ -7380,7 +7496,8 @@ async function sendMessage() {
                     // Фото доступны только в WebApp
                     skipNotification: photoData ? true : false,
                     photoUrl: photoData?.photo_url || null,
-                    telegramFileId: photoData?.file_id || null
+                    telegramFileId: photoData?.file_id || null,
+                    replyToMessageId: replyToMessage ? replyToMessage.id : null
                 }
             })
         });
@@ -7424,6 +7541,9 @@ async function sendMessage() {
         // Очищаем поле ввода и фото
         input.value = '';
         removePhoto();
+        
+        // Скрываем превью ответа
+        cancelReply();
 
         // Перезагружаем сообщения
         await loadChatMessages(currentChatId);
@@ -7496,6 +7616,110 @@ async function markMessagesAsDelivered() {
         }
     } catch (error) {
         console.error('Ошибка markMessagesAsDelivered:', error);
+    }
+}
+
+// ==================== ОТВЕТ НА СООБЩЕНИЕ ====================
+
+let replyToMessage = null;
+
+// Ответить на сообщение
+function replyToMsg(messageId, nickname, messageText) {
+    replyToMessage = { id: messageId, nickname, text: messageText };
+    
+    // Показываем превью
+    const replyPreview = document.getElementById('replyPreview');
+    const replyToNickname = document.getElementById('replyToNickname');
+    const replyToText = document.getElementById('replyToText');
+    
+    replyToNickname.textContent = nickname;
+    replyToText.textContent = messageText.length > 50 ? messageText.substring(0, 50) + '...' : messageText;
+    
+    replyPreview.style.display = 'flex';
+    
+    // Фокусируем поле ввода
+    document.getElementById('messageInput').focus();
+}
+
+// Отменить ответ
+function cancelReply() {
+    replyToMessage = null;
+    document.getElementById('replyPreview').style.display = 'none';
+}
+
+// Скролл к сообщению и подсветка
+function scrollToMessage(messageId) {
+    const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageEl) return;
+    
+    // Скроллим к сообщению
+    messageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Добавляем класс для подсветки
+    messageEl.classList.add('highlight');
+    
+    // Убираем подсветку через 1 секунду
+    setTimeout(() => {
+        messageEl.classList.remove('highlight');
+    }, 1000);
+}
+
+// ==================== РАЗМЕР ШРИФТА ====================
+
+function toggleChatFontSize() {
+    const messagesContainer = document.querySelector('.chat-messages');
+    if (!messagesContainer) return;
+    
+    // Получаем текущий размер из localStorage или дефолтный 'medium'
+    let currentSize = localStorage.getItem('chatFontSize') || 'medium';
+    
+    // Переключаем на следующий размер
+    const sizes = ['small', 'medium', 'large'];
+    const currentIndex = sizes.indexOf(currentSize);
+    const nextIndex = (currentIndex + 1) % sizes.length;
+    const nextSize = sizes[nextIndex];
+    
+    // Удаляем старые классы и добавляем новый
+    messagesContainer.classList.remove('font-small', 'font-medium', 'font-large');
+    messagesContainer.classList.add(`font-${nextSize}`);
+    
+    // Сохраняем в localStorage
+    localStorage.setItem('chatFontSize', nextSize);
+    
+    // Обновляем текст кнопки
+    const btn = document.getElementById('chatFontSizeBtn');
+    if (btn) {
+        if (nextSize === 'small') {
+            btn.style.fontSize = '14px';
+        } else if (nextSize === 'medium') {
+            btn.style.fontSize = '18px';
+        } else {
+            btn.style.fontSize = '22px';
+        }
+    }
+    
+    console.log('📏 Размер шрифта чата:', nextSize);
+}
+
+// Применить сохраненный размер шрифта при загрузке чата
+function applyChatFontSize() {
+    const savedSize = localStorage.getItem('chatFontSize') || 'medium';
+    const messagesContainer = document.querySelector('.chat-messages');
+    if (messagesContainer) {
+        messagesContainer.classList.remove('font-small', 'font-medium', 'font-large');
+        messagesContainer.classList.add(`font-${savedSize}`);
+    }
+    
+    // Обновляем кнопку
+    const btn = document.getElementById('chatFontSizeBtn');
+    if (btn) {
+        if (savedSize === 'small') {
+            btn.style.fontSize = '14px';
+        } else if (savedSize === 'medium') {
+            btn.style.fontSize = '18px';
+        } else {
+            btn.style.fontSize = '22px';
+        }
     }
 }
 

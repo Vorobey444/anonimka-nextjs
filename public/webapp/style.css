@@ -3776,6 +3776,87 @@ h3 {
     font-size: 1rem;
 }
 
+/* Кнопка FAQ для Мир чата */
+.world-chat-faq-btn {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    background: rgba(0, 255, 255, 0.1);
+    border: 2px solid var(--neon-cyan);
+    border-radius: 50%;
+    color: var(--neon-cyan);
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.world-chat-faq-btn:hover {
+    background: rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.world-chat-faq-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+/* Стили для FAQ модального окна */
+.world-chat-faq-content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.world-chat-faq-text {
+    font-size: 11px !important;
+    line-height: 1.5;
+}
+
+.world-chat-faq-text p {
+    font-size: 11px !important;
+    margin-bottom: 10px;
+}
+
+.world-chat-faq-text ul {
+    font-size: 11px !important;
+    margin-left: 15px;
+    margin-bottom: 10px;
+}
+
+.world-chat-faq-text li {
+    font-size: 11px !important;
+    margin-bottom: 5px;
+}
+
+.world-chat-faq-text strong {
+    font-size: 11px !important;
+    color: var(--neon-cyan);
+}
+
+.chat-font-size-btn {
+    background: transparent;
+    border: none;
+    color: var(--neon-cyan);
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px 10px;
+    transition: all 0.3s ease;
+    margin-left: auto;
+    margin-right: 5px;
+}
+
+.chat-font-size-btn:hover {
+    color: var(--neon-pink);
+    text-shadow: 0 0 10px var(--neon-pink);
+}
+
 .chat-menu-btn {
     background: transparent;
     border: none;
@@ -3988,6 +4069,23 @@ h3 {
     border-radius: 18px;
     position: relative;
     animation: messageSlideIn 0.3s ease;
+    transition: transform 0.2s ease, background 0.3s ease;
+    touch-action: pan-y;
+}
+
+/* Подсветка при скролле к сообщению */
+.message.highlight {
+    animation: highlightPulse 1s ease;
+}
+
+@keyframes highlightPulse {
+    0%, 100% {
+        background: inherit;
+    }
+    50% {
+        background: rgba(0, 217, 255, 0.3);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+    }
 }
 
 @keyframes messageSlideIn {
@@ -4145,6 +4243,128 @@ h3 {
         text-shadow: 0 0 12px var(--neon-cyan), 0 0 20px var(--neon-cyan);
         opacity: 0.9;
     }
+}
+
+/* Превью ответа на сообщение */
+.reply-preview {
+    position: fixed;
+    bottom: 56px;
+    left: 0;
+    right: 0;
+    background: rgba(26, 26, 46, 0.95);
+    border-top: 2px solid var(--neon-cyan);
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 99;
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.reply-preview-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+.reply-preview-header {
+    font-size: 12px;
+    color: var(--neon-cyan);
+    margin-bottom: 2px;
+    font-weight: 600;
+}
+
+.reply-preview-text {
+    font-size: 13px;
+    color: var(--text-gray);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.reply-preview-close {
+    background: transparent;
+    border: none;
+    color: var(--text-gray);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.reply-preview-close:hover {
+    color: var(--neon-red);
+}
+
+/* Индикатор ответа в сообщениях */
+.message-reply-indicator {
+    display: flex;
+    gap: 8px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    background: rgba(0, 255, 255, 0.05);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.message-reply-indicator:hover {
+    background: rgba(0, 255, 255, 0.1);
+}
+
+.reply-indicator-line {
+    width: 3px;
+    background: var(--neon-cyan);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.reply-indicator-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+.reply-indicator-nickname {
+    font-size: 11px;
+    color: var(--neon-cyan);
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.reply-indicator-text {
+    font-size: 12px;
+    color: var(--text-gray);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Размеры шрифта для сообщений в чате */
+.chat-messages.font-small .message {
+    font-size: 13px;
+}
+
+.chat-messages.font-medium .message {
+    font-size: 15px;
+}
+
+.chat-messages.font-large .message {
+    font-size: 18px;
 }
 
 /* Контейнер ввода */
