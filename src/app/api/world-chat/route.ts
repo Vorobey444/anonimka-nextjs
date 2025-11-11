@@ -41,11 +41,12 @@ async function getMessages(params: {
     let queryParams: any[] = [];
 
     if (tab === 'world') {
-        // Вкладка "Мир" - все сообщения, исключая заблокированных
+        // Вкладка "Мир" - только публичные сообщения типа 'world', исключая заблокированных и личные (private)
         query = `
             SELECT id, user_token, nickname, message, type, target_user_token, target_nickname, location_city, is_premium, created_at
             FROM world_chat_messages
-            WHERE user_token NOT IN (
+            WHERE type = 'world'
+            AND user_token NOT IN (
                 SELECT blocked_token FROM user_blocks WHERE blocker_token = $1
             )
             ORDER BY created_at DESC
