@@ -9676,7 +9676,7 @@ async function switchWorldChatTab(tab) {
 // Загрузить сообщения
 async function loadWorldChatMessages(silent = false) {
     try {
-        const userToken = getUserToken();
+        const userToken = localStorage.getItem('user_token');
         const userCity = localStorage.getItem('userCity') || 'Алматы';
         
         const response = await fetch('/api/world-chat', {
@@ -9787,7 +9787,7 @@ async function sendWorldChatMessage() {
     }
     
     try {
-        const userToken = getUserToken();
+        const userToken = localStorage.getItem('user_token');
         const nickname = localStorage.getItem('userNickname') || 'Аноним';
         const isPremium = userPremiumStatus.isPremium || false;
         const city = localStorage.getItem('userCity') || 'Алматы';
