@@ -9656,14 +9656,24 @@ async function switchWorldChatTab(tab) {
     });
     document.getElementById(`${tab}Tab`).classList.add('active');
     
-    // Обновляем префикс
+    // Обновляем префикс и очищаем поле при переключении на Мир или Город
     const prefixElement = document.getElementById('worldChatPrefix');
+    const input = document.getElementById('worldChatInput');
+    
     if (tab === 'world') {
         prefixElement.textContent = '@';
         prefixElement.style.color = '#FFD700';
+        // Очищаем поле если там был никнейм для личного сообщения
+        if (input.value.trim()) {
+            input.value = '';
+        }
     } else if (tab === 'city') {
         prefixElement.textContent = '&';
         prefixElement.style.color = '#00D9FF';
+        // Очищаем поле если там был никнейм для личного сообщения
+        if (input.value.trim()) {
+            input.value = '';
+        }
     } else if (tab === 'private') {
         prefixElement.textContent = '/';
         prefixElement.style.color = '#FF006E';
@@ -9867,50 +9877,22 @@ async function sendWorldChatMessage() {
             input.value = '';
             updateWorldChatCharCount();
             
-            // Запускаем таймер 30 секунд
-            startWorldChatTimeout();
-            
             // Сразу обновляем сообщения
             await loadWorldChatMessages();
         } else {
             console.error('❌ Ошибка отправки:', data.error);
-            tg.showAlert(data.error || 'Ошибка отправки сообщения');
             
-            // Если это таймаут, запускаем уведомление
+            // Если это таймаут - показываем alert с информацией
             if (response.status === 429) {
-                const match = data.error.match(/(\d+) сек/);
-                if (match) {
-                    const seconds = parseInt(match[1]);
-                    startWorldChatTimeout(seconds);
-                }
+                tg.showAlert('Таймаут на отправку 30 сек. Подождите и попробуйте снова.');
+            } else {
+                tg.showAlert(data.error || 'Ошибка отправки сообщения');
             }
         }
     } catch (error) {
         console.error('Ошибка отправки сообщения:', error);
         tg.showAlert('Ошибка отправки сообщения');
     }
-}
-
-// Таймаут между сообщениями (только для world и city)
-function startWorldChatTimeout(seconds = 30) {
-    // Таймаут только для Мир и Город чата
-    if (currentWorldChatTab === 'private') {
-        return; // Приват без ограничений
-    }
-    
-    const timeoutDiv = document.getElementById('worldChatTimeout');
-    const secondsSpan = document.getElementById('timeoutSeconds');
-    const sendBtn = document.querySelector('.world-chat-send-btn');
-    
-    timeoutDiv.style.display = 'block';
-    sendBtn.disabled = true;
-    secondsSpan.textContent = seconds;
-    
-    // Просто ждём указанное время
-    setTimeout(() => {
-        timeoutDiv.style.display = 'none';
-        sendBtn.disabled = false;
-    }, seconds * 1000);
 }
 
 // Обновление счетчика символов
