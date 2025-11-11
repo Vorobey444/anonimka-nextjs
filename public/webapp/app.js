@@ -10031,7 +10031,7 @@ function showWorldChatContextMenu(event, nickname, userToken, isOwnMessage = fal
                 </div>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="worldChatPrivateMessage('${escapeHtml(nickname)}')" style="
+                <button onclick="worldChatPrivateMessage('${escapeHtml(nickname)}', '${userToken}')" style="
                     padding: 12px;
                     background: linear-gradient(135deg, #FF006E, #C4005A);
                     border: none;
@@ -10116,9 +10116,141 @@ function closeWorldChatContextMenu() {
 }
 
 // Приват чат через контекстное меню
-function worldChatPrivateMessage(nickname) {
+async function worldChatPrivateMessage(nickname, userToken) {
     closeWorldChatContextMenu();
-    clickWorldChatNickname(nickname);
+    
+    // Получаем токен текущего пользователя
+    const currentUserToken = localStorage.getItem('user_token');
+    if (!currentUserToken || currentUserToken === 'null' || currentUserToken === 'undefined') {
+        tg.showAlert('⚠️ Сначала создайте анкету или авторизуйтесь');
+        return;
+    }
+    
+    // Проверяем, не пытается ли пользователь написать самому себе
+    if (currentUserToken === userToken) {
+        tg.showAlert('Вы не можете отправить сообщение самому себе');
+        return;
+    }
+    
+    // Проверяем, не заблокированы ли мы этим пользователем
+    try {
+        const blockCheckResponse = await fetch('/api/user-blocks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'is-blocked',
+                params: {
+                    blockerToken: userToken,
+                    blockedToken: currentUserToken
+                }
+            })
+        });
+        
+        const blockCheckData = await blockCheckResponse.json();
+        
+        if (blockCheckData.success && blockCheckData.isBlocked) {
+            tg.showAlert('Вы не можете создать чат с этим пользователем');
+            return;
+        }
+    } catch (error) {
+        console.error('Ошибка проверки блокировки:', error);
+    }
+    
+    // Показываем модальное окно для ввода сообщения
+    showCustomPrompt(`Введите сообщение для ${nickname}:`, async (message) => {
+        if (!message || message.trim() === '') {
+            return;
+        }
+        
+        try {
+            // Создаём приватный чат через Мир чат
+            await createWorldChatPrivateChat(nickname, userToken, currentUserToken, message);
+        } catch (error) {
+            console.error('Ошибка создания чата:', error);
+            tg.showAlert('❌ Ошибка при создании чата: ' + error.message);
+        }
+    });
+}
+
+// Создать приватный чат из Мир чата
+async function createWorldChatPrivateChat(nickname, targetUserToken, senderUserToken, message) {
+    try {
+        console.log('Создание приватного чата с', nickname);
+        
+        // Проверяем, существует ли уже чат между этими пользователями
+        const checkResponse = await fetch('/api/neon-chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'check-existing-by-tokens',
+                params: {
+                    user1_token: senderUserToken,
+                    user2_token: targetUserToken
+                }
+            })
+        });
+        
+        const checkData = await checkResponse.json();
+        
+        if (checkData.data) {
+            // Чат уже существует
+            console.log('Чат уже существует:', checkData.data);
+            
+            // Отправляем сообщение в существующий чат
+            const sendResponse = await fetch('/api/neon-messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'send-message',
+                    params: {
+                        chatId: checkData.data.id,
+                        senderToken: senderUserToken,
+                        message: message,
+                        senderNickname: localStorage.getItem('userNickname') || 'Аноним'
+                    }
+                })
+            });
+            
+            const sendData = await sendResponse.json();
+            
+            if (sendData.error) {
+                throw new Error(sendData.error.message || 'Ошибка отправки сообщения');
+            }
+            
+            tg.showAlert(`✅ Сообщение отправлено ${nickname}!\n\nПроверьте раздел "Мои чаты"`);
+        } else {
+            // Создаём новый чат (без ad_id, так как это из Мир чата)
+            const createResponse = await fetch('/api/neon-chats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create-direct',
+                    params: {
+                        user1_token: senderUserToken,
+                        user2_token: targetUserToken,
+                        message: message,
+                        senderNickname: localStorage.getItem('userNickname') || 'Аноним'
+                    }
+                })
+            });
+            
+            const createData = await createResponse.json();
+            
+            if (createData.error) {
+                throw new Error(createData.error.message || 'Ошибка создания чата');
+            }
+            
+            console.log('Чат успешно создан:', createData.data);
+            tg.showAlert(`✅ Приватный чат с ${nickname} создан!\n\nПроверьте раздел "Мои чаты"`);
+        }
+        
+        // Обновляем бейдж чатов
+        await updateChatBadge();
+        
+    } catch (error) {
+        console.error('Ошибка при создании приватного чата:', error);
+        throw error;
+    }
 }
 
 // Добавить в ЧС

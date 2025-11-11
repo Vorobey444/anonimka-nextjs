@@ -263,6 +263,50 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ data: adData, error: null });
       }
 
+      case 'check-existing-by-tokens': {
+        // Проверка существующего чата между двумя пользователями (без привязки к ad_id)
+        const { user1_token, user2_token } = params;
+        
+        // Ищем чат в обе стороны
+        const result = await sql`
+          SELECT id, accepted, blocked_by, blocked_by_token, ad_id 
+          FROM private_chats 
+          WHERE (
+            (user_token_1 = ${user1_token} AND user_token_2 = ${user2_token})
+            OR
+            (user_token_1 = ${user2_token} AND user_token_2 = ${user1_token})
+          )
+          ORDER BY created_at DESC
+          LIMIT 1
+        `;
+        
+        return NextResponse.json({ data: result.rows[0] || null, error: null });
+      }
+
+      case 'create-direct': {
+        // Создание прямого чата без привязки к объявлению (из Мир чата)
+        const { user1_token, user2_token, message, senderNickname } = params;
+        
+        // Создаём чат без ad_id (NULL)
+        const chatResult = await sql`
+          INSERT INTO private_chats (user_token_1, user_token_2, ad_id, message, accepted)
+          VALUES (${user1_token}, ${user2_token}, NULL, ${message || ''}, false)
+          RETURNING *
+        `;
+        
+        const chat = chatResult.rows[0];
+        
+        // Отправляем первое сообщение
+        if (message) {
+          await sql`
+            INSERT INTO messages (chat_id, sender_token, sender_nickname, message, read)
+            VALUES (${chat.id}, ${user1_token}, ${senderNickname}, ${message}, false)
+          `;
+        }
+        
+        return NextResponse.json({ data: chat, error: null });
+      }
+
       default:
         return NextResponse.json(
           { error: { message: 'Unknown action' } },
