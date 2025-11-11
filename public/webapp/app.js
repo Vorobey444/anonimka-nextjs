@@ -6767,8 +6767,19 @@ async function loadChatMessages(chatId, silent = false) {
                 if (isVideo) {
                     photoHtml = `<video src="${escapeHtml(msg.photo_url)}" class="message-photo" controls playsinline controlslist="nodownload" disablePictureInPicture></video>`;
                 } else {
-                    // Защищенное фото: запрет контекстного меню, drag & drop
-                    photoHtml = `<img src="${escapeHtml(msg.photo_url)}" class="message-photo secure-photo" alt="Фото" onclick="showPhotoModal('${escapeHtml(msg.photo_url)}')" oncontextmenu="return false;" draggable="false" />`;
+                    // Защищенное фото через DIV с background-image (нельзя скачать)
+                    const photoId = `photo-${msg.id || Date.now()}`;
+                    photoHtml = `<div id="${photoId}" class="message-photo-secure" style="background-image: url('${escapeHtml(msg.photo_url)}');" data-photo-url="${escapeHtml(msg.photo_url)}"></div>`;
+                    
+                    // Добавляем обработчик клика после рендеринга
+                    setTimeout(() => {
+                        const photoEl = document.getElementById(photoId);
+                        if (photoEl) {
+                            photoEl.addEventListener('click', () => {
+                                showPhotoModal(photoEl.dataset.photoUrl);
+                            });
+                        }
+                    }, 50);
                 }
             }
             
