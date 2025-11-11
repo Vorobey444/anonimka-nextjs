@@ -41,29 +41,39 @@ async function getMessages(params: {
     let queryParams: any[] = [];
 
     if (tab === 'world') {
-        // Вкладка "Мир" - все сообщения
+        // Вкладка "Мир" - все сообщения, исключая заблокированных
         query = `
             SELECT id, user_token, nickname, message, type, target_user_token, target_nickname, location_city, is_premium, created_at
             FROM world_chat_messages
+            WHERE user_token NOT IN (
+                SELECT blocked_token FROM user_blocks WHERE blocker_token = $1
+            )
             ORDER BY created_at DESC
             LIMIT 50
         `;
+        queryParams = [userToken];
     } else if (tab === 'city') {
-        // Вкладка "Город" - только сообщения с городом пользователя
+        // Вкладка "Город" - только сообщения с городом пользователя, исключая заблокированных
         query = `
             SELECT id, user_token, nickname, message, type, target_user_token, target_nickname, location_city, is_premium, created_at
             FROM world_chat_messages
             WHERE type = 'city' AND location_city = $1
+            AND user_token NOT IN (
+                SELECT blocked_token FROM user_blocks WHERE blocker_token = $2
+            )
             ORDER BY created_at DESC
             LIMIT 50
         `;
-        queryParams = [userCity];
+        queryParams = [userCity, userToken];
     } else if (tab === 'private') {
-        // Вкладка "ЛС" - только личные сообщения для текущего пользователя
+        // Вкладка "ЛС" - только личные сообщения для текущего пользователя, исключая заблокированных
         query = `
             SELECT id, user_token, nickname, message, type, target_user_token, target_nickname, location_city, is_premium, created_at
             FROM world_chat_messages
             WHERE type = 'private' AND (target_user_token = $1 OR user_token = $1)
+            AND user_token NOT IN (
+                SELECT blocked_token FROM user_blocks WHERE blocker_token = $1
+            )
             ORDER BY created_at DESC
             LIMIT 50
         `;
@@ -138,6 +148,20 @@ async function sendMessage(params: {
         }
 
         targetUserToken = targetUserResult.rows[0].user_token;
+        
+        // Проверяем, не заблокированы ли мы получателем
+        const blockCheckResult = await sql.query(
+            `SELECT id FROM user_blocks 
+             WHERE blocker_token = $1 AND blocked_token = $2`,
+            [targetUserToken, userToken]
+        );
+        
+        if (blockCheckResult.rows.length > 0) {
+            return NextResponse.json(
+                { error: 'Вы не можете отправить сообщение этому пользователю' },
+                { status: 403 }
+            );
+        }
     }
 
     // Проверка таймаута 30 секунд (только для world и city, не для private)

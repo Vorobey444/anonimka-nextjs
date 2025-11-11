@@ -3144,6 +3144,31 @@ async function contactAuthor(adIndex) {
         return;
     }
     
+    // Проверяем, не заблокированы ли мы автором
+    try {
+        const blockCheckResponse = await fetch('/api/user-blocks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'is-blocked',
+                params: {
+                    blockerToken: authorToken,
+                    blockedToken: currentUserToken
+                }
+            })
+        });
+        
+        const blockCheckData = await blockCheckResponse.json();
+        
+        if (blockCheckData.success && blockCheckData.isBlocked) {
+            tg.showAlert('Вы не можете создать чат с этим пользователем');
+            return;
+        }
+    } catch (error) {
+        console.error('Ошибка проверки блокировки:', error);
+        // Продолжаем, если проверка не удалась
+    }
+    
     // Запрашиваем текст сообщения через кастомное модальное окно
     showCustomPrompt('Введите сообщение автору анкеты:', async (message) => {
         if (!message || message.trim() === '') {
@@ -10061,20 +10086,36 @@ function worldChatPrivateMessage(nickname) {
 }
 
 // Добавить в ЧС
-async function worldChatBlockUser(nickname, userToken) {
+async function worldChatBlockUser(nickname, blockedUserToken) {
     closeWorldChatContextMenu();
     
-    const confirmed = confirm(`Добавить ${nickname} в черный список?`);
+    const confirmed = confirm(`Добавить ${nickname} в черный список?\n\nВы не будете видеть сообщения этого пользователя в чате.`);
     if (!confirmed) return;
     
     try {
         const currentUserToken = localStorage.getItem('user_token');
         
-        // TODO: Реализовать API для блокировки
-        // Пока просто показываем уведомление
-        tg.showAlert(`${nickname} добавлен в ЧС (функция в разработке)`);
+        const response = await fetch('/api/user-blocks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'block-user',
+                params: {
+                    blockerToken: currentUserToken,
+                    blockedToken: blockedUserToken
+                }
+            })
+        });
         
-        console.log('Блокировка пользователя:', nickname, userToken);
+        const data = await response.json();
+        
+        if (data.success) {
+            tg.showAlert(`${nickname} добавлен в ЧС`);
+            // Обновляем сообщения, чтобы скрыть заблокированного
+            await loadWorldChatMessages();
+        } else {
+            tg.showAlert(data.error || 'Ошибка при блокировке');
+        }
     } catch (error) {
         console.error('Ошибка блокировки:', error);
         tg.showAlert('Ошибка при блокировке пользователя');
