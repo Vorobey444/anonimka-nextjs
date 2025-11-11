@@ -784,6 +784,17 @@ function initializeTelegramWebApp() {
     // Настройка кнопки назад
     tg.BackButton.onClick(() => handleBackButton());
     
+    // Перехват физической кнопки назад на Android через popstate
+    window.addEventListener('popstate', (event) => {
+        event.preventDefault();
+        handleBackButton();
+        // Возвращаем состояние чтобы не было двойного срабатывания
+        window.history.pushState(null, '', window.location.href);
+    });
+    
+    // Добавляем начальное состояние в историю
+    window.history.pushState(null, '', window.location.href);
+    
     // Показываем предупреждение если не в Telegram
     if (!isTelegramWebApp) {
         console.warn('⚠️ Приложение запущено вне Telegram WebApp. Некоторые функции недоступны.');
@@ -1911,14 +1922,20 @@ function updateTelegramButtons(screenId) {
             tg.MainButton.hide();
             break;
         case 'createAd':
-            tg.BackButton.show();
-            tg.MainButton.hide();
-            break;
         case 'browseAds':
+        case 'adDetails':
+        case 'chatScreen':
+        case 'chatsScreen':
+        case 'worldChatScreen':
+        case 'locationSetup':
+        case 'locationChoice':
+        case 'autoLocationDetection':
+        case 'referralScreen':
             tg.BackButton.show();
             tg.MainButton.hide();
             break;
-        case 'adDetails':
+        default:
+            // Для всех остальных экранов показываем кнопку назад
             tg.BackButton.show();
             tg.MainButton.hide();
             break;
@@ -1926,7 +1943,7 @@ function updateTelegramButtons(screenId) {
 }
 
 function handleBackButton() {
-    const activeScreen = document.querySelector('.screen.active').id;
+    const activeScreen = document.querySelector('.screen.active')?.id;
     
     switch(activeScreen) {
         case 'createAd':
@@ -1937,6 +1954,24 @@ function handleBackButton() {
             break;
         case 'adDetails':
             showBrowseAds();
+            break;
+        case 'chatScreen':
+            // Закрываем приватный чат и возвращаемся в меню чатов
+            showScreen('chatsScreen');
+            break;
+        case 'chatsScreen':
+            showMainMenu();
+            break;
+        case 'worldChatScreen':
+            showMainMenu();
+            break;
+        case 'locationSetup':
+        case 'locationChoice':
+        case 'autoLocationDetection':
+            showMainMenu();
+            break;
+        case 'referralScreen':
+            showMainMenu();
             break;
         default:
             showMainMenu();
