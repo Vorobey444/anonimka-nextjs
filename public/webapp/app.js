@@ -1365,7 +1365,7 @@ async function completeOnboarding() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                tgId: userId,
+                tgId: tgId,
                 agreed: true
             })
         });
