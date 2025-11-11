@@ -1202,11 +1202,9 @@ function showOnboardingScreen() {
     const continueBtn = document.getElementById('onboardingContinue');
     const agreeCheckbox = document.getElementById('agreeTerms');
     
-    // Заполняем текущий никнейм если есть
-    const currentNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname') || '';
-    if (currentNickname && nicknameInput) {
-        nicknameInput.value = currentNickname;
-        checkNicknameAvailability(currentNickname);
+    // Очищаем поле никнейма при первом открытии (показываем placeholder)
+    if (nicknameInput) {
+        nicknameInput.value = '';
     }
     
     // Обработчик ввода никнейма
