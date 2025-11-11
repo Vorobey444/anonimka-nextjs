@@ -4640,6 +4640,11 @@ function saveUserLocation(country, region, city) {
         timestamp: Date.now()
     };
     
+    // Update individual localStorage items for city filtering
+    localStorage.setItem('userCountry', country || '');
+    localStorage.setItem('userRegion', region || '');
+    localStorage.setItem('userCity', city || '');
+    
     try {
         if (supportsCloudStorage()) {
             tg.CloudStorage.setItem('userLocation', JSON.stringify(currentUserLocation), function(err) {
