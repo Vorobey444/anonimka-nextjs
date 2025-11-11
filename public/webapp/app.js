@@ -654,6 +654,12 @@ function initializeApp() {
         } catch (e) {
             console.error('❌ Ошибка loadPremiumStatus:', e);
         }
+        
+        try {
+            loadWorldChatPreview(); // Загружаем превью последнего сообщения для кнопки
+        } catch (e) {
+            console.error('❌ Ошибка loadWorldChatPreview:', e);
+        }
     }, 300);
     
     try {
@@ -9612,5 +9618,306 @@ async function unblockUserFromList(blockedId) {
         }
     });
 }
+
+// ==================== WORLD CHAT ====================
+
+let currentWorldChatTab = 'world';
+let worldChatAutoRefreshInterval = null;
+let worldChatLastMessageTime = null;
+
+// Показать экран Мир чата
+async function showWorldChat() {
+    console.log('🌍 Открытие Мир чата');
+    hideAllScreens();
+    document.getElementById('worldChatScreen').classList.add('active');
+    
+    // Загружаем сообщения
+    await loadWorldChatMessages();
+    
+    // Обновляем счетчик символов
+    updateWorldChatCharCount();
+    
+    // Запускаем автообновление каждые 3 секунды
+    if (worldChatAutoRefreshInterval) {
+        clearInterval(worldChatAutoRefreshInterval);
+    }
+    worldChatAutoRefreshInterval = setInterval(() => {
+        loadWorldChatMessages(true); // silent reload
+    }, 3000);
+}
+
+// Переключение вкладок
+async function switchWorldChatTab(tab) {
+    console.log('🔄 Переключение на вкладку:', tab);
+    currentWorldChatTab = tab;
+    
+    // Обновляем активную кнопку
+    document.querySelectorAll('.world-chat-tabs .tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById(`${tab}Tab`).classList.add('active');
+    
+    // Обновляем префикс
+    const prefixElement = document.getElementById('worldChatPrefix');
+    if (tab === 'world') {
+        prefixElement.textContent = '@';
+        prefixElement.style.color = '#FFD700';
+    } else if (tab === 'city') {
+        prefixElement.textContent = '&';
+        prefixElement.style.color = '#00D9FF';
+    } else if (tab === 'private') {
+        prefixElement.textContent = '/';
+        prefixElement.style.color = '#FF006E';
+    }
+    
+    // Загружаем сообщения для этой вкладки
+    await loadWorldChatMessages();
+}
+
+// Загрузить сообщения
+async function loadWorldChatMessages(silent = false) {
+    try {
+        const userToken = getUserToken();
+        const userCity = localStorage.getItem('userCity') || 'Алматы';
+        
+        const response = await fetch('/api/world-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get-messages',
+                params: {
+                    tab: currentWorldChatTab,
+                    userToken: userToken,
+                    userCity: userCity
+                }
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            if (!silent) {
+                console.log(`✅ Загружено ${data.data.length} сообщений для вкладки ${currentWorldChatTab}`);
+            }
+            renderWorldChatMessages(data.data);
+        } else {
+            console.error('❌ Ошибка загрузки сообщений:', data.error);
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки сообщений:', error);
+    }
+}
+
+// Отрисовка сообщений
+function renderWorldChatMessages(messages) {
+    const container = document.getElementById('worldChatMessages');
+    
+    if (messages.length === 0) {
+        container.innerHTML = `
+            <div class="loading-placeholder">
+                <div class="neon-icon">💬</div>
+                <p>Пока нет сообщений</p>
+                <p style="font-size: 12px; color: var(--text-gray);">Будьте первым!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = messages.map(msg => {
+        const isPremium = msg.is_premium;
+        const nicknameClass = `${msg.type}-type${isPremium ? ' premium' : ''}`;
+        const proБадge = isPremium ? '<span class="world-chat-pro-badge">⭐</span>' : '';
+        const time = formatMessageTime(msg.created_at);
+        
+        // Для личных сообщений показываем "кому"
+        let targetInfo = '';
+        if (msg.type === 'private' && msg.target_nickname) {
+            targetInfo = ` → ${msg.target_nickname}`;
+        }
+        
+        return `
+            <div class="world-chat-message ${msg.type}-type">
+                <div class="world-chat-nickname ${nicknameClass}" 
+                     onclick="clickWorldChatNickname('${escapeHtml(msg.nickname)}')"
+                     oncontextmenu="return showWorldChatContextMenu(event, '${escapeHtml(msg.nickname)}', '${msg.user_token}')">
+                    ${escapeHtml(msg.nickname)}${proБадge}${targetInfo}
+                </div>
+                <div class="world-chat-text">${escapeHtml(msg.message)}</div>
+                <div class="world-chat-time">${time}</div>
+            </div>
+        `;
+    }).join('');
+    
+    // Прокручиваем вниз (новые сообщения внизу)
+    container.scrollTop = container.scrollHeight;
+}
+
+// Клик на никнейм - добавить в инпут для личного сообщения
+function clickWorldChatNickname(nickname) {
+    const input = document.getElementById('worldChatInput');
+    const prefix = document.getElementById('worldChatPrefix');
+    
+    // Переключаемся на вкладку ЛС и ставим префикс /
+    if (currentWorldChatTab !== 'private') {
+        switchWorldChatTab('private');
+    }
+    
+    input.value = `${nickname} `;
+    prefix.textContent = '/';
+    prefix.style.color = '#FF006E';
+    input.focus();
+}
+
+// Отправить сообщение
+async function sendWorldChatMessage() {
+    const input = document.getElementById('worldChatInput');
+    const prefix = document.getElementById('worldChatPrefix').textContent;
+    let message = input.value.trim();
+    
+    if (!message) {
+        return;
+    }
+    
+    // Добавляем префикс
+    message = prefix + message;
+    
+    // Проверяем длину (50 символов без префикса)
+    if (message.length - 1 > 50) {
+        tg.showAlert('Максимум 50 символов');
+        return;
+    }
+    
+    try {
+        const userToken = getUserToken();
+        const nickname = localStorage.getItem('userNickname') || 'Аноним';
+        const isPremium = userPremiumStatus.isPremium || false;
+        const city = localStorage.getItem('userCity') || 'Алматы';
+        
+        const response = await fetch('/api/world-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'send-message',
+                params: {
+                    userToken: userToken,
+                    nickname: nickname,
+                    message: message,
+                    isPremium: isPremium,
+                    city: city
+                }
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('✅ Сообщение отправлено');
+            input.value = '';
+            updateWorldChatCharCount();
+            
+            // Запускаем таймер 30 секунд
+            startWorldChatTimeout();
+            
+            // Сразу обновляем сообщения
+            await loadWorldChatMessages();
+        } else {
+            console.error('❌ Ошибка отправки:', data.error);
+            tg.showAlert(data.error || 'Ошибка отправки сообщения');
+            
+            // Если это таймаут, запускаем отсчет
+            if (response.status === 429) {
+                const match = data.error.match(/(\d+) сек/);
+                if (match) {
+                    const seconds = parseInt(match[1]);
+                    startWorldChatTimeout(seconds);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка отправки сообщения:', error);
+        tg.showAlert('Ошибка отправки сообщения');
+    }
+}
+
+// Таймаут между сообщениями
+function startWorldChatTimeout(seconds = 30) {
+    const timeoutDiv = document.getElementById('worldChatTimeout');
+    const secondsSpan = document.getElementById('timeoutSeconds');
+    const sendBtn = document.querySelector('.world-chat-send-btn');
+    
+    timeoutDiv.style.display = 'block';
+    sendBtn.disabled = true;
+    
+    let remaining = seconds;
+    secondsSpan.textContent = remaining;
+    
+    const interval = setInterval(() => {
+        remaining--;
+        secondsSpan.textContent = remaining;
+        
+        if (remaining <= 0) {
+            clearInterval(interval);
+            timeoutDiv.style.display = 'none';
+            sendBtn.disabled = false;
+        }
+    }, 1000);
+}
+
+// Обновление счетчика символов
+function updateWorldChatCharCount() {
+    const input = document.getElementById('worldChatInput');
+    const counter = document.getElementById('worldChatCharCount');
+    
+    if (input && counter) {
+        input.addEventListener('input', () => {
+            const length = input.value.length;
+            counter.textContent = length;
+            
+            if (length > 45) {
+                counter.style.color = '#FF006E';
+            } else {
+                counter.style.color = 'var(--text-gray)';
+            }
+        });
+    }
+}
+
+// Загрузить превью последнего сообщения для кнопки
+async function loadWorldChatPreview() {
+    try {
+        const response = await fetch('/api/world-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get-last-message'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const preview = document.getElementById('worldChatPreview');
+            const msg = data.data;
+            preview.textContent = `${msg.nickname}: ${msg.message}`;
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки превью:', error);
+    }
+}
+
+// Контекстное меню (долгое нажатие) - TODO
+function showWorldChatContextMenu(event, nickname, userToken) {
+    event.preventDefault();
+    console.log('Long-press на', nickname);
+    // TODO: Реализовать модальное окно с опциями
+    return false;
+}
+
+// Остановить автообновление при выходе
+window.addEventListener('beforeunload', () => {
+    if (worldChatAutoRefreshInterval) {
+        clearInterval(worldChatAutoRefreshInterval);
+    }
+});
 
 
