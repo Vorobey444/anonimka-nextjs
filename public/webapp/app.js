@@ -998,18 +998,15 @@ async function saveNicknamePage() {
         let nickname = nicknameInputPage.value.trim();
         
         if (!nickname) {
-            nickname = 'Аноним';
+            if (isTelegramWebApp) {
+                tg.showAlert('❌ Никнейм не может быть пустым');
+            } else {
+                alert('❌ Никнейм не может быть пустым');
+            }
+            return;
         }
         
-    // Сохраняем в localStorage (оба ключа для совместимости)
-    localStorage.setItem('user_nickname', nickname);
-    localStorage.setItem('userNickname', nickname);
-        console.log('✅ Никнейм сохранён:', nickname);
-        
-        // Обновляем nickname во всех анкетах пользователя
-        const userId = getCurrentUserId();
-        const userToken = localStorage.getItem('user_token');
-        // Пытаемся вытащить реальный tgId из Telegram WebApp или сохранённого Login Widget
+        // Получаем tgId
         let tgIdAuth = null;
         if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
             tgIdAuth = Number(window.Telegram.WebApp.initDataUnsafe.user.id);
@@ -1023,75 +1020,108 @@ async function saveNicknamePage() {
             }
         }
 
-        if (userId || userToken || tgIdAuth) {
-            try {
-                // Формируем полезную нагрузку: если есть токен — отправляем его, если есть числовой tgId — тоже отправляем
-                const payload = {
-                    action: 'update-all-nicknames',
-                    nickname: nickname
-                };
-                if (userToken && userToken !== 'null' && userToken !== 'undefined') {
-                    payload.userToken = userToken;
-                }
-                // Всегда используем реальный tgId, если удалось получить из Telegram/Widget
-                if (typeof tgIdAuth === 'number' && Number.isFinite(tgIdAuth)) {
-                    payload.tgId = tgIdAuth;
-                } else if (userId && !isNaN(Number(userId))) {
-                    payload.tgId = Number(userId);
-                }
-
-                const response = await fetch('/api/ads', {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (result.success) {
-                    console.log('✅ Никнейм обновлен в анкетах:', result.count);
-                }
-            } catch (error) {
-                console.error('Ошибка обновления никнейма в анкетах:', error);
+        if (!tgIdAuth) {
+            if (isTelegramWebApp) {
+                tg.showAlert('❌ Не удалось получить ваш Telegram ID');
+            } else {
+                alert('❌ Не удалось получить ваш Telegram ID');
             }
-
-            // Дополнительно: обновим users.display_nickname напрямую
-            try {
-                const payload2 = { action: 'set-nickname', nickname };
-                if (typeof tgIdAuth === 'number' && Number.isFinite(tgIdAuth)) {
-                    payload2.tgId = tgIdAuth;
-                } else if (userId && !isNaN(Number(userId))) {
-                    payload2.tgId = Number(userId);
-                } else if (userToken && userToken !== 'null' && userToken !== 'undefined') {
-                    payload2.userToken = userToken;
-                }
-                const respUsers = await fetch('/api/users', {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload2)
-                });
-                const resUsers = await respUsers.json();
-                if (resUsers?.success) {
-                    console.log('✅ Никнейм обновлен в users.display_nickname');
-                } else {
-                    console.warn('⚠️ Не удалось обновить users.display_nickname:', resUsers?.error);
-                }
-            } catch (e) {
-                console.warn('⚠️ Ошибка обновления никнейма в users:', e);
-            }
+            return;
         }
-        
-        // Показываем уведомление и возвращаемся на главную
-        if (isTelegramWebApp) {
-            tg.showPopup({
-                title: '✅ Сохранено',
-                message: `Ваш новый псевдоним: "${nickname}"`,
-                buttons: [{ type: 'ok' }]
+
+        try {
+            // Используем новый /api/nickname endpoint с проверкой ограничений
+            const response = await fetch('/api/nickname', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    tgId: tgIdAuth, 
+                    nickname: nickname 
+                })
             });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                // Обрабатываем различные ошибки
+                let errorMessage = result.error || 'Неизвестная ошибка';
+                
+                if (result.code === 'NICKNAME_LOCKED_FREE') {
+                    errorMessage = '🔒 FREE пользователи не могут менять никнейм.\n\nОбновитесь до PRO чтобы менять никнейм раз в сутки!';
+                } else if (result.code === 'NICKNAME_COOLDOWN') {
+                    const hours = result.hoursRemaining || 24;
+                    errorMessage = `⏳ PRO пользователи могут менять никнейм раз в 24 часа.\n\nПопробуйте через ${hours} ч.`;
+                } else if (result.code === 'NICKNAME_TAKEN') {
+                    errorMessage = '❌ Этот никнейм уже занят. Выберите другой.';
+                }
+
+                if (isTelegramWebApp) {
+                    tg.showAlert(errorMessage);
+                } else {
+                    alert(errorMessage);
+                }
+                return;
+            }
+
+            // Успешно сохранено - обновляем localStorage
+            localStorage.setItem('user_nickname', nickname);
+            localStorage.setItem('userNickname', nickname);
+            console.log('✅ Никнейм сохранён:', nickname);
+
+            // Обновляем nickname во всех анкетах пользователя
+            const userId = getCurrentUserId();
+            const userToken = localStorage.getItem('user_token');
+
+            if (userId || userToken || tgIdAuth) {
+                try {
+                    const payload = {
+                        action: 'update-all-nicknames',
+                        nickname: nickname
+                    };
+                    if (userToken && userToken !== 'null' && userToken !== 'undefined') {
+                        payload.userToken = userToken;
+                    }
+                    if (typeof tgIdAuth === 'number' && Number.isFinite(tgIdAuth)) {
+                        payload.tgId = tgIdAuth;
+                    } else if (userId && !isNaN(Number(userId))) {
+                        payload.tgId = Number(userId);
+                    }
+
+                    const adsResponse = await fetch('/api/ads', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const adsResult = await adsResponse.json();
+                    if (adsResult.success) {
+                        console.log('✅ Никнейм обновлен в анкетах:', adsResult.count);
+                    }
+                } catch (error) {
+                    console.error('Ошибка обновления никнейма в анкетах:', error);
+                }
+            }
+            
+            // Показываем уведомление и возвращаемся на главную
+            if (isTelegramWebApp) {
+                tg.showPopup({
+                    title: '✅ Сохранено',
+                    message: `Ваш ${result.isFirstTime ? '' : 'новый '}псевдоним: "${nickname}"`,
+                    buttons: [{ type: 'ok' }]
+                });
+            }
+            
+            // Возвращаемся на главную страницу
+            setTimeout(() => {
+                showMainMenu();
+            }, 300);
+        } catch (error) {
+            console.error('Ошибка сохранения никнейма:', error);
+            if (isTelegramWebApp) {
+                tg.showAlert('❌ Ошибка сохранения никнейма');
+            } else {
+                alert('❌ Ошибка сохранения никнейма');
+            }
         }
-        
-        // Возвращаемся на главную страницу
-        setTimeout(() => {
-            showMainMenu();
-        }, 300);
     }
 }
 

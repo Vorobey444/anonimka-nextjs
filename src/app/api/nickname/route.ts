@@ -63,6 +63,9 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST - установка/обновление никнейма пользователя
+ * Правила:
+ * - FREE: никнейм можно установить ТОЛЬКО ОДИН РАЗ при регистрации
+ * - PRO: никнейм можно менять раз в 24 часа
  */
 export async function POST(request: NextRequest) {
   try {
@@ -78,24 +81,91 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userId = parseInt(tgId);
+
+    // Получаем информацию о пользователе
+    const userResult = await sql`
+      SELECT 
+        display_nickname, 
+        is_premium, 
+        premium_until,
+        nickname_changed_at
+      FROM users 
+      WHERE id = ${userId} 
+      LIMIT 1
+    `;
+
+    const existingUser = userResult.rows[0];
+    const isFirstTime = !existingUser || !existingUser.display_nickname;
+    
+    // Проверяем PRO статус
+    let isPremium = existingUser?.is_premium || false;
+    
+    // Автоматически отключаем PRO если срок истек
+    if (isPremium && existingUser?.premium_until) {
+      const now = new Date();
+      const until = new Date(existingUser.premium_until);
+      if (now > until) {
+        isPremium = false;
+      }
+    }
+
+    // Проверяем право на смену никнейма
+    if (!isFirstTime) {
+      if (!isPremium) {
+        // FREE пользователи не могут менять никнейм
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'FREE users cannot change nickname. Upgrade to PRO to change nickname once per day.',
+            code: 'NICKNAME_LOCKED_FREE'
+          },
+          { status: 403 }
+        );
+      }
+
+      // PRO пользователи могут менять раз в 24 часа
+      if (existingUser.nickname_changed_at) {
+        const lastChange = new Date(existingUser.nickname_changed_at);
+        const now = new Date();
+        const hoursSinceLastChange = (now.getTime() - lastChange.getTime()) / (1000 * 60 * 60);
+
+        if (hoursSinceLastChange < 24) {
+          const hoursRemaining = Math.ceil(24 - hoursSinceLastChange);
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: `PRO users can change nickname once per 24 hours. Try again in ${hoursRemaining} hours.`,
+              code: 'NICKNAME_COOLDOWN',
+              hoursRemaining
+            },
+            { status: 429 }
+          );
+        }
+      }
+    }
+
     // Проверяем доступность никнейма
     const checkResult = await sql`
-      SELECT id FROM users WHERE display_nickname = ${nickname} AND id != ${parseInt(tgId)} LIMIT 1
+      SELECT id FROM users WHERE display_nickname = ${nickname} AND id != ${userId} LIMIT 1
     `;
 
     if (checkResult.rows.length > 0) {
       return NextResponse.json(
-        { success: false, error: 'Nickname already taken' },
+        { success: false, error: 'Nickname already taken', code: 'NICKNAME_TAKEN' },
         { status: 409 }
       );
     }
 
     // Обновляем/создаем пользователя с никнеймом
     await sql`
-      INSERT INTO users (id, display_nickname, created_at, updated_at)
-      VALUES (${parseInt(tgId)}, ${nickname}, NOW(), NOW())
+      INSERT INTO users (id, display_nickname, nickname_changed_at, created_at, updated_at)
+      VALUES (${userId}, ${nickname}, NOW(), NOW(), NOW())
       ON CONFLICT (id) DO UPDATE
-      SET display_nickname = ${nickname}, updated_at = NOW()
+      SET 
+        display_nickname = ${nickname}, 
+        nickname_changed_at = NOW(),
+        updated_at = NOW()
     `;
 
     console.log('[NICKNAME API] Никнейм успешно установлен');
@@ -103,7 +173,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       nickname,
-      tgId
+      tgId,
+      isFirstTime,
+      isPremium
     });
 
   } catch (error: any) {
