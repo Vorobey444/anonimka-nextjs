@@ -187,6 +187,13 @@
                     </button>
                     <span id="chatBadge" class="chat-badge" style="display: none;"></span>
                 </div>
+                <button class="neon-button world-chat-button" onclick="showWorldChat()" style="width: 100%;">
+                    <span class="icon">🌍</span>
+                    <div class="world-chat-content">
+                        <div class="world-chat-title">Мир чат</div>
+                        <div id="worldChatPreview" class="world-chat-preview">Загрузка...</div>
+                    </div>
+                </button>
                 <button class="neon-button referral-button" onclick="showReferralModal()">
                     <span class="icon pulse-icon">🎁</span>
                     Пригласи друга - месяц PRO!
@@ -874,6 +881,66 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Мир чат -->
+        <div id="worldChatScreen" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>🌍 Мир чат</h2>
+            </div>
+
+            <!-- Вкладки Мир чата -->
+            <div class="tabs-container world-chat-tabs">
+                <button class="tab-btn active" onclick="switchWorldChatTab('world')" id="worldTab">
+                    <span class="tab-icon">🌍</span>
+                    <span class="tab-label">Мир</span>
+                </button>
+                <button class="tab-btn" onclick="switchWorldChatTab('city')" id="cityTab">
+                    <span class="tab-icon">🏙️</span>
+                    <span class="tab-label">Город</span>
+                </button>
+                <button class="tab-btn" onclick="switchWorldChatTab('private')" id="privateTab">
+                    <span class="tab-icon">💌</span>
+                    <span class="tab-label">ЛС</span>
+                </button>
+            </div>
+
+            <!-- Лента сообщений -->
+            <div class="world-chat-messages-container">
+                <div id="worldChatMessages" class="world-chat-messages">
+                    <!-- Сообщения будут загружены через JS -->
+                    <div class="loading-placeholder">
+                        <div class="neon-icon pulse">💬</div>
+                        <p>Загрузка сообщений...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Инпут для сообщений -->
+            <div class="world-chat-input-container">
+                <div class="world-chat-input-wrapper">
+                    <span class="world-chat-prefix" id="worldChatPrefix">@</span>
+                    <input 
+                        type="text" 
+                        id="worldChatInput" 
+                        class="world-chat-input" 
+                        placeholder="Введите сообщение..." 
+                        maxlength="50"
+                        onkeypress="if(event.key === 'Enter') sendWorldChatMessage()">
+                    <div class="world-chat-char-counter">
+                        <span id="worldChatCharCount">0</span>/50
+                    </div>
+                </div>
+                <button class="world-chat-send-btn" onclick="sendWorldChatMessage()">
+                    <span>📤</span>
+                </button>
+            </div>
+
+            <!-- Таймаут уведомление -->
+            <div id="worldChatTimeout" class="world-chat-timeout" style="display: none;">
+                ⏱️ Подождите <span id="timeoutSeconds">30</span> сек
             </div>
         </div>
 

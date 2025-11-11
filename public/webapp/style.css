@@ -5484,3 +5484,247 @@ h3 {
 .modal-text li {
     margin-bottom: 8px;
 }
+
+/* ==================== WORLD CHAT STYLES ==================== */
+
+/* Кнопка Мир чат в главном меню */
+.world-chat-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    padding: 12px 16px;
+}
+
+.world-chat-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.world-chat-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.world-chat-preview {
+    font-size: 13px;
+    color: var(--text-gray);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Вкладки Мир чата */
+.world-chat-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.world-chat-tabs .tab-btn {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Контейнер сообщений */
+.world-chat-messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.world-chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Сообщение в чате */
+.world-chat-message {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border-left: 3px solid;
+    animation: fadeIn 0.3s ease;
+}
+
+.world-chat-message.world-type {
+    border-left-color: #FFD700;
+}
+
+.world-chat-message.city-type {
+    border-left-color: #00D9FF;
+}
+
+.world-chat-message.private-type {
+    border-left-color: #FF006E;
+}
+
+/* Никнейм в сообщении */
+.world-chat-nickname {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.world-chat-nickname:hover {
+    opacity: 0.8;
+}
+
+/* Цвета никнеймов */
+.world-chat-nickname.world-type {
+    color: #FFD700;
+}
+
+.world-chat-nickname.world-type.premium {
+    color: #FFA500; /* Оранжевый для PRO */
+}
+
+.world-chat-nickname.city-type {
+    color: #00D9FF;
+}
+
+.world-chat-nickname.city-type.premium {
+    color: #00FF64; /* Зеленый для PRO */
+}
+
+.world-chat-nickname.private-type {
+    color: #FF006E;
+}
+
+/* Звездочка PRO */
+.world-chat-pro-badge {
+    color: #FFD700;
+    font-size: 12px;
+}
+
+/* Текст сообщения */
+.world-chat-text {
+    font-size: 14px;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+/* Цвета текста по типу */
+.world-chat-message.world-type .world-chat-text {
+    color: #FFD700;
+}
+
+.world-chat-message.city-type .world-chat-text {
+    color: #00D9FF;
+}
+
+.world-chat-message.private-type .world-chat-text {
+    color: #FF006E;
+}
+
+/* Время сообщения */
+.world-chat-time {
+    font-size: 11px;
+    color: var(--text-gray);
+    margin-top: 4px;
+}
+
+/* Инпут для сообщений */
+.world-chat-input-container {
+    display: flex;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.world-chat-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--neon-cyan);
+    border-radius: 12px;
+    padding: 10px 12px;
+    position: relative;
+}
+
+.world-chat-prefix {
+    font-weight: bold;
+    font-size: 16px;
+    color: var(--neon-cyan);
+    min-width: 16px;
+}
+
+.world-chat-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-light);
+    font-size: 14px;
+}
+
+.world-chat-char-counter {
+    font-size: 11px;
+    color: var(--text-gray);
+    min-width: 45px;
+    text-align: right;
+}
+
+.world-chat-send-btn {
+    min-width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s ease;
+}
+
+.world-chat-send-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px var(--neon-cyan);
+}
+
+.world-chat-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Таймаут уведомление */
+.world-chat-timeout {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 0, 0, 0.9);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 1000;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
