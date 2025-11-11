@@ -17,8 +17,9 @@ export async function GET(request: NextRequest) {
     if (nickname) {
       console.log('[NICKNAME API] Проверка доступности:', nickname);
       
+      // Проверяем регистронезависимо (LOWER)
       const result = await sql`
-        SELECT id FROM users WHERE display_nickname = ${nickname} LIMIT 1
+        SELECT id FROM users WHERE LOWER(display_nickname) = LOWER(${nickname}) LIMIT 1
       `;
 
       const available = result.rows.length === 0;
@@ -82,6 +83,28 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = parseInt(tgId);
+
+    // Валидация никнейма
+    // 1. Проверка на пробелы
+    if (nickname.includes(' ')) {
+      return NextResponse.json(
+        { success: false, error: 'Nickname cannot contain spaces', code: 'INVALID_NICKNAME' },
+        { status: 400 }
+      );
+    }
+
+    // 2. Разрешаем только латиницу, русский язык, цифры, подчеркивание и дефис
+    const validPattern = /^[a-zA-Zа-яА-ЯёЁ0-9_-]+$/;
+    if (!validPattern.test(nickname)) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Nickname can only contain letters (English/Russian), numbers, underscore and dash', 
+          code: 'INVALID_NICKNAME' 
+        },
+        { status: 400 }
+      );
+    }
 
     // Получаем информацию о пользователе
     const userResult = await sql`
@@ -160,9 +183,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Проверяем доступность никнейма
+    // Проверяем доступность никнейма (регистронезависимо)
     const checkResult = await sql`
-      SELECT id FROM users WHERE display_nickname = ${nickname} AND id != ${userId} LIMIT 1
+      SELECT id FROM users WHERE LOWER(display_nickname) = LOWER(${nickname}) AND id != ${userId} LIMIT 1
     `;
 
     if (checkResult.rows.length > 0) {

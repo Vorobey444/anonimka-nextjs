@@ -1053,6 +1053,8 @@ async function saveNicknamePage() {
                     errorMessage = `⏳ PRO пользователи могут менять никнейм раз в 24 часа.\n\nПопробуйте через ${hours} ч.`;
                 } else if (result.code === 'NICKNAME_TAKEN') {
                     errorMessage = '❌ Этот никнейм уже занят. Выберите другой.';
+                } else if (result.code === 'INVALID_NICKNAME') {
+                    errorMessage = '❌ Никнейм может содержать только буквы (рус/eng), цифры, _ и -\n\nПробелы запрещены!';
                 }
 
                 if (isTelegramWebApp) {
@@ -1300,6 +1302,19 @@ async function completeOnboarding() {
         tg.showAlert('Введите никнейм (минимум 3 символа)');
         return;
     }
+
+    // Проверка на пробелы
+    if (nickname.includes(' ')) {
+        tg.showAlert('❌ Никнейм не может содержать пробелы');
+        return;
+    }
+
+    // Проверка на допустимые символы (латиница, кириллица, цифры, _, -)
+    const validPattern = /^[a-zA-Zа-яА-ЯёЁ0-9_-]+$/;
+    if (!validPattern.test(nickname)) {
+        tg.showAlert('❌ Никнейм может содержать только буквы (рус/eng), цифры, _ и -');
+        return;
+    }
     
     if (!agreed) {
         tg.showAlert('Необходимо согласиться с условиями');
@@ -1312,14 +1327,32 @@ async function completeOnboarding() {
     continueBtn.textContent = '⏳ Сохраняем...';
     
     try {
-        const userId = getCurrentUserId();
-        
+        // Получаем tgId
+        let tgId = null;
+        if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+            tgId = window.Telegram.WebApp.initDataUnsafe.user.id;
+        } else {
+            const savedUserJson = localStorage.getItem('telegram_user');
+            if (savedUserJson) {
+                try {
+                    const u = JSON.parse(savedUserJson);
+                    if (u?.id) tgId = u.id;
+                } catch (e) {
+                    console.error('Ошибка парсинга telegram_user:', e);
+                }
+            }
+        }
+
+        if (!tgId) {
+            throw new Error('Не удалось получить ваш Telegram ID');
+        }
+
         // 1. Сохраняем никнейм
         const nicknameResponse = await fetch('/api/nickname', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                userToken: localStorage.getItem('user_token'),
+                tgId: tgId,
                 nickname: nickname
             })
         });
