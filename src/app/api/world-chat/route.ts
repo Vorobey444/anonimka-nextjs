@@ -217,6 +217,7 @@ async function getLastMessage() {
     const result = await sql.query(
         `SELECT nickname, message, created_at
          FROM world_chat_messages
+         WHERE type = 'world'
          ORDER BY created_at DESC
          LIMIT 1`
     );
@@ -224,7 +225,7 @@ async function getLastMessage() {
     if (result.rows.length === 0) {
         return NextResponse.json({ 
             success: true, 
-            data: { nickname: 'Мир чат', message: 'Начните общение!', created_at: new Date() } 
+            data: { nickname: 'Мир чат', message: 'Начните мировое общение с @!', created_at: new Date() } 
         });
     }
 
