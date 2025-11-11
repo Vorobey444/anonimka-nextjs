@@ -1219,7 +1219,7 @@ function showOnboardingScreen() {
             const nickname = this.value.trim();
             clearTimeout(nicknameCheckTimeout);
             
-            if (nickname.length < 3) {
+            if (nickname.length < 1) {
                 showNicknameStatus('', '');
                 updateContinueButton();
                 return;
@@ -1287,7 +1287,7 @@ function updateContinueButton() {
     const agreed = agreeCheckbox?.checked || false;
     const nicknameAvailable = statusEl?.classList.contains('available');
     
-    const canContinue = nickname.length >= 3 && nicknameAvailable && agreed;
+    const canContinue = nickname.length >= 1 && nicknameAvailable && agreed;
     
     continueBtn.disabled = !canContinue;
     continueBtn.textContent = canContinue ? '🚀 Продолжить' : '⏳ Сохраняем...';
@@ -1302,8 +1302,8 @@ async function completeOnboarding() {
     const nickname = nicknameInput?.value.trim();
     const agreed = agreeCheckbox?.checked;
     
-    if (!nickname || nickname.length < 3) {
-        tg.showAlert('Введите никнейм (минимум 3 символа)');
+    if (!nickname || nickname.length < 1) {
+        tg.showAlert('Введите никнейм (минимум 1 символ)');
         return;
     }
 
