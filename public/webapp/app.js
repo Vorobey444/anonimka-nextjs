@@ -988,43 +988,6 @@ function updateTelegramNameButton() {
         }
     }
     
-    const defaultNicknameTextPage = document.getElementById('defaultNicknameTextPage');
-    if (defaultNicknameTextPage) {
-        defaultNicknameTextPage.textContent = `Использовать: "${telegramName}"`;
-    }
-}
-
-// Использовать имя из Telegram на странице редактирования
-function useDefaultNicknamePage() {
-    let telegramName = 'Аноним';
-    
-    if (isTelegramWebApp && tg.initDataUnsafe?.user) {
-        const user = tg.initDataUnsafe.user;
-        telegramName = user.first_name || user.username || 'Аноним';
-    } else {
-        const savedUser = localStorage.getItem('telegram_user');
-        if (savedUser) {
-            try {
-                const user = JSON.parse(savedUser);
-                telegramName = user.first_name || user.username || 'Аноним';
-            } catch (e) {
-                console.error('Ошибка парсинга данных пользователя:', e);
-            }
-        }
-    }
-    
-    const nicknameInputPage = document.getElementById('nicknameInputPage');
-    if (nicknameInputPage) {
-        nicknameInputPage.value = telegramName;
-    }
-}
-
-// Сбросить никнейм на "Аноним"
-function resetToAnonym() {
-    const nicknameInputPage = document.getElementById('nicknameInputPage');
-    if (nicknameInputPage) {
-        nicknameInputPage.value = 'Аноним';
-    }
 }
 
 // Сохранить никнейм со страницы редактирования
