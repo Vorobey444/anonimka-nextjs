@@ -40,11 +40,10 @@ async function blockUser(params: {
     const { blockerToken, blockedToken, blockedNickname } = params;
 
     // Проверяем, не заблокирован ли уже
-    const existingBlock = await sql.query(
-        `SELECT id FROM user_blocks 
-         WHERE blocker_token = $1 AND blocked_token = $2`,
-        [blockerToken, blockedToken]
-    );
+    const existingBlock = await sql`
+        SELECT id FROM user_blocks 
+        WHERE blocker_token = ${blockerToken} AND blocked_token = ${blockedToken}
+    `;
 
     if (existingBlock.rows.length > 0) {
         return NextResponse.json({ 
@@ -56,21 +55,22 @@ async function blockUser(params: {
     // Если никнейм не передан, пытаемся получить его из ads
     let nickname = blockedNickname;
     if (!nickname) {
-        const nicknameResult = await sql.query(
-            `SELECT nickname FROM ads WHERE user_token = $1 ORDER BY created_at DESC LIMIT 1`,
-            [blockedToken]
-        );
+        const nicknameResult = await sql`
+            SELECT nickname FROM ads 
+            WHERE user_token = ${blockedToken} 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        `;
         if (nicknameResult.rows.length > 0) {
             nickname = nicknameResult.rows[0].nickname;
         }
     }
 
     // Добавляем блокировку с никнеймом
-    await sql.query(
-        `INSERT INTO user_blocks (blocker_token, blocked_token, blocked_nickname, created_at)
-         VALUES ($1, $2, $3, NOW())`,
-        [blockerToken, blockedToken, nickname || 'Неизвестный']
-    );
+    await sql`
+        INSERT INTO user_blocks (blocker_token, blocked_token, blocked_nickname, created_at)
+        VALUES (${blockerToken}, ${blockedToken}, ${nickname || 'Неизвестный'}, NOW())
+    `;
 
     return NextResponse.json({ 
         success: true, 
@@ -85,11 +85,10 @@ async function unblockUser(params: {
 }) {
     const { blockerToken, blockedToken } = params;
 
-    await sql.query(
-        `DELETE FROM user_blocks 
-         WHERE blocker_token = $1 AND blocked_token = $2`,
-        [blockerToken, blockedToken]
-    );
+    await sql`
+        DELETE FROM user_blocks 
+        WHERE blocker_token = ${blockerToken} AND blocked_token = ${blockedToken}
+    `;
 
     return NextResponse.json({ 
         success: true, 
@@ -103,13 +102,12 @@ async function getBlockedUsers(params: {
 }) {
     const { userToken } = params;
 
-    const result = await sql.query(
-        `SELECT blocked_token, blocked_nickname, created_at
-         FROM user_blocks 
-         WHERE blocker_token = $1
-         ORDER BY created_at DESC`,
-        [userToken]
-    );
+    const result = await sql`
+        SELECT blocked_token, blocked_nickname, created_at
+        FROM user_blocks 
+        WHERE blocker_token = ${userToken}
+        ORDER BY created_at DESC
+    `;
 
     return NextResponse.json({ 
         success: true, 
@@ -124,11 +122,10 @@ async function isBlocked(params: {
 }) {
     const { blockerToken, blockedToken } = params;
 
-    const result = await sql.query(
-        `SELECT id FROM user_blocks 
-         WHERE blocker_token = $1 AND blocked_token = $2`,
-        [blockerToken, blockedToken]
-    );
+    const result = await sql`
+        SELECT id FROM user_blocks 
+        WHERE blocker_token = ${blockerToken} AND blocked_token = ${blockedToken}
+    `;
 
     return NextResponse.json({ 
         success: true, 
