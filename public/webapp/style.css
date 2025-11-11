@@ -4955,9 +4955,8 @@ h3 {
 
 /* Защищенное модальное изображение через DIV с background */
 .photo-modal-image-secure {
-    width: 90vw;
-    height: 70vh;
-    max-width: 600px;
+    max-width: 90vw;
+    max-height: 90vh;
     border-radius: 12px;
     box-shadow: 0 0 40px rgba(0, 217, 255, 0.5);
     background-size: contain;

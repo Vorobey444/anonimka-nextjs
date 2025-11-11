@@ -7148,6 +7148,31 @@ function showPhotoModal(photoUrl) {
     const modal = document.getElementById('photoModal');
     const modalImage = document.getElementById('photoModalImage');
     
+    // Загружаем изображение для определения реальных размеров
+    const tempImg = new Image();
+    tempImg.onload = function() {
+        const aspectRatio = tempImg.width / tempImg.height;
+        
+        // Вычисляем размеры с учетом соотношения сторон
+        const maxWidth = window.innerWidth * 0.9;
+        const maxHeight = window.innerHeight * 0.9;
+        
+        let width, height;
+        if (maxWidth / maxHeight > aspectRatio) {
+            // Ограничиваем по высоте
+            height = maxHeight;
+            width = height * aspectRatio;
+        } else {
+            // Ограничиваем по ширине
+            width = maxWidth;
+            height = width / aspectRatio;
+        }
+        
+        modalImage.style.width = `${width}px`;
+        modalImage.style.height = `${height}px`;
+    };
+    tempImg.src = photoUrl;
+    
     // Используем DIV с background-image вместо IMG (защита от long-press)
     modalImage.style.backgroundImage = `url('${photoUrl}')`;
     
