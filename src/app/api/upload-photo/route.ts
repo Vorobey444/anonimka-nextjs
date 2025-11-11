@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Конвертируем File в Buffer
-    let buffer = Buffer.from(await photo.arrayBuffer());
+    let buffer: Buffer = Buffer.from(await photo.arrayBuffer());
     
     // Определяем тип медиа (фото или видео)
     const isVideo = photo.type.startsWith('video/');
@@ -87,7 +87,8 @@ export async function POST(request: NextRequest) {
     if (!isVideo && photo.type.startsWith('image/')) {
       console.log('🧹 Удаление EXIF метаданных...');
       const originalSize = buffer.length;
-      buffer = await stripExifData(buffer);
+      const cleanedBuffer = await stripExifData(buffer);
+      buffer = Buffer.from(cleanedBuffer);
       console.log(`✅ EXIF удалён (${originalSize} → ${buffer.length} bytes)`);
     }
     
@@ -113,7 +114,9 @@ export async function POST(request: NextRequest) {
     
     const telegramFormData = new FormData();
     telegramFormData.append('chat_id', storageChannel); // Отправляем в канал-хранилище
-    telegramFormData.append(fieldName, new Blob([buffer], { type: isVideo ? 'video/mp4' : 'image/jpeg' }), isVideo ? 'video.mp4' : 'photo.jpg');
+    // Создаем Blob из buffer
+    const blob = new Blob([buffer as any], { type: isVideo ? 'video/mp4' : 'image/jpeg' });
+    telegramFormData.append(fieldName, blob, isVideo ? 'video.mp4' : 'photo.jpg');
     telegramFormData.append('caption', `${isVideo ? '🎥' : '📸'} User: ${telegramUserId} (EXIF stripped)`);
     
     // Отправляем медиа в канал-хранилище
