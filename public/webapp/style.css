@@ -4044,9 +4044,9 @@ h3 {
 /* Защищенное фото через DIV с background-image (нельзя скачать через long-press) */
 .message-photo-secure {
     display: block;
-    max-width: 200px;
-    width: 200px;
-    height: 200px; /* Квадратное превью */
+    max-width: 150px;
+    width: 150px;
+    height: 150px; /* Квадратное превью */
     border-radius: 12px;
     margin: 0 0 8px 0;
     cursor: pointer;
@@ -4955,17 +4955,14 @@ h3 {
 
 /* Защищенное модальное изображение через DIV с background */
 .photo-modal-image-secure {
-    max-width: 90vw;
-    max-height: 90vh;
-    width: auto;
-    height: auto;
-    aspect-ratio: 3/4; /* Типичное соотношение фото со смартфона */
+    width: 90vw;
+    height: 70vh;
+    max-width: 600px;
     border-radius: 12px;
     box-shadow: 0 0 40px rgba(0, 217, 255, 0.5);
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
-    background-color: rgba(0, 0, 0, 0.3); /* Легкий фон вместо черного */
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
