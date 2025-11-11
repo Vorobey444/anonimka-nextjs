@@ -9651,7 +9651,7 @@ async function switchWorldChatTab(tab) {
     currentWorldChatTab = tab;
     
     // Обновляем активную кнопку
-    document.querySelectorAll('.world-chat-tabs .tab-btn').forEach(btn => {
+    document.querySelectorAll('.world-chat-tab').forEach(btn => {
         btn.classList.remove('active');
     });
     document.getElementById(`${tab}Tab`).classList.add('active');

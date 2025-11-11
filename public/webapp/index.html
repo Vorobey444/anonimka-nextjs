@@ -891,22 +891,6 @@
                 <h2>🌍 Мир чат</h2>
             </div>
 
-            <!-- Вкладки Мир чата -->
-            <div class="tabs-container world-chat-tabs">
-                <button class="tab-btn active" onclick="switchWorldChatTab('world')" id="worldTab">
-                    <span class="tab-icon">🌍</span>
-                    <span class="tab-label">Мир</span>
-                </button>
-                <button class="tab-btn" onclick="switchWorldChatTab('city')" id="cityTab">
-                    <span class="tab-icon">🏙️</span>
-                    <span class="tab-label">Город</span>
-                </button>
-                <button class="tab-btn" onclick="switchWorldChatTab('private')" id="privateTab">
-                    <span class="tab-icon">💌</span>
-                    <span class="tab-label">ЛС</span>
-                </button>
-            </div>
-
             <!-- Лента сообщений -->
             <div class="world-chat-messages-container">
                 <div id="worldChatMessages" class="world-chat-messages">
@@ -916,6 +900,13 @@
                         <p>Загрузка сообщений...</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Вкладки над полем ввода -->
+            <div class="world-chat-tabs">
+                <button class="world-chat-tab active" onclick="switchWorldChatTab('world')" id="worldTab">Мир</button>
+                <button class="world-chat-tab" onclick="switchWorldChatTab('city')" id="cityTab">Город</button>
+                <button class="world-chat-tab" onclick="switchWorldChatTab('private')" id="privateTab">ЛС</button>
             </div>
 
             <!-- Инпут для сообщений -->

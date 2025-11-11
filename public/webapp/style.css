@@ -5515,37 +5515,57 @@ h3 {
     text-overflow: ellipsis;
 }
 
-/* Вкладки Мир чата */
+/* Вкладки Мир чата - компактные над полем ввода */
 .world-chat-tabs {
     display: flex;
-    gap: 8px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.3);
+    gap: 6px;
+    padding: 8px 12px 4px 12px;
+    background: rgba(0, 0, 0, 0.4);
 }
 
-.world-chat-tabs .tab-btn {
+.world-chat-tab {
     flex: 1;
-    min-width: 0;
+    padding: 6px 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-gray);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.world-chat-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.world-chat-tab.active {
+    background: var(--neon-cyan);
+    color: var(--bg-dark);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
 }
 
 /* Контейнер сообщений */
 .world-chat-messages-container {
     flex: 1;
     overflow-y: auto;
-    padding: 15px;
+    padding: 10px;
     background: rgba(0, 0, 0, 0.2);
 }
 
 .world-chat-messages {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
 /* Сообщение в чате */
 .world-chat-message {
-    padding: 10px 12px;
-    border-radius: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
     background: rgba(0, 0, 0, 0.4);
     border-left: 3px solid;
     animation: fadeIn 0.3s ease;
@@ -5566,12 +5586,12 @@ h3 {
 /* Никнейм в сообщении */
 .world-chat-nickname {
     font-weight: bold;
-    font-size: 14px;
-    margin-bottom: 4px;
+    font-size: 13px;
+    margin-bottom: 3px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
     user-select: none;
     -webkit-user-select: none;
 }
@@ -5609,8 +5629,8 @@ h3 {
 
 /* Текст сообщения */
 .world-chat-text {
-    font-size: 14px;
-    line-height: 1.4;
+    font-size: 13px;
+    line-height: 1.3;
     word-wrap: break-word;
 }
 
@@ -5637,8 +5657,8 @@ h3 {
 /* Инпут для сообщений */
 .world-chat-input-container {
     display: flex;
-    gap: 10px;
-    padding: 12px;
+    gap: 8px;
+    padding: 8px 10px;
     background: rgba(0, 0, 0, 0.4);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -5647,19 +5667,21 @@ h3 {
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     background: rgba(0, 0, 0, 0.3);
     border: 2px solid var(--neon-cyan);
-    border-radius: 12px;
-    padding: 10px 12px;
+    border-radius: 10px;
+    padding: 8px 10px;
     position: relative;
+    min-width: 0;
 }
 
 .world-chat-prefix {
     font-weight: bold;
-    font-size: 16px;
+    font-size: 15px;
     color: var(--neon-cyan);
-    min-width: 16px;
+    min-width: 14px;
+    flex-shrink: 0;
 }
 
 .world-chat-input {
@@ -5669,27 +5691,31 @@ h3 {
     outline: none;
     color: var(--text-light);
     font-size: 14px;
+    min-width: 0;
 }
 
 .world-chat-char-counter {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-gray);
-    min-width: 45px;
+    min-width: 38px;
     text-align: right;
+    flex-shrink: 0;
 }
 
 .world-chat-send-btn {
-    min-width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    min-width: 42px;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
     background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 18px;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
 .world-chat-send-btn:hover {
@@ -5705,17 +5731,18 @@ h3 {
 /* Таймаут уведомление */
 .world-chat-timeout {
     position: fixed;
-    bottom: 80px;
+    bottom: 70px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(255, 0, 0, 0.9);
     color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 18px;
+    font-size: 13px;
     font-weight: bold;
     z-index: 1000;
     animation: pulse 1s ease-in-out infinite;
+    white-space: nowrap;
 }
 
 @keyframes fadeIn {
@@ -5726,5 +5753,70 @@ h3 {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+/* Адаптивность для узких экранов (Z Fold 5 и подобные) */
+@media (max-width: 380px) {
+    .world-chat-tabs {
+        gap: 4px;
+        padding: 6px 8px 4px 8px;
+    }
+    
+    .world-chat-tab {
+        padding: 5px 6px;
+        font-size: 12px;
+    }
+    
+    .world-chat-messages-container {
+        padding: 8px;
+    }
+    
+    .world-chat-message {
+        padding: 6px 8px;
+    }
+    
+    .world-chat-nickname {
+        font-size: 12px;
+    }
+    
+    .world-chat-text {
+        font-size: 12px;
+    }
+    
+    .world-chat-input-container {
+        gap: 6px;
+        padding: 6px 8px;
+    }
+    
+    .world-chat-input-wrapper {
+        gap: 4px;
+        padding: 6px 8px;
+    }
+    
+    .world-chat-prefix {
+        font-size: 14px;
+        min-width: 12px;
+    }
+    
+    .world-chat-input {
+        font-size: 13px;
+    }
+    
+    .world-chat-char-counter {
+        font-size: 9px;
+        min-width: 32px;
+    }
+    
+    .world-chat-send-btn {
+        min-width: 38px;
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+    }
+    
+    .world-chat-timeout {
+        font-size: 12px;
+        padding: 6px 12px;
     }
 }
