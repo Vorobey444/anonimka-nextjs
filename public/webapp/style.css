@@ -5319,6 +5319,66 @@ h3 {
     box-shadow: 0 0 30px rgba(255, 0, 110, 0.6);
 }
 
+/* ==================== COMPACT ONBOARDING STYLES ==================== */
+
+.onboarding-logo-compact {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.onboarding-logo-img {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 0 25px rgba(236, 72, 153, 0.6);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.onboarding-title-compact {
+    text-align: center;
+    font-size: 26px;
+    background: linear-gradient(135deg, var(--neon-pink), var(--neon-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+}
+
+.onboarding-subtitle-compact {
+    text-align: center;
+    color: var(--text-gray);
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+.onboarding-card-compact {
+    background: var(--bg-card);
+    border: 2px solid var(--neon-cyan);
+    border-radius: 18px;
+    padding: 20px 16px;
+    box-shadow: var(--shadow-cyan);
+}
+
+.onboarding-step-compact {
+    margin-bottom: 20px;
+}
+
+.onboarding-step-compact:last-of-type {
+    margin-bottom: 16px;
+}
+
+.onboarding-step-compact h3 {
+    font-size: 18px;
+    margin-bottom: 6px;
+}
+
+.step-description-compact {
+    color: var(--text-gray);
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
 .onboarding-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
