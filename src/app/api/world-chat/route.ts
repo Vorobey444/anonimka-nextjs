@@ -41,14 +41,11 @@ async function getMessages(params: {
     let queryParams: any[] = [];
 
     if (tab === 'world') {
-        // Вкладка "Мир" - все публичные сообщения + личные для текущего пользователя (свои ЛС)
+        // Вкладка "Мир" - ВСЕ публичные сообщения (world + city со всех городов), БЕЗ личных
         query = `
             SELECT id, user_token, nickname, message, type, target_user_token, target_nickname, location_city, is_premium, created_at
             FROM world_chat_messages
-            WHERE (
-                type IN ('world', 'city')
-                OR (type = 'private' AND (target_user_token = $1 OR user_token = $1))
-            )
+            WHERE type IN ('world', 'city')
             AND user_token NOT IN (
                 SELECT blocked_token FROM user_blocks WHERE blocker_token = $1
             )
@@ -57,7 +54,7 @@ async function getMessages(params: {
         `;
         queryParams = [userToken];
     } else if (tab === 'city') {
-        // Вкладка "Город" - городские сообщения + личные для текущего пользователя (свои ЛС)
+        // Вкладка "Город" - сообщения текущего города + личные сообщения пользователя
         query = `
             SELECT id, user_token, nickname, message, type, target_user_token, target_nickname, location_city, is_premium, created_at
             FROM world_chat_messages
