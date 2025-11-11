@@ -6108,3 +6108,110 @@ h3 {
         font-size: 16px;
     }
 }
+
+/* Адаптивная верстка для экрана выбора локации */
+/* Узкие экраны (сложенный Z Fold5, узкие телефоны) */
+@media (max-width: 400px) {
+    .header {
+        margin-bottom: 15px;
+        padding-top: 5px;
+    }
+    
+    .back-btn {
+        padding: 4px 8px;
+        font-size: 12px;
+        left: 5px;
+        top: 5px;
+    }
+    
+    .logo {
+        padding-top: 40px;
+    }
+    
+    .logo h1 {
+        font-size: 18px;
+    }
+    
+    .logo p {
+        font-size: 12px;
+        margin-top: 5px;
+    }
+    
+    .neon-icon {
+        font-size: 32px;
+        margin-bottom: 5px;
+    }
+    
+    .location-setup-container {
+        padding: 0.5rem 1rem 1rem 1rem;
+    }
+    
+    .setup-country-selection h3,
+    .setup-region-selection h3,
+    .setup-city-selection h3 {
+        font-size: 1rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .auto-location-section {
+        margin-bottom: 15px;
+    }
+    
+    .or-divider {
+        margin: 10px 0;
+        font-size: 0.8rem;
+    }
+    
+    .setup-country-selection, 
+    .setup-region-selection, 
+    .setup-city-selection {
+        margin: 1rem 0;
+    }
+    
+    .country-btn {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    
+    .neon-button {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+}
+
+/* Средние экраны (обычные смартфоны) */
+@media (min-width: 401px) and (max-width: 768px) {
+    .header {
+        margin-bottom: 20px;
+    }
+    
+    .logo {
+        padding-top: 45px;
+    }
+    
+    .location-setup-container {
+        padding: 0.75rem 1.5rem 1.5rem 1.5rem;
+    }
+}
+
+/* Широкие экраны (планшеты, развернутый Z Fold5) */
+@media (min-width: 769px) {
+    .header {
+        margin-bottom: 30px;
+    }
+    
+    .logo {
+        padding-top: 50px;
+    }
+    
+    .location-setup-container {
+        padding: 1rem 2rem 2rem 2rem;
+        max-width: 600px;
+    }
+    
+    .setup-country-selection h3,
+    .setup-region-selection h3,
+    .setup-city-selection h3 {
+        font-size: 1.3rem;
+    }
+}
