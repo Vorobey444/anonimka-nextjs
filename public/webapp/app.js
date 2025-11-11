@@ -9722,6 +9722,9 @@ function renderWorldChatMessages(messages) {
         return;
     }
     
+    // Сохраняем позицию прокрутки
+    const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+    
     container.innerHTML = messages.map(msg => {
         const isPremium = msg.is_premium;
         const nicknameClass = `${msg.type}-type${isPremium ? ' premium' : ''}`;
@@ -9747,8 +9750,10 @@ function renderWorldChatMessages(messages) {
         `;
     }).join('');
     
-    // Прокручиваем вниз (новые сообщения внизу)
-    container.scrollTop = container.scrollHeight;
+    // Прокручиваем вниз только если были внизу (убираем моргание при прокрутке вверх)
+    if (wasAtBottom) {
+        container.scrollTop = container.scrollHeight;
+    }
 }
 
 // Клик на никнейм - добавить в инпут для личного сообщения
@@ -9823,7 +9828,7 @@ async function sendWorldChatMessage() {
             console.error('❌ Ошибка отправки:', data.error);
             tg.showAlert(data.error || 'Ошибка отправки сообщения');
             
-            // Если это таймаут, запускаем отсчет
+            // Если это таймаут, запускаем уведомление
             if (response.status === 429) {
                 const match = data.error.match(/(\d+) сек/);
                 if (match) {
@@ -9838,28 +9843,26 @@ async function sendWorldChatMessage() {
     }
 }
 
-// Таймаут между сообщениями
+// Таймаут между сообщениями (только для world и city)
 function startWorldChatTimeout(seconds = 30) {
+    // Таймаут только для Мир и Город чата
+    if (currentWorldChatTab === 'private') {
+        return; // Приват без ограничений
+    }
+    
     const timeoutDiv = document.getElementById('worldChatTimeout');
     const secondsSpan = document.getElementById('timeoutSeconds');
     const sendBtn = document.querySelector('.world-chat-send-btn');
     
     timeoutDiv.style.display = 'block';
     sendBtn.disabled = true;
+    secondsSpan.textContent = seconds;
     
-    let remaining = seconds;
-    secondsSpan.textContent = remaining;
-    
-    const interval = setInterval(() => {
-        remaining--;
-        secondsSpan.textContent = remaining;
-        
-        if (remaining <= 0) {
-            clearInterval(interval);
-            timeoutDiv.style.display = 'none';
-            sendBtn.disabled = false;
-        }
-    }, 1000);
+    // Просто ждём указанное время
+    setTimeout(() => {
+        timeoutDiv.style.display = 'none';
+        sendBtn.disabled = false;
+    }, seconds * 1000);
 }
 
 // Обновление счетчика символов

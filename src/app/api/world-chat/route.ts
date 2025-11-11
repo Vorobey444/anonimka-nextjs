@@ -96,30 +96,7 @@ async function sendMessage(params: {
         );
     }
 
-    // Проверка таймаута 30 секунд
-    const lastMessageResult = await sql.query(
-        `SELECT created_at FROM world_chat_messages 
-         WHERE user_token = $1 
-         ORDER BY created_at DESC 
-         LIMIT 1`,
-        [userToken]
-    );
-
-    if (lastMessageResult.rows.length > 0) {
-        const lastMessageTime = new Date(lastMessageResult.rows[0].created_at);
-        const now = new Date();
-        const diffSeconds = (now.getTime() - lastMessageTime.getTime()) / 1000;
-
-        if (diffSeconds < 30) {
-            const remainingTime = Math.ceil(30 - diffSeconds);
-            return NextResponse.json(
-                { error: `Подождите ${remainingTime} сек перед следующим сообщением` },
-                { status: 429 }
-            );
-        }
-    }
-
-    // Определяем тип сообщения по префиксу
+    // Определяем тип сообщения по префиксу (сначала, чтобы знать нужен ли таймаут)
     let type: 'world' | 'city' | 'private' = 'world';
     let cleanMessage = message;
     let targetUserToken: string | null = null;
@@ -161,6 +138,31 @@ async function sendMessage(params: {
         }
 
         targetUserToken = targetUserResult.rows[0].user_token;
+    }
+
+    // Проверка таймаута 30 секунд (только для world и city, не для private)
+    if (type === 'world' || type === 'city') {
+        const lastMessageResult = await sql.query(
+            `SELECT created_at FROM world_chat_messages 
+             WHERE user_token = $1 AND type IN ('world', 'city')
+             ORDER BY created_at DESC 
+             LIMIT 1`,
+            [userToken]
+        );
+
+        if (lastMessageResult.rows.length > 0) {
+            const lastMessageTime = new Date(lastMessageResult.rows[0].created_at);
+            const now = new Date();
+            const diffSeconds = (now.getTime() - lastMessageTime.getTime()) / 1000;
+
+            if (diffSeconds < 30) {
+                const remainingTime = Math.ceil(30 - diffSeconds);
+                return NextResponse.json(
+                    { error: `Попробуйте через ${remainingTime} сек` },
+                    { status: 429 }
+                );
+            }
+        }
     }
 
     // Вставляем сообщение
