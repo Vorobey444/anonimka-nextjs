@@ -9755,6 +9755,8 @@ function renderWorldChatMessages(messages) {
         return `
             <div class="world-chat-message ${msg.type}-type">
                 <div class="world-chat-nickname ${nicknameClass}" 
+                     data-nickname="${escapeHtml(msg.nickname)}"
+                     data-user-token="${msg.user_token}"
                      onclick="clickWorldChatNickname('${escapeHtml(msg.nickname)}')"
                      oncontextmenu="return showWorldChatContextMenu(event, '${escapeHtml(msg.nickname)}', '${msg.user_token}')">
                     ${escapeHtml(msg.nickname)}${proБадge}${targetInfo}
@@ -9769,6 +9771,40 @@ function renderWorldChatMessages(messages) {
     if (wasAtBottom) {
         container.scrollTop = container.scrollHeight;
     }
+    
+    // Добавляем обработчики long press для никнеймов
+    setupLongPressHandlers();
+}
+
+// Настройка long press для мобильных устройств
+function setupLongPressHandlers() {
+    const nicknames = document.querySelectorAll('.world-chat-nickname');
+    
+    nicknames.forEach(nickname => {
+        let pressTimer;
+        
+        // Touch events для мобильных
+        nickname.addEventListener('touchstart', function(e) {
+            const nick = this.getAttribute('data-nickname');
+            const token = this.getAttribute('data-user-token');
+            
+            pressTimer = setTimeout(() => {
+                // Вибрация при долгом нажатии (если поддерживается)
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+                showWorldChatContextMenu(e, nick, token);
+            }, 500); // 500ms для long press
+        });
+        
+        nickname.addEventListener('touchend', function() {
+            clearTimeout(pressTimer);
+        });
+        
+        nickname.addEventListener('touchmove', function() {
+            clearTimeout(pressTimer);
+        });
+    });
 }
 
 // Клик на никнейм - добавить в инпут для личного сообщения
@@ -9776,11 +9812,8 @@ function clickWorldChatNickname(nickname) {
     const input = document.getElementById('worldChatInput');
     const prefix = document.getElementById('worldChatPrefix');
     
-    // Переключаемся на вкладку ЛС и ставим префикс /
-    if (currentWorldChatTab !== 'private') {
-        switchWorldChatTab('private');
-    }
-    
+    // НЕ переключаемся на вкладку ЛС, остаемся где есть
+    // Просто меняем префикс на / для личного сообщения
     input.value = `${nickname} `;
     prefix.textContent = '/';
     prefix.style.color = '#FF006E';
@@ -9922,12 +9955,169 @@ async function loadWorldChatPreview() {
     }
 }
 
-// Контекстное меню (долгое нажатие) - TODO
+// Контекстное меню (ПКМ + долгое нажатие)
 function showWorldChatContextMenu(event, nickname, userToken) {
     event.preventDefault();
-    console.log('Long-press на', nickname);
-    // TODO: Реализовать модальное окно с опциями
+    event.stopPropagation();
+    
+    console.log('Контекстное меню для', nickname);
+    
+    // Создаём модальное окно с опциями
+    const modal = document.createElement('div');
+    modal.className = 'world-chat-context-menu';
+    modal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(20, 20, 30, 0.98);
+        border: 2px solid var(--neon-cyan);
+        border-radius: 16px;
+        padding: 20px;
+        z-index: 10000;
+        min-width: 280px;
+        animation: fadeIn 0.2s ease;
+    `;
+    
+    modal.innerHTML = `
+        <div style="margin-bottom: 15px; text-align: center;">
+            <div style="font-size: 18px; font-weight: bold; color: var(--neon-cyan); margin-bottom: 5px;">
+                ${escapeHtml(nickname)}
+            </div>
+            <div style="font-size: 12px; color: var(--text-gray);">
+                Выберите действие
+            </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button onclick="worldChatPrivateMessage('${escapeHtml(nickname)}')" style="
+                padding: 12px;
+                background: linear-gradient(135deg, #FF006E, #C4005A);
+                border: none;
+                border-radius: 10px;
+                color: white;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            ">
+                💌 Приват чат
+            </button>
+            <button onclick="worldChatBlockUser('${escapeHtml(nickname)}', '${userToken}')" style="
+                padding: 12px;
+                background: linear-gradient(135deg, #555, #333);
+                border: none;
+                border-radius: 10px;
+                color: white;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            ">
+                🚫 В ЧС
+            </button>
+            <button onclick="worldChatReportUser('${escapeHtml(nickname)}', '${userToken}')" style="
+                padding: 12px;
+                background: linear-gradient(135deg, #FF4444, #CC0000);
+                border: none;
+                border-radius: 10px;
+                color: white;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            ">
+                ⚠️ Пожаловаться
+            </button>
+            <button onclick="closeWorldChatContextMenu()" style="
+                padding: 12px;
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 10px;
+                color: var(--text-light);
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            ">
+                Отмена
+            </button>
+        </div>
+    `;
+    
+    // Overlay для закрытия при клике вне меню
+    const overlay = document.createElement('div');
+    overlay.className = 'world-chat-context-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+    `;
+    overlay.onclick = closeWorldChatContextMenu;
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    
     return false;
+}
+
+// Закрыть контекстное меню
+function closeWorldChatContextMenu() {
+    const menu = document.querySelector('.world-chat-context-menu');
+    const overlay = document.querySelector('.world-chat-context-overlay');
+    if (menu) menu.remove();
+    if (overlay) overlay.remove();
+}
+
+// Приват чат через контекстное меню
+function worldChatPrivateMessage(nickname) {
+    closeWorldChatContextMenu();
+    clickWorldChatNickname(nickname);
+}
+
+// Добавить в ЧС
+async function worldChatBlockUser(nickname, userToken) {
+    closeWorldChatContextMenu();
+    
+    const confirmed = confirm(`Добавить ${nickname} в черный список?`);
+    if (!confirmed) return;
+    
+    try {
+        const currentUserToken = localStorage.getItem('user_token');
+        
+        // TODO: Реализовать API для блокировки
+        // Пока просто показываем уведомление
+        tg.showAlert(`${nickname} добавлен в ЧС (функция в разработке)`);
+        
+        console.log('Блокировка пользователя:', nickname, userToken);
+    } catch (error) {
+        console.error('Ошибка блокировки:', error);
+        tg.showAlert('Ошибка при блокировке пользователя');
+    }
+}
+
+// Пожаловаться на пользователя
+async function worldChatReportUser(nickname, userToken) {
+    closeWorldChatContextMenu();
+    
+    const reason = prompt(`Причина жалобы на ${nickname}:`);
+    if (!reason) return;
+    
+    try {
+        const currentUserToken = localStorage.getItem('user_token');
+        
+        // TODO: Реализовать API для жалоб
+        // Пока просто показываем уведомление
+        tg.showAlert(`Жалоба на ${nickname} отправлена (функция в разработке)`);
+        
+        console.log('Жалоба на пользователя:', nickname, userToken, reason);
+    } catch (error) {
+        console.error('Ошибка отправки жалобы:', error);
+        tg.showAlert('Ошибка при отправке жалобы');
+    }
 }
 
 // Остановить автообновление при выходе
