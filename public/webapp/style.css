@@ -4041,6 +4041,19 @@ h3 {
     box-shadow: 0 6px 20px rgba(0, 217, 255, 0.4);
 }
 
+/* Защищенное фото - запрет выделения и копирования */
+.secure-photo {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    pointer-events: auto;
+}
+
+.secure-photo::selection {
+    background: transparent;
+}
+
 .message-time {
     font-size: 0.7rem;
     opacity: 0.7;

@@ -6765,9 +6765,10 @@ async function loadChatMessages(chatId, silent = false) {
                 const isVideo = msg.photo_url.includes('.mp4') || msg.photo_url.includes('.mov') || msg.photo_url.includes('video');
                 
                 if (isVideo) {
-                    photoHtml = `<video src="${escapeHtml(msg.photo_url)}" class="message-photo" controls playsinline></video>`;
+                    photoHtml = `<video src="${escapeHtml(msg.photo_url)}" class="message-photo" controls playsinline controlslist="nodownload" disablePictureInPicture></video>`;
                 } else {
-                    photoHtml = `<img src="${escapeHtml(msg.photo_url)}" class="message-photo" alt="Фото" onclick="showPhotoModal('${escapeHtml(msg.photo_url)}')" />`;
+                    // Защищенное фото: запрет контекстного меню, drag & drop
+                    photoHtml = `<img src="${escapeHtml(msg.photo_url)}" class="message-photo secure-photo" alt="Фото" onclick="showPhotoModal('${escapeHtml(msg.photo_url)}')" oncontextmenu="return false;" draggable="false" />`;
                 }
             }
             
@@ -7136,9 +7137,19 @@ function showPhotoModal(photoUrl) {
     const modal = document.getElementById('photoModal');
     const modalImage = document.getElementById('photoModalImage');
     
+    // Применяем защиту от скачивания и копирования
     modalImage.src = photoUrl;
+    modalImage.oncontextmenu = () => false; // Запрет правой кнопки мыши
+    modalImage.draggable = false; // Запрет drag & drop
+    modalImage.style.userSelect = 'none'; // Запрет выделения
+    modalImage.style.webkitUserSelect = 'none';
+    modalImage.style.mozUserSelect = 'none';
+    
     modal.classList.add('active');
     modal.style.display = 'flex';
+    
+    // Запрет контекстного меню на модальном окне
+    modal.oncontextmenu = () => false;
 }
 
 // Закрыть модальное окно фото
@@ -7149,6 +7160,7 @@ function closePhotoModal() {
     modal.classList.remove('active');
     modal.style.display = 'none';
     modalImage.src = '';
+    modal.oncontextmenu = null;
 }
 
 // Загрузить фото в Telegram и получить file_id

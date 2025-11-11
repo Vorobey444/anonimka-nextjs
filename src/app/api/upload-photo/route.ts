@@ -1,9 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 import { ENV } from '@/lib/env';
+import sharp from 'sharp';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs'; // Ensure Node.js runtime for env vars
+
+/**
+ * Удаляет EXIF метаданные из изображения
+ */
+async function stripExifData(buffer: Buffer): Promise<Buffer> {
+  try {
+    // Sharp автоматически удаляет EXIF при конвертации
+    return await sharp(buffer)
+      .rotate() // Автоповорот по EXIF (если есть), затем удаление
+      .jpeg({ quality: 85 }) // Конвертируем в JPEG без метаданных
+      .toBuffer();
+  } catch (error) {
+    console.error('Ошибка удаления EXIF:', error);
+    return buffer; // Возвращаем оригинал если не удалось
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,13 +78,25 @@ export async function POST(request: NextRequest) {
     }
     
     // Конвертируем File в Buffer
-    const buffer = Buffer.from(await photo.arrayBuffer());
+    let buffer = Buffer.from(await photo.arrayBuffer());
     
-    console.log('📤 Загрузка фото через Telegram Bot API:', {
+    // Определяем тип медиа (фото или видео)
+    const isVideo = photo.type.startsWith('video/');
+    
+    // Удаляем EXIF метаданные из фото (для видео не применяется)
+    if (!isVideo && photo.type.startsWith('image/')) {
+      console.log('🧹 Удаление EXIF метаданных...');
+      const originalSize = buffer.length;
+      buffer = await stripExifData(buffer);
+      console.log(`✅ EXIF удалён (${originalSize} → ${buffer.length} bytes)`);
+    }
+    
+    console.log('📤 Загрузка медиа через Telegram Bot API:', {
       userId: userId.substring(0, 10) + '...',
       tg_id: telegramUserId,
-      photoSize: buffer.length,
-      photoType: photo.type
+      mediaSize: buffer.length,
+      mediaType: photo.type,
+      exifRemoved: !isVideo && photo.type.startsWith('image/')
     });
     
     // РЕШЕНИЕ: Используем служебный канал для хранения фото
@@ -79,15 +108,13 @@ export async function POST(request: NextRequest) {
       fromEnv: !!process.env.TELEGRAM_STORAGE_CHANNEL
     });
     
-    // Определяем тип медиа (фото или видео)
-    const isVideo = photo.type.startsWith('video/');
     const endpoint = isVideo ? 'sendVideo' : 'sendPhoto';
     const fieldName = isVideo ? 'video' : 'photo';
     
     const telegramFormData = new FormData();
     telegramFormData.append('chat_id', storageChannel); // Отправляем в канал-хранилище
-    telegramFormData.append(fieldName, new Blob([buffer], { type: photo.type }), isVideo ? 'video.mp4' : 'photo.jpg');
-    telegramFormData.append('caption', `${isVideo ? '🎥' : '📸'} User: ${telegramUserId}`);
+    telegramFormData.append(fieldName, new Blob([buffer], { type: isVideo ? 'video/mp4' : 'image/jpeg' }), isVideo ? 'video.mp4' : 'photo.jpg');
+    telegramFormData.append('caption', `${isVideo ? '🎥' : '📸'} User: ${telegramUserId} (EXIF stripped)`);
     
     // Отправляем медиа в канал-хранилище
     const response = await fetch(`https://api.telegram.org/bot${botToken}/${endpoint}`, {
@@ -119,27 +146,15 @@ export async function POST(request: NextRequest) {
       fileId = fileData.file_id;
     }
     
-    // Получаем file_path для построения URL
-    const fileResponse = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
-    const fileResult = await fileResponse.json();
+    // Используем защищенный URL через наш прокси (без раскрытия Telegram API)
+    const securePhotoUrl = `/api/secure-photo?fileId=${encodeURIComponent(fileId)}`;
     
-    if (!fileResult.ok) {
-      console.error('❌ Failed to get file path:', fileResult);
-      return NextResponse.json(
-        { error: { message: 'Failed to get file path' } },
-        { status: 500 }
-      );
-    }
-    
-    const filePath = fileResult.result.file_path;
-    const photoUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
-    
-    console.log(`✅ ${isVideo ? 'Video' : 'Photo'} URL:`, photoUrl);
+    console.log(`✅ ${isVideo ? 'Video' : 'Photo'} uploaded, file_id:`, fileId);
     
     return NextResponse.json({
       data: {
         file_id: fileId,
-        photo_url: photoUrl,
+        photo_url: securePhotoUrl, // Защищенный URL через прокси
         is_video: isVideo
       },
       error: null
