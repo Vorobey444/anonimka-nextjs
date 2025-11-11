@@ -96,7 +96,6 @@ export async function POST(request: NextRequest) {
     `;
 
     const existingUser = userResult.rows[0];
-    const isFirstTime = !existingUser || !existingUser.display_nickname;
     
     // Проверяем PRO статус
     let isPremium = existingUser?.is_premium || false;
@@ -110,10 +109,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Проверяем право на смену никнейма
-    if (!isFirstTime) {
+    // Определяем, это первая установка никнейма или попытка изменить
+    // Если nickname_changed_at === NULL, значит это первая установка (разрешено всем)
+    const isFirstTimeChange = !existingUser?.nickname_changed_at;
+    
+    console.log('[NICKNAME API] Проверка:', {
+      userId,
+      existingNickname: existingUser?.display_nickname,
+      isFirstTimeChange,
+      isPremium,
+      nickname_changed_at: existingUser?.nickname_changed_at
+    });
+
+    // Проверяем право на смену никнейма (только если это НЕ первая установка)
+    if (!isFirstTimeChange) {
       if (!isPremium) {
         // FREE пользователи не могут менять никнейм
+        console.log('[NICKNAME API] ❌ FREE пользователь пытается изменить никнейм');
         return NextResponse.json(
           { 
             success: false, 
@@ -125,23 +137,22 @@ export async function POST(request: NextRequest) {
       }
 
       // PRO пользователи могут менять раз в 24 часа
-      if (existingUser.nickname_changed_at) {
-        const lastChange = new Date(existingUser.nickname_changed_at);
-        const now = new Date();
-        const hoursSinceLastChange = (now.getTime() - lastChange.getTime()) / (1000 * 60 * 60);
+      const lastChange = new Date(existingUser.nickname_changed_at);
+      const now = new Date();
+      const hoursSinceLastChange = (now.getTime() - lastChange.getTime()) / (1000 * 60 * 60);
 
-        if (hoursSinceLastChange < 24) {
-          const hoursRemaining = Math.ceil(24 - hoursSinceLastChange);
-          return NextResponse.json(
-            { 
-              success: false, 
-              error: `PRO users can change nickname once per 24 hours. Try again in ${hoursRemaining} hours.`,
-              code: 'NICKNAME_COOLDOWN',
-              hoursRemaining
-            },
-            { status: 429 }
-          );
-        }
+      if (hoursSinceLastChange < 24) {
+        const hoursRemaining = Math.ceil(24 - hoursSinceLastChange);
+        console.log('[NICKNAME API] ⏳ PRO пользователь должен подождать:', hoursRemaining, 'часов');
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `PRO users can change nickname once per 24 hours. Try again in ${hoursRemaining} hours.`,
+            code: 'NICKNAME_COOLDOWN',
+            hoursRemaining
+          },
+          { status: 429 }
+        );
       }
     }
 
@@ -174,7 +185,7 @@ export async function POST(request: NextRequest) {
       success: true,
       nickname,
       tgId,
-      isFirstTime,
+      isFirstTime: isFirstTimeChange,
       isPremium
     });
 
