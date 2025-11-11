@@ -4059,14 +4059,14 @@ h3 {
 .chat-messages {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 8px;
 }
 
 /* Сообщение */
 .message {
-    max-width: 70%;
-    padding: 12px 16px;
-    border-radius: 18px;
+    max-width: 75%;
+    padding: 8px 12px;
+    border-radius: 12px;
     position: relative;
     animation: messageSlideIn 0.3s ease;
     transition: transform 0.2s ease, background 0.3s ease;
@@ -4105,21 +4105,22 @@ h3 {
     background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
     color: white;
     margin-left: auto;
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 3px;
 }
 
 /* Полученное сообщение */
 .message.received {
     align-self: flex-start;
-    background: linear-gradient(135deg, rgba(26, 26, 46, 0.9), rgba(16, 16, 32, 0.9));
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.8), rgba(16, 16, 32, 0.8));
     border: 1px solid var(--border-glow);
     color: var(--text-light);
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 3px;
 }
 
 .message-text {
-    margin-bottom: 5px;
+    margin-bottom: 3px;
     word-wrap: break-word;
+    line-height: 1.4;
 }
 
 .message-photo {
@@ -4187,13 +4188,14 @@ h3 {
 }
 
 .message-time {
-    font-size: 0.7rem;
-    opacity: 0.7;
+    font-size: 0.65rem;
+    opacity: 0.6;
     text-align: right;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 4px;
+    gap: 3px;
+    margin-top: 2px;
 }
 
 /* Статусы сообщений (галочки) */
@@ -4226,12 +4228,12 @@ h3 {
 
 /* Nickname над сообщениями */
 .message-nickname {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--neon-cyan);
-    text-shadow: 0 0 5px var(--neon-cyan);
-    margin-bottom: 4px;
+    text-shadow: 0 0 3px var(--neon-cyan);
+    margin-bottom: 3px;
     font-weight: 500;
-    opacity: 0.9;
+    opacity: 0.85;
 }
 
 @keyframes neon-pulse {
@@ -4314,23 +4316,23 @@ h3 {
 /* Индикатор ответа в сообщениях */
 .message-reply-indicator {
     display: flex;
-    gap: 8px;
-    padding: 6px 8px;
-    margin-bottom: 6px;
-    background: rgba(0, 255, 255, 0.05);
-    border-radius: 6px;
+    gap: 6px;
+    padding: 4px 6px;
+    margin-bottom: 4px;
+    background: rgba(0, 255, 255, 0.08);
+    border-radius: 4px;
     cursor: pointer;
     transition: background 0.2s ease;
 }
 
 .message-reply-indicator:hover {
-    background: rgba(0, 255, 255, 0.1);
+    background: rgba(0, 255, 255, 0.15);
 }
 
 .reply-indicator-line {
-    width: 3px;
+    width: 2px;
     background: var(--neon-cyan);
-    border-radius: 2px;
+    border-radius: 1px;
     flex-shrink: 0;
 }
 
@@ -4340,18 +4342,20 @@ h3 {
 }
 
 .reply-indicator-nickname {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--neon-cyan);
     font-weight: 600;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
+    opacity: 0.9;
 }
 
 .reply-indicator-text {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-gray);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    opacity: 0.8;
 }
 
 /* Размеры шрифта для сообщений в чате */
