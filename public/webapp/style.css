@@ -93,11 +93,12 @@ body {
 /* Заголовок */
 .header {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
     margin-bottom: 30px;
     position: relative;
     min-height: 50px;
+    padding-top: 10px;
 }
 
 .back-btn {
@@ -115,19 +116,26 @@ body {
     gap: 4px;
     position: absolute;
     left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 10px;
     z-index: 10;
 }
 
 .back-btn:hover {
     box-shadow: var(--shadow-cyan);
-    transform: translateY(-50%) scale(1.05);
+    transform: scale(1.05);
 }
 
 .logo {
     text-align: center;
     width: 100%;
+    padding-top: 50px;
+}
+
+.logo p {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 8px;
+    margin-bottom: 0;
 }
 
 .neon-icon {
@@ -1394,13 +1402,13 @@ h3 {
 .location-setup-container {
     max-width: 500px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 1rem 2rem 2rem 2rem;
 }
 
 .setup-country-selection, 
 .setup-region-selection, 
 .setup-city-selection {
-    margin: 2rem 0;
+    margin: 1.5rem 0;
     animation: fadeIn 0.5s ease;
 }
 
@@ -3393,15 +3401,15 @@ h3 {
 
 /* Секция автоопределения локации */
 .auto-location-section {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     text-align: center;
 }
 
 .or-divider {
     color: var(--text-gray);
-    margin: 15px 0;
+    margin: 12px 0;
     opacity: 0.6;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 /* Кнопка удаления анкеты в списке "Мои анкеты" */
