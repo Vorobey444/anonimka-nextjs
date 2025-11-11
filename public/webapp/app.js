@@ -9628,8 +9628,7 @@ let worldChatLastMessageTime = null;
 // Показать экран Мир чата
 async function showWorldChat() {
     console.log('🌍 Открытие Мир чата');
-    hideAllScreens();
-    document.getElementById('worldChatScreen').classList.add('active');
+    showScreen('worldChatScreen');
     
     // Загружаем сообщения
     await loadWorldChatMessages();
