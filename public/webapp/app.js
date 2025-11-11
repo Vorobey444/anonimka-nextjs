@@ -3637,6 +3637,31 @@ async function checkUserLocation() {
 async function checkOnboardingStatus() {
     console.log('checkOnboardingStatus вызвана');
     try {
+        // Получаем tgId пользователя
+        let tgId = null;
+        if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+            tgId = window.Telegram.WebApp.initDataUnsafe.user.id;
+        } else {
+            try {
+                const savedUser = localStorage.getItem('telegram_user');
+                if (savedUser) {
+                    const user = JSON.parse(savedUser);
+                    tgId = user.id;
+                }
+            } catch (e) {
+                console.error('Ошибка парсинга telegram_user:', e);
+            }
+        }
+        
+        console.log('checkOnboardingStatus - tgId:', tgId);
+        
+        if (!tgId) {
+            // Если нет tgId, сразу показываем онбординг
+            console.log('Нет tgId, показываем онбординг');
+            showOnboardingScreen();
+            return;
+        }
+        
         // Проверяем, есть ли у пользователя никнейм в БД
         const response = await fetch(`/api/nickname?tgId=${tgId}`);
         const data = await response.json();
