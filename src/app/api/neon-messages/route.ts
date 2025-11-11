@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
             m.telegram_file_id,
             m.read,
             m.delivered,
+            m.reply_to_message_id,
             m.created_at,
             pc.user_token_1, 
             pc.user_token_2,
