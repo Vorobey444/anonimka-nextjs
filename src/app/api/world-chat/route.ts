@@ -41,11 +41,11 @@ async function getMessages(params: {
     let queryParams: any[] = [];
 
     if (tab === 'world') {
-        // Вкладка "Мир" - только публичные сообщения типа 'world', исключая заблокированных и личные (private)
+        // Вкладка "Мир" - все публичные сообщения (world + city), БЕЗ личных (private)
         query = `
             SELECT id, user_token, nickname, message, type, target_user_token, target_nickname, location_city, is_premium, created_at
             FROM world_chat_messages
-            WHERE type = 'world'
+            WHERE type IN ('world', 'city')
             AND user_token NOT IN (
                 SELECT blocked_token FROM user_blocks WHERE blocker_token = $1
             )
@@ -54,14 +54,11 @@ async function getMessages(params: {
         `;
         queryParams = [userToken];
     } else if (tab === 'city') {
-        // Вкладка "Город" - сообщения с городом пользователя + личные сообщения для него, исключая заблокированных
+        // Вкладка "Город" - только сообщения с городом пользователя, БЕЗ личных (private)
         query = `
             SELECT id, user_token, nickname, message, type, target_user_token, target_nickname, location_city, is_premium, created_at
             FROM world_chat_messages
-            WHERE (
-                (type = 'city' AND location_city = $1)
-                OR (type = 'private' AND (target_user_token = $2 OR user_token = $2))
-            )
+            WHERE type = 'city' AND location_city = $1
             AND user_token NOT IN (
                 SELECT blocked_token FROM user_blocks WHERE blocker_token = $2
             )
@@ -70,7 +67,7 @@ async function getMessages(params: {
         `;
         queryParams = [userCity, userToken];
     } else if (tab === 'private') {
-        // Вкладка "ЛС" - только личные сообщения для текущего пользователя, исключая заблокированных
+        // Вкладка "ЛС" - только личные сообщения между двумя пользователями
         query = `
             SELECT id, user_token, nickname, message, type, target_user_token, target_nickname, location_city, is_premium, created_at
             FROM world_chat_messages
