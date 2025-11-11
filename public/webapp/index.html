@@ -976,7 +976,7 @@
                     <img id="photoPreviewImage" src="" alt="Preview" />
                     <button class="remove-photo-button" onclick="removePhoto()">×</button>
                 </div>
-                <input type="text" id="messageInput" class="chat-input" placeholder="Введите сообщение..." />
+                <input type="text" id="messageInput" class="chat-input" placeholder="Введите сообщение..." onkeypress="if(event.key === 'Enter') sendMessage()" />
                 <button id="sendButton" class="send-button" onclick="sendMessage()">
                     <span class="send-icon">✈️</span>
                 </button>
