@@ -5559,6 +5559,30 @@ h3 {
     box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
 }
 
+/* Кнопка размера шрифта */
+.world-chat-font-size-btn {
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-gray);
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 5px;
+    min-width: 35px;
+}
+
+.world-chat-font-size-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--neon-cyan);
+}
+
+.world-chat-font-size-btn:active {
+    transform: scale(0.95);
+}
+
 /* Контейнер сообщений */
 .world-chat-messages-container {
     flex: 1;
@@ -5646,6 +5670,31 @@ h3 {
     word-wrap: break-word;
 }
 
+/* Размеры шрифта */
+.world-chat-messages.font-small .world-chat-text {
+    font-size: 11px;
+}
+
+.world-chat-messages.font-small .world-chat-nickname {
+    font-size: 11px;
+}
+
+.world-chat-messages.font-medium .world-chat-text {
+    font-size: 13px;
+}
+
+.world-chat-messages.font-medium .world-chat-nickname {
+    font-size: 13px;
+}
+
+.world-chat-messages.font-large .world-chat-text {
+    font-size: 16px;
+}
+
+.world-chat-messages.font-large .world-chat-nickname {
+    font-size: 15px;
+}
+
 /* Цвета текста по типу */
 .world-chat-message.world-type .world-chat-text {
     color: #FFD700;
@@ -5661,9 +5710,10 @@ h3 {
 
 /* Время сообщения */
 .world-chat-time {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-gray);
-    margin-top: 4px;
+    text-align: right;
+    margin-top: 2px;
 }
 
 /* Инпут для сообщений */
@@ -5760,6 +5810,13 @@ h3 {
     .world-chat-tab {
         padding: 5px 6px;
         font-size: 12px;
+    }
+    
+    .world-chat-font-size-btn {
+        padding: 5px 8px;
+        font-size: 13px;
+        min-width: 30px;
+        margin-left: 3px;
     }
     
     .world-chat-messages-container {

@@ -35,8 +35,9 @@ export async function POST(request: Request) {
 async function blockUser(params: {
     blockerToken: string;
     blockedToken: string;
+    blockedNickname?: string;
 }) {
-    const { blockerToken, blockedToken } = params;
+    const { blockerToken, blockedToken, blockedNickname } = params;
 
     // Проверяем, не заблокирован ли уже
     const existingBlock = await sql.query(
@@ -52,11 +53,23 @@ async function blockUser(params: {
         });
     }
 
-    // Добавляем блокировку
+    // Если никнейм не передан, пытаемся получить его из ads
+    let nickname = blockedNickname;
+    if (!nickname) {
+        const nicknameResult = await sql.query(
+            `SELECT nickname FROM ads WHERE user_token = $1 ORDER BY created_at DESC LIMIT 1`,
+            [blockedToken]
+        );
+        if (nicknameResult.rows.length > 0) {
+            nickname = nicknameResult.rows[0].nickname;
+        }
+    }
+
+    // Добавляем блокировку с никнеймом
     await sql.query(
-        `INSERT INTO user_blocks (blocker_token, blocked_token, created_at)
-         VALUES ($1, $2, NOW())`,
-        [blockerToken, blockedToken]
+        `INSERT INTO user_blocks (blocker_token, blocked_token, blocked_nickname, created_at)
+         VALUES ($1, $2, $3, NOW())`,
+        [blockerToken, blockedToken, nickname || 'Неизвестный']
     );
 
     return NextResponse.json({ 
@@ -91,7 +104,7 @@ async function getBlockedUsers(params: {
     const { userToken } = params;
 
     const result = await sql.query(
-        `SELECT blocked_token, created_at
+        `SELECT blocked_token, blocked_nickname, created_at
          FROM user_blocks 
          WHERE blocker_token = $1
          ORDER BY created_at DESC`,

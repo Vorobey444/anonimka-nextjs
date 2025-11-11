@@ -9553,12 +9553,12 @@ async function showBlockedUsers() {
         
         const userToken = localStorage.getItem('user_token') || userId;
         
-        const response = await fetch('/api/blocks', {
+        const response = await fetch('/api/user-blocks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'get-blocked-users',
-                params: { user_token: userToken }
+                params: { userToken: userToken }
             })
         });
         
@@ -9569,7 +9569,7 @@ async function showBlockedUsers() {
                 <div class="empty-state">
                     <div class="neon-icon">⚠️</div>
                     <h3>Ошибка</h3>
-                    <p>${result.error.message}</p>
+                    <p>${result.error}</p>
                 </div>
             `;
             return;
@@ -9594,8 +9594,8 @@ async function showBlockedUsers() {
                 <div class="blocked-user-info">
                     <span class="blocked-user-icon">👤</span>
                     <div class="blocked-user-details">
-                        <div class="blocked-user-name">${escapeHtml(user.nickname || 'Собеседник')}</div>
-                        <div class="blocked-user-date">Заблокирован ${formatChatTime(user.blocked_at)}</div>
+                        <div class="blocked-user-name">${escapeHtml(user.blocked_nickname || 'Неизвестный')}</div>
+                        <div class="blocked-user-date">Заблокирован ${formatChatTime(user.created_at)}</div>
                     </div>
                 </div>
                 <button class="unblock-btn" onclick="unblockUserFromList('${user.blocked_token}')" title="Разблокировать">
@@ -9623,19 +9623,19 @@ async function unblockUserFromList(blockedId) {
         if (!confirmed) return;
         
         try {
-            const response = await fetch('/api/blocks', {
+            const response = await fetch('/api/user-blocks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'unblock-user',
-                    params: { blocker_token: userToken, blocked_token: blockedId }
+                    params: { blockerToken: userToken, blockedToken: blockedId }
                 })
             });
             
             const result = await response.json();
             
             if (result.error) {
-                tg.showAlert('Ошибка: ' + result.error.message);
+                tg.showAlert('Ошибка: ' + result.error);
                 return;
             }
             
@@ -9661,6 +9661,26 @@ async function showWorldChat() {
     console.log('🌍 Открытие Мир чата');
     showScreen('worldChatScreen');
     
+    // Применяем сохраненный размер шрифта
+    const savedSize = localStorage.getItem('worldChatFontSize') || 'medium';
+    const messagesContainer = document.querySelector('.world-chat-messages');
+    if (messagesContainer) {
+        messagesContainer.classList.remove('font-small', 'font-medium', 'font-large');
+        messagesContainer.classList.add(`font-${savedSize}`);
+    }
+    
+    // Обновляем кнопку размера шрифта
+    const btn = document.getElementById('fontSizeBtn');
+    if (btn) {
+        if (savedSize === 'small') {
+            btn.style.fontSize = '12px';
+        } else if (savedSize === 'medium') {
+            btn.style.fontSize = '14px';
+        } else {
+            btn.style.fontSize = '17px';
+        }
+    }
+    
     // Загружаем сообщения
     await loadWorldChatMessages();
     
@@ -9674,6 +9694,45 @@ async function showWorldChat() {
     worldChatAutoRefreshInterval = setInterval(() => {
         loadWorldChatMessages(true); // silent reload
     }, 3000);
+}
+
+// Переключение размера шрифта
+function toggleFontSize() {
+    const messagesContainer = document.querySelector('.world-chat-messages');
+    if (!messagesContainer) return;
+    
+    // Получаем текущий размер из localStorage или дефолтный 'medium'
+    let currentSize = localStorage.getItem('worldChatFontSize') || 'medium';
+    
+    // Переключаем на следующий размер
+    const sizes = ['small', 'medium', 'large'];
+    const currentIndex = sizes.indexOf(currentSize);
+    const nextIndex = (currentIndex + 1) % sizes.length;
+    const nextSize = sizes[nextIndex];
+    
+    // Удаляем старые классы и добавляем новый
+    messagesContainer.classList.remove('font-small', 'font-medium', 'font-large');
+    messagesContainer.classList.add(`font-${nextSize}`);
+    
+    // Сохраняем в localStorage
+    localStorage.setItem('worldChatFontSize', nextSize);
+    
+    // Обновляем текст кнопки
+    const btn = document.getElementById('fontSizeBtn');
+    if (btn) {
+        if (nextSize === 'small') {
+            btn.textContent = 'A';
+            btn.style.fontSize = '12px';
+        } else if (nextSize === 'medium') {
+            btn.textContent = 'A';
+            btn.style.fontSize = '14px';
+        } else {
+            btn.textContent = 'A';
+            btn.style.fontSize = '17px';
+        }
+    }
+    
+    console.log('📏 Размер шрифта:', nextSize);
 }
 
 // Переключение вкладок
@@ -10519,7 +10578,8 @@ async function worldChatBlockUser(nickname, blockedUserToken) {
                 action: 'block-user',
                 params: {
                     blockerToken: currentUserToken,
-                    blockedToken: blockedUserToken
+                    blockedToken: blockedUserToken,
+                    blockedNickname: nickname // Передаем никнейм
                 }
             })
         });
