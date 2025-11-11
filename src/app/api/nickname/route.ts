@@ -109,34 +109,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Определяем, это первая установка никнейма или попытка изменить
-    // Если nickname_changed_at === NULL, значит это первая установка (разрешено всем)
-    const isFirstTimeChange = !existingUser?.nickname_changed_at;
+    // Определяем количество смен никнейма
+    // nickname_changed_at === NULL → 0 смен (первая установка/изменение)
+    // nickname_changed_at !== NULL → уже была хотя бы 1 смена
+    const hasChangedBefore = !!existingUser?.nickname_changed_at;
     
     console.log('[NICKNAME API] Проверка:', {
       userId,
       existingNickname: existingUser?.display_nickname,
-      isFirstTimeChange,
+      hasChangedBefore,
       isPremium,
       nickname_changed_at: existingUser?.nickname_changed_at
     });
 
-    // Проверяем право на смену никнейма (только если это НЕ первая установка)
-    if (!isFirstTimeChange) {
+    // Логика ограничений:
+    // FREE: 1 смена разрешена (подарок для исправления ошибки при регистрации)
+    // PRO: неограниченные смены, но не чаще 1 раза в 24 часа
+    
+    if (hasChangedBefore) {
       if (!isPremium) {
-        // FREE пользователи не могут менять никнейм
-        console.log('[NICKNAME API] ❌ FREE пользователь пытается изменить никнейм');
+        // FREE пользователи уже использовали свою 1 бесплатную смену
+        console.log('[NICKNAME API] ❌ FREE пользователь уже использовал бесплатную смену');
         return NextResponse.json(
           { 
             success: false, 
-            error: 'FREE users cannot change nickname. Upgrade to PRO to change nickname once per day.',
+            error: 'FREE users can change nickname only ONCE. Upgrade to PRO to change nickname unlimited times (once per 24h).',
             code: 'NICKNAME_LOCKED_FREE'
           },
           { status: 403 }
         );
       }
 
-      // PRO пользователи могут менять раз в 24 часа
+      // PRO пользователи могут менять неограниченно, но раз в 24 часа
       const lastChange = new Date(existingUser.nickname_changed_at);
       const now = new Date();
       const hoursSinceLastChange = (now.getTime() - lastChange.getTime()) / (1000 * 60 * 60);
@@ -185,7 +189,7 @@ export async function POST(request: NextRequest) {
       success: true,
       nickname,
       tgId,
-      isFirstTime: isFirstTimeChange,
+      isFirstChange: !hasChangedBefore,
       isPremium
     });
 
