@@ -102,17 +102,59 @@ async function getBlockedUsers(params: {
 }) {
     const { userToken } = params;
 
-    const result = await sql`
-        SELECT blocked_token, blocked_nickname, created_at
-        FROM user_blocks 
-        WHERE blocker_token = ${userToken}
-        ORDER BY created_at DESC
-    `;
+    try {
+        // Пробуем с полем blocked_nickname
+        const result = await sql`
+            SELECT blocked_token, blocked_nickname, created_at
+            FROM user_blocks 
+            WHERE blocker_token = ${userToken}
+            ORDER BY created_at DESC
+        `;
 
-    return NextResponse.json({ 
-        success: true, 
-        data: result.rows 
-    });
+        return NextResponse.json({ 
+            success: true, 
+            data: result.rows 
+        });
+    } catch (error: any) {
+        // Если поле blocked_nickname не существует, делаем запрос без него
+        console.log('Fallback: blocked_nickname поле не найдено, используем базовый запрос');
+        
+        const result = await sql`
+            SELECT blocked_token, created_at
+            FROM user_blocks 
+            WHERE blocker_token = ${userToken}
+            ORDER BY created_at DESC
+        `;
+
+        // Добавляем никнейм из ads для каждого заблокированного
+        const enrichedData = await Promise.all(
+            result.rows.map(async (block: any) => {
+                try {
+                    const nicknameResult = await sql`
+                        SELECT nickname 
+                        FROM ads 
+                        WHERE user_token = ${block.blocked_token}
+                        ORDER BY created_at DESC
+                        LIMIT 1
+                    `;
+                    return {
+                        ...block,
+                        blocked_nickname: nicknameResult.rows[0]?.nickname || 'Неизвестный'
+                    };
+                } catch {
+                    return {
+                        ...block,
+                        blocked_nickname: 'Неизвестный'
+                    };
+                }
+            })
+        );
+
+        return NextResponse.json({ 
+            success: true, 
+            data: enrichedData 
+        });
+    }
 }
 
 // Проверить, заблокирован ли пользователь
