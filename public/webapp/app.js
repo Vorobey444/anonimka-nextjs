@@ -9787,13 +9787,18 @@ function renderWorldChatMessages(messages) {
             targetInfo = ` → ${msg.target_nickname}`;
         }
         
+        // Проверяем, это свой никнейм или чужой
+        const currentUserToken = localStorage.getItem('user_token');
+        const isOwnMessage = msg.user_token === currentUserToken;
+        
         return `
             <div class="world-chat-message ${msg.type}-type">
                 <div class="world-chat-nickname ${nicknameClass}" 
                      data-nickname="${escapeHtml(msg.nickname)}"
                      data-user-token="${msg.user_token}"
+                     data-is-own="${isOwnMessage}"
                      onclick="clickWorldChatNickname('${escapeHtml(msg.nickname)}')"
-                     oncontextmenu="return showWorldChatContextMenu(event, '${escapeHtml(msg.nickname)}', '${msg.user_token}')">
+                     oncontextmenu="return showWorldChatContextMenu(event, '${escapeHtml(msg.nickname)}', '${msg.user_token}', ${isOwnMessage})">
                     ${escapeHtml(msg.nickname)}${proБадge}${targetInfo}
                 </div>
                 <div class="world-chat-text">${escapeHtml(msg.message)}</div>
@@ -9822,13 +9827,14 @@ function setupLongPressHandlers() {
         nickname.addEventListener('touchstart', function(e) {
             const nick = this.getAttribute('data-nickname');
             const token = this.getAttribute('data-user-token');
+            const isOwn = this.getAttribute('data-is-own') === 'true';
             
             pressTimer = setTimeout(() => {
                 // Вибрация при долгом нажатии (если поддерживается)
                 if (navigator.vibrate) {
                     navigator.vibrate(50);
                 }
-                showWorldChatContextMenu(e, nick, token);
+                showWorldChatContextMenu(e, nick, token, isOwn);
             }, 500); // 500ms для long press
         });
         
@@ -9963,11 +9969,11 @@ async function loadWorldChatPreview() {
 }
 
 // Контекстное меню (ПКМ + долгое нажатие)
-function showWorldChatContextMenu(event, nickname, userToken) {
+function showWorldChatContextMenu(event, nickname, userToken, isOwnMessage = false) {
     event.preventDefault();
     event.stopPropagation();
     
-    console.log('Контекстное меню для', nickname);
+    console.log('Контекстное меню для', nickname, 'isOwn:', isOwnMessage);
     
     // Создаём модальное окно с опциями
     const modal = document.createElement('div');
@@ -9986,70 +9992,100 @@ function showWorldChatContextMenu(event, nickname, userToken) {
         animation: fadeIn 0.2s ease;
     `;
     
-    modal.innerHTML = `
-        <div style="margin-bottom: 15px; text-align: center;">
-            <div style="font-size: 18px; font-weight: bold; color: var(--neon-cyan); margin-bottom: 5px;">
-                ${escapeHtml(nickname)}
+    // Если это свой никнейм - показываем специальное окно
+    if (isOwnMessage) {
+        modal.innerHTML = `
+            <div style="margin-bottom: 15px; text-align: center;">
+                <div style="font-size: 18px; font-weight: bold; color: var(--neon-cyan); margin-bottom: 5px;">
+                    ${escapeHtml(nickname)}
+                </div>
+                <div style="font-size: 12px; color: var(--text-gray);">
+                    Это Вы
+                </div>
             </div>
-            <div style="font-size: 12px; color: var(--text-gray);">
-                Выберите действие
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="closeWorldChatContextMenu()" style="
+                    padding: 12px;
+                    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+                    border: none;
+                    border-radius: 10px;
+                    color: white;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                ">
+                    Закрыть
+                </button>
             </div>
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <button onclick="worldChatPrivateMessage('${escapeHtml(nickname)}')" style="
-                padding: 12px;
-                background: linear-gradient(135deg, #FF006E, #C4005A);
-                border: none;
-                border-radius: 10px;
-                color: white;
-                font-size: 14px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s;
-            ">
-                💌 Приват чат
-            </button>
-            <button onclick="worldChatBlockUser('${escapeHtml(nickname)}', '${userToken}')" style="
-                padding: 12px;
-                background: linear-gradient(135deg, #555, #333);
-                border: none;
-                border-radius: 10px;
-                color: white;
-                font-size: 14px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s;
-            ">
-                🚫 В ЧС
-            </button>
-            <button onclick="worldChatReportUser('${escapeHtml(nickname)}', '${userToken}')" style="
-                padding: 12px;
-                background: linear-gradient(135deg, #FF4444, #CC0000);
-                border: none;
-                border-radius: 10px;
-                color: white;
-                font-size: 14px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s;
-            ">
-                ⚠️ Пожаловаться
-            </button>
-            <button onclick="closeWorldChatContextMenu()" style="
-                padding: 12px;
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 10px;
-                color: var(--text-light);
-                font-size: 14px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s;
-            ">
-                Отмена
-            </button>
-        </div>
-    `;
+        `;
+    } else {
+        // Обычное меню для других пользователей
+        modal.innerHTML = `
+            <div style="margin-bottom: 15px; text-align: center;">
+                <div style="font-size: 18px; font-weight: bold; color: var(--neon-cyan); margin-bottom: 5px;">
+                    ${escapeHtml(nickname)}
+                </div>
+                <div style="font-size: 12px; color: var(--text-gray);">
+                    Выберите действие
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="worldChatPrivateMessage('${escapeHtml(nickname)}')" style="
+                    padding: 12px;
+                    background: linear-gradient(135deg, #FF006E, #C4005A);
+                    border: none;
+                    border-radius: 10px;
+                    color: white;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                ">
+                    💌 Приват чат
+                </button>
+                <button onclick="worldChatBlockUser('${escapeHtml(nickname)}', '${userToken}')" style="
+                    padding: 12px;
+                    background: linear-gradient(135deg, #555, #333);
+                    border: none;
+                    border-radius: 10px;
+                    color: white;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                ">
+                    🚫 В ЧС
+                </button>
+                <button onclick="worldChatReportUser('${escapeHtml(nickname)}', '${userToken}')" style="
+                    padding: 12px;
+                    background: linear-gradient(135deg, #FF4444, #CC0000);
+                    border: none;
+                    border-radius: 10px;
+                    color: white;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                ">
+                    ⚠️ Пожаловаться
+                </button>
+                <button onclick="closeWorldChatContextMenu()" style="
+                    padding: 12px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    border-radius: 10px;
+                    color: var(--text-light);
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                ">
+                    Отмена
+                </button>
+            </div>
+        `;
+    }
     
     // Overlay для закрытия при клике вне меню
     const overlay = document.createElement('div');
