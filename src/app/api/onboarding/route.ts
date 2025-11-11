@@ -14,10 +14,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Обновляем статус согласия
+        // Обновляем статус согласия (все поля для совместимости)
         await sql`
             UPDATE users 
-            SET agreed_to_terms = ${agreed}, 
+            SET agreed_to_terms = ${agreed},
+                agreed_to_rules = ${agreed},
+                agreed_to_privacy = ${agreed},
+                agreements_accepted = ${agreed},
                 agreed_at = NOW()
             WHERE tg_id = ${tgId}
         `;
