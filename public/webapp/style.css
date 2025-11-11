@@ -5619,17 +5619,26 @@ h3 {
     border-left-color: #FF006E;
 }
 
+/* Заголовок сообщения (никнейм + время) */
+.world-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+    gap: 8px;
+}
+
 /* Никнейм в сообщении */
 .world-chat-nickname {
     font-weight: bold;
     font-size: 13px;
-    margin-bottom: 2px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 3px;
     user-select: none;
     -webkit-user-select: none;
+    flex-shrink: 1;
 }
 
 .world-chat-nickname:hover {
@@ -5712,8 +5721,8 @@ h3 {
 .world-chat-time {
     font-size: 10px;
     color: var(--text-gray);
-    text-align: right;
-    margin-top: 1px;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 /* Инпут для сообщений */

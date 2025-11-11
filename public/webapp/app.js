@@ -9915,16 +9915,18 @@ function renderWorldChatMessages(messages) {
         
         return `
             <div class="world-chat-message ${msg.type}-type">
-                <div class="world-chat-nickname ${nicknameClass}" 
-                     data-nickname="${escapeHtml(msg.nickname)}"
-                     data-user-token="${msg.user_token}"
-                     data-is-own="${isOwnMessage}"
-                     onclick="clickWorldChatNickname('${escapeHtml(msg.nickname)}')"
-                     oncontextmenu="return showWorldChatContextMenu(event, '${escapeHtml(msg.nickname)}', '${msg.user_token}', ${isOwnMessage})">
-                    ${escapeHtml(msg.nickname)}${proБадge}${targetInfo}
+                <div class="world-chat-header">
+                    <div class="world-chat-nickname ${nicknameClass}" 
+                         data-nickname="${escapeHtml(msg.nickname)}"
+                         data-user-token="${msg.user_token}"
+                         data-is-own="${isOwnMessage}"
+                         onclick="clickWorldChatNickname('${escapeHtml(msg.nickname)}')"
+                         oncontextmenu="return showWorldChatContextMenu(event, '${escapeHtml(msg.nickname)}', '${msg.user_token}', ${isOwnMessage})">
+                        ${escapeHtml(msg.nickname)}${proБадge}${targetInfo}
+                    </div>
+                    <div class="world-chat-time">${time}</div>
                 </div>
                 <div class="world-chat-text">${escapeHtml(censoredMessage)}</div>
-                <div class="world-chat-time">${time}</div>
             </div>
         `;
     }).join('');
