@@ -6836,7 +6836,10 @@ async function loadChatMessages(chatId, silent = false) {
             }
             
             return `
-                <div class="message ${messageClass}">
+                <div class="message ${messageClass}" 
+                     data-message-id="${msg.id}" 
+                     data-is-mine="${isMine}"
+                     ${isMine ? 'oncontextmenu="return showDeleteMessageMenu(event, ' + msg.id + ')"' : ''}>
                     ${nicknameHtml}
                     ${photoHtml}
                     ${messageTextHtml}
@@ -6845,6 +6848,9 @@ async function loadChatMessages(chatId, silent = false) {
             `;
         }).join('');
 
+        // Добавляем обработчики long press для своих сообщений
+        setupMessageLongPress();
+        
         // Прокручиваем вниз если это первая загрузка или были внизу
         if (!silent || wasAtBottom) {
             // Сначала пробуем немедленно
@@ -9745,6 +9751,60 @@ async function loadWorldChatMessages(silent = false) {
 // Кэш последних ID сообщений для предотвращения моргания
 let lastWorldChatMessageIds = [];
 
+// Функция цензуры матерных слов
+function censorMessage(text) {
+    if (!text) return text;
+    
+    // Список матерных слов и их вариаций
+    const badWords = [
+        // Основные маты
+        'блять', 'бля', 'блядь', 'блят', 'бляд',
+        'хуй', 'хуя', 'хуе', 'хую', 'хуи', 'хер',
+        'пизда', 'пизд', 'пиздец', 'пизде', 'пизду',
+        'ебать', 'ебал', 'ебан', 'еба', 'ебу', 'ебёт', 'ебёшь', 'ебля',
+        'сука', 'суки', 'суку', 'сук',
+        'гандон', 'гандоны', 'гондон',
+        'мудак', 'мудила', 'мудаки', 'мудло',
+        'долбоеб', 'долбоёб', 'дибил', 'дебил',
+        'уебок', 'уёбок', 'ублюдок', 'ублюдки',
+        'говно', 'говна', 'гавно',
+        'жопа', 'жопы', 'жопу', 'жоп',
+        'шлюха', 'шлюхи', 'шлюху',
+        'петух', 'петухи', 'пидор', 'пидр', 'педик',
+        'чмо', 'чмошник',
+        // Латиница
+        'fuck', 'shit', 'bitch', 'ass', 'dick', 'cock', 'pussy',
+        // Вариации с заменой букв
+        'б л я', 'б л я т ь', 'х у й', 'п и з д а',
+        'сцука', 'сучка', 'сучки',
+        // Казахские маты
+        'қарақшы', 'жесір', 'көтек'
+    ];
+    
+    let censored = text;
+    
+    // Заменяем каждое матерное слово на звездочки
+    badWords.forEach(word => {
+        // Создаем регулярное выражение для поиска слова (игнорируем регистр)
+        const regex = new RegExp(word.split('').map(char => {
+            // Экранируем спецсимволы
+            const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Добавляем возможные вариации с пробелами/точками между буквами
+            return escaped + '[\\s\\.\\-_]*';
+        }).join(''), 'gi');
+        
+        censored = censored.replace(regex, (match) => {
+            return '*'.repeat(Math.max(4, match.length));
+        });
+        
+        // Также простая замена без вариаций
+        const simpleRegex = new RegExp(`\\b${word}\\b`, 'gi');
+        censored = censored.replace(simpleRegex, '****');
+    });
+    
+    return censored;
+}
+
 // Отрисовка сообщений
 function renderWorldChatMessages(messages) {
     const container = document.getElementById('worldChatMessages');
@@ -9791,6 +9851,9 @@ function renderWorldChatMessages(messages) {
         const currentUserToken = localStorage.getItem('user_token');
         const isOwnMessage = msg.user_token === currentUserToken;
         
+        // Применяем цензуру к сообщению
+        const censoredMessage = censorMessage(msg.message);
+        
         return `
             <div class="world-chat-message ${msg.type}-type">
                 <div class="world-chat-nickname ${nicknameClass}" 
@@ -9801,7 +9864,7 @@ function renderWorldChatMessages(messages) {
                      oncontextmenu="return showWorldChatContextMenu(event, '${escapeHtml(msg.nickname)}', '${msg.user_token}', ${isOwnMessage})">
                     ${escapeHtml(msg.nickname)}${proБадge}${targetInfo}
                 </div>
-                <div class="world-chat-text">${escapeHtml(msg.message)}</div>
+                <div class="world-chat-text">${escapeHtml(censoredMessage)}</div>
                 <div class="world-chat-time">${time}</div>
             </div>
         `;
@@ -10115,6 +10178,190 @@ function closeWorldChatContextMenu() {
     if (overlay) overlay.remove();
 }
 
+// Меню для удаления сообщения
+function showDeleteMessageMenu(event, messageId) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log('Меню удаления для сообщения:', messageId);
+    
+    // Создаём модальное окно
+    const modal = document.createElement('div');
+    modal.className = 'delete-message-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(20, 20, 30, 0.98);
+        border: 2px solid var(--neon-red);
+        border-radius: 16px;
+        padding: 20px;
+        z-index: 10000;
+        min-width: 280px;
+        animation: fadeIn 0.2s ease;
+    `;
+    
+    modal.innerHTML = `
+        <div style="margin-bottom: 15px; text-align: center;">
+            <div style="font-size: 18px; font-weight: bold; color: var(--neon-red); margin-bottom: 5px;">
+                Удалить сообщение?
+            </div>
+            <div style="font-size: 12px; color: var(--text-gray);">
+                Сообщение будет удалено у обоих пользователей
+            </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button onclick="deleteMessage(${messageId})" style="
+                padding: 12px;
+                background: linear-gradient(135deg, #ff4444, #cc0000);
+                border: none;
+                border-radius: 10px;
+                color: white;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            ">
+                🗑️ Удалить сообщение
+            </button>
+            <button onclick="closeDeleteMessageMenu()" style="
+                padding: 12px;
+                background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+                border: none;
+                border-radius: 10px;
+                color: white;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            ">
+                Отмена
+            </button>
+        </div>
+    `;
+    
+    // Оверлей
+    const overlay = document.createElement('div');
+    overlay.className = 'delete-message-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+        animation: fadeIn 0.2s ease;
+    `;
+    overlay.onclick = closeDeleteMessageMenu;
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    
+    return false;
+}
+
+// Закрыть меню удаления
+function closeDeleteMessageMenu() {
+    const menu = document.querySelector('.delete-message-modal');
+    const overlay = document.querySelector('.delete-message-overlay');
+    if (menu) menu.remove();
+    if (overlay) overlay.remove();
+}
+
+// Удалить сообщение
+async function deleteMessage(messageId) {
+    try {
+        const userToken = localStorage.getItem('user_token');
+        if (!userToken) {
+            tg.showAlert('⚠️ Ошибка авторизации');
+            return;
+        }
+        
+        console.log('Удаление сообщения:', messageId);
+        
+        const response = await fetch('/api/neon-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'delete-message',
+                messageId: messageId,
+                userToken: userToken
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            tg.showAlert('❌ ' + data.error);
+            return;
+        }
+        
+        console.log('Сообщение удалено');
+        closeDeleteMessageMenu();
+        
+        // Перезагружаем сообщения
+        const currentChatId = window.currentChatId;
+        if (currentChatId) {
+            await loadChatMessages(currentChatId);
+        }
+        
+        tg.showAlert('✅ Сообщение удалено');
+        
+    } catch (error) {
+        console.error('Ошибка удаления:', error);
+        tg.showAlert('❌ Ошибка при удалении сообщения');
+    }
+}
+
+// Настройка long press для сообщений
+function setupMessageLongPress() {
+    const messages = document.querySelectorAll('.message[data-is-mine="true"]');
+    
+    messages.forEach(msg => {
+        let pressTimer = null;
+        let touchMoved = false;
+        
+        const startLongPress = (e) => {
+            touchMoved = false;
+            const messageId = msg.getAttribute('data-message-id');
+            
+            pressTimer = setTimeout(() => {
+                if (!touchMoved && messageId) {
+                    // Вибрация для тактильной обратной связи
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    }
+                    showDeleteMessageMenu(e, messageId);
+                }
+            }, 500);
+        };
+        
+        const cancelLongPress = () => {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
+        
+        const handleTouchMove = () => {
+            touchMoved = true;
+            cancelLongPress();
+        };
+        
+        // Touch events для мобильных
+        msg.addEventListener('touchstart', startLongPress, { passive: true });
+        msg.addEventListener('touchend', cancelLongPress, { passive: true });
+        msg.addEventListener('touchmove', handleTouchMove, { passive: true });
+        
+        // Mouse events для десктопа (дополнительно к oncontextmenu)
+        msg.addEventListener('mousedown', startLongPress);
+        msg.addEventListener('mouseup', cancelLongPress);
+        msg.addEventListener('mouseleave', cancelLongPress);
+    });
+}
+
 // Приват чат через контекстное меню
 async function worldChatPrivateMessage(nickname, userToken) {
     closeWorldChatContextMenu();
@@ -10196,7 +10443,7 @@ async function createWorldChatPrivateChat(nickname, targetUserToken, senderUserT
             // Чат уже существует
             console.log('Чат уже существует:', checkData.data);
             
-            // Отправляем сообщение в существующий чат
+            // Отправляем сообщение в существующий чат через send-message
             const sendResponse = await fetch('/api/neon-messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -10204,9 +10451,10 @@ async function createWorldChatPrivateChat(nickname, targetUserToken, senderUserT
                     action: 'send-message',
                     params: {
                         chatId: checkData.data.id,
-                        senderToken: senderUserToken,
-                        message: message,
-                        senderNickname: localStorage.getItem('userNickname') || 'Аноним'
+                        senderId: senderUserToken,
+                        messageText: message,
+                        senderNickname: localStorage.getItem('userNickname') || 'Аноним',
+                        skipNotification: false
                     }
                 })
             });
@@ -10229,7 +10477,8 @@ async function createWorldChatPrivateChat(nickname, targetUserToken, senderUserT
                         user1_token: senderUserToken,
                         user2_token: targetUserToken,
                         message: message,
-                        senderNickname: localStorage.getItem('userNickname') || 'Аноним'
+                        senderNickname: localStorage.getItem('userNickname') || 'Аноним',
+                        senderToken: senderUserToken // Указываем явно кто отправитель
                     }
                 })
             });

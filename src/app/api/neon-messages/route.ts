@@ -348,6 +348,40 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Удалить сообщение (только свое)
+      case 'delete-message': {
+        const { messageId, userToken } = body;
+        
+        console.log('[DELETE-MESSAGE] messageId:', messageId, 'userToken:', userToken?.substring(0, 16) + '...');
+        
+        // Проверяем что сообщение существует и принадлежит пользователю
+        const checkResult = await sql`
+          SELECT id, sender_token, chat_id 
+          FROM messages 
+          WHERE id = ${messageId} AND sender_token = ${userToken}
+        `;
+        
+        if (checkResult.rows.length === 0) {
+          return NextResponse.json(
+            { data: null, error: 'Сообщение не найдено или вы не можете его удалить' },
+            { status: 403 }
+          );
+        }
+        
+        // Удаляем сообщение
+        await sql`
+          DELETE FROM messages 
+          WHERE id = ${messageId} AND sender_token = ${userToken}
+        `;
+        
+        console.log('[DELETE-MESSAGE] Сообщение удалено:', messageId);
+        
+        return NextResponse.json({ 
+          data: { success: true }, 
+          error: null 
+        });
+      }
+
       default:
         return NextResponse.json(
           { data: null, error: { message: 'Unknown action' } },

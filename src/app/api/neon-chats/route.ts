@@ -285,7 +285,7 @@ export async function POST(request: NextRequest) {
 
       case 'create-direct': {
         // Создание прямого чата без привязки к объявлению (из Мир чата)
-        const { user1_token, user2_token, message, senderNickname } = params;
+        const { user1_token, user2_token, message, senderNickname, senderToken } = params;
         
         // Создаём чат без ad_id (NULL)
         const chatResult = await sql`
@@ -296,11 +296,12 @@ export async function POST(request: NextRequest) {
         
         const chat = chatResult.rows[0];
         
-        // Отправляем первое сообщение
+        // Отправляем первое сообщение (используем правильный sender_token)
         if (message) {
+          const actualSender = senderToken || user1_token; // Используем senderToken если передан
           await sql`
-            INSERT INTO messages (chat_id, sender_token, sender_nickname, message, read)
-            VALUES (${chat.id}, ${user1_token}, ${senderNickname}, ${message}, false)
+            INSERT INTO messages (chat_id, sender_token, sender_nickname, message, read, created_at)
+            VALUES (${chat.id}, ${actualSender}, ${senderNickname}, ${message}, false, NOW())
           `;
         }
         
