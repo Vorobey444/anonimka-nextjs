@@ -902,36 +902,39 @@
                 </div>
             </div>
 
-            <!-- Вкладки над полем ввода -->
-            <div class="world-chat-tabs">
-                <button class="world-chat-tab active" onclick="switchWorldChatTab('world')" id="worldTab">Мир</button>
-                <button class="world-chat-tab" onclick="switchWorldChatTab('city')" id="cityTab">Город</button>
-                <button class="world-chat-tab" onclick="switchWorldChatTab('private')" id="privateTab">ЛС</button>
-            </div>
-
-            <!-- Инпут для сообщений -->
-            <div class="world-chat-input-container">
-                <div class="world-chat-input-wrapper">
-                    <span class="world-chat-prefix" id="worldChatPrefix">@</span>
-                    <input 
-                        type="text" 
-                        id="worldChatInput" 
-                        class="world-chat-input" 
-                        placeholder="Введите сообщение..." 
-                        maxlength="50"
-                        onkeypress="if(event.key === 'Enter') sendWorldChatMessage()">
-                    <div class="world-chat-char-counter">
-                        <span id="worldChatCharCount">0</span>/50
-                    </div>
+            <!-- Фиксированный футер с вкладками и инпутом -->
+            <div class="world-chat-footer">
+                <!-- Вкладки над полем ввода -->
+                <div class="world-chat-tabs">
+                    <button class="world-chat-tab active" onclick="switchWorldChatTab('world')" id="worldTab">Мир</button>
+                    <button class="world-chat-tab" onclick="switchWorldChatTab('city')" id="cityTab">Город</button>
+                    <button class="world-chat-tab" onclick="switchWorldChatTab('private')" id="privateTab">ЛС</button>
                 </div>
-                <button class="world-chat-send-btn" onclick="sendWorldChatMessage()">
-                    <span>📤</span>
-                </button>
-            </div>
 
-            <!-- Таймаут уведомление -->
-            <div id="worldChatTimeout" class="world-chat-timeout" style="display: none;">
-                ⏱️ Попробуйте через <span id="timeoutSeconds">30</span> сек
+                <!-- Инпут для сообщений -->
+                <div class="world-chat-input-container">
+                    <div class="world-chat-input-wrapper">
+                        <span class="world-chat-prefix" id="worldChatPrefix">@</span>
+                        <input 
+                            type="text" 
+                            id="worldChatInput" 
+                            class="world-chat-input" 
+                            placeholder="Введите сообщение..." 
+                            maxlength="50"
+                            onkeypress="if(event.key === 'Enter') sendWorldChatMessage()">
+                        <div class="world-chat-char-counter">
+                            <span id="worldChatCharCount">0</span>/50
+                        </div>
+                    </div>
+                    <button class="world-chat-send-btn" onclick="sendWorldChatMessage()">
+                        <span>📤</span>
+                    </button>
+                </div>
+
+                <!-- Таймаут уведомление -->
+                <div id="worldChatTimeout" class="world-chat-timeout" style="display: none;">
+                    ⏱️ Попробуйте через <span id="timeoutSeconds">30</span> сек
+                </div>
             </div>
         </div>
 

@@ -9707,6 +9707,9 @@ async function loadWorldChatMessages(silent = false) {
     }
 }
 
+// Кэш последних ID сообщений для предотвращения моргания
+let lastWorldChatMessageIds = [];
+
 // Отрисовка сообщений
 function renderWorldChatMessages(messages) {
     const container = document.getElementById('worldChatMessages');
@@ -9719,8 +9722,20 @@ function renderWorldChatMessages(messages) {
                 <p style="font-size: 12px; color: var(--text-gray);">Будьте первым!</p>
             </div>
         `;
+        lastWorldChatMessageIds = [];
         return;
     }
+    
+    // Проверяем, изменились ли сообщения
+    const currentIds = messages.map(m => m.id);
+    const idsChanged = JSON.stringify(currentIds) !== JSON.stringify(lastWorldChatMessageIds);
+    
+    // Если сообщения не изменились, не перерисовываем
+    if (!idsChanged) {
+        return;
+    }
+    
+    lastWorldChatMessageIds = currentIds;
     
     // Сохраняем позицию прокрутки
     const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
@@ -9750,7 +9765,7 @@ function renderWorldChatMessages(messages) {
         `;
     }).join('');
     
-    // Прокручиваем вниз только если были внизу (убираем моргание при прокрутке вверх)
+    // Прокручиваем вниз только если были внизу
     if (wasAtBottom) {
         container.scrollTop = container.scrollHeight;
     }

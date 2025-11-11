@@ -5515,12 +5515,23 @@ h3 {
     text-overflow: ellipsis;
 }
 
+/* Фиксированный футер Мир чата */
+.world-chat-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 100;
+}
+
 /* Вкладки Мир чата - компактные над полем ввода */
 .world-chat-tabs {
     display: flex;
     gap: 6px;
     padding: 8px 12px 4px 12px;
-    background: rgba(0, 0, 0, 0.4);
+    background: transparent;
 }
 
 .world-chat-tab {
@@ -5553,6 +5564,7 @@ h3 {
     flex: 1;
     overflow-y: auto;
     padding: 10px;
+    padding-bottom: 140px; /* Отступ для фиксированного футера */
     background: rgba(0, 0, 0, 0.2);
 }
 
@@ -5659,8 +5671,7 @@ h3 {
     display: flex;
     gap: 8px;
     padding: 8px 10px;
-    background: rgba(0, 0, 0, 0.4);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
 }
 
 .world-chat-input-wrapper {
@@ -5730,17 +5741,18 @@ h3 {
 
 /* Таймаут уведомление */
 .world-chat-timeout {
-    position: fixed;
-    bottom: 70px;
+    position: absolute;
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
+    margin-bottom: 8px;
     background: rgba(255, 0, 0, 0.9);
     color: white;
     padding: 8px 16px;
     border-radius: 18px;
     font-size: 13px;
     font-weight: bold;
-    z-index: 1000;
+    z-index: 1001;
     animation: pulse 1s ease-in-out infinite;
     white-space: nowrap;
 }
@@ -5770,6 +5782,7 @@ h3 {
     
     .world-chat-messages-container {
         padding: 8px;
+        padding-bottom: 130px; /* Уменьшенный отступ для узких экранов */
     }
     
     .world-chat-message {
