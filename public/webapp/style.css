@@ -4046,13 +4046,15 @@ h3 {
     display: block;
     max-width: 200px;
     width: 100%;
-    height: 200px;
+    min-height: 150px;
+    max-height: 300px;
+    aspect-ratio: auto;
     border-radius: 12px;
     margin: 0 0 8px 0;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    background-size: cover;
+    background-size: contain; /* Показываем полное фото без обрезки */
     background-position: center;
     background-repeat: no-repeat;
     user-select: none;
@@ -4953,6 +4955,28 @@ h3 {
     }
 }
 
+/* Защищенное модальное изображение через DIV с background */
+.photo-modal-image-secure {
+    max-width: 100%;
+    max-height: 90vh;
+    min-width: 300px;
+    min-height: 300px;
+    width: 80vw;
+    height: 80vh;
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(0, 217, 255, 0.5);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Старый стиль для совместимости */
 .photo-modal-content img {
     max-width: 100%;
     max-height: 90vh;

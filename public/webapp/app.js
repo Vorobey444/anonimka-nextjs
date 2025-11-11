@@ -7148,13 +7148,15 @@ function showPhotoModal(photoUrl) {
     const modal = document.getElementById('photoModal');
     const modalImage = document.getElementById('photoModalImage');
     
-    // Применяем защиту от скачивания и копирования
-    modalImage.src = photoUrl;
-    modalImage.oncontextmenu = () => false; // Запрет правой кнопки мыши
-    modalImage.draggable = false; // Запрет drag & drop
-    modalImage.style.userSelect = 'none'; // Запрет выделения
+    // Используем DIV с background-image вместо IMG (защита от long-press)
+    modalImage.style.backgroundImage = `url('${photoUrl}')`;
+    
+    // Дополнительная защита
+    modalImage.oncontextmenu = () => false;
+    modalImage.style.userSelect = 'none';
     modalImage.style.webkitUserSelect = 'none';
     modalImage.style.mozUserSelect = 'none';
+    modalImage.style.webkitTouchCallout = 'none';
     
     modal.classList.add('active');
     modal.style.display = 'flex';
@@ -7170,7 +7172,7 @@ function closePhotoModal() {
     
     modal.classList.remove('active');
     modal.style.display = 'none';
-    modalImage.src = '';
+    modalImage.style.backgroundImage = '';
     modal.oncontextmenu = null;
 }
 
