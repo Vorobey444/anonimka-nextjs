@@ -10197,13 +10197,13 @@ function renderWorldChatMessages(messages) {
     }).join('');
     
     // ВСЕГДА прокручиваем вниз к новым сообщениям
-    setTimeout(() => {
-        // Прокручиваем РОДИТЕЛЬСКИЙ контейнер, у которого есть overflow-y: auto
+    // Используем requestAnimationFrame для гарантии что DOM обновился
+    requestAnimationFrame(() => {
         const scrollContainer = container.parentElement;
         if (scrollContainer) {
             scrollContainer.scrollTop = scrollContainer.scrollHeight;
         }
-    }, 50);
+    });
     
     // Добавляем обработчики long press для никнеймов
     setupLongPressHandlers();

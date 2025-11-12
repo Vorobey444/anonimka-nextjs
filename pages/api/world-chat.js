@@ -88,7 +88,17 @@ async function handleNewFormat(body, res) {
     });
   }
 
-  if (message.length > 50) {
+  // Добавляем префикс автоматически если его нет
+  let finalMessage = message;
+  if (!message.startsWith('@') && !message.startsWith('&') && !message.startsWith('/')) {
+    if (type === 'world') {
+      finalMessage = `@${message}`;
+    } else if (type === 'city') {
+      finalMessage = `&${message}`;
+    }
+  }
+
+  if (finalMessage.length > 50) {
     return res.status(400).json({
       success: false,
       error: 'Сообщение слишком длинное (макс. 50 символов)'
@@ -97,7 +107,7 @@ async function handleNewFormat(body, res) {
 
   const result = await sql`
     INSERT INTO world_chat_messages (user_token, nickname, message, type, is_bot)
-    VALUES (${user_token}, ${nickname}, ${message}, ${type}, ${is_bot})
+    VALUES (${user_token}, ${nickname}, ${finalMessage}, ${type}, ${is_bot})
     RETURNING 
       id,
       user_token as "userToken",
