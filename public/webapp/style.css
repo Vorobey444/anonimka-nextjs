@@ -5825,7 +5825,7 @@ h3 {
     overflow-y: auto;
     overflow-x: hidden;
     padding: 10px;
-    padding-bottom: 100px; /* Отступ снизу чтобы видно было последнее сообщение */
+    padding-bottom: 85px; /* Минимальный отступ снизу для вкладок и инпута */
     background: rgba(0, 0, 0, 0.2);
     scroll-behavior: smooth;
 }
@@ -6073,7 +6073,7 @@ h3 {
     
     .world-chat-messages-container {
         padding: 8px;
-        padding-bottom: 110px; /* Больше места для узких экранов */
+        padding-bottom: 90px; /* Оптимальное пространство для узких экранов */
     }
     
     .world-chat-message {

@@ -10306,9 +10306,9 @@ async function sendWorldChatMessage() {
     // Добавляем префикс
     message = prefix + message;
     
-    // Проверяем длину (50 символов без префикса)
-    if (message.length - 1 > 50) {
-        tg.showAlert('Максимум 50 символов');
+    // Проверяем длину (120 символов без префикса)
+    if (message.length - 1 > 120) {
+        tg.showAlert('Максимум 120 символов');
         return;
     }
     

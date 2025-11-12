@@ -91,10 +91,10 @@ async function handleNewFormat(body, res) {
   // Бот сам добавляет префикс, не дублируем его
   const finalMessage = message;
 
-  if (finalMessage.length > 50) {
+  if (finalMessage.length > 120) {
     return res.status(400).json({
       success: false,
-      error: 'Сообщение слишком длинное (макс. 50 символов)'
+      error: 'Сообщение слишком длинное (макс. 120 символов)'
     });
   }
 
@@ -211,10 +211,10 @@ async function getMessages(params, res) {
 async function sendMessage(params, res) {
   const { userToken, nickname, message, isPremium, city } = params;
 
-  if (!message || message.length > 50) {
+  if (!message || message.length > 120) {
     return res.status(400).json({
       success: false,
-      error: 'Сообщение должно быть от 1 до 50 символов'
+      error: 'Сообщение должно быть от 1 до 120 символов'
     });
   }
 
