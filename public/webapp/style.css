@@ -6226,3 +6226,98 @@ h3 {
         font-size: 1.3rem;
     }
 }
+
+
+/* ===== STICKY NOTE BETA NOTICE ===== */
+.sticky-note {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 220px;
+    background: linear-gradient(135deg, #FFF740 0%, #FFE135 100%);
+    padding: 15px 12px 12px 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transform: rotate(-2deg);
+    transition: transform 0.3s ease;
+    z-index: 999;
+    animation: flutter 3s ease-in-out infinite;
+}
+
+.sticky-note:hover {
+    transform: rotate(0deg) scale(1.02);
+    animation: none;
+}
+
+.sticky-note-tape {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 2px;
+}
+
+.sticky-note-content {
+    position: relative;
+}
+
+.sticky-note-text {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #333;
+    font-weight: 500;
+}
+
+.sticky-note-link {
+    display: inline-block;
+    font-size: 11px;
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.sticky-note-link:hover {
+    color: #004499;
+    text-decoration: underline;
+}
+
+@keyframes flutter {
+    0%, 100% {
+        transform: rotate(-2deg);
+    }
+    25% {
+        transform: rotate(-1deg) translateY(-1px);
+    }
+    50% {
+        transform: rotate(-2.5deg);
+    }
+    75% {
+        transform: rotate(-1.5deg) translateY(-0.5px);
+    }
+}
+
+@media (max-width: 600px) {
+    .sticky-note {
+        width: 180px;
+        padding: 12px 10px 10px 10px;
+        bottom: 15px;
+        right: 15px;
+        font-size: 11px;
+    }
+    
+    .sticky-note-text {
+        font-size: 10px;
+        margin-bottom: 6px;
+    }
+    
+    .sticky-note-link {
+        font-size: 10px;
+    }
+}
