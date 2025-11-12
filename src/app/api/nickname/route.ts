@@ -120,13 +120,36 @@ export async function POST(request: NextRequest) {
 
     const existingUser = userResult.rows[0];
     
-    // Проверяем PRO статус
+    // Проверяем PRO статус из users
     let isPremium = existingUser?.is_premium || false;
+    let premiumUntil = existingUser?.premium_until || null;
+    
+    // Дополнительно проверяем premium_tokens (для веб-пользователей)
+    // Ищем user_token через ads таблицу
+    const tokenResult = await sql`
+      SELECT user_token FROM ads WHERE tg_id = ${userId} ORDER BY created_at DESC LIMIT 1
+    `;
+    
+    if (tokenResult.rows.length > 0) {
+      const userToken = tokenResult.rows[0].user_token;
+      const premiumTokenResult = await sql`
+        SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${userToken} LIMIT 1
+      `;
+      
+      if (premiumTokenResult.rows.length > 0) {
+        const tokenPremium = premiumTokenResult.rows[0];
+        // Приоритет premium_tokens над users
+        if (tokenPremium.is_premium) {
+          isPremium = true;
+          premiumUntil = tokenPremium.premium_until;
+        }
+      }
+    }
     
     // Автоматически отключаем PRO если срок истек
-    if (isPremium && existingUser?.premium_until) {
+    if (isPremium && premiumUntil) {
       const now = new Date();
-      const until = new Date(existingUser.premium_until);
+      const until = new Date(premiumUntil);
       if (now > until) {
         isPremium = false;
       }
