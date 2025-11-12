@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
               SELECT COUNT(*)::int AS c
               FROM ads
               WHERE user_token = ${userId}
-                AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Almaty') = ${currentAlmatyDate}::date
+                AND (created_at AT TIME ZONE 'Asia/Almaty')::date = ${currentAlmatyDate}::date
             `;
             const used = countRes.rows[0]?.c ?? 0;
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
               SELECT COUNT(*)::int AS c
               FROM ads
               WHERE user_token = ${userId}
-                AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Almaty') = ${currentAlmatyDate}::date
+                AND (created_at AT TIME ZONE 'Asia/Almaty')::date = ${currentAlmatyDate}::date
             `;
             const used = countRes.rows[0]?.c ?? 0;
 
