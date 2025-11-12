@@ -10040,29 +10040,15 @@ async function switchWorldChatTab(tab) {
 // Загрузить сообщения
 async function loadWorldChatMessages(silent = false) {
     try {
-        const userToken = localStorage.getItem('user_token');
-        const userCity = localStorage.getItem('userCity') || 'Алматы';
-        
-        const response = await fetch('/api/world-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'get-messages',
-                params: {
-                    tab: currentWorldChatTab,
-                    userToken: userToken,
-                    userCity: userCity
-                }
-            })
-        });
+        const response = await fetch(`/api/world-chat?type=world&limit=100`);
         
         const data = await response.json();
         
         if (data.success) {
             if (!silent) {
-                console.log(`✅ Загружено ${data.data.length} сообщений для вкладки ${currentWorldChatTab}`);
+                console.log(`✅ Загружено ${data.messages.length} сообщений`);
             }
-            renderWorldChatMessages(data.data);
+            renderWorldChatMessages(data.messages);
         } else {
             console.error('❌ Ошибка загрузки сообщений:', data.error);
         }
@@ -10159,20 +10145,21 @@ function renderWorldChatMessages(messages) {
     const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
     
     container.innerHTML = messages.map(msg => {
-        const isPremium = msg.is_premium;
+        const isPremium = msg.isPremium || msg.is_premium || false;
         const nicknameClass = `${msg.type}-type${isPremium ? ' premium' : ''}`;
         const proБадge = isPremium ? '<span class="world-chat-pro-badge">⭐</span>' : '';
-        const time = formatMessageTime(msg.created_at);
+        const time = formatMessageTime(msg.createdAt || msg.created_at);
         
         // Для личных сообщений показываем "кому"
         let targetInfo = '';
-        if (msg.type === 'private' && msg.target_nickname) {
-            targetInfo = ` → ${msg.target_nickname}`;
+        if (msg.type === 'private' && (msg.targetNickname || msg.target_nickname)) {
+            targetInfo = ` → ${msg.targetNickname || msg.target_nickname}`;
         }
         
         // Проверяем, это свой никнейм или чужой
         const currentUserToken = localStorage.getItem('user_token');
-        const isOwnMessage = msg.user_token === currentUserToken;
+        const userToken = msg.userToken || msg.user_token;
+        const isOwnMessage = userToken === currentUserToken;
         
         // Применяем цензуру к сообщению
         const censoredMessage = censorMessage(msg.message);
@@ -10182,10 +10169,10 @@ function renderWorldChatMessages(messages) {
                 <div class="world-chat-header">
                     <div class="world-chat-nickname ${nicknameClass}" 
                          data-nickname="${escapeHtml(msg.nickname)}"
-                         data-user-token="${msg.user_token}"
+                         data-user-token="${userToken}"
                          data-is-own="${isOwnMessage}"
                          onclick="clickWorldChatNickname('${escapeHtml(msg.nickname)}')"
-                         oncontextmenu="return showWorldChatContextMenu(event, '${escapeHtml(msg.nickname)}', '${msg.user_token}', ${isOwnMessage})">
+                         oncontextmenu="return showWorldChatContextMenu(event, '${escapeHtml(msg.nickname)}', '${userToken}', ${isOwnMessage})">
                         ${escapeHtml(msg.nickname)}${proБадge}${targetInfo}
                     </div>
                     <div class="world-chat-time">${time}</div>
@@ -10271,21 +10258,16 @@ async function sendWorldChatMessage() {
     try {
         const userToken = localStorage.getItem('user_token');
         const nickname = localStorage.getItem('userNickname') || 'Аноним';
-        const isPremium = userPremiumStatus.isPremium || false;
-        const city = localStorage.getItem('userCity') || 'Алматы';
         
         const response = await fetch('/api/world-chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'send-message',
-                params: {
-                    userToken: userToken,
-                    nickname: nickname,
-                    message: message,
-                    isPremium: isPremium,
-                    city: city
-                }
+                user_token: userToken,
+                nickname: nickname,
+                message: message,
+                type: 'world',
+                is_bot: false
             })
         });
         
@@ -10300,13 +10282,7 @@ async function sendWorldChatMessage() {
             await loadWorldChatMessages();
         } else {
             console.error('❌ Ошибка отправки:', data.error);
-            
-            // Если это таймаут - показываем alert с информацией
-            if (response.status === 429) {
-                tg.showAlert('Таймаут на отправку 30 сек. Подождите и попробуйте снова.');
-            } else {
-                tg.showAlert(data.error || 'Ошибка отправки сообщения');
-            }
+            tg.showAlert(data.error || 'Ошибка отправки сообщения');
         }
     } catch (error) {
         console.error('Ошибка отправки сообщения:', error);
