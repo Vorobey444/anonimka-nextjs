@@ -2781,6 +2781,7 @@ async function submitAd() {
             currentStep = 1;
             // Финальное обновление статуса перед показом главного меню
             await loadPremiumStatus();
+            updateAdLimitBadge(); // Обновляем счётчик анкет
             showScreen('mainMenu');
         });
 
