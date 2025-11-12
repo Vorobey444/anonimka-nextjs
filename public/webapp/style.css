@@ -3773,13 +3773,14 @@ h3 {
 .chat-header {
     background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(16, 16, 32, 0.95));
     border-bottom: 2px solid var(--border-glow);
-    padding: 10px 15px;
+    padding: 8px 12px;
     position: sticky;
     top: 0;
     z-index: 100;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    min-height: auto;
 }
 
 .header h2 {
@@ -3854,13 +3855,13 @@ h3 {
     background: transparent;
     border: none;
     color: var(--neon-cyan);
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    padding: 5px 10px;
+    padding: 4px 8px;
     transition: all 0.3s ease;
     margin-left: auto;
-    margin-right: 5px;
+    margin-right: 4px;
 }
 
 .chat-font-size-btn:hover {
@@ -3872,9 +3873,9 @@ h3 {
     background: transparent;
     border: none;
     color: var(--neon-cyan);
-    font-size: 24px;
+    font-size: 20px;
     cursor: pointer;
-    padding: 5px 10px;
+    padding: 4px 8px;
     transition: all 0.3s ease;
 }
 
@@ -3886,7 +3887,7 @@ h3 {
 .chat-menu-dropdown {
     position: absolute;
     right: 15px;
-    top: 70px;
+    top: 50px;
     background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(16, 16, 32, 0.98));
     border: 1px solid var(--border-glow);
     border-radius: 8px;
@@ -4037,16 +4038,16 @@ h3 {
 }
 
 .chat-info h2 {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     margin: 0;
-    line-height: 1.2;
+    line-height: 1.1;
 }
 
 .chat-subtitle {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--neon-cyan);
-    margin-top: 2px;
-    line-height: 1.2;
+    margin-top: 1px;
+    line-height: 1.1;
 }
 
 .view-ad-link {
