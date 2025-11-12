@@ -5819,15 +5819,19 @@ h3 {
 .world-chat-messages-container {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 10px;
-    padding-bottom: 140px; /* Отступ для фиксированного футера */
+    padding-bottom: 160px; /* Увеличенный отступ для фиксированного футера */
     background: rgba(0, 0, 0, 0.2);
+    height: 100%;
+    position: relative;
 }
 
 .world-chat-messages {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-height: 100%;
 }
 
 /* Сообщение в чате */
