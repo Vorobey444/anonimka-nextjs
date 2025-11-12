@@ -5819,13 +5819,13 @@ h3 {
 .world-chat-messages-container {
     position: fixed;
     top: 60px; /* Высота header */
-    bottom: 80px; /* Высота футера (вкладки + инпут) */
+    bottom: 0; /* До самого низа */
     left: 0;
     right: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 10px;
-    padding-bottom: 10px;
+    padding-bottom: 100px; /* Отступ снизу чтобы видно было последнее сообщение */
     background: rgba(0, 0, 0, 0.2);
     scroll-behavior: smooth;
 }
@@ -6068,7 +6068,7 @@ h3 {
     
     .world-chat-messages-container {
         padding: 8px;
-        padding-bottom: 130px; /* Уменьшенный отступ для узких экранов */
+        padding-bottom: 110px; /* Больше места для узких экранов */
     }
     
     .world-chat-message {
