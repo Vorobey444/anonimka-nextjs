@@ -3771,17 +3771,17 @@ h3 {
 .chat-header {
     background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(16, 16, 32, 0.95));
     border-bottom: 2px solid var(--border-glow);
-    padding: 15px;
+    padding: 10px 15px;
     position: sticky;
     top: 0;
     z-index: 100;
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
 
 .header h2 {
-    margin-left: 45px;
+    margin-left: 0;
     font-size: 1rem;
 }
 
@@ -4031,18 +4031,20 @@ h3 {
 .chat-info {
     flex: 1;
     text-align: center;
-    margin-left: 40px; /* Сместили правее от кнопки "Назад" */
+    margin-left: 0;
 }
 
 .chat-info h2 {
-    font-size: 1rem; /* Уменьшили размер шрифта */
+    font-size: 0.95rem;
     margin: 0;
+    line-height: 1.2;
 }
 
 .chat-subtitle {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: var(--neon-cyan);
-    margin-top: 5px;
+    margin-top: 2px;
+    line-height: 1.2;
 }
 
 .view-ad-link {
