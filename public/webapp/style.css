@@ -507,6 +507,8 @@ h3 {
     gap: 8px;
     max-width: 260px;
     margin: 5px auto 0;
+    position: relative;
+    padding-bottom: 80px;
 }
 
 /* Форма */
@@ -1402,9 +1404,8 @@ h3 {
 .location-setup-container {
     max-width: 500px;
     margin: 0 auto;
-    padding: 1rem 2rem 120px 2rem;
+    padding: 1rem 2rem 2rem 2rem;
     position: relative;
-    min-height: 400px;
 }
 
 .setup-country-selection, 
@@ -6234,10 +6235,9 @@ h3 {
 
 /* ===== STICKY NOTE BETA NOTICE ===== */
 .sticky-note {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 220px;
+    position: relative;
+    width: 200px;
+    margin: 15px auto 0;
     background: linear-gradient(135deg, #FFF740 0%, #FFE135 100%);
     padding: 15px 12px 12px 12px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -6245,8 +6245,9 @@ h3 {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     transform: rotate(-2deg);
     transition: transform 0.3s ease;
-    z-index: 999;
+    z-index: 10;
     animation: flutter 3s ease-in-out infinite;
+    cursor: pointer;
 }
 
 .sticky-note:hover {
