@@ -10223,7 +10223,12 @@ function createWorldChatMessageHtml(msg) {
         const isOwnMessage = userToken === currentUserToken;
         
         // Применяем цензуру к сообщению
-        const censoredMessage = censorMessage(msg.message);
+        let censoredMessage = censorMessage(msg.message);
+        
+        // Убираем префиксы @ & / из начала сообщения для отображения
+        if (censoredMessage.startsWith('@') || censoredMessage.startsWith('&') || censoredMessage.startsWith('/')) {
+            censoredMessage = censoredMessage.substring(1).trim();
+        }
         
         return `
             <div class="world-chat-message ${msg.type}-type">
