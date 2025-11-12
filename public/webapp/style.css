@@ -1402,8 +1402,9 @@ h3 {
 .location-setup-container {
     max-width: 500px;
     margin: 0 auto;
-    padding: 1rem 2rem 2rem 2rem;
+    padding: 1rem 2rem 120px 2rem;
     position: relative;
+    min-height: 400px;
 }
 
 .setup-country-selection, 
@@ -6234,7 +6235,7 @@ h3 {
 /* ===== STICKY NOTE BETA NOTICE ===== */
 .sticky-note {
     position: absolute;
-    bottom: -80px;
+    bottom: 20px;
     right: 20px;
     width: 220px;
     background: linear-gradient(135deg, #FFF740 0%, #FFE135 100%);
