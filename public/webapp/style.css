@@ -5817,14 +5817,16 @@ h3 {
 
 /* Контейнер сообщений */
 .world-chat-messages-container {
-    flex: 1;
+    position: fixed;
+    top: 60px; /* Высота header */
+    bottom: 120px; /* Высота футера (вкладки + инпут) */
+    left: 0;
+    right: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 10px;
-    padding-bottom: 200px; /* Большой отступ для фиксированного футера */
+    padding-bottom: 10px;
     background: rgba(0, 0, 0, 0.2);
-    height: 100%;
-    position: relative;
     scroll-behavior: smooth;
 }
 
@@ -5841,7 +5843,6 @@ h3 {
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.4);
     border-left: 3px solid;
-    animation: fadeIn 0.3s ease;
 }
 
 .world-chat-message.world-type {

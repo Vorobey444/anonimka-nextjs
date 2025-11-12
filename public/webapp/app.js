@@ -9948,6 +9948,15 @@ async function showWorldChat() {
     // Загружаем сообщения
     await loadWorldChatMessages();
     
+    // Прокручиваем вниз после первой загрузки
+    setTimeout(() => {
+        const container = document.getElementById('worldChatMessages');
+        const scrollContainer = container?.parentElement;
+        if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+    }, 100);
+    
     // Обновляем счетчик символов
     updateWorldChatCharCount();
     
@@ -10153,12 +10162,50 @@ function renderWorldChatMessages(messages) {
         return;
     }
     
+    // Находим новые сообщения
+    const newMessageIds = currentIds.filter(id => !lastWorldChatMessageIds.includes(id));
+    const hasNewMessages = newMessageIds.length > 0;
+    
     lastWorldChatMessageIds = currentIds;
     
-    // Сохраняем позицию прокрутки
-    const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+    // Если есть новые сообщения, добавляем их без перерисовки всех
+    if (hasNewMessages && container.children.length > 0) {
+        const newMessages = messages.filter(m => newMessageIds.includes(m.id));
+        newMessages.forEach(msg => {
+            const messageHtml = createWorldChatMessageHtml(msg);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = messageHtml;
+            const messageElement = tempDiv.firstElementChild;
+            messageElement.style.opacity = '0';
+            messageElement.style.transform = 'translateY(10px)';
+            container.appendChild(messageElement);
+            
+            // Плавное появление
+            requestAnimationFrame(() => {
+                messageElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                messageElement.style.opacity = '1';
+                messageElement.style.transform = 'translateY(0)';
+            });
+        });
+    } else {
+        // Первая загрузка - перерисовываем все
+        container.innerHTML = messages.map(msg => createWorldChatMessageHtml(msg)).join('');
+    }
     
-    container.innerHTML = messages.map(msg => {
+    // ВСЕГДА прокручиваем вниз к новым сообщениям
+    requestAnimationFrame(() => {
+        const scrollContainer = container.parentElement;
+        if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+    });
+    
+    // Добавляем обработчики long press для никнеймов
+    setupLongPressHandlers();
+}
+
+// Создать HTML для одного сообщения (вынесено в отдельную функцию)
+function createWorldChatMessageHtml(msg) {
         const isPremium = msg.is_premium || msg.isPremium || false;
         const nicknameClass = `${msg.type}-type${isPremium ? ' premium' : ''}`;
         const proБадge = isPremium ? '<span class="world-chat-pro-badge">⭐</span>' : '';
@@ -10194,19 +10241,6 @@ function renderWorldChatMessages(messages) {
                 <div class="world-chat-text">${escapeHtml(censoredMessage)}</div>
             </div>
         `;
-    }).join('');
-    
-    // ВСЕГДА прокручиваем вниз к новым сообщениям
-    // Используем requestAnimationFrame для гарантии что DOM обновился
-    requestAnimationFrame(() => {
-        const scrollContainer = container.parentElement;
-        if (scrollContainer) {
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-        }
-    });
-    
-    // Добавляем обработчики long press для никнеймов
-    setupLongPressHandlers();
 }
 
 // Настройка long press для мобильных устройств
