@@ -88,15 +88,8 @@ async function handleNewFormat(body, res) {
     });
   }
 
-  // Добавляем префикс автоматически если его нет
-  let finalMessage = message;
-  if (!message.startsWith('@') && !message.startsWith('&') && !message.startsWith('/')) {
-    if (type === 'world') {
-      finalMessage = `@${message}`;
-    } else if (type === 'city') {
-      finalMessage = `&${message}`;
-    }
-  }
+  // Бот сам добавляет префикс, не дублируем его
+  const finalMessage = message;
 
   if (finalMessage.length > 50) {
     return res.status(400).json({

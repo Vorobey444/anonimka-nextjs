@@ -5819,7 +5819,7 @@ h3 {
 .world-chat-messages-container {
     position: fixed;
     top: 60px; /* Высота header */
-    bottom: 120px; /* Высота футера (вкладки + инпут) */
+    bottom: 80px; /* Высота футера (вкладки + инпут) */
     left: 0;
     right: 0;
     overflow-y: auto;
