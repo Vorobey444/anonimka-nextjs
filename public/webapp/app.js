@@ -10364,6 +10364,17 @@ function updateWorldChatCharCount() {
     const counter = document.getElementById('worldChatCharCount');
     
     if (input && counter) {
+        // Обновляем счетчик сразу
+        const length = input.value.length;
+        counter.textContent = length;
+        
+        if (length > 45) {
+            counter.style.color = '#FF006E';
+        } else {
+            counter.style.color = 'var(--text-gray)';
+        }
+        
+        // И добавляем listener для дальнейших изменений
         input.addEventListener('input', () => {
             const length = input.value.length;
             counter.textContent = length;
