@@ -8206,14 +8206,11 @@ function updateAdLimitBadge() {
         badge.textContent = `${used}/${max}`;
         badge.className = 'limit-badge warning';
         badge.style.display = 'block';
-    } else if (used > 0) {
-        // Показываем прогресс
+    } else {
+        // Всегда показываем счётчик прогресса
         badge.textContent = `${used}/${max}`;
         badge.className = 'limit-badge';
         badge.style.display = 'block';
-    } else {
-        // Ещё не создано анкет
-        badge.style.display = 'none';
     }
 
     // Добавляем всплывающую подсказку с деталями лимита
