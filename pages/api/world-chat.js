@@ -20,6 +20,24 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Периодическая очистка истёкших PRO (раз в 10 запросов)
+    if (Math.random() < 0.1) {
+      try {
+        await sql`
+          UPDATE users 
+          SET is_premium = false, updated_at = NOW()
+          WHERE is_premium = true AND premium_until IS NOT NULL AND premium_until < NOW()
+        `;
+        await sql`
+          UPDATE premium_tokens 
+          SET is_premium = false
+          WHERE is_premium = true AND premium_until IS NOT NULL AND premium_until < NOW()
+        `;
+      } catch (e) {
+        console.error('Premium cleanup error:', e);
+      }
+    }
+
     if (req.method === 'GET') {
       // Новый формат для ботов - простой GET запрос
       const limit = parseInt(req.query.limit) || 50;
