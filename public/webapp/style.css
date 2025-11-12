@@ -3780,7 +3780,7 @@ h3 {
     display: flex;
     align-items: center;
     gap: 8px;
-    min-height: auto;
+    min-height: 44px;
 }
 
 .header h2 {
@@ -3852,16 +3852,18 @@ h3 {
 }
 
 .chat-font-size-btn {
+    position: absolute;
+    right: 45px;
+    top: 8px;
     background: transparent;
     border: none;
     color: var(--neon-cyan);
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 6px 10px;
     transition: all 0.3s ease;
-    margin-left: auto;
-    margin-right: 4px;
+    z-index: 101;
 }
 
 .chat-font-size-btn:hover {
@@ -3870,13 +3872,17 @@ h3 {
 }
 
 .chat-menu-btn {
+    position: absolute;
+    right: 8px;
+    top: 8px;
     background: transparent;
     border: none;
     color: var(--neon-cyan);
-    font-size: 20px;
+    font-size: 22px;
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 6px 10px;
     transition: all 0.3s ease;
+    z-index: 101;
 }
 
 .chat-menu-btn:hover {
