@@ -98,9 +98,12 @@ async function handleNewFormat(body, res) {
     });
   }
 
+  // Определяем бота по префиксу токена или явному флагу
+  const isBotMessage = is_bot || user_token.startsWith('bot_');
+
   const result = await sql`
     INSERT INTO world_chat_messages (user_token, nickname, message, type, is_bot)
-    VALUES (${user_token}, ${nickname}, ${finalMessage}, ${type}, ${is_bot})
+    VALUES (${user_token}, ${nickname}, ${finalMessage}, ${type}, ${isBotMessage})
     RETURNING 
       id,
       user_token as "userToken",
