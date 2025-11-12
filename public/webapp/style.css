@@ -6269,6 +6269,7 @@ h3 {
 
 .sticky-note-content {
     position: relative;
+    text-align: center;
 }
 
 .sticky-note-text {
@@ -6277,12 +6278,15 @@ h3 {
     line-height: 1.4;
     color: #333;
     font-weight: 500;
+    text-align: center;
 }
 
 .sticky-note-link {
-    display: inline-block;
+    display: block;
     font-size: 11px;
     color: #0066cc;
+    text-align: center;
+    margin: 0;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.2s;
