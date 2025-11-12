@@ -9919,6 +9919,7 @@ async function unblockUserFromList(blockedId) {
 let currentWorldChatTab = 'world';
 let worldChatAutoRefreshInterval = null;
 let worldChatLastMessageTime = null;
+let worldChatLoadingController = null; // Для отмены предыдущих запросов
 
 // Показать экран Мир чата
 async function showWorldChat() {
@@ -10011,6 +10012,12 @@ function toggleFontSize() {
 // Переключение вкладок
 async function switchWorldChatTab(tab) {
     console.log('🔄 Переключение на вкладку:', tab);
+    
+    // Отменяем предыдущий запрос если есть
+    if (worldChatLoadingController) {
+        worldChatLoadingController.abort();
+    }
+    
     currentWorldChatTab = tab;
     
     // Обновляем активную кнопку
@@ -10042,6 +10049,12 @@ async function switchWorldChatTab(tab) {
         prefixElement.style.color = '#FF006E';
     }
     
+    // Очищаем контейнер перед загрузкой новых сообщений
+    const messagesContainer = document.querySelector('.world-chat-messages');
+    if (messagesContainer) {
+        messagesContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-gray);">Загрузка...</div>';
+    }
+    
     // Загружаем сообщения для этой вкладки
     await loadWorldChatMessages();
 }
@@ -10049,6 +10062,10 @@ async function switchWorldChatTab(tab) {
 // Загрузить сообщения
 async function loadWorldChatMessages(silent = false) {
     try {
+        // Создаем новый AbortController для этого запроса
+        worldChatLoadingController = new AbortController();
+        const requestTab = currentWorldChatTab; // Сохраняем текущую вкладку
+        
         const userToken = localStorage.getItem('user_token');
         const userCity = localStorage.getItem('userCity') || 'Алматы';
         
@@ -10058,25 +10075,36 @@ async function loadWorldChatMessages(silent = false) {
             body: JSON.stringify({
                 action: 'get-messages',
                 params: {
-                    tab: currentWorldChatTab,
+                    tab: requestTab,
                     userToken: userToken,
                     userCity: userCity
                 }
-            })
+            }),
+            signal: worldChatLoadingController.signal
         });
         
         const data = await response.json();
         
+        // Проверяем что вкладка не изменилась пока грузились данные
+        if (requestTab !== currentWorldChatTab) {
+            console.log(`⏭️ Пропускаем рендер для ${requestTab}, текущая вкладка: ${currentWorldChatTab}`);
+            return;
+        }
+        
         if (data.success) {
             if (!silent) {
-                console.log(`✅ Загружено ${data.data.length} сообщений для вкладки ${currentWorldChatTab}`);
+                console.log(`✅ Загружено ${data.data.length} сообщений для вкладки ${requestTab}`);
             }
             renderWorldChatMessages(data.data);
         } else {
             console.error('❌ Ошибка загрузки сообщений:', data.error);
         }
     } catch (error) {
-        console.error('Ошибка загрузки сообщений:', error);
+        if (error.name === 'AbortError') {
+            console.log('⏹️ Запрос отменен (переключение вкладки)');
+        } else {
+            console.error('Ошибка загрузки сообщений:', error);
+        }
     }
 }
 
