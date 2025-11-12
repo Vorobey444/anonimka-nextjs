@@ -8185,6 +8185,8 @@ function updateAdLimitBadge() {
     const max = adsLimit.max || 1;
     const remaining = adsLimit.remaining || 0;
     
+    console.log('📊 updateAdLimitBadge:', { used, max, remaining, adsLimit });
+    
     if (remaining === 0) {
         // Лимит исчерпан - показываем таймер
         const timeUntilReset = getTimeUntilMidnight();
