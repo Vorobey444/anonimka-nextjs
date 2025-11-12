@@ -22,9 +22,20 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       // Новый формат для ботов - простой GET запрос
-      const limit = parseInt(req.query.limit) || 100;
+      const limit = parseInt(req.query.limit) || 50;
       const offset = parseInt(req.query.offset) || 0;
       const type = req.query.type || 'world';
+
+      // Автоочистка: удаляем сообщения старше 50-го для каждого типа
+      await sql`
+        DELETE FROM world_chat_messages
+        WHERE id IN (
+          SELECT id FROM world_chat_messages
+          WHERE type = ${type}
+          ORDER BY created_at DESC
+          OFFSET 50
+        )
+      `;
 
       const messages = await sql`
         SELECT 
@@ -112,6 +123,17 @@ async function handleNewFormat(body, res) {
       type,
       is_bot as "isBot",
       created_at as "createdAt"
+  `;
+
+  // Автоочистка после добавления: оставляем только 50 последних сообщений каждого типа
+  await sql`
+    DELETE FROM world_chat_messages
+    WHERE id IN (
+      SELECT id FROM world_chat_messages
+      WHERE type = ${type}
+      ORDER BY created_at DESC
+      OFFSET 50
+    )
   `;
 
   return res.status(200).json({
@@ -292,6 +314,17 @@ async function sendMessage(params, res) {
     (user_token, nickname, message, type, target_user_token, target_nickname, location_city, is_premium)
     VALUES (${userToken}, ${nickname}, ${cleanMessage}, ${type}, ${targetUserToken}, ${targetNickname}, ${locationCity}, ${isPremium})
     RETURNING *
+  `;
+
+  // Автоочистка: оставляем только 50 последних сообщений каждого типа
+  await sql`
+    DELETE FROM world_chat_messages
+    WHERE id IN (
+      SELECT id FROM world_chat_messages
+      WHERE type = ${type}
+      ORDER BY created_at DESC
+      OFFSET 50
+    )
   `;
 
   return res.status(200).json({ 
