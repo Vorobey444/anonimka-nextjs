@@ -10198,7 +10198,11 @@ function renderWorldChatMessages(messages) {
     
     // ВСЕГДА прокручиваем вниз к новым сообщениям
     setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
+        // Прокручиваем РОДИТЕЛЬСКИЙ контейнер, у которого есть overflow-y: auto
+        const scrollContainer = container.parentElement;
+        if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
     }, 50);
     
     // Добавляем обработчики long press для никнеймов
