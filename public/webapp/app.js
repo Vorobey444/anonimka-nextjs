@@ -10196,10 +10196,10 @@ function renderWorldChatMessages(messages) {
         `;
     }).join('');
     
-    // Прокручиваем вниз только если были внизу
-    if (wasAtBottom) {
+    // ВСЕГДА прокручиваем вниз к новым сообщениям
+    setTimeout(() => {
         container.scrollTop = container.scrollHeight;
-    }
+    }, 50);
     
     // Добавляем обработчики long press для никнеймов
     setupLongPressHandlers();
