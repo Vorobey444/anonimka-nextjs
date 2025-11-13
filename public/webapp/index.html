@@ -816,6 +816,16 @@
                     </div>
                     
                     <div class="filter-group">
+                        <label>Ориентация:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn" data-filter-type="orientation" data-value="all" onclick="setFilter('orientation', 'all')">Все</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="heterosexual" onclick="setFilter('orientation', 'heterosexual')">🔴 Гетеро</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="homosexual" onclick="setFilter('orientation', 'homosexual')">🟣 Гомо</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="bisexual" onclick="setFilter('orientation', 'bisexual')">🌈 Би</button>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
                         <label>Возраст:</label>
                         <div class="age-filter">
                             <input type="number" id="ageFrom" placeholder="От" min="18" max="99" value="18">

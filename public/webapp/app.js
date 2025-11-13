@@ -2946,6 +2946,20 @@ function displayAds(ads, city = null) {
             }
         }
         
+        // Фильтр по ориентации
+        if (adsFilters.orientation !== 'all') {
+            const orientationLower = ad.orientation?.toLowerCase();
+            if (adsFilters.orientation === 'heterosexual' && orientationLower !== 'heterosexual' && orientationLower !== 'гетеросексуальная' && orientationLower !== 'гетеро') {
+                return false;
+            }
+            if (adsFilters.orientation === 'homosexual' && orientationLower !== 'homosexual' && orientationLower !== 'гомосексуальная' && orientationLower !== 'гомо') {
+                return false;
+            }
+            if (adsFilters.orientation === 'bisexual' && orientationLower !== 'bisexual' && orientationLower !== 'бисексуальная' && orientationLower !== 'би') {
+                return false;
+            }
+        }
+        
         // Фильтр по возрасту
         const age = parseInt(ad.my_age || ad.myAge);
         if (!isNaN(age)) {
@@ -8178,14 +8192,26 @@ async function loadPremiumStatus() {
 // Обновить индикатор лимита анкет
 function updateAdLimitBadge() {
     const badge = document.getElementById('adLimitBadge');
-    if (!badge || !userPremiumStatus.limits) return;
+    console.log('🔍 updateAdLimitBadge START:', { 
+        hasBadge: !!badge, 
+        hasStatus: !!userPremiumStatus,
+        hasLimits: !!userPremiumStatus?.limits,
+        fullLimits: userPremiumStatus?.limits 
+    });
+    
+    if (!badge || !userPremiumStatus.limits) {
+        console.warn('⚠️ updateAdLimitBadge ABORT: badge или limits отсутствуют');
+        return;
+    }
     
     const adsLimit = userPremiumStatus.limits.ads;
-    const used = adsLimit.used || 0;
-    const max = adsLimit.max || 1;
-    const remaining = adsLimit.remaining || 0;
+    console.log('🔍 adsLimit object:', adsLimit);
     
-    console.log('📊 updateAdLimitBadge:', { used, max, remaining, adsLimit });
+    const used = adsLimit?.used || 0;
+    const max = adsLimit?.max || 1;
+    const remaining = adsLimit?.remaining || 0;
+    
+    console.log('📊 updateAdLimitBadge:', { used, max, remaining });
     
     if (remaining === 0) {
         // Лимит исчерпан - показываем таймер
@@ -9273,6 +9299,7 @@ async function deleteChat() {
 let adsFilters = {
     gender: 'all',
     target: 'all',
+    orientation: 'all',
     ageFrom: 18,
     ageTo: 99
 };
@@ -9306,6 +9333,11 @@ function updateFilterButtons() {
     document.querySelectorAll('[data-filter-type="target"]').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.value === adsFilters.target);
     });
+    
+    // Обновляем кнопки ориентации
+    document.querySelectorAll('[data-filter-type="orientation"]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === adsFilters.orientation);
+    });
 }
 
 // Применить фильтры
@@ -9323,6 +9355,7 @@ function applyFilters() {
     let activeCount = 0;
     if (adsFilters.gender !== 'all') activeCount++;
     if (adsFilters.target !== 'all') activeCount++;
+    if (adsFilters.orientation !== 'all') activeCount++;
     if (adsFilters.ageFrom !== 18 || adsFilters.ageTo !== 99) activeCount++;
     
     // Обновляем badge
@@ -9344,6 +9377,7 @@ function resetFilters() {
     adsFilters = {
         gender: 'all',
         target: 'all',
+        orientation: 'all',
         ageFrom: 18,
         ageTo: 99
     };
