@@ -848,6 +848,59 @@ if (document.readyState === 'loading') {
     setupAutoHideScrollbars();
 }
 
+// Функция для отслеживания визита
+async function trackPageVisit(page = 'home') {
+    try {
+        const userId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
+        const userLocation = getUserLocation();
+        
+        await fetch('/api/analytics', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: userId ? parseInt(userId) : null,
+                page: page,
+                country: userLocation?.country || null,
+                city: userLocation?.city || null
+            })
+        });
+    } catch (error) {
+        console.error('Ошибка отслеживания визита:', error);
+    }
+}
+
+// Функция для загрузки статистики
+async function loadSiteStats() {
+    try {
+        const response = await fetch('/api/analytics?metric=all');
+        const data = await response.json();
+        
+        // Обновляем счетчики на странице если они есть
+        const totalVisitsEl = document.getElementById('totalVisits');
+        const onlineNowEl = document.getElementById('onlineNow');
+        
+        if (totalVisitsEl && data.stats) {
+            const totalVisits = data.stats.find(s => s.metric_name === 'total_visits');
+            if (totalVisits) {
+                totalVisitsEl.textContent = formatNumber(totalVisits.metric_value);
+            }
+        }
+        
+        if (onlineNowEl && data.last_24h) {
+            onlineNowEl.textContent = formatNumber(data.last_24h);
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки статистики:', error);
+    }
+}
+
+// Форматирование чисел (1234 -> 1.2K)
+function formatNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+}
+
 function initializeTelegramWebApp() {
     console.log('🚀 [INIT] initializeTelegramWebApp started');
     console.log('🚀 [INIT] Telegram WebApp data:', {
@@ -858,6 +911,12 @@ function initializeTelegramWebApp() {
         start_param: tg?.initDataUnsafe?.start_param,
         user: tg?.initDataUnsafe?.user
     });
+    
+    // Отслеживаем визит при загрузке
+    trackPageVisit('home');
+    
+    // Загружаем статистику
+    loadSiteStats();
     
     // Настройка темы
     tg.setHeaderColor('#0a0a0f');
