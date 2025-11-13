@@ -39,60 +39,12 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      // Новый формат для ботов - простой GET запрос
+      // Новый формат для ботов - простой GET запрос БЕЗ автоочистки
       const limit = parseInt(req.query.limit) || 50;
       const offset = parseInt(req.query.offset) || 0;
       const type = req.query.type || 'world';
 
-      // Автоочистка: удаляем сообщения старше 50-го для каждого типа/города/пользователя
-      if (type === 'world') {
-        // Для МИР: последние 50 сообщений всего
-        await sql`
-          DELETE FROM world_chat_messages
-          WHERE type = 'world' AND id NOT IN (
-            SELECT id FROM world_chat_messages
-            WHERE type = 'world'
-            ORDER BY created_at DESC
-            LIMIT 50
-          )
-        `;
-      } else if (type === 'city') {
-        // Для ГОРОД: последние 50 сообщений ДЛЯ КАЖДОГО города
-        const cities = await sql`SELECT DISTINCT location_city FROM world_chat_messages WHERE type = 'city' AND location_city IS NOT NULL`;
-        for (const cityRow of cities) {
-          const city = cityRow.location_city;
-          await sql`
-            DELETE FROM world_chat_messages
-            WHERE type = 'city' AND location_city = ${city} AND id NOT IN (
-              SELECT id FROM world_chat_messages
-              WHERE type = 'city' AND location_city = ${city}
-              ORDER BY created_at DESC
-              LIMIT 50
-            )
-          `;
-        }
-      } else if (type === 'private') {
-        // Для ЛС: последние 50 сообщений ДЛЯ КАЖДОГО пользователя
-        const users = await sql`
-          SELECT DISTINCT user_token FROM world_chat_messages 
-          WHERE type = 'private' AND (user_token IS NOT NULL OR target_user_token IS NOT NULL)
-        `;
-        for (const userRow of users) {
-          const userToken = userRow.user_token;
-          await sql`
-            DELETE FROM world_chat_messages
-            WHERE type = 'private' 
-              AND (user_token = ${userToken} OR target_user_token = ${userToken})
-              AND id NOT IN (
-                SELECT id FROM world_chat_messages
-                WHERE type = 'private' AND (user_token = ${userToken} OR target_user_token = ${userToken})
-                ORDER BY created_at DESC
-                LIMIT 50
-              )
-          `;
-        }
-      }
-
+      // Получаем сообщения (cleanup делается только при POST)
       const messages = await sql`
         SELECT 
           id,

@@ -10203,6 +10203,11 @@ function censorMessage(text) {
 function renderWorldChatMessages(messages) {
     const container = document.getElementById('worldChatMessages');
     
+    if (!container) {
+        console.error('❌ Container worldChatMessages не найден');
+        return;
+    }
+    
     if (messages.length === 0) {
         container.innerHTML = `
             <div class="loading-placeholder">
