@@ -4728,7 +4728,7 @@ function displayUserLocation() {
 const updateUserLocationDisplay = displayUserLocation;
 
 // Сохранение локации пользователя
-function saveUserLocation(country, region, city) {
+async function saveUserLocation(country, region, city) {
     currentUserLocation = {
         country: country,
         region: region,
