@@ -784,6 +784,13 @@ function setupAutoHideScrollbars() {
     
     // Функция для проверки нужен ли скролл
     function checkScrollNeed(element) {
+        // Исключаем карточки анкет и модальные окна с анкетами
+        if (element.classList.contains('ad-card') || 
+            element.closest('.ad-card') ||
+            element.classList.contains('modal-ad-card')) {
+            return;
+        }
+        
         if (element.scrollHeight > element.clientHeight) {
             element.style.overflowY = 'auto';
         } else {
@@ -791,23 +798,29 @@ function setupAutoHideScrollbars() {
         }
     }
     
-    // Добавляем обработчики на все скроллируемые элементы
-    const scrollableElements = document.querySelectorAll('.screen, .modal-body, .messages-list, .chat-messages, [style*="overflow"]');
+    // Добавляем обработчики на все скроллируемые элементы (исключая карточки анкет)
+    const scrollableElements = document.querySelectorAll('.screen, .modal-body:not(.ad-card), .messages-list, .chat-messages');
     scrollableElements.forEach(element => {
-        attachScrollHandler(element);
-        checkScrollNeed(element);
+        if (!element.classList.contains('ad-card') && !element.closest('.ad-card')) {
+            attachScrollHandler(element);
+            checkScrollNeed(element);
+        }
     });
     
     // Наблюдаем за новыми элементами и изменением размеров
     const observer = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
-                if (node.nodeType === 1) {
+                if (node.nodeType === 1 && 
+                    !node.classList.contains('ad-card') && 
+                    !node.closest('.ad-card')) {
                     attachScrollHandler(node);
                     checkScrollNeed(node);
-                    node.querySelectorAll('.screen, .modal-body, .messages-list, .chat-messages').forEach(el => {
-                        attachScrollHandler(el);
-                        checkScrollNeed(el);
+                    node.querySelectorAll('.screen, .modal-body:not(.ad-card), .messages-list, .chat-messages').forEach(el => {
+                        if (!el.classList.contains('ad-card') && !el.closest('.ad-card')) {
+                            attachScrollHandler(el);
+                            checkScrollNeed(el);
+                        }
                     });
                 }
             });
