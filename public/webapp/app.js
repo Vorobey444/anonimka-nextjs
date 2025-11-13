@@ -2949,13 +2949,8 @@ function displayAds(ads, city = null) {
         // Фильтр по ориентации
         if (adsFilters.orientation !== 'all') {
             const orientationLower = ad.orientation?.toLowerCase();
-            if (adsFilters.orientation === 'heterosexual' && orientationLower !== 'heterosexual' && orientationLower !== 'гетеросексуальная' && orientationLower !== 'гетеро') {
-                return false;
-            }
-            if (adsFilters.orientation === 'homosexual' && orientationLower !== 'homosexual' && orientationLower !== 'гомосексуальная' && orientationLower !== 'гомо') {
-                return false;
-            }
-            if (adsFilters.orientation === 'bisexual' && orientationLower !== 'bisexual' && orientationLower !== 'бисексуальная' && orientationLower !== 'би') {
+            // Точное совпадение по data-orientation значениям из формы
+            if (orientationLower !== adsFilters.orientation) {
                 return false;
             }
         }
