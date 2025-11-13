@@ -778,23 +778,44 @@ function setupAutoHideScrollbars() {
         }, { passive: true });
     }
     
+    // Функция для проверки нужен ли скролл
+    function checkScrollNeed(element) {
+        if (element.scrollHeight > element.clientHeight) {
+            element.style.overflowY = 'auto';
+        } else {
+            element.style.overflowY = 'visible';
+        }
+    }
+    
     // Добавляем обработчики на все скроллируемые элементы
     const scrollableElements = document.querySelectorAll('.screen, .modal-body, .messages-list, .chat-messages, [style*="overflow"]');
-    scrollableElements.forEach(attachScrollHandler);
+    scrollableElements.forEach(element => {
+        attachScrollHandler(element);
+        checkScrollNeed(element);
+    });
     
-    // Наблюдаем за новыми элементами
+    // Наблюдаем за новыми элементами и изменением размеров
     const observer = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
                 if (node.nodeType === 1) {
                     attachScrollHandler(node);
-                    node.querySelectorAll('.screen, .modal-body, .messages-list, .chat-messages').forEach(attachScrollHandler);
+                    checkScrollNeed(node);
+                    node.querySelectorAll('.screen, .modal-body, .messages-list, .chat-messages').forEach(el => {
+                        attachScrollHandler(el);
+                        checkScrollNeed(el);
+                    });
                 }
             });
         });
     });
     
     observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Пересчитываем при изменении размера окна
+    window.addEventListener('resize', () => {
+        scrollableElements.forEach(checkScrollNeed);
+    });
 }
 
 // Проверяем готовность DOM и запускаем инициализацию

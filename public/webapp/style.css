@@ -83,12 +83,23 @@ body {
 .screen {
     display: none;
     padding: 15px;
+    padding-bottom: 10px; /* Уменьшаем нижний отступ */
     overflow-y: auto;
     max-height: 100vh;
+    box-sizing: border-box; /* Учитываем padding в высоте */
 }
 
 .screen.active {
     display: block;
+}
+
+/* Убираем скролл если контент влезает */
+.screen:not(.force-scroll) {
+    overflow-y: auto;
+}
+
+.screen:not(.force-scroll):not(:has(:nth-child(10))) {
+    overflow-y: visible;
 }
 
 /* Заголовок */
