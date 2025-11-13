@@ -10054,6 +10054,9 @@ async function switchWorldChatTab(tab) {
     
     currentWorldChatTab = tab;
     
+    // Сбрасываем кеш ID сообщений при переключении вкладок
+    lastWorldChatMessageIds = [];
+    
     // Обновляем активную кнопку
     document.querySelectorAll('.world-chat-tab').forEach(btn => {
         btn.classList.remove('active');
@@ -10086,7 +10089,12 @@ async function switchWorldChatTab(tab) {
     // Очищаем контейнер перед загрузкой новых сообщений
     const messagesContainer = document.querySelector('.world-chat-messages');
     if (messagesContainer) {
-        messagesContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-gray);">Загрузка...</div>';
+        messagesContainer.innerHTML = `
+            <div class="loading-placeholder">
+                <div class="neon-icon pulse">💬</div>
+                <p>Загрузка сообщений...</p>
+            </div>
+        `;
     }
     
     // Загружаем сообщения для этой вкладки
