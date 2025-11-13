@@ -83,7 +83,8 @@ body {
 .screen {
     display: none;
     padding: 15px;
-    min-height: 100vh;
+    overflow-y: auto;
+    max-height: 100vh;
 }
 
 .screen.active {

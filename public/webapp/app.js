@@ -755,24 +755,46 @@ function initializeApp() {
 
 // ============= АВТОСКРЫТИЕ СКРОЛЛБАРОВ =============
 function setupAutoHideScrollbars() {
-    const scrollableElements = document.querySelectorAll('*');
+    const scrollTimeouts = new WeakMap();
     
-    scrollableElements.forEach(element => {
-        let scrollTimeout;
+    function attachScrollHandler(element) {
+        // Проверяем что элемент может скроллиться
+        if (element.scrollHeight <= element.clientHeight) return;
         
         element.addEventListener('scroll', function() {
             // Добавляем класс при скролле
             this.classList.add('scrolling');
             
             // Очищаем предыдущий таймаут
-            clearTimeout(scrollTimeout);
+            const existingTimeout = scrollTimeouts.get(this);
+            if (existingTimeout) clearTimeout(existingTimeout);
             
             // Убираем класс через 2 секунды после остановки скролла
-            scrollTimeout = setTimeout(() => {
+            const newTimeout = setTimeout(() => {
                 this.classList.remove('scrolling');
             }, 2000);
+            
+            scrollTimeouts.set(this, newTimeout);
         }, { passive: true });
+    }
+    
+    // Добавляем обработчики на все скроллируемые элементы
+    const scrollableElements = document.querySelectorAll('.screen, .modal-body, .messages-list, .chat-messages, [style*="overflow"]');
+    scrollableElements.forEach(attachScrollHandler);
+    
+    // Наблюдаем за новыми элементами
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeType === 1) {
+                    attachScrollHandler(node);
+                    node.querySelectorAll('.screen, .modal-body, .messages-list, .chat-messages').forEach(attachScrollHandler);
+                }
+            });
+        });
     });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
 }
 
 // Проверяем готовность DOM и запускаем инициализацию
