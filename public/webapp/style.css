@@ -82,8 +82,8 @@ body {
 /* Экраны */
 .screen {
     display: none;
-    padding: 15px;
-    padding-bottom: 10px; /* Уменьшаем нижний отступ */
+    padding: 10px;
+    padding-bottom: 5px; /* Минимальный нижний отступ */
     overflow-y: auto;
     max-height: 100vh;
     box-sizing: border-box; /* Учитываем padding в высоте */
@@ -107,10 +107,10 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 15px;
     position: relative;
-    min-height: 50px;
-    padding-top: 10px;
+    min-height: 40px;
+    padding-top: 5px;
 }
 
 .back-btn {
@@ -140,7 +140,7 @@ body {
 .logo {
     text-align: center;
     width: 100%;
-    padding-top: 50px;
+    padding-top: 35px;
 }
 
 .logo p {
@@ -151,19 +151,19 @@ body {
 }
 
 .neon-icon {
-    font-size: 40px;
-    margin-bottom: 8px;
+    font-size: 35px;
+    margin-bottom: 5px;
     filter: drop-shadow(var(--shadow-pink));
 }
 
 h1, h2, h3 {
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     text-shadow: var(--shadow-pink);
 }
 
 h1 {
-    font-size: 22px;
+    font-size: 20px;
     background: linear-gradient(45deg, var(--neon-pink), var(--neon-cyan));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -171,14 +171,14 @@ h1 {
 }
 
 h2 {
-    font-size: 20px;
+    font-size: 18px;
     color: var(--neon-cyan);
 }
 
 h3 {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--neon-purple);
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 /* Неоновые кнопки */
@@ -186,7 +186,7 @@ h3 {
     background: linear-gradient(45deg, var(--bg-card), #2a2a3e);
     border: 2px solid var(--neon-pink);
     color: var(--text-light);
-    padding: 12px 20px;
+    padding: 10px 16px;
     border-radius: 25px;
     cursor: pointer;
     font-size: 15px;
@@ -516,11 +516,11 @@ h3 {
 .menu-buttons {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     max-width: 260px;
-    margin: 5px auto 0;
+    margin: 0 auto;
     position: relative;
-    padding-bottom: 80px;
+    padding-bottom: 10px;
 }
 
 /* Форма */
