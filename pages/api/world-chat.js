@@ -352,8 +352,8 @@ async function sendMessage(params, res) {
       const now = new Date();
       const diffSeconds = (now.getTime() - lastMessageTime.getTime()) / 1000;
 
-      if (diffSeconds < 30) {
-        const remainingTime = Math.ceil(30 - diffSeconds);
+      if (diffSeconds < 5) {
+        const remainingTime = Math.ceil(5 - diffSeconds);
         return res.status(429).json({
           success: false,
           error: `Попробуйте через ${remainingTime} сек`
