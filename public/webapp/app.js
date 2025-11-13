@@ -753,13 +753,39 @@ function initializeApp() {
     });
 }
 
+// ============= АВТОСКРЫТИЕ СКРОЛЛБАРОВ =============
+function setupAutoHideScrollbars() {
+    const scrollableElements = document.querySelectorAll('*');
+    
+    scrollableElements.forEach(element => {
+        let scrollTimeout;
+        
+        element.addEventListener('scroll', function() {
+            // Добавляем класс при скролле
+            this.classList.add('scrolling');
+            
+            // Очищаем предыдущий таймаут
+            clearTimeout(scrollTimeout);
+            
+            // Убираем класс через 2 секунды после остановки скролла
+            scrollTimeout = setTimeout(() => {
+                this.classList.remove('scrolling');
+            }, 2000);
+        }, { passive: true });
+    });
+}
+
 // Проверяем готовность DOM и запускаем инициализацию
 if (document.readyState === 'loading') {
     console.log('📄 DOM загружается, ждем DOMContentLoaded');
-    document.addEventListener('DOMContentLoaded', initializeApp);
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeApp();
+        setupAutoHideScrollbars();
+    });
 } else {
     console.log('📄 DOM уже загружен, запускаем инициализацию немедленно');
     initializeApp();
+    setupAutoHideScrollbars();
 }
 
 function initializeTelegramWebApp() {

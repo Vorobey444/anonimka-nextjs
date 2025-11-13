@@ -1242,22 +1242,39 @@ h3 {
     animation: fadeIn 0.5s ease;
 }
 
-/* Скроллбар */
+/* Скроллбар - автоскрытие */
 ::-webkit-scrollbar {
     width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-dark);
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, var(--neon-pink), var(--neon-purple));
     border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(180deg, var(--neon-cyan), var(--neon-pink));
+}
+
+/* Показываем скроллбар при скролле */
+.scrolling::-webkit-scrollbar-thumb {
+    opacity: 1;
+}
+
+/* Для всех скроллируемых элементов */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+
+*.scrolling {
+    scrollbar-color: rgba(255, 32, 110, 0.8) transparent;
 }
 
 /* Система выбора локации */
