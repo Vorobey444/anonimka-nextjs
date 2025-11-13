@@ -6260,23 +6260,25 @@ h3 {
     cursor: pointer;
 }
 
-/* Неоновое розовое свечение под стикером */
+/* Неоновое розовое свечение ПО ВСЕМУ периметру стикера (ярче!) */
 .sticky-note::before {
     content: '';
     position: absolute;
-    bottom: -30px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 180px;
-    height: 30px;
-    background: radial-gradient(ellipse at center, 
-        rgba(255, 0, 110, 0.6) 0%,
-        rgba(255, 0, 110, 0.4) 30%,
-        rgba(255, 0, 110, 0.2) 60%,
-        transparent 100%);
-    filter: blur(10px);
+    top: -15px;
+    left: -15px;
+    right: -15px;
+    bottom: -15px;
+    background: transparent;
+    box-shadow: 
+        0 0 20px rgba(255, 0, 110, 0.8),
+        0 0 40px rgba(255, 0, 110, 0.6),
+        0 0 60px rgba(255, 0, 110, 0.4),
+        0 0 80px rgba(255, 0, 110, 0.2),
+        inset 0 0 20px rgba(255, 0, 110, 0.1);
+    border-radius: 4px;
     animation: neonFlicker 4s infinite;
     z-index: -1;
+    pointer-events: none;
 }
 
 .sticky-note:hover {
@@ -6341,87 +6343,120 @@ h3 {
     }
 }
 
-/* Анимация мерцания неоновой лампочки (как будто вот-вот перегорит) */
+/* Анимация мерцания неоновой лампочки (как будто вот-вот перегорит) - ЯРЧЕ! */
 @keyframes neonFlicker {
     0%, 100% {
         opacity: 1;
-        filter: blur(10px);
+        box-shadow: 
+            0 0 25px rgba(255, 0, 110, 1),
+            0 0 50px rgba(255, 0, 110, 0.8),
+            0 0 75px rgba(255, 0, 110, 0.6),
+            0 0 100px rgba(255, 0, 110, 0.4);
     }
     2% {
-        opacity: 0.8;
-        filter: blur(12px);
+        opacity: 0.7;
+        box-shadow: 
+            0 0 15px rgba(255, 0, 110, 0.7),
+            0 0 30px rgba(255, 0, 110, 0.5),
+            0 0 45px rgba(255, 0, 110, 0.3);
     }
     4% {
         opacity: 1;
-        filter: blur(10px);
+        box-shadow: 
+            0 0 25px rgba(255, 0, 110, 1),
+            0 0 50px rgba(255, 0, 110, 0.8),
+            0 0 75px rgba(255, 0, 110, 0.6),
+            0 0 100px rgba(255, 0, 110, 0.4);
     }
     8% {
-        opacity: 0.6;
-        filter: blur(15px);
+        opacity: 0.5;
+        box-shadow: 
+            0 0 10px rgba(255, 0, 110, 0.5),
+            0 0 20px rgba(255, 0, 110, 0.3);
     }
     10% {
         opacity: 1;
-        filter: blur(10px);
+        box-shadow: 
+            0 0 30px rgba(255, 0, 110, 1),
+            0 0 60px rgba(255, 0, 110, 0.9),
+            0 0 90px rgba(255, 0, 110, 0.7),
+            0 0 120px rgba(255, 0, 110, 0.5);
     }
     12% {
-        opacity: 0.4;
-        filter: blur(18px);
+        opacity: 0.3;
+        box-shadow: 
+            0 0 5px rgba(255, 0, 110, 0.3),
+            0 0 10px rgba(255, 0, 110, 0.2);
     }
     14% {
         opacity: 1;
-        filter: blur(10px);
-    }
-    30% {
-        opacity: 0.9;
-        filter: blur(11px);
-    }
-    32% {
-        opacity: 1;
-        filter: blur(10px);
+        box-shadow: 
+            0 0 25px rgba(255, 0, 110, 1),
+            0 0 50px rgba(255, 0, 110, 0.8),
+            0 0 75px rgba(255, 0, 110, 0.6),
+            0 0 100px rgba(255, 0, 110, 0.4);
     }
     50% {
         opacity: 1;
-        filter: blur(10px);
+        box-shadow: 
+            0 0 25px rgba(255, 0, 110, 1),
+            0 0 50px rgba(255, 0, 110, 0.8),
+            0 0 75px rgba(255, 0, 110, 0.6),
+            0 0 100px rgba(255, 0, 110, 0.4);
     }
     52% {
-        opacity: 0.7;
-        filter: blur(14px);
+        opacity: 0.6;
+        box-shadow: 
+            0 0 12px rgba(255, 0, 110, 0.6),
+            0 0 25px rgba(255, 0, 110, 0.4);
     }
     54% {
-        opacity: 0.3;
-        filter: blur(20px);
+        opacity: 0.2;
+        box-shadow: 
+            0 0 5px rgba(255, 0, 110, 0.2);
     }
     56% {
-        opacity: 0.8;
-        filter: blur(12px);
+        opacity: 0.9;
+        box-shadow: 
+            0 0 22px rgba(255, 0, 110, 0.9),
+            0 0 45px rgba(255, 0, 110, 0.7),
+            0 0 70px rgba(255, 0, 110, 0.5);
     }
     58% {
         opacity: 1;
-        filter: blur(10px);
-    }
-    70% {
-        opacity: 1;
-        filter: blur(10px);
+        box-shadow: 
+            0 0 25px rgba(255, 0, 110, 1),
+            0 0 50px rgba(255, 0, 110, 0.8),
+            0 0 75px rgba(255, 0, 110, 0.6),
+            0 0 100px rgba(255, 0, 110, 0.4);
     }
     72% {
-        opacity: 0.5;
-        filter: blur(16px);
+        opacity: 0.4;
+        box-shadow: 
+            0 0 8px rgba(255, 0, 110, 0.4),
+            0 0 15px rgba(255, 0, 110, 0.3);
     }
     74% {
         opacity: 1;
-        filter: blur(10px);
-    }
-    90% {
-        opacity: 1;
-        filter: blur(10px);
+        box-shadow: 
+            0 0 25px rgba(255, 0, 110, 1),
+            0 0 50px rgba(255, 0, 110, 0.8),
+            0 0 75px rgba(255, 0, 110, 0.6),
+            0 0 100px rgba(255, 0, 110, 0.4);
     }
     92% {
-        opacity: 0.6;
-        filter: blur(15px);
+        opacity: 0.5;
+        box-shadow: 
+            0 0 10px rgba(255, 0, 110, 0.5),
+            0 0 20px rgba(255, 0, 110, 0.3);
     }
     94% {
         opacity: 1;
-        filter: blur(10px);
+        box-shadow: 
+            0 0 25px rgba(255, 0, 110, 1),
+            0 0 50px rgba(255, 0, 110, 0.8),
+            0 0 75px rgba(255, 0, 110, 0.6),
+            0 0 100px rgba(255, 0, 110, 0.4);
     }
 }
 
