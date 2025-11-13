@@ -657,6 +657,10 @@ function initializeApp() {
         
         try {
             loadWorldChatPreview(); // Загружаем превью последнего сообщения для кнопки
+            // Обновляем превью каждые 10 секунд
+            setInterval(() => {
+                loadWorldChatPreview();
+            }, 10000);
         } catch (e) {
             console.error('❌ Ошибка loadWorldChatPreview:', e);
         }
@@ -10546,7 +10550,9 @@ async function loadWorldChatPreview() {
         if (data.success) {
             const preview = document.getElementById('worldChatPreview');
             const msg = data.data;
-            preview.textContent = `${msg.nickname}: ${msg.message}`;
+            // Убираем @ из сообщения
+            const cleanMessage = msg.message.replace(/^[@&\/]\s*/, '');
+            preview.textContent = `${msg.nickname}: ${cleanMessage}`;
         }
     } catch (error) {
         console.error('Ошибка загрузки превью:', error);
