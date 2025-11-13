@@ -3,11 +3,30 @@ import { sql } from '@vercel/postgres';
 
 export const dynamic = 'force-dynamic';
 
+// Определение страны по городу
+function getCountryFromCity(city: string | null | undefined): string {
+  if (!city) return 'KZ';
+  
+  const cityLower = city.toLowerCase();
+  
+  // Города Казахстана
+  const kzCities = ['алматы', 'астана', 'нур-султан', 'шымкент', 'караганда', 'актобе', 'тараз', 'павлодар', 'усть-каменогорск', 'семей', 'атырау', 'костанай', 'кызылорда', 'уральск', 'петропавловск', 'актау', 'темиртау', 'туркестан', 'кокшетау', 'талдыкорган', 'экибастуз', 'рудный'];
+  
+  // Города России
+  const ruCities = ['москва', 'санкт-петербург', 'петербург', 'новосибирск', 'екатеринбург', 'казань', 'нижний новгород', 'челябинск', 'самара', 'омск', 'ростов-на-дону', 'уфа', 'красноярск', 'воронеж', 'пермь', 'волгоград'];
+  
+  if (kzCities.some(kzCity => cityLower.includes(kzCity))) return 'KZ';
+  if (ruCities.some(ruCity => cityLower.includes(ruCity))) return 'RU';
+  
+  // По умолчанию - Казахстан (т.к. приложение для КЗ)
+  return 'KZ';
+}
+
 // POST - инициализация пользователя при входе в приложение
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { tgId, nickname } = body;
+    const { tgId, nickname, city } = body;
 
     console.log('[USERS API] Инициализация пользователя (анонимно)');
 
@@ -40,16 +59,20 @@ export async function POST(req: NextRequest) {
       userToken = hmac.digest('hex');
     }
 
+    // Определяем страну из города
+    const country = getCountryFromCity(city);
+
     // Создаём/обновляем запись в users
     await sql`
-      INSERT INTO users (id, display_nickname, created_at, updated_at)
-      VALUES (${tgId}, ${nickname || null}, NOW(), NOW())
+      INSERT INTO users (id, display_nickname, country, created_at, updated_at)
+      VALUES (${tgId}, ${nickname || null}, ${country}, NOW(), NOW())
       ON CONFLICT (id) DO UPDATE SET
         -- Не перезаписываем уже существующий никнейм на сервера локальным значением
         display_nickname = CASE 
           WHEN users.display_nickname IS NULL OR users.display_nickname = '' THEN COALESCE(EXCLUDED.display_nickname, users.display_nickname)
           ELSE users.display_nickname
         END,
+        country = COALESCE(EXCLUDED.country, users.country),
         updated_at = NOW()
     `;
 

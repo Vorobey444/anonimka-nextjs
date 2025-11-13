@@ -4758,6 +4758,25 @@ function saveUserLocation(country, region, city) {
     } catch (error) {
         console.error('Ошибка сохранения локации:', error);
     }
+    
+    // Обновляем country в базе данных пользователя
+    try {
+        const userId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
+        if (userId && city) {
+            console.log('📍 Обновляем country в БД для города:', city);
+            await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tgId: parseInt(userId),
+                    city: city
+                })
+            });
+            console.log('✅ Country обновлена в БД');
+        }
+    } catch (error) {
+        console.error('Ошибка обновления country:', error);
+    }
 }
 
 // Показать экран автоматического определения локации
