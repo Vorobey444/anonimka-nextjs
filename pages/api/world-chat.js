@@ -44,16 +44,54 @@ export default async function handler(req, res) {
       const offset = parseInt(req.query.offset) || 0;
       const type = req.query.type || 'world';
 
-      // Автоочистка: удаляем сообщения старше 50-го для каждого типа
-      await sql`
-        DELETE FROM world_chat_messages
-        WHERE id IN (
-          SELECT id FROM world_chat_messages
-          WHERE type = ${type}
-          ORDER BY created_at DESC
-          OFFSET 50
-        )
-      `;
+      // Автоочистка: удаляем сообщения старше 50-го для каждого типа/города/пользователя
+      if (type === 'world') {
+        // Для МИР: последние 50 сообщений всего
+        await sql`
+          DELETE FROM world_chat_messages
+          WHERE type = 'world' AND id NOT IN (
+            SELECT id FROM world_chat_messages
+            WHERE type = 'world'
+            ORDER BY created_at DESC
+            LIMIT 50
+          )
+        `;
+      } else if (type === 'city') {
+        // Для ГОРОД: последние 50 сообщений ДЛЯ КАЖДОГО города
+        const cities = await sql`SELECT DISTINCT location_city FROM world_chat_messages WHERE type = 'city' AND location_city IS NOT NULL`;
+        for (const cityRow of cities) {
+          const city = cityRow.location_city;
+          await sql`
+            DELETE FROM world_chat_messages
+            WHERE type = 'city' AND location_city = ${city} AND id NOT IN (
+              SELECT id FROM world_chat_messages
+              WHERE type = 'city' AND location_city = ${city}
+              ORDER BY created_at DESC
+              LIMIT 50
+            )
+          `;
+        }
+      } else if (type === 'private') {
+        // Для ЛС: последние 50 сообщений ДЛЯ КАЖДОГО пользователя
+        const users = await sql`
+          SELECT DISTINCT user_token FROM world_chat_messages 
+          WHERE type = 'private' AND (user_token IS NOT NULL OR target_user_token IS NOT NULL)
+        `;
+        for (const userRow of users) {
+          const userToken = userRow.user_token;
+          await sql`
+            DELETE FROM world_chat_messages
+            WHERE type = 'private' 
+              AND (user_token = ${userToken} OR target_user_token = ${userToken})
+              AND id NOT IN (
+                SELECT id FROM world_chat_messages
+                WHERE type = 'private' AND (user_token = ${userToken} OR target_user_token = ${userToken})
+                ORDER BY created_at DESC
+                LIMIT 50
+              )
+          `;
+        }
+      }
 
       const messages = await sql`
         SELECT 
@@ -143,16 +181,62 @@ async function handleNewFormat(body, res) {
       created_at as "createdAt"
   `;
 
-  // Автоочистка после добавления: оставляем только 50 последних сообщений каждого типа
-  await sql`
-    DELETE FROM world_chat_messages
-    WHERE id IN (
-      SELECT id FROM world_chat_messages
-      WHERE type = ${type}
-      ORDER BY created_at DESC
-      OFFSET 50
-    )
-  `;
+  // Автоочистка после добавления: оставляем только 50 последних сообщений для каждого контекста
+  if (type === 'world') {
+    await sql`
+      DELETE FROM world_chat_messages
+      WHERE type = 'world' AND id NOT IN (
+        SELECT id FROM world_chat_messages
+        WHERE type = 'world'
+        ORDER BY created_at DESC
+        LIMIT 50
+      )
+    `;
+  } else if (type === 'city') {
+    // Очищаем только для текущего города
+    const city = result[0].location_city || body.location_city;
+    if (city) {
+      await sql`
+        DELETE FROM world_chat_messages
+        WHERE type = 'city' AND location_city = ${city} AND id NOT IN (
+          SELECT id FROM world_chat_messages
+          WHERE type = 'city' AND location_city = ${city}
+          ORDER BY created_at DESC
+          LIMIT 50
+        )
+      `;
+    }
+  } else if (type === 'private') {
+    // Очищаем для обоих участников диалога
+    const userToken = result[0].user_token || user_token;
+    const targetToken = result[0].target_user_token || body.target_user_token;
+    if (userToken) {
+      await sql`
+        DELETE FROM world_chat_messages
+        WHERE type = 'private' 
+          AND (user_token = ${userToken} OR target_user_token = ${userToken})
+          AND id NOT IN (
+            SELECT id FROM world_chat_messages
+            WHERE type = 'private' AND (user_token = ${userToken} OR target_user_token = ${userToken})
+            ORDER BY created_at DESC
+            LIMIT 50
+          )
+      `;
+    }
+    if (targetToken && targetToken !== userToken) {
+      await sql`
+        DELETE FROM world_chat_messages
+        WHERE type = 'private' 
+          AND (user_token = ${targetToken} OR target_user_token = ${targetToken})
+          AND id NOT IN (
+            SELECT id FROM world_chat_messages
+            WHERE type = 'private' AND (user_token = ${targetToken} OR target_user_token = ${targetToken})
+            ORDER BY created_at DESC
+            LIMIT 50
+          )
+      `;
+    }
+  }
 
   return res.status(200).json({
     success: true,
@@ -334,16 +418,63 @@ async function sendMessage(params, res) {
     RETURNING *
   `;
 
-  // Автоочистка: оставляем только 50 последних сообщений каждого типа
-  await sql`
-    DELETE FROM world_chat_messages
-    WHERE id IN (
-      SELECT id FROM world_chat_messages
-      WHERE type = ${type}
-      ORDER BY created_at DESC
-      OFFSET 50
-    )
-  `;
+  // Автоочистка с учетом контекста
+  if (type === 'world') {
+    // Для Мира: оставляем последние 50 глобальных сообщений
+    await sql`
+      DELETE FROM world_chat_messages
+      WHERE type = 'world' AND id NOT IN (
+        SELECT id FROM world_chat_messages
+        WHERE type = 'world'
+        ORDER BY created_at DESC
+        LIMIT 50
+      )
+    `;
+  } else if (type === 'city') {
+    // Для Города: оставляем 50 сообщений только для этого города
+    const city = insertResult[0].location_city;
+    if (city) {
+      await sql`
+        DELETE FROM world_chat_messages
+        WHERE type = 'city' AND location_city = ${city} AND id NOT IN (
+          SELECT id FROM world_chat_messages
+          WHERE type = 'city' AND location_city = ${city}
+          ORDER BY created_at DESC
+          LIMIT 50
+        )
+      `;
+    }
+  } else if (type === 'private') {
+    // Для ЛС: очищаем для обоих участников диалога
+    const userToken = insertResult[0].user_token;
+    const targetToken = insertResult[0].target_user_token;
+    if (userToken) {
+      await sql`
+        DELETE FROM world_chat_messages
+        WHERE type = 'private' 
+          AND (user_token = ${userToken} OR target_user_token = ${userToken})
+          AND id NOT IN (
+            SELECT id FROM world_chat_messages
+            WHERE type = 'private' AND (user_token = ${userToken} OR target_user_token = ${userToken})
+            ORDER BY created_at DESC
+            LIMIT 50
+          )
+      `;
+    }
+    if (targetToken && targetToken !== userToken) {
+      await sql`
+        DELETE FROM world_chat_messages
+        WHERE type = 'private' 
+          AND (user_token = ${targetToken} OR target_user_token = ${targetToken})
+          AND id NOT IN (
+            SELECT id FROM world_chat_messages
+            WHERE type = 'private' AND (user_token = ${targetToken} OR target_user_token = ${targetToken})
+            ORDER BY created_at DESC
+            LIMIT 50
+          )
+      `;
+    }
+  }
 
   return res.status(200).json({ 
     success: true, 
