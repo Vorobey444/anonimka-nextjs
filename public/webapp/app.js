@@ -10243,8 +10243,11 @@ function renderWorldChatMessages(messages) {
     
     lastWorldChatMessageIds = currentIds;
     
-    // Если есть новые сообщения, добавляем их без перерисовки всех
-    if (hasNewMessages && container.children.length > 0) {
+    // Проверяем, есть ли placeholder загрузки (первая загрузка)
+    const hasLoadingPlaceholder = container.querySelector('.loading-placeholder');
+    
+    // Если есть новые сообщения И в контейнере уже есть реальные сообщения (не placeholder)
+    if (hasNewMessages && container.children.length > 0 && !hasLoadingPlaceholder) {
         const newMessages = messages.filter(m => newMessageIds.includes(m.id));
         newMessages.forEach(msg => {
             const messageHtml = createWorldChatMessageHtml(msg);
@@ -10263,7 +10266,7 @@ function renderWorldChatMessages(messages) {
             });
         });
     } else {
-        // Первая загрузка - перерисовываем все
+        // Первая загрузка или есть placeholder - перерисовываем все
         container.innerHTML = messages.map(msg => createWorldChatMessageHtml(msg)).join('');
     }
     
