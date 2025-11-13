@@ -10418,9 +10418,9 @@ async function sendWorldChatMessage() {
         } else {
             console.error('❌ Ошибка отправки:', data.error);
             
-            // Если это таймаут - показываем alert с информацией
+            // Если это таймаут - показываем сообщение от сервера (там правильное время)
             if (response.status === 429) {
-                tg.showAlert('Таймаут на отправку 30 сек. Подождите и попробуйте снова.');
+                tg.showAlert(data.error || 'Подождите немного перед отправкой');
             } else {
                 tg.showAlert(data.error || 'Ошибка отправки сообщения');
             }
