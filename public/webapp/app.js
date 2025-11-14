@@ -2324,7 +2324,13 @@ async function loadMyAds() {
             
             const authorGender = formatGender(ad.gender);
             // Проверяем и на русском, и на английском
-            const authorIcon = (ad.gender?.toLowerCase() === 'male' || ad.gender?.toLowerCase() === 'мужчина') ? '♂️' : '♀️';
+            const genderLower = ad.gender?.toLowerCase();
+            let authorIcon = '♀️';
+            if (genderLower === 'male' || genderLower === 'мужчина') {
+                authorIcon = '♂️';
+            } else if (genderLower === 'пара') {
+                authorIcon = '👫';
+            }
             const targetText = formatTarget(ad.target);
             // Проверяем на английском и русском, поддержка "Пары"
             let targetIcon = '👤';
@@ -3086,6 +3092,9 @@ function displayAds(ads, city = null) {
                 return false;
             }
             if (adsFilters.gender === 'female' && genderLower !== 'female' && genderLower !== 'девушка') {
+                return false;
+            }
+            if (adsFilters.gender === 'couple' && genderLower !== 'пара') {
                 return false;
             }
         }
@@ -8019,7 +8028,8 @@ function formatGender(gender) {
         'male': 'Мужчина',
         'female': 'Девушка',
         'мужчина': 'Мужчина',
-        'девушка': 'Девушка'
+        'девушка': 'Девушка',
+        'пара': 'Пара'
     };
     return genderMap[gender?.toLowerCase()] || gender || 'Не указан';
 }
@@ -8224,7 +8234,12 @@ async function showAdModal(adId) {
         };
         
         const genderLower = ad.gender?.toLowerCase();
-        const genderIcon = (genderLower === 'male' || genderLower === 'мужчина') ? '♂️' : '♀️';
+        let genderIcon = '♀️';
+        if (genderLower === 'male' || genderLower === 'мужчина') {
+            genderIcon = '♂️';
+        } else if (genderLower === 'пара') {
+            genderIcon = '👫';
+        }
         
         // Маппинг ориентации на читаемые лейблы с эмодзи
         const orientationLabels = {
