@@ -892,15 +892,14 @@ async function loadSiteStats() {
         const totalVisitsEl = document.getElementById('totalVisits');
         const onlineNowEl = document.getElementById('onlineNow');
         
-        if (totalVisitsEl && data.stats) {
-            const totalVisits = data.stats.find(s => s.metric_name === 'total_visits');
-            if (totalVisits) {
-                totalVisitsEl.textContent = formatNumber(totalVisits.metric_value);
-            }
+        // 👥 - Общее количество уникальных пользователей за все время
+        if (totalVisitsEl && data.total_unique_users !== undefined) {
+            totalVisitsEl.textContent = formatNumber(data.total_unique_users);
         }
         
-        if (onlineNowEl && data.last_24h) {
-            onlineNowEl.textContent = formatNumber(data.last_24h);
+        // 🔥 - Уникальные пользователи за последние 24 часа
+        if (onlineNowEl && data.unique_last_24h !== undefined) {
+            onlineNowEl.textContent = formatNumber(data.unique_last_24h);
         }
     } catch (error) {
         console.error('Ошибка загрузки статистики:', error);

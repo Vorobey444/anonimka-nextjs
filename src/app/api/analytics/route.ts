@@ -103,29 +103,25 @@ export async function GET(request: NextRequest) {
       `;
 
       // Дополнительная аналитика
-      const todayVisits = await sql`
-        SELECT COUNT(*) as count
-        FROM page_visits
-        WHERE created_at >= CURRENT_DATE
-      `;
-
-      const uniqueToday = await sql`
+      // Общее количество уникальных пользователей за все время
+      const totalUniqueUsers = await sql`
         SELECT COUNT(DISTINCT user_id) as count
         FROM page_visits
-        WHERE created_at >= CURRENT_DATE AND user_id IS NOT NULL
+        WHERE user_id IS NOT NULL
       `;
 
-      const last24h = await sql`
-        SELECT COUNT(*) as count
+      // Уникальные пользователи за последние 24 часа
+      const uniqueLast24h = await sql`
+        SELECT COUNT(DISTINCT user_id) as count
         FROM page_visits
-        WHERE created_at >= NOW() - INTERVAL '24 hours'
+        WHERE created_at >= NOW() - INTERVAL '24 hours' 
+        AND user_id IS NOT NULL
       `;
 
       return NextResponse.json({
         stats: stats.rows,
-        today_visits: parseInt(todayVisits.rows[0].count),
-        unique_today: parseInt(uniqueToday.rows[0].count),
-        last_24h: parseInt(last24h.rows[0].count)
+        total_unique_users: parseInt(totalUniqueUsers.rows[0].count),
+        unique_last_24h: parseInt(uniqueLast24h.rows[0].count)
       });
     } else {
       // Получаем конкретную метрику
