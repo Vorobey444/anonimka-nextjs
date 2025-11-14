@@ -15,30 +15,32 @@ export async function POST(request: NextRequest) {
       reason, 
       description,
       relatedAdId,
-      relatedMessageId,
-      chatHistory 
+      relatedMessageId
     } = body;
 
-    // Проверяем что пользователь не жалуется сам на себя (только для авторизованных)
-    if (reporterId && reporterId === reportedUserId) {
+    // Проверяем что reporterId указан
+    if (!reporterId) {
+      return NextResponse.json({ error: 'Reporter ID is required' }, { status: 400 });
+    }
+
+    // Проверяем что пользователь не жалуется сам на себя
+    if (reporterId === reportedUserId) {
       return NextResponse.json({ error: 'Cannot report yourself' }, { status: 400 });
     }
 
-    // Проверяем что пользователь не создает дубликаты жалоб (только для авторизованных)
-    if (reporterId) {
-      const existingReport = await sql`
-        SELECT id FROM reports
-        WHERE reporter_id = ${reporterId}
-          AND reported_user_id = ${reportedUserId}
-          AND status = 'pending'
-          AND created_at > NOW() - INTERVAL '24 hours'
-      `;
-      
-      if (existingReport.rows.length > 0) {
-        return NextResponse.json({ 
-          error: 'You already reported this user recently' 
-        }, { status: 400 });
-      }
+    // Проверяем что пользователь не создает дубликаты жалоб
+    const existingReport = await sql`
+      SELECT id FROM reports
+      WHERE reporter_id = ${reporterId}
+        AND reported_user_id = ${reportedUserId}
+        AND status = 'pending'
+        AND created_at > NOW() - INTERVAL '24 hours'
+    `;
+    
+    if (existingReport.rows.length > 0) {
+      return NextResponse.json({ 
+        error: 'You already reported this user recently' 
+      }, { status: 400 });
     }
 
     // Создаем жалобу
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest) {
         description, related_ad_id, related_message_id
       )
       VALUES (
-        ${reporterId || null}, ${reportedUserId}, ${reportType}, ${reason},
+        ${reporterId}, ${reportedUserId}, ${reportType}, ${reason},
         ${description || null}, ${relatedAdId || null}, ${relatedMessageId || null}
       )
       RETURNING id, created_at
@@ -57,13 +59,10 @@ export async function POST(request: NextRequest) {
     const reportId = report.rows[0].id;
 
     // Получаем данные о пользователях
-    let reporterNick = 'Анонимный пользователь';
-    if (reporterId) {
-      const reporterData = await sql`
-        SELECT display_nickname, id FROM users WHERE id = ${reporterId}
-      `;
-      reporterNick = reporterData.rows[0]?.display_nickname || 'Аноним';
-    }
+    const reporterData = await sql`
+      SELECT display_nickname, id FROM users WHERE id = ${reporterId}
+    `;
+    const reporterNick = reporterData.rows[0]?.display_nickname || 'Аноним';
     
     const reportedData = await sql`
       SELECT display_nickname, id FROM users WHERE id = ${reportedUserId}
@@ -80,24 +79,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Получаем историю чата если это жалоба на сообщение
-    let chatHistoryData: Array<{nickname: string; message: string; timestamp: string; photo?: string}> | undefined;
-    if (reportType === 'message' && reportedUserId) {
+    let chatHistoryData: Array<{nickname: string; message: string; timestamp: string}> | undefined;
+    if (reportType === 'message' && (reporterId || reportedUserId)) {
       try {
-        // Получаем последние 20 сообщений из world_chat_messages
-        const chatMessages = await sql`
-          SELECT nickname, message, photo_url, created_at
-          FROM world_chat_messages
-          WHERE user_id = ${reportedUserId} OR user_id = ${reporterId || null}
-          ORDER BY created_at DESC
-          LIMIT 20
+        // Находим chat_id между двумя пользователями
+        const chatResult = await sql`
+          SELECT id FROM private_chats
+          WHERE (user1_id = ${reporterId} AND user2_id = ${reportedUserId})
+             OR (user1_id = ${reportedUserId} AND user2_id = ${reporterId})
+          LIMIT 1
         `;
         
-        chatHistoryData = chatMessages.rows.map(msg => ({
-          nickname: msg.nickname,
-          message: msg.message,
-          timestamp: new Date(msg.created_at).toLocaleString('ru-RU'),
-          photo: msg.photo_url
-        })).reverse(); // Переворачиваем чтобы старые были сверху
+        if (chatResult.rows.length > 0) {
+          const chatId = chatResult.rows[0].id;
+          
+          // Получаем последние 20 сообщений из этого чата
+          const messages = await sql`
+            SELECT m.message, m.sender_id, m.created_at, u.display_nickname
+            FROM messages m
+            LEFT JOIN users u ON m.sender_id = u.id
+            WHERE m.chat_id = ${chatId}
+            ORDER BY m.created_at DESC
+            LIMIT 20
+          `;
+          
+          chatHistoryData = messages.rows.map(msg => ({
+            nickname: msg.display_nickname || 'Аноним',
+            message: msg.message,
+            timestamp: new Date(msg.created_at).toLocaleString('ru-RU')
+          })).reverse(); // Переворачиваем чтобы старые были сверху
+        }
       } catch (err) {
         console.error('Error fetching chat history:', err);
         // Продолжаем без истории если произошла ошибка
@@ -246,7 +257,7 @@ async function sendReportToAdmin(data: {
   reason: string;
   description?: string;
   adText?: string;
-  chatHistory?: Array<{nickname: string; message: string; timestamp: string; photo?: string}>;
+  chatHistory?: Array<{nickname: string; message: string; timestamp: string}>;
 }) {
   if (!BOT_TOKEN) return;
 
@@ -265,9 +276,7 @@ async function sendReportToAdmin(data: {
     ad: '📝'
   };
 
-  const reporterInfo = data.reporterId 
-    ? `👤 <b>Жалобу подал:</b> ${data.reporterNick} (ID: ${data.reporterId})`
-    : `👤 <b>Жалобу подал:</b> ${data.reporterNick} (анонимно)`;
+  const reporterInfo = `👤 <b>Жалобу подал:</b> ${data.reporterNick} (ID: ${data.reporterId})`;
 
   let message = `
 🚨 <b>НОВАЯ ЖАЛОБА #${data.reportId}</b>
@@ -289,7 +298,7 @@ ${data.description ? `📝 <b>Описание:</b>\n${data.description}\n\n` : 
   if (data.chatHistory && data.chatHistory.length > 0 && data.reportType === 'message') {
     message += `💬 <b>История чата (последние ${data.chatHistory.length} сообщений):</b>\n`;
     data.chatHistory.forEach((msg, idx) => {
-      message += `${idx + 1}. <b>${msg.nickname}:</b> ${msg.message}${msg.photo ? ' 🖼️Фото' : ''} <i>(${msg.timestamp})</i>\n`;
+      message += `${idx + 1}. <b>${msg.nickname}:</b> ${msg.message} <i>(${msg.timestamp})</i>\n`;
     });
     message += '\n';
   }

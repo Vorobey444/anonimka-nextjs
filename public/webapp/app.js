@@ -11316,8 +11316,13 @@ async function submitReport() {
         return;
     }
     
-    // Получаем ID текущего пользователя
-    const currentUserId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id') || null;
+    // Получаем ID текущего пользователя (обязательно)
+    const currentUserId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
+    
+    if (!currentUserId) {
+        tg.showAlert('⚠️ Для отправки жалобы необходимо авторизоваться через Telegram');
+        return;
+    }
     
     const description = document.getElementById('reportDescription').value.trim();
     
@@ -11326,7 +11331,7 @@ async function submitReport() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                reporterId: currentUserId ? parseInt(currentUserId) : null,
+                reporterId: parseInt(currentUserId),
                 reportedUserId: currentReportData.reportedUserId,
                 reportType: currentReportData.reportType,
                 reason: currentReportData.reason,
