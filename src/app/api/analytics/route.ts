@@ -1,9 +1,62 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Проверка и создание таблиц если их нет
+async function ensureTablesExist() {
+  try {
+    // Проверяем существование таблицы page_visits
+    const tableCheck = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'page_visits'
+      );
+    `;
+    
+    if (!tableCheck.rows[0].exists) {
+      // Создаем таблицы
+      await sql`
+        CREATE TABLE IF NOT EXISTS page_visits (
+          id SERIAL PRIMARY KEY,
+          user_id BIGINT,
+          page VARCHAR(100) NOT NULL,
+          user_agent TEXT,
+          ip_address VARCHAR(45),
+          country VARCHAR(100),
+          city VARCHAR(100),
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+      `;
+      
+      await sql`
+        CREATE TABLE IF NOT EXISTS site_stats (
+          id SERIAL PRIMARY KEY,
+          metric_name VARCHAR(50) UNIQUE NOT NULL,
+          metric_value INTEGER DEFAULT 0,
+          updated_at TIMESTAMP DEFAULT NOW()
+        );
+      `;
+      
+      await sql`
+        INSERT INTO site_stats (metric_name, metric_value) VALUES 
+          ('total_visits', 0),
+          ('unique_users', 0),
+          ('online_now', 0)
+        ON CONFLICT (metric_name) DO NOTHING;
+      `;
+      
+      console.log('✅ Analytics tables created');
+    }
+  } catch (error) {
+    console.error('Error ensuring tables:', error);
+  }
+}
+
 // POST - Записать визит
 export async function POST(request: NextRequest) {
   try {
+    await ensureTablesExist();
+    
     const body = await request.json();
     const { userId, page, country, city } = body;
 
@@ -18,6 +71,14 @@ export async function POST(request: NextRequest) {
       INSERT INTO page_visits (user_id, page, user_agent, ip_address, country, city)
       VALUES (${userId || null}, ${page}, ${userAgent}, ${ip}, ${country || null}, ${city || null})
     `;
+    
+    // Обновляем счетчик
+    await sql`
+      UPDATE site_stats 
+      SET metric_value = metric_value + 1,
+          updated_at = NOW()
+      WHERE metric_name = 'total_visits'
+    `;
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -29,6 +90,8 @@ export async function POST(request: NextRequest) {
 // GET - Получить статистику
 export async function GET(request: NextRequest) {
   try {
+    await ensureTablesExist();
+    
     const { searchParams } = new URL(request.url);
     const metric = searchParams.get('metric');
 
@@ -60,9 +123,9 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         stats: stats.rows,
-        today_visits: todayVisits.rows[0].count,
-        unique_today: uniqueToday.rows[0].count,
-        last_24h: last24h.rows[0].count
+        today_visits: parseInt(todayVisits.rows[0].count),
+        unique_today: parseInt(uniqueToday.rows[0].count),
+        last_24h: parseInt(last24h.rows[0].count)
       });
     } else {
       // Получаем конкретную метрику
