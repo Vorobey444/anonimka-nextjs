@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       result = await sql`
         SELECT id, gender, target, goal, age_from, age_to, my_age, 
                body_type, orientation, text, nickname, country, region, city, 
-               is_pinned, pinned_until, created_at, user_token
+               is_pinned, pinned_until, created_at, user_token, tg_id as user_id
         FROM ads
         WHERE id = ${parseInt(id)}
         LIMIT 1
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       result = await sql`
         SELECT id, gender, target, goal, age_from, age_to, my_age, 
                body_type, orientation, text, nickname, country, region, city, 
-               is_pinned, pinned_until, created_at, user_token
+               is_pinned, pinned_until, created_at, user_token, tg_id as user_id
         FROM ads
         WHERE city = ${city} AND country = ${country}
         ORDER BY 
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       result = await sql`
         SELECT id, gender, target, goal, age_from, age_to, my_age, 
                body_type, orientation, text, nickname, country, region, city, 
-               is_pinned, pinned_until, created_at, user_token
+               is_pinned, pinned_until, created_at, user_token, tg_id as user_id
         FROM ads
         WHERE city = ${city}
         ORDER BY 
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
       result = await sql`
         SELECT id, gender, target, goal, age_from, age_to, my_age, 
                body_type, orientation, text, nickname, country, region, city, 
-               is_pinned, pinned_until, created_at, user_token
+               is_pinned, pinned_until, created_at, user_token, tg_id as user_id
         FROM ads
         WHERE country = ${country}
         ORDER BY 
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
       result = await sql`
         SELECT id, gender, target, goal, age_from, age_to, my_age, 
                body_type, orientation, text, nickname, country, region, city, 
-               is_pinned, pinned_until, created_at, user_token
+               is_pinned, pinned_until, created_at, user_token, tg_id as user_id
         FROM ads
         ORDER BY 
           CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
