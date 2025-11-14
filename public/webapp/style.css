@@ -3018,17 +3018,17 @@ h3 {
 .report-reasons {
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
+    gap: 0.5rem;
 }
 
 .report-reason-btn {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem;
+    gap: 0.6rem;
+    padding: 0.6rem 0.8rem;
     background: linear-gradient(135deg, rgba(131, 56, 236, 0.1), rgba(0, 217, 255, 0.1));
     border: 2px solid transparent;
-    border-radius: 12px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: left;
@@ -3038,29 +3038,29 @@ h3 {
 .report-reason-btn:hover {
     border-color: var(--neon-cyan);
     background: linear-gradient(135deg, rgba(131, 56, 236, 0.2), rgba(0, 217, 255, 0.2));
-    transform: translateX(5px);
+    transform: translateX(3px);
 }
 
 .report-reason-btn.selected {
     border-color: var(--neon-pink);
     background: linear-gradient(135deg, rgba(255, 0, 110, 0.2), rgba(131, 56, 236, 0.2));
-    box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+    box-shadow: 0 0 15px rgba(255, 0, 110, 0.3);
 }
 
 .reason-icon {
-    font-size: 2rem;
-    min-width: 40px;
+    font-size: 1.5rem;
+    min-width: 32px;
 }
 
 .reason-text h4 {
     color: var(--text-light);
-    font-size: 1rem;
-    margin-bottom: 0.2rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.1rem;
 }
 
 .reason-text p {
     color: var(--text-gray);
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     margin: 0;
 }
 

@@ -2554,6 +2554,17 @@ function previousStep() {
     }
 }
 
+// Обработчик кнопки "Назад" в форме создания анкеты
+function handleCreateAdBack() {
+    if (currentStep > 1) {
+        // Если не на первом шаге - возвращаемся на шаг назад
+        previousStep();
+    } else {
+        // Если на первом шаге - возвращаемся в главное меню
+        showMainMenu();
+    }
+}
+
 // Функции для контроля возраста
 function increaseAge(inputId) {
     const input = document.getElementById(inputId);
@@ -3108,7 +3119,7 @@ function displayAds(ads, city = null) {
             if (adsFilters.target === 'female' && targetLower !== 'female' && targetLower !== 'женщину' && targetLower !== 'девушку') {
                 return false;
             }
-            if (adsFilters.target === 'couple' && targetLower !== 'couple' && targetLower !== 'пару') {
+            if (adsFilters.target === 'couple' && targetLower !== 'couple' && targetLower !== 'пару' && targetLower !== 'пара') {
                 return false;
             }
         }
@@ -11305,11 +11316,8 @@ async function submitReport() {
         return;
     }
     
-    const currentUserId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
-    if (!currentUserId) {
-        tg.showAlert('Необходимо авторизоваться');
-        return;
-    }
+    // Получаем ID текущего пользователя
+    const currentUserId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id') || null;
     
     const description = document.getElementById('reportDescription').value.trim();
     
@@ -11318,7 +11326,7 @@ async function submitReport() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                reporterId: parseInt(currentUserId),
+                reporterId: currentUserId ? parseInt(currentUserId) : null,
                 reportedUserId: currentReportData.reportedUserId,
                 reportType: currentReportData.reportType,
                 reason: currentReportData.reason,
