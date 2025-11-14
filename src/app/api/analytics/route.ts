@@ -103,19 +103,27 @@ export async function GET(request: NextRequest) {
       `;
 
       // Дополнительная аналитика
-      // Общее количество уникальных пользователей за все время
+      // Общее количество зарегистрированных пользователей
       const totalUniqueUsers = await sql`
-        SELECT COUNT(DISTINCT user_id) as count
-        FROM page_visits
-        WHERE user_id IS NOT NULL
+        SELECT COUNT(*) as count
+        FROM users
+        WHERE id IS NOT NULL
       `;
 
-      // Уникальные пользователи за последние 24 часа
+      // Пользователи активные за последние 24 часа
+      // Считаем тех, кто создавал анкеты, отправлял сообщения или был онлайн
       const uniqueLast24h = await sql`
         SELECT COUNT(DISTINCT user_id) as count
-        FROM page_visits
-        WHERE created_at >= NOW() - INTERVAL '24 hours' 
-        AND user_id IS NOT NULL
+        FROM (
+          SELECT tg_id as user_id FROM ads 
+          WHERE created_at >= NOW() - INTERVAL '24 hours'
+          UNION
+          SELECT sender_id as user_id FROM messages 
+          WHERE created_at >= NOW() - INTERVAL '24 hours'
+          UNION
+          SELECT tg_id as user_id FROM world_chat_messages 
+          WHERE created_at >= NOW() - INTERVAL '24 hours'
+        ) as active_users
       `;
 
       return NextResponse.json({
