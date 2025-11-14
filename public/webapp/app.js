@@ -1015,7 +1015,8 @@ function checkTelegramAuth() {
         // Сохраняем в localStorage
         localStorage.setItem('telegram_user', JSON.stringify(userData));
         localStorage.setItem('telegram_auth_time', Date.now().toString());
-        console.log('✅ Авторизован через Telegram WebApp');
+        localStorage.setItem('user_id', userData.id.toString());
+        console.log('✅ Авторизован через Telegram WebApp, user_id:', userData.id);
         
         // Закрываем модальное окно если оно было открыто
         const modal = document.getElementById('telegramAuthModal');
@@ -1050,6 +1051,12 @@ function checkTelegramAuth() {
             // Авторизация действительна 30 дней
             if (authTime && (now - parseInt(authTime)) < 30 * 24 * 60 * 60 * 1000) {
                 console.log('✅ Авторизация действительна');
+                
+                // Восстанавливаем user_id если его нет
+                if (!localStorage.getItem('user_id') && userData.id) {
+                    localStorage.setItem('user_id', userData.id.toString());
+                    console.log('✅ Восстановлен user_id:', userData.id);
+                }
                 
                 // Закрываем модальное окно если оно было открыто
                 const modal = document.getElementById('telegramAuthModal');
