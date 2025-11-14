@@ -11316,13 +11316,8 @@ async function submitReport() {
         return;
     }
     
-    // Получаем ID текущего пользователя (обязательно)
+    // Получаем ID текущего пользователя
     const currentUserId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
-    
-    if (!currentUserId) {
-        tg.showAlert('⚠️ Для отправки жалобы необходимо авторизоваться через Telegram');
-        return;
-    }
     
     const description = document.getElementById('reportDescription').value.trim();
     
