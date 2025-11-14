@@ -110,16 +110,16 @@ export async function GET(request: NextRequest) {
         WHERE id IS NOT NULL
       `;
 
-      // Пользователи активные за последние 24 часа
+      // Пользователи активные за последние 24 часа (UTC+5)
       // Считаем тех, кто создавал анкеты или отправлял сообщения
       const uniqueLast24h = await sql`
         SELECT COUNT(DISTINCT user_id) as count
         FROM (
           SELECT tg_id as user_id FROM ads 
-          WHERE created_at >= NOW() - INTERVAL '24 hours'
+          WHERE created_at >= (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Almaty') - INTERVAL '24 hours'
           UNION
           SELECT sender_id as user_id FROM messages 
-          WHERE created_at >= NOW() - INTERVAL '24 hours'
+          WHERE created_at >= (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Almaty') - INTERVAL '24 hours'
         ) as active_users
         WHERE user_id IS NOT NULL
       `;
