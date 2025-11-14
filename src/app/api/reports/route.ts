@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
       reason, 
       description,
       relatedAdId,
-      relatedMessageId 
+      relatedMessageId,
+      chatHistory 
     } = body;
 
     // Проверяем что пользователь не жалуется сам на себя (только для авторизованных)
@@ -69,6 +70,40 @@ export async function POST(request: NextRequest) {
     `;
     const reportedNick = reportedData.rows[0]?.display_nickname || 'Аноним';
 
+    // Получаем текст анкеты если это жалоба на анкету
+    let adText: string | undefined;
+    if (reportType === 'ad' && relatedAdId) {
+      const adData = await sql`
+        SELECT text FROM ads WHERE id = ${relatedAdId}
+      `;
+      adText = adData.rows[0]?.text;
+    }
+
+    // Получаем историю чата если это жалоба на сообщение
+    let chatHistoryData: Array<{nickname: string; message: string; timestamp: string; photo?: string}> | undefined;
+    if (reportType === 'message' && reportedUserId) {
+      try {
+        // Получаем последние 20 сообщений из world_chat_messages
+        const chatMessages = await sql`
+          SELECT nickname, message, photo_url, created_at
+          FROM world_chat_messages
+          WHERE user_id = ${reportedUserId} OR user_id = ${reporterId || null}
+          ORDER BY created_at DESC
+          LIMIT 20
+        `;
+        
+        chatHistoryData = chatMessages.rows.map(msg => ({
+          nickname: msg.nickname,
+          message: msg.message,
+          timestamp: new Date(msg.created_at).toLocaleString('ru-RU'),
+          photo: msg.photo_url
+        })).reverse(); // Переворачиваем чтобы старые были сверху
+      } catch (err) {
+        console.error('Error fetching chat history:', err);
+        // Продолжаем без истории если произошла ошибка
+      }
+    }
+
     // Отправляем уведомление админу в Telegram
     await sendReportToAdmin({
       reportId,
@@ -78,7 +113,9 @@ export async function POST(request: NextRequest) {
       reportedUserId,
       reportType,
       reason,
-      description
+      description,
+      adText,
+      chatHistory: chatHistoryData
     });
 
     return NextResponse.json({ 
@@ -208,6 +245,8 @@ async function sendReportToAdmin(data: {
   reportType: string;
   reason: string;
   description?: string;
+  adText?: string;
+  chatHistory?: Array<{nickname: string; message: string; timestamp: string; photo?: string}>;
 }) {
   if (!BOT_TOKEN) return;
 
@@ -230,7 +269,7 @@ async function sendReportToAdmin(data: {
     ? `👤 <b>Жалобу подал:</b> ${data.reporterNick} (ID: ${data.reporterId})`
     : `👤 <b>Жалобу подал:</b> ${data.reporterNick} (анонимно)`;
 
-  const message = `
+  let message = `
 🚨 <b>НОВАЯ ЖАЛОБА #${data.reportId}</b>
 
 ${typeEmoji[data.reportType] || '⚠️'} <b>Тип:</b> ${data.reportType}
@@ -239,18 +278,30 @@ ${reasonEmoji[data.reason] || '⚠️'} <b>Причина:</b> ${data.reason}
 ${reporterInfo}
 🎯 <b>На кого жалоба:</b> ${data.reportedNick} (ID: ${data.reportedUserId})
 
-${data.description ? `📝 <b>Описание:</b>\n${data.description}\n` : ''}
-🕐 <b>Время:</b> ${new Date().toLocaleString('ru-RU')}
-  `.trim();
+${data.description ? `📝 <b>Описание:</b>\n${data.description}\n\n` : ''}`;
+
+  // Добавляем текст анкеты если это жалоба на анкету
+  if (data.adText && data.reportType === 'ad') {
+    message += `📝 <b>Текст анкеты:</b>\n<code>${data.adText.substring(0, 500)}${data.adText.length > 500 ? '...' : ''}</code>\n\n`;
+  }
+
+  // Добавляем историю чата если это жалоба из чата
+  if (data.chatHistory && data.chatHistory.length > 0 && data.reportType === 'message') {
+    message += `💬 <b>История чата (последние ${data.chatHistory.length} сообщений):</b>\n`;
+    data.chatHistory.forEach((msg, idx) => {
+      message += `${idx + 1}. <b>${msg.nickname}:</b> ${msg.message}${msg.photo ? ' 🖼️Фото' : ''} <i>(${msg.timestamp})</i>\n`;
+    });
+    message += '\n';
+  }
+
+  message += `🕐 <b>Время:</b> ${new Date().toLocaleString('ru-RU')}`;
+  message = message.trim();
 
   const keyboard = {
     inline_keyboard: [
       [
         { text: '✅ Забанить', callback_data: `ban_${data.reportId}_${data.reportedUserId}` },
         { text: '❌ Отклонить', callback_data: `reject_${data.reportId}` }
-      ],
-      [
-        { text: '👤 Профиль нарушителя', url: `https://anonimka.kz/webapp/?userId=${data.reportedUserId}` }
       ]
     ]
   };
