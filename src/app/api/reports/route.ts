@@ -18,24 +18,26 @@ export async function POST(request: NextRequest) {
       relatedMessageId 
     } = body;
 
-    // Проверяем что пользователь не жалуется сам на себя
-    if (reporterId === reportedUserId) {
+    // Проверяем что пользователь не жалуется сам на себя (только для авторизованных)
+    if (reporterId && reporterId === reportedUserId) {
       return NextResponse.json({ error: 'Cannot report yourself' }, { status: 400 });
     }
 
-    // Проверяем что пользователь не создает дубликаты жалоб
-    const existingReport = await sql`
-      SELECT id FROM reports
-      WHERE reporter_id = ${reporterId}
-        AND reported_user_id = ${reportedUserId}
-        AND status = 'pending'
-        AND created_at > NOW() - INTERVAL '24 hours'
-    `;
-
-    if (existingReport.rows.length > 0) {
-      return NextResponse.json({ 
-        error: 'You already reported this user recently' 
-      }, { status: 400 });
+    // Проверяем что пользователь не создает дубликаты жалоб (только для авторизованных)
+    if (reporterId) {
+      const existingReport = await sql`
+        SELECT id FROM reports
+        WHERE reporter_id = ${reporterId}
+          AND reported_user_id = ${reportedUserId}
+          AND status = 'pending'
+          AND created_at > NOW() - INTERVAL '24 hours'
+      `;
+      
+      if (existingReport.rows.length > 0) {
+        return NextResponse.json({ 
+          error: 'You already reported this user recently' 
+        }, { status: 400 });
+      }
     }
 
     // Создаем жалобу
@@ -45,7 +47,7 @@ export async function POST(request: NextRequest) {
         description, related_ad_id, related_message_id
       )
       VALUES (
-        ${reporterId}, ${reportedUserId}, ${reportType}, ${reason},
+        ${reporterId || null}, ${reportedUserId}, ${reportType}, ${reason},
         ${description || null}, ${relatedAdId || null}, ${relatedMessageId || null}
       )
       RETURNING id, created_at
@@ -54,14 +56,17 @@ export async function POST(request: NextRequest) {
     const reportId = report.rows[0].id;
 
     // Получаем данные о пользователях
-    const reporterData = await sql`
-      SELECT display_nickname, id FROM users WHERE id = ${reporterId}
-    `;
+    let reporterNick = 'Анонимный пользователь';
+    if (reporterId) {
+      const reporterData = await sql`
+        SELECT display_nickname, id FROM users WHERE id = ${reporterId}
+      `;
+      reporterNick = reporterData.rows[0]?.display_nickname || 'Аноним';
+    }
+    
     const reportedData = await sql`
       SELECT display_nickname, id FROM users WHERE id = ${reportedUserId}
     `;
-
-    const reporterNick = reporterData.rows[0]?.display_nickname || 'Аноним';
     const reportedNick = reportedData.rows[0]?.display_nickname || 'Аноним';
 
     // Отправляем уведомление админу в Telegram
@@ -221,13 +226,17 @@ async function sendReportToAdmin(data: {
     ad: '📝'
   };
 
+  const reporterInfo = data.reporterId 
+    ? `👤 <b>Жалобу подал:</b> ${data.reporterNick} (ID: ${data.reporterId})`
+    : `👤 <b>Жалобу подал:</b> ${data.reporterNick} (анонимно)`;
+
   const message = `
 🚨 <b>НОВАЯ ЖАЛОБА #${data.reportId}</b>
 
 ${typeEmoji[data.reportType] || '⚠️'} <b>Тип:</b> ${data.reportType}
 ${reasonEmoji[data.reason] || '⚠️'} <b>Причина:</b> ${data.reason}
 
-👤 <b>Жалобу подал:</b> ${data.reporterNick} (ID: ${data.reporterId})
+${reporterInfo}
 🎯 <b>На кого жалоба:</b> ${data.reportedNick} (ID: ${data.reportedUserId})
 
 ${data.description ? `📝 <b>Описание:</b>\n${data.description}\n` : ''}
