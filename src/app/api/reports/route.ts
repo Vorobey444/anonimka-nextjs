@@ -18,9 +18,24 @@ export async function POST(request: NextRequest) {
       relatedMessageId
     } = body;
 
+    console.log('[REPORTS API] Получены данные:', {
+      reporterId,
+      reportedUserId,
+      reportType,
+      reason,
+      body
+    });
+
     // Проверяем что reporterId указан
     if (!reporterId) {
+      console.error('[REPORTS API] reporterId отсутствует');
       return NextResponse.json({ error: 'Reporter ID is required' }, { status: 400 });
+    }
+
+    // Проверяем что reportedUserId указан
+    if (!reportedUserId) {
+      console.error('[REPORTS API] reportedUserId отсутствует');
+      return NextResponse.json({ error: 'Reported User ID is required' }, { status: 400 });
     }
 
     // Проверяем что пользователь не жалуется сам на себя

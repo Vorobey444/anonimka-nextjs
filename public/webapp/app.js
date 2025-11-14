@@ -11326,21 +11326,36 @@ async function submitReport() {
     // Получаем ID текущего пользователя
     const currentUserId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
     
+    // Проверяем что все необходимые данные есть
+    if (!currentUserId || !currentReportData.reportedUserId) {
+        console.error('Недостаточно данных для жалобы:', {
+            currentUserId,
+            reportedUserId: currentReportData.reportedUserId,
+            currentReportData
+        });
+        tg.showAlert('Ошибка: не удалось определить пользователей');
+        return;
+    }
+    
     const description = document.getElementById('reportDescription').value.trim();
+    
+    const reportPayload = {
+        reporterId: parseInt(currentUserId),
+        reportedUserId: parseInt(currentReportData.reportedUserId),
+        reportType: currentReportData.reportType,
+        reason: currentReportData.reason,
+        description: description || null,
+        relatedAdId: currentReportData.relatedAdId || null,
+        relatedMessageId: null
+    };
+    
+    console.log('Отправка жалобы:', reportPayload);
     
     try {
         const response = await fetch('/api/reports', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                reporterId: parseInt(currentUserId),
-                reportedUserId: currentReportData.reportedUserId,
-                reportType: currentReportData.reportType,
-                reason: currentReportData.reason,
-                description: description || null,
-                relatedAdId: currentReportData.relatedAdId || null,
-                relatedMessageId: null
-            })
+            body: JSON.stringify(reportPayload)
         });
         
         const data = await response.json();
