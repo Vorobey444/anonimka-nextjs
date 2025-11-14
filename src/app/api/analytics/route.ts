@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
       `;
 
       // Пользователи активные за последние 24 часа
-      // Считаем тех, кто создавал анкеты, отправлял сообщения или был онлайн
+      // Считаем тех, кто создавал анкеты или отправлял сообщения
       const uniqueLast24h = await sql`
         SELECT COUNT(DISTINCT user_id) as count
         FROM (
@@ -120,16 +120,14 @@ export async function GET(request: NextRequest) {
           UNION
           SELECT sender_id as user_id FROM messages 
           WHERE created_at >= NOW() - INTERVAL '24 hours'
-          UNION
-          SELECT tg_id as user_id FROM world_chat_messages 
-          WHERE created_at >= NOW() - INTERVAL '24 hours'
         ) as active_users
+        WHERE user_id IS NOT NULL
       `;
 
       return NextResponse.json({
         stats: stats.rows,
-        total_unique_users: parseInt(totalUniqueUsers.rows[0].count),
-        unique_last_24h: parseInt(uniqueLast24h.rows[0].count)
+        total_unique_users: parseInt(totalUniqueUsers.rows[0]?.count || 0),
+        unique_last_24h: parseInt(uniqueLast24h.rows[0]?.count || 0)
       });
     } else {
       // Получаем конкретную метрику
