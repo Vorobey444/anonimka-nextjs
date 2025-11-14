@@ -872,6 +872,19 @@ async function trackPageVisit(page = 'home') {
 // Функция для загрузки статистики
 async function loadSiteStats() {
     try {
+        // Проверяем ID пользователя - статистика только для админа
+        const userId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
+        const isAdmin = userId && parseInt(userId) === 884253640;
+        
+        // Скрываем/показываем блок статистики
+        const siteStatsEl = document.querySelector('.site-stats');
+        if (siteStatsEl) {
+            siteStatsEl.style.display = isAdmin ? 'flex' : 'none';
+        }
+        
+        // Загружаем данные только для админа
+        if (!isAdmin) return;
+        
         const response = await fetch('/api/analytics?metric=all');
         const data = await response.json();
         
