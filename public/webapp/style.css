@@ -3014,6 +3014,67 @@ h3 {
     padding: 25px;
 }
 
+/* Стили для модального окна жалобы */
+.report-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.report-reason-btn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(131, 56, 236, 0.1), rgba(0, 217, 255, 0.1));
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.report-reason-btn:hover {
+    border-color: var(--neon-cyan);
+    background: linear-gradient(135deg, rgba(131, 56, 236, 0.2), rgba(0, 217, 255, 0.2));
+    transform: translateX(5px);
+}
+
+.report-reason-btn.selected {
+    border-color: var(--neon-pink);
+    background: linear-gradient(135deg, rgba(255, 0, 110, 0.2), rgba(131, 56, 236, 0.2));
+    box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+}
+
+.reason-icon {
+    font-size: 2rem;
+    min-width: 40px;
+}
+
+.reason-text h4 {
+    color: var(--text-light);
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+}
+
+.reason-text p {
+    color: var(--text-gray);
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.neon-button.danger-outline {
+    background: transparent;
+    border: 2px solid var(--neon-pink);
+    color: var(--neon-pink);
+}
+
+.neon-button.danger-outline:hover {
+    background: rgba(255, 0, 110, 0.1);
+    box-shadow: 0 0 20px rgba(255, 0, 110, 0.4);
+}
+
 .auth-warning {
     background: rgba(255, 153, 0, 0.1);
     border: 2px solid rgba(255, 153, 0, 0.5);

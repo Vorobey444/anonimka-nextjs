@@ -62,6 +62,21 @@ export async function POST(req: NextRequest) {
     // Определяем страну из города
     const country = getCountryFromCity(city);
 
+    // Проверяем не забанен ли пользователь
+    const banCheck = await sql`
+      SELECT is_banned, ban_reason FROM users WHERE id = ${tgId}
+    `;
+    
+    if (banCheck.rows.length > 0 && banCheck.rows[0].is_banned) {
+      const banReason = banCheck.rows[0].ban_reason || 'Нарушение правил сервиса';
+      return NextResponse.json({
+        success: false,
+        error: 'banned',
+        message: `Ваш аккаунт заблокирован. Причина: ${banReason}`,
+        banReason: banReason
+      }, { status: 403 });
+    }
+
     // Создаём/обновляем запись в users
     await sql`
       INSERT INTO users (id, display_nickname, country, created_at, updated_at)

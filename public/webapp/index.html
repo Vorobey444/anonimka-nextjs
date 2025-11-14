@@ -1059,6 +1059,91 @@
                 <button class="neon-button primary full-width" onclick="contactAuthor()">
                     ✉️ Написать автору
                 </button>
+                <button class="neon-button danger-outline full-width" onclick="reportAd()" style="margin-top: 0.5rem;">
+                    🚨 Пожаловаться
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно жалобы -->
+    <div id="reportModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeReportModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🚨 Пожаловаться на пользователя</h2>
+                <button class="modal-close" onclick="closeReportModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-gray); margin-bottom: 1rem;">Выберите причину жалобы:</p>
+                
+                <div class="report-reasons">
+                    <button class="report-reason-btn" data-reason="spam" onclick="selectReportReason('spam')">
+                        <span class="reason-icon">📢</span>
+                        <div class="reason-text">
+                            <h4>Спам</h4>
+                            <p>Реклама, навязчивые сообщения</p>
+                        </div>
+                    </button>
+                    
+                    <button class="report-reason-btn" data-reason="porn" onclick="selectReportReason('porn')">
+                        <span class="reason-icon">🔞</span>
+                        <div class="reason-text">
+                            <h4>Порнография</h4>
+                            <p>Откровенные фото/видео</p>
+                        </div>
+                    </button>
+                    
+                    <button class="report-reason-btn" data-reason="harassment" onclick="selectReportReason('harassment')">
+                        <span class="reason-icon">😡</span>
+                        <div class="reason-text">
+                            <h4>Домогательства</h4>
+                            <p>Оскорбления, угрозы</p>
+                        </div>
+                    </button>
+                    
+                    <button class="report-reason-btn" data-reason="fake" onclick="selectReportReason('fake')">
+                        <span class="reason-icon">🎭</span>
+                        <div class="reason-text">
+                            <h4>Фейковый профиль</h4>
+                            <p>Подделка, ложная информация</p>
+                        </div>
+                    </button>
+                    
+                    <button class="report-reason-btn" data-reason="underage" onclick="selectReportReason('underage')">
+                        <span class="reason-icon">👶</span>
+                        <div class="reason-text">
+                            <h4>Несовершеннолетний</h4>
+                            <p>Пользователь младше 18 лет</p>
+                        </div>
+                    </button>
+                    
+                    <button class="report-reason-btn" data-reason="other" onclick="selectReportReason('other')">
+                        <span class="reason-icon">⚠️</span>
+                        <div class="reason-text">
+                            <h4>Другое</h4>
+                            <p>Иная причина</p>
+                        </div>
+                    </button>
+                </div>
+                
+                <div id="reportDetailsSection" style="display: none; margin-top: 1rem;">
+                    <label for="reportDescription" style="display: block; margin-bottom: 0.5rem; color: var(--text-light);">
+                        Дополнительная информация (необязательно):
+                    </label>
+                    <textarea 
+                        id="reportDescription" 
+                        class="neon-input" 
+                        rows="3" 
+                        maxlength="500"
+                        placeholder="Опишите ситуацию подробнее..."
+                        style="width: 100%; resize: vertical; font-size: 14px; padding: 0.8rem;"
+                    ></textarea>
+                    
+                    <button class="neon-button primary full-width" onclick="submitReport()" style="margin-top: 1rem;">
+                        ✅ Отправить жалобу
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -11200,4 +11200,136 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
+// ============= СИСТЕМА ЖАЛОБ =============
+
+let currentReportData = {
+    reportedUserId: null,
+    reportedNickname: null,
+    reportType: 'profile',
+    relatedAdId: null,
+    reason: null
+};
+
+// Открыть модальное окно жалобы (из анкеты)
+function reportAd() {
+    const ad = window.currentAds?.[window.currentAdIndex];
+    if (!ad) {
+        tg.showAlert('Анкета не найдена');
+        return;
+    }
+    
+    // Получаем ID пользователя из user_token
+    const reportedUserId = ad.user_id || null;
+    if (!reportedUserId) {
+        tg.showAlert('Не удалось определить автора анкеты');
+        return;
+    }
+    
+    currentReportData = {
+        reportedUserId: reportedUserId,
+        reportedNickname: ad.nickname || 'Аноним',
+        reportType: 'ad',
+        relatedAdId: ad.id,
+        reason: null
+    };
+    
+    document.getElementById('reportModal').style.display = 'flex';
+}
+
+// Пожаловаться на пользователя из Мир чата
+function reportUserFromWorldChat(nickname, userToken) {
+    closeWorldChatContextMenu();
+    
+    // Получаем user_id из токена (предполагаем что токен = user_id)
+    const reportedUserId = parseInt(userToken);
+    if (!reportedUserId) {
+        tg.showAlert('Не удалось определить пользователя');
+        return;
+    }
+    
+    currentReportData = {
+        reportedUserId: reportedUserId,
+        reportedNickname: nickname,
+        reportType: 'message',
+        relatedAdId: null,
+        reason: null
+    };
+    
+    document.getElementById('reportModal').style.display = 'flex';
+}
+
+// Закрыть модальное окно жалобы
+function closeReportModal() {
+    document.getElementById('reportModal').style.display = 'none';
+    document.getElementById('reportDetailsSection').style.display = 'none';
+    document.getElementById('reportDescription').value = '';
+    document.querySelectorAll('.report-reason-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    currentReportData.reason = null;
+}
+
+// Выбрать причину жалобы
+function selectReportReason(reason) {
+    currentReportData.reason = reason;
+    
+    // Визуально выделяем выбранную кнопку
+    document.querySelectorAll('.report-reason-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    event.target.closest('.report-reason-btn').classList.add('selected');
+    
+    // Показываем секцию с дополнительной информацией
+    document.getElementById('reportDetailsSection').style.display = 'block';
+}
+
+// Отправить жалобу
+async function submitReport() {
+    if (!currentReportData.reason) {
+        tg.showAlert('Выберите причину жалобы');
+        return;
+    }
+    
+    const currentUserId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
+    if (!currentUserId) {
+        tg.showAlert('Необходимо авторизоваться');
+        return;
+    }
+    
+    const description = document.getElementById('reportDescription').value.trim();
+    
+    try {
+        const response = await fetch('/api/reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                reporterId: parseInt(currentUserId),
+                reportedUserId: currentReportData.reportedUserId,
+                reportType: currentReportData.reportType,
+                reason: currentReportData.reason,
+                description: description || null,
+                relatedAdId: currentReportData.relatedAdId || null,
+                relatedMessageId: null
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            tg.showAlert('✅ Жалоба отправлена. Администрация рассмотрит её в ближайшее время.');
+            closeReportModal();
+        } else {
+            tg.showAlert(data.error || 'Ошибка при отправке жалобы');
+        }
+    } catch (error) {
+        console.error('Ошибка отправки жалобы:', error);
+        tg.showAlert('Ошибка при отправке жалобы');
+    }
+}
+
+// Заменяем старую функцию worldChatReportUser
+window.worldChatReportUser = reportUserFromWorldChat;
+
+
+
 
