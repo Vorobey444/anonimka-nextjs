@@ -11263,25 +11263,32 @@ function reportAd() {
 }
 
 // Пожаловаться на пользователя из Мир чата
-function reportUserFromWorldChat(nickname, userToken) {
+async function reportUserFromWorldChat(nickname, userToken) {
     closeWorldChatContextMenu();
     
-    // Получаем user_id из токена (предполагаем что токен = user_id)
-    const reportedUserId = parseInt(userToken);
-    if (!reportedUserId) {
+    try {
+        // Получаем user_id через user_token из API
+        const response = await fetch(`/api/users/by-token?token=${userToken}`);
+        const data = await response.json();
+        
+        if (!data.success || !data.userId) {
+            tg.showAlert('Не удалось определить пользователя');
+            return;
+        }
+        
+        currentReportData = {
+            reportedUserId: data.userId,
+            reportedNickname: nickname,
+            reportType: 'message',
+            relatedAdId: null,
+            reason: null
+        };
+        
+        document.getElementById('reportModal').style.display = 'flex';
+    } catch (error) {
+        console.error('Ошибка получения user_id:', error);
         tg.showAlert('Не удалось определить пользователя');
-        return;
     }
-    
-    currentReportData = {
-        reportedUserId: reportedUserId,
-        reportedNickname: nickname,
-        reportType: 'message',
-        relatedAdId: null,
-        reason: null
-    };
-    
-    document.getElementById('reportModal').style.display = 'flex';
 }
 
 // Закрыть модальное окно жалобы
