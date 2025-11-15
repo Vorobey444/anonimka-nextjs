@@ -7858,6 +7858,12 @@ async function markMessagesAsRead(chatId) {
         
         if (result.error) {
             console.warn('⚠️ Ошибка пометки сообщений как прочитанных:', result.error);
+        } else {
+            // Обновляем счётчик непрочитанных после успешной пометки
+            console.log('✅ Сообщения помечены как прочитанные, обновляем счётчик');
+            if (typeof updateChatBadge === 'function') {
+                updateChatBadge();
+            }
         }
     } catch (error) {
         console.error('Ошибка markMessagesAsRead:', error);
@@ -9241,7 +9247,8 @@ function showBlockWarning(show, type = 'other') {
 
 // Обновить UI блокировки
 function updateBlockUI() {
-    showBlockWarning(isUserBlocked);
+    // Если isUserBlocked = true, значит МЫ заблокировали (self), иначе нас заблокировали (other)
+    showBlockWarning(isUserBlocked, isUserBlocked ? 'self' : 'other');
 }
 
 // Заблокировать/разблокировать пользователя
