@@ -81,18 +81,17 @@ export async function POST(request: NextRequest) {
 
     const reportId = report.rows[0].id;
 
-    // Получаем данные о пользователях (включая username)
+    // Получаем данные о пользователях
     // Сначала пытаемся найти в users, если нет - ищем в ads
     let reporterNick = 'Аноним';
     let reporterUsername: string | undefined;
     
     const reporterData = await sql`
-      SELECT display_nickname, id, telegram_username FROM users WHERE id = ${reporterId}
+      SELECT display_nickname, id FROM users WHERE id = ${reporterId}
     `;
     
     if (reporterData.rows.length > 0) {
       reporterNick = reporterData.rows[0]?.display_nickname || 'Аноним';
-      reporterUsername = reporterData.rows[0]?.telegram_username;
     } else {
       // Если пользователя нет в users, ищем его nickname в ads
       const reporterAd = await sql`
@@ -107,12 +106,11 @@ export async function POST(request: NextRequest) {
     let reportedUsername: string | undefined;
     
     const reportedData = await sql`
-      SELECT display_nickname, id, telegram_username FROM users WHERE id = ${reportedUserId}
+      SELECT display_nickname, id FROM users WHERE id = ${reportedUserId}
     `;
     
     if (reportedData.rows.length > 0) {
       reportedNick = reportedData.rows[0]?.display_nickname || 'Аноним';
-      reportedUsername = reportedData.rows[0]?.telegram_username;
     } else {
       // Если пользователя нет в users, ищем его nickname в ads
       const reportedAd = await sql`
