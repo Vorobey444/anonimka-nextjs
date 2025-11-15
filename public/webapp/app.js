@@ -8657,40 +8657,7 @@ async function showPremiumModal() {
     });
 }
 
-// Переключение валюты в модальном окне тарифов
-function switchCurrency(currencyCode) {
-    console.log('💱 Переключение валюты на:', currencyCode);
-    
-    let currency, proPrice;
-    
-    if (currencyCode === 'rub') {
-        currency = '₽';
-        proPrice = 99;
-    } else {
-        currency = '₸';
-        proPrice = 499;
-    }
-    
-    // Обновляем кнопки переключателя
-    document.querySelectorAll('.currency-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.currency === currencyCode) {
-            btn.classList.add('active');
-        }
-    });
-    
-    // Обновляем валюту в FREE тарифе
-    const freeCurrencyElement = document.querySelector('.pricing-card:not(.featured) .price-currency');
-    if (freeCurrencyElement) {
-        freeCurrencyElement.textContent = currency;
-    }
-    
-    // Обновляем цену и валюту в PRO тарифе
-    document.getElementById('proPriceAmount').textContent = proPrice;
-    document.getElementById('proPriceCurrency').textContent = currency;
-    
-    console.log('✅ Валюта обновлена:', currency, proPrice);
-}
+// Функция switchCurrency удалена - валюта определяется автоматически по геолокации
 
 // Закрыть модальное окно тарифов
 function closePremiumModal() {
