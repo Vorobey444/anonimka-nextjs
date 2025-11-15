@@ -13,14 +13,17 @@ interface ErrorInfo {
 }
 
 class ErrorLogger {
-  private static instance: ErrorLogger;
+  private static instance: ErrorLogger | null = null;
   private apiUrl = '/api/log-error';
   private userId: string | null = null;
   private errorQueue: ErrorInfo[] = [];
   private isSending = false;
 
   private constructor() {
-    this.init();
+    // Инициализация только на клиенте
+    if (typeof window !== 'undefined') {
+      this.init();
+    }
   }
 
   static getInstance(): ErrorLogger {
@@ -35,6 +38,9 @@ class ErrorLogger {
   }
 
   private init() {
+    // Проверяем что мы на клиенте
+    if (typeof window === 'undefined') return;
+
     // Глобальный обработчик JS ошибок
     window.addEventListener('error', (event) => {
       this.logError({
@@ -126,6 +132,9 @@ class ErrorLogger {
 
   // Ручная отправка ошибки
   logManual(message: string, additionalInfo?: Record<string, any>) {
+    // Проверяем что мы на клиенте
+    if (typeof window === 'undefined') return;
+
     this.logError({
       message: `[Manual] ${message}`,
       stack: new Error().stack,
@@ -138,10 +147,11 @@ class ErrorLogger {
   }
 }
 
-// Экспортируем синглтон
-export const errorLogger = ErrorLogger.getInstance();
+// Экспортируем singleton только на клиенте
+let errorLoggerInstance: ErrorLogger | null = null;
 
-// Инициализация при загрузке модуля
 if (typeof window !== 'undefined') {
-  errorLogger;
+  errorLoggerInstance = ErrorLogger.getInstance();
 }
+
+export const errorLogger = errorLoggerInstance as ErrorLogger;
