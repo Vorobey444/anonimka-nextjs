@@ -1,5 +1,6 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
+import { ServerErrorLogger } from '@/lib/serverErrorLogger';
 
 const ADMIN_TG_ID = 884253640;
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -196,6 +197,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error creating report:', error);
+    await ServerErrorLogger.logError(error as Error, {
+      endpoint: '/api/reports',
+      method: 'POST',
+      statusCode: 500
+    });
     return NextResponse.json({ error: 'Failed to create report' }, { status: 500 });
   }
 }
@@ -230,8 +236,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ reports: reports.rows });
   } catch (error) {
-    console.error('Error getting reports:', error);
-    return NextResponse.json({ error: 'Failed to get reports' }, { status: 500 });
+    console.error('Error fetching reports:', error);
+    await ServerErrorLogger.logError(error as Error, {
+      endpoint: '/api/reports',
+      method: 'GET',
+      statusCode: 500
+    });
+    return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 });
   }
 }
 

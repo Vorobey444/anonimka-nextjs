@@ -1,8 +1,11 @@
-# 🔴 Система мониторинга клиентских ошибок
+# 🔴 Система мониторинга ошибок
 
 ## Описание
 
-Автоматическая система отслеживания JavaScript ошибок в браузерах пользователей с отправкой уведомлений в Telegram.
+Автоматическая система отслеживания ошибок (клиентских и серверных) с отправкой уведомлений в Telegram.
+
+- **Client-side** - JavaScript ошибки в браузерах пользователей
+- **Server-side** - ошибки API routes, необработанные exceptions в Next.js
 
 ## Как работает
 
@@ -210,12 +213,162 @@ if (process.env.NODE_ENV === 'production') {
 }
 ```
 
+## Серверные ошибки (Server-side)
+
+### Как работает
+
+**`serverErrorLogger.ts`** - логирует серверные ошибки:
+- API route exceptions
+- Database errors
+- Unhandled Promise rejections
+- Uncaught exceptions
+
+### Использование в API routes
+
+**Автоматическая обертка:**
+```typescript
+import { withErrorLogging } from '@/lib/serverErrorLogger';
+
+async function handler(request: Request) {
+  // Ваш код API route
+  const data = await fetchData();
+  return Response.json(data);
+}
+
+// Оборачиваем в withErrorLogging - автоматически ловит ошибки
+export const POST = withErrorLogging(handler, '/api/your-endpoint');
+```
+
+**Ручное логирование:**
+```typescript
+import { ServerErrorLogger } from '@/lib/serverErrorLogger';
+
+export async function POST(request: Request) {
+  try {
+    // Ваш код
+  } catch (error) {
+    await ServerErrorLogger.logError(error as Error, {
+      endpoint: '/api/reports',
+      method: 'POST',
+      statusCode: 500,
+      userId: reporterId,
+    });
+    return Response.json({ error: 'Failed' }, { status: 500 });
+  }
+}
+```
+
+**С помощью wrap() helper:**
+```typescript
+import { ServerErrorLogger } from '@/lib/serverErrorLogger';
+
+const result = await ServerErrorLogger.wrap(
+  async () => {
+    // Код который может упасть
+    return await dangerousOperation();
+  },
+  {
+    endpoint: '/api/dangerous',
+    method: 'POST',
+    userId: '12345',
+  }
+);
+```
+
+### Middleware
+
+**`middleware.ts`** - ловит глобальные необработанные ошибки:
+- `unhandledRejection` - Promise без catch
+- `uncaughtException` - синхронные ошибки без try-catch
+
+### Rate Limiting
+
+Защита от спама:
+- Максимум **10 ошибок в минуту** отправляются в Telegram
+- Остальные только логируются в Vercel Logs
+
+### Environment
+
+Telegram alerts только в **production**:
+```typescript
+if (process.env.VERCEL_ENV === 'production') {
+  // Отправляем в Telegram
+}
+```
+
+В development - только console.error
+
+## Пример серверного уведомления
+
+```
+🔴 Серверная ошибка!
+
+📍 Endpoint: POST /api/reports
+📊 Status: 500
+⏰ Время: 2025-11-15T14:30:45.123Z
+👤 User ID: 884253640
+🌍 Environment: production
+
+❌ Ошибка:
+Error: Failed to connect to database
+
+📋 Stack:
+at sql.query (/var/task/node_modules/@vercel/postgres/dist/index.js:45:12)
+at POST (/var/task/.next/server/app/api/reports/route.js:23:18)
+```
+
+## Vercel Logs Integration
+
+### Прямая интеграция (альтернатива)
+
+Можно настроить **Vercel Log Drains** для отправки всех логов:
+
+1. Vercel Dashboard → Settings → Log Drains
+2. Add Log Drain → Webhook URL
+3. Создайте endpoint `/api/vercel-logs` который парсит и отправляет ошибки
+
+**Пример `/api/vercel-logs/route.ts`:**
+```typescript
+export async function POST(request: Request) {
+  const logs = await request.json();
+  
+  // Фильтруем только ERROR и WARNING
+  const errors = logs.filter((log: any) => 
+    log.level === 'error' || log.level === 'warning'
+  );
+  
+  // Отправляем в Telegram
+  for (const error of errors) {
+    await sendTelegramAlert(error);
+  }
+  
+  return Response.json({ success: true });
+}
+```
+
+Но текущий способ проще и не требует дополнительных endpoint'ов.
+
 ## Итог
 
-✅ Автоматический мониторинг клиентских ошибок  
+✅ Автоматический мониторинг **клиентских** ошибок  
+✅ Автоматический мониторинг **серверных** ошибок  
 ✅ Мгновенные уведомления в Telegram  
 ✅ Детальная информация для отладки  
 ✅ Фильтрация спама и ложных срабатываний  
+✅ Rate limiting (не более 10 ошибок/мин)  
 ✅ Не влияет на UX пользователей  
+✅ Работает в production, не спамит в development  
 
 Теперь вы узнаете о проблемах на сайте **раньше** чем пользователи успеют пожаловаться! 🎯
+
+### Проверить работу
+
+**1. Vercel Logs:**
+https://vercel.com/dashboard → ваш проект → Logs
+
+**2. Telegram бот:**
+Получайте уведомления в личных сообщениях
+
+**3. Тестирование:**
+- Client: `throw new Error('Test')` в консоли браузера
+- Server: Вызовите API с невалидными данными
