@@ -227,11 +227,30 @@ export async function PATCH(request: NextRequest) {
       const reportedUserId = report.rows[0].reported_user_id;
       const banReason = `${report.rows[0].reason}: ${report.rows[0].description || 'По жалобе пользователя'}`;
 
+      console.log(`[REPORTS] Блокировка пользователя ${reportedUserId}, причина: ${banReason}`);
+
       // Баним пользователя
       await sql`
         INSERT INTO banned_users (user_id, banned_by, reason, related_report_id)
         VALUES (${reportedUserId}, ${adminId}, ${banReason}, ${reportId})
         ON CONFLICT (user_id) DO NOTHING
+      `;
+
+      // Удаляем все анкеты забаненного пользователя
+      await sql`
+        DELETE FROM ads 
+        WHERE user_id = ${reportedUserId}
+      `;
+
+      console.log(`[REPORTS] Удалены все анкеты пользователя ${reportedUserId}`);
+
+      // Помечаем пользователя как забаненного
+      await sql`
+        UPDATE users 
+        SET is_banned = true,
+            ban_reason = ${banReason},
+            banned_at = NOW()
+        WHERE id = ${reportedUserId}
       `;
 
       // Обновляем статус жалобы
@@ -244,9 +263,12 @@ export async function PATCH(request: NextRequest) {
         WHERE id = ${reportId}
       `;
 
+      console.log(`[REPORTS] Пользователь ${reportedUserId} заблокирован, анкеты удалены`);
+
       return NextResponse.json({ 
         success: true, 
-        message: 'User banned successfully' 
+        message: 'User banned and ads deleted successfully',
+        bannedUserId: reportedUserId
       });
 
     } else if (action === 'reject') {
