@@ -2778,15 +2778,35 @@ function validateCurrentStep() {
             return hasOrientation;
         case 8: // Текст анкеты
             const adText = document.getElementById('adText')?.value.trim();
-            console.log(`Шаг 8 (Текст): textarea элемент:`, document.getElementById('adText'));
+            const adTextArea = document.getElementById('adText');
+            console.log(`Шаг 8 (Текст): textarea элемент:`, adTextArea);
             console.log(`Шаг 8 (Текст): значение:`, adText);
             if (adText && adText.length >= 10) {
                 formData.text = adText;
                 console.log(`Шаг 8 (Текст): ✅ ${adText.length} символов`);
+                // Убираем красную границу если была
+                if (adTextArea) {
+                    adTextArea.style.borderColor = '';
+                }
                 return true;
             }
             console.log(`Шаг 8 (Текст): ❌ слишком короткий текст`);
-            tg.showAlert('Пожалуйста, введите текст анкеты (минимум 10 символов)');
+            
+            // Визуальная обратная связь
+            if (adTextArea) {
+                adTextArea.style.borderColor = '#ff0066';
+                adTextArea.focus();
+            }
+            
+            // Показываем сообщение пользователю
+            const errorMessage = `Пожалуйста, введите текст анкеты\n\nМинимум 10 символов${adText ? `\nСейчас: ${adText.length} симв.` : ''}`;
+            
+            if (window.Telegram?.WebApp?.showAlert) {
+                window.Telegram.WebApp.showAlert(errorMessage);
+            } else {
+                alert(errorMessage);
+            }
+            
             return false;
     }
     return false;
