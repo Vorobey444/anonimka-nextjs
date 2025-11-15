@@ -2872,8 +2872,8 @@ function selectOrientation(orientation) {
 
 // Отправка анкеты
 async function submitAd() {
+    // validateCurrentStep() сам показывает специфичные ошибки
     if (!validateCurrentStep()) {
-        tg.showAlert('Заполните все поля');
         return;
     }
 
