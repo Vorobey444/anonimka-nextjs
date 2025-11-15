@@ -73,16 +73,18 @@ export async function POST(request: NextRequest) {
 
     const reportId = report.rows[0].id;
 
-    // Получаем данные о пользователях
+    // Получаем данные о пользователях (включая username)
     const reporterData = await sql`
-      SELECT display_nickname, id FROM users WHERE id = ${reporterId}
+      SELECT display_nickname, id, telegram_username FROM users WHERE id = ${reporterId}
     `;
     const reporterNick = reporterData.rows[0]?.display_nickname || 'Аноним';
+    const reporterUsername = reporterData.rows[0]?.telegram_username;
     
     const reportedData = await sql`
-      SELECT display_nickname, id FROM users WHERE id = ${reportedUserId}
+      SELECT display_nickname, id, telegram_username FROM users WHERE id = ${reportedUserId}
     `;
     const reportedNick = reportedData.rows[0]?.display_nickname || 'Аноним';
+    const reportedUsername = reportedData.rows[0]?.telegram_username;
 
     // Получаем текст анкеты если это жалоба на анкету
     let adText: string | undefined;
@@ -135,8 +137,10 @@ export async function POST(request: NextRequest) {
       reportId,
       reporterNick,
       reporterId,
+      reporterUsername,
       reportedNick,
       reportedUserId,
+      reportedUsername,
       reportType,
       reason,
       description,
@@ -266,8 +270,10 @@ async function sendReportToAdmin(data: {
   reportId: number;
   reporterNick: string;
   reporterId: number;
+  reporterUsername?: string;
   reportedNick: string;
   reportedUserId: number;
+  reportedUsername?: string;
   reportType: string;
   reason: string;
   description?: string;
@@ -291,7 +297,13 @@ async function sendReportToAdmin(data: {
     ad: '📝'
   };
 
-  const reporterInfo = `👤 <b>Жалобу подал:</b> ${data.reporterNick} (ID: ${data.reporterId})`;
+  const reporterInfo = data.reporterUsername 
+    ? `👤 <b>Жалобу подал:</b> ${data.reporterNick} (ID: ${data.reporterId}) (@${data.reporterUsername})`
+    : `👤 <b>Жалобу подал:</b> ${data.reporterNick} (ID: ${data.reporterId})`;
+  
+  const reportedInfo = data.reportedUsername
+    ? `🎯 <b>На кого жалоба:</b> ${data.reportedNick} (ID: ${data.reportedUserId}) (@${data.reportedUsername})`
+    : `🎯 <b>На кого жалоба:</b> ${data.reportedNick} (ID: ${data.reportedUserId})`;
 
   let message = `
 🚨 <b>НОВАЯ ЖАЛОБА #${data.reportId}</b>
@@ -300,7 +312,7 @@ ${typeEmoji[data.reportType] || '⚠️'} <b>Тип:</b> ${data.reportType}
 ${reasonEmoji[data.reason] || '⚠️'} <b>Причина:</b> ${data.reason}
 
 ${reporterInfo}
-🎯 <b>На кого жалоба:</b> ${data.reportedNick} (ID: ${data.reportedUserId})
+${reportedInfo}
 
 ${data.description ? `📝 <b>Описание:</b>\n${data.description}\n\n` : ''}`;
 
