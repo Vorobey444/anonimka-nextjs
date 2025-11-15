@@ -82,17 +82,53 @@ export async function POST(request: NextRequest) {
     const reportId = report.rows[0].id;
 
     // Получаем данные о пользователях (включая username)
+    // Сначала пытаемся найти в users, если нет - ищем в ads
+    let reporterNick = 'Аноним';
+    let reporterUsername: string | undefined;
+    
     const reporterData = await sql`
       SELECT display_nickname, id, telegram_username FROM users WHERE id = ${reporterId}
     `;
-    const reporterNick = reporterData.rows[0]?.display_nickname || 'Аноним';
-    const reporterUsername = reporterData.rows[0]?.telegram_username;
+    
+    if (reporterData.rows.length > 0) {
+      reporterNick = reporterData.rows[0]?.display_nickname || 'Аноним';
+      reporterUsername = reporterData.rows[0]?.telegram_username;
+    } else {
+      // Если пользователя нет в users, ищем его nickname в ads
+      const reporterAd = await sql`
+        SELECT nickname FROM ads WHERE tg_id = ${reporterId} ORDER BY created_at DESC LIMIT 1
+      `;
+      if (reporterAd.rows.length > 0) {
+        reporterNick = reporterAd.rows[0].nickname || 'Аноним';
+      }
+    }
+    
+    let reportedNick = 'Аноним';
+    let reportedUsername: string | undefined;
     
     const reportedData = await sql`
       SELECT display_nickname, id, telegram_username FROM users WHERE id = ${reportedUserId}
     `;
-    const reportedNick = reportedData.rows[0]?.display_nickname || 'Аноним';
-    const reportedUsername = reportedData.rows[0]?.telegram_username;
+    
+    if (reportedData.rows.length > 0) {
+      reportedNick = reportedData.rows[0]?.display_nickname || 'Аноним';
+      reportedUsername = reportedData.rows[0]?.telegram_username;
+    } else {
+      // Если пользователя нет в users, ищем его nickname в ads
+      const reportedAd = await sql`
+        SELECT nickname FROM ads WHERE tg_id = ${reportedUserId} ORDER BY created_at DESC LIMIT 1
+      `;
+      if (reportedAd.rows.length > 0) {
+        reportedNick = reportedAd.rows[0].nickname || 'Аноним';
+      }
+    }
+
+    console.log('[REPORTS] Найдены пользователи:', {
+      reporterNick,
+      reporterUsername,
+      reportedNick,
+      reportedUsername
+    });
 
     // Получаем текст анкеты если это жалоба на анкету
     let adText: string | undefined;
