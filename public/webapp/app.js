@@ -8734,7 +8734,7 @@ function updatePremiumModalButtons() {
         if (trialBtn) trialBtn.style.display = 'none';
         if (referralInfo) referralInfo.style.display = 'none';
     } else {
-        // Пользователь FREE - показываем ОДНУ кнопку "Оформить PRO"
+        // Пользователь FREE - показываем кнопки покупки, trial (если не использован) и реферала
         if (freeBtn) {
             freeBtn.textContent = 'Текущий план (FREE)';
             freeBtn.disabled = true;
@@ -8746,8 +8746,13 @@ function updatePremiumModalButtons() {
             proBtn.classList.remove('locked', 'active');
             proBtn.title = 'Не всё можно купить за деньги... но попробуй 😏';
         }
-        // Скрываем отдельную кнопку триала - он будет предложен в диалоге
-        if (trialBtn) trialBtn.style.display = 'none';
+        
+        // Показываем кнопку trial только если пользователь ещё не использовал её
+        const trial7hUsed = userPremiumStatus.trial7h_used || false;
+        if (trialBtn) {
+            trialBtn.style.display = trial7hUsed ? 'none' : 'block';
+        }
+        
         if (referralInfo) referralInfo.style.display = 'block';
     }
 }
@@ -11381,7 +11386,69 @@ window.worldChatReportUser = reportUserFromWorldChat;
  * Покупка PRO подписки через Telegram Stars
  * Перенаправляет пользователя в бота для оплаты
  */
-async function buyPremiumViaTelegram() {
+// Глобальная переменная для хранения текущего выбранного срока
+let selectedPremiumMonths = 1;
+let selectedPremiumPrice = { stars: 50, discount: 0, kzt: 499, rub: 100 };
+
+// Обновление ценовой информации при движении slider
+async function updatePremiumPricing(months) {
+    selectedPremiumMonths = parseInt(months);
+    
+    try {
+        // Запрашиваем цену с API
+        const response = await fetch(`/api/premium/calculate?months=${months}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Ошибка расчёта цены:', data.error);
+            return;
+        }
+        
+        selectedPremiumPrice = {
+            stars: data.stars,
+            discount: data.discount,
+            kzt: data.kzt_equivalent,
+            rub: data.rub_equivalent
+        };
+        
+        // Обновляем интерфейс
+        const durationLabel = document.getElementById('premiumDurationLabel');
+        const priceLabel = document.getElementById('premiumPrice');
+        const priceRubLabel = document.getElementById('premiumPriceRub');
+        const discountLabel = document.getElementById('premiumDiscount');
+        
+        // Склонение слова "месяц"
+        const monthWord = months === 1 ? 'месяц' : (months >= 2 && months <= 4) ? 'месяца' : 'месяцев';
+        
+        if (durationLabel) {
+            durationLabel.textContent = `${months} ${monthWord}`;
+        }
+        
+        if (priceLabel) {
+            priceLabel.textContent = `${data.stars} ⭐`;
+        }
+        
+        if (priceRubLabel) {
+            priceRubLabel.textContent = `~${Math.round(data.kzt_equivalent)}₸ / ~${Math.round(data.rub_equivalent)}₽`;
+        }
+        
+        if (discountLabel) {
+            if (data.discount > 0) {
+                discountLabel.textContent = `🔥 Скидка ${data.discount}%`;
+                discountLabel.style.display = 'block';
+            } else {
+                discountLabel.textContent = '';
+                discountLabel.style.display = 'none';
+            }
+        }
+        
+    } catch (error) {
+        console.error('Ошибка обновления цены:', error);
+    }
+}
+
+// Покупка PRO с выбранным сроком
+async function buyPremiumWithDuration() {
     try {
         // Проверяем авторизацию
         if (!isTelegramWebApp) {
@@ -11398,35 +11465,45 @@ async function buyPremiumViaTelegram() {
         // Закрываем модалку Premium
         closePremiumModal();
         
+        // Формируем текст подтверждения
+        const monthWord = selectedPremiumMonths === 1 ? 'месяц' : 
+                         (selectedPremiumMonths >= 2 && selectedPremiumMonths <= 4) ? 'месяца' : 'месяцев';
+        
+        let confirmText = `💳 Покупка PRO подписки\n\n` +
+                         `⏱️ Срок: ${selectedPremiumMonths} ${monthWord}\n` +
+                         `💰 Стоимость: ${selectedPremiumPrice.stars} Stars (~${Math.round(selectedPremiumPrice.kzt)}₸)`;
+        
+        if (selectedPremiumPrice.discount > 0) {
+            confirmText += `\n🔥 Скидка: ${selectedPremiumPrice.discount}%`;
+        }
+        
+        confirmText += '\n\n✨ Что входит:\n' +
+                      '• 3 анкеты/день\n' +
+                      '• Безлимит фото\n' +
+                      '• Закрепление 3×1ч/день\n' +
+                      '• Значок PRO\n\n' +
+                      'Открыть бота для оплаты?';
+        
         // Показываем информацию о покупке
-        tg.showConfirm(
-            '💳 Покупка PRO подписки\n\n' +
-            '💰 Стоимость: 50 Stars (~499₸)\n' +
-            '⏱️ Срок: 1 месяц\n\n' +
-            '✨ Что входит:\n' +
-            '• 3 анкеты/день\n' +
-            '• Безлимит фото\n' +
-            '• Закрепление 3×1ч/день\n' +
-            '• Значок PRO\n\n' +
-            '💡 Также доступны:\n' +
-            '• 3 месяца - 130 Stars (-17%)\n' +
-            '• 6 месяцев - 215 Stars (-30%)\n' +
-            '• 12 месяцев - 360 Stars (-41%)\n\n' +
-            'Открыть бота для оплаты?',
-            (confirmed) => {
-                if (confirmed) {
-                    // Открываем бота
-                    const botUrl = 'https://t.me/anonimka_kz_bot?start=buy_premium';
-                    if (window.Telegram?.WebApp) {
-                        window.Telegram.WebApp.openTelegramLink(botUrl);
-                    } else {
-                        window.open(botUrl, '_blank');
-                    }
+        tg.showConfirm(confirmText, (confirmed) => {
+            if (confirmed) {
+                // Открываем бота с параметром количества месяцев
+                const botUrl = `https://t.me/anonimka_kz_bot?start=buy_premium_${selectedPremiumMonths}m`;
+                if (window.Telegram?.WebApp) {
+                    window.Telegram.WebApp.openTelegramLink(botUrl);
+                } else {
+                    window.open(botUrl, '_blank');
                 }
             }
-        );
+        });
     } catch (error) {
         console.error('Ошибка покупки PRO:', error);
         tg.showAlert('Ошибка при переходе к оплате. Попробуйте позже.');
     }
+}
+
+// Старая функция buyPremiumViaTelegram() для обратной совместимости
+async function buyPremiumViaTelegram() {
+    // Перенаправляем на новую функцию
+    await buyPremiumWithDuration();
 }
