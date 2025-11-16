@@ -2323,7 +2323,7 @@ h3 {
 .hamburger-menu {
     position: absolute;
     top: 15px;
-    left: 10px;
+    left: 60px;
     width: 40px;
     height: 40px;
     background: transparent;
@@ -5068,7 +5068,7 @@ h3 {
 .premium-toggle {
     position: fixed;
     top: 8px;
-    right: 8px;
+    right: 60px;
     z-index: 999;
     display: flex;
     gap: 2px;
