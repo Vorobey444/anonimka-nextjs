@@ -5067,7 +5067,7 @@ h3 {
 
 .premium-toggle {
     position: fixed;
-    top: 8px;
+    top: 15px;
     right: 8px;
     z-index: 999;
     display: flex;
