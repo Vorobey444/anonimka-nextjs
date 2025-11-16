@@ -11527,7 +11527,12 @@ async function buyPremiumWithDuration() {
             if (confirmed) {
                 // Открываем бота с параметром количества месяцев
                 const botUrl = `https://t.me/anonimka_kz_bot?start=buy_premium_${selectedPremiumMonths}m`;
-                if (window.Telegram?.WebApp) {
+                console.log('Открываем бота для оплаты:', botUrl);
+                
+                // Используем правильный метод для открытия Telegram ссылки
+                if (tg.openTelegramLink) {
+                    tg.openTelegramLink(botUrl);
+                } else if (window.Telegram?.WebApp?.openTelegramLink) {
                     window.Telegram.WebApp.openTelegramLink(botUrl);
                 } else {
                     window.open(botUrl, '_blank');
