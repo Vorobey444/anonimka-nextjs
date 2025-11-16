@@ -11390,6 +11390,28 @@ window.worldChatReportUser = reportUserFromWorldChat;
 let selectedPremiumMonths = 1;
 let selectedPremiumPrice = { stars: 50, discount: 0, kzt: 499, rub: 100 };
 
+// Открыть подмодальное окно выбора срока подписки
+function showStarsPurchaseModal() {
+    const modal = document.getElementById('starsPurchaseModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Сбрасываем slider на 1 месяц при открытии
+        const slider = document.getElementById('premiumSlider');
+        if (slider) {
+            slider.value = 1;
+            updatePremiumPricing(1);
+        }
+    }
+}
+
+// Закрыть подмодальное окно выбора срока
+function closeStarsPurchaseModal() {
+    const modal = document.getElementById('starsPurchaseModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 // Обновление ценовой информации при движении slider
 async function updatePremiumPricing(months) {
     selectedPremiumMonths = parseInt(months);
@@ -11462,7 +11484,8 @@ async function buyPremiumWithDuration() {
             return;
         }
         
-        // Закрываем модалку Premium
+        // Закрываем подмодальное окно Stars и основное модальное окно Premium
+        closeStarsPurchaseModal();
         closePremiumModal();
         
         // Формируем текст подтверждения
