@@ -66,6 +66,20 @@ export async function POST(request: NextRequest) {
                request.headers.get('x-real-ip') || 
                'Unknown';
 
+    // Если есть userId, проверяем/создаем пользователя в БД
+    if (userId && userId !== 'anonymous') {
+      try {
+        await sql`
+          INSERT INTO users (telegram_id, created_at, updated_at)
+          VALUES (${userId}, NOW(), NOW())
+          ON CONFLICT (telegram_id) DO UPDATE
+          SET updated_at = NOW()
+        `;
+      } catch (userError) {
+        console.log('User already exists or error creating:', userError);
+      }
+    }
+
     // Записываем визит
     await sql`
       INSERT INTO page_visits (user_id, page, user_agent, ip_address, country, city)
