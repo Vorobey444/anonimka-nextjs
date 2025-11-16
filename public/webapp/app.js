@@ -11429,7 +11429,7 @@ async function updatePremiumPricing(months) {
         }
         
         if (priceRubLabel) {
-            priceRubLabel.textContent = `~${Math.round(data.kzt_equivalent)}₸ / ~${Math.round(data.rub_equivalent)}₽`;
+            priceRubLabel.textContent = ``; // Убрали тенге/рубли, пока только Stars
         }
         
         if (discountLabel) {
@@ -11471,7 +11471,7 @@ async function buyPremiumWithDuration() {
         
         let confirmText = `💳 Покупка PRO подписки\n\n` +
                          `⏱️ Срок: ${selectedPremiumMonths} ${monthWord}\n` +
-                         `💰 Стоимость: ${selectedPremiumPrice.stars} Stars (~${Math.round(selectedPremiumPrice.kzt)}₸)`;
+                         `💰 Стоимость: ${selectedPremiumPrice.stars} Stars`;
         
         if (selectedPremiumPrice.discount > 0) {
             confirmText += `\n🔥 Скидка: ${selectedPremiumPrice.discount}%`;
