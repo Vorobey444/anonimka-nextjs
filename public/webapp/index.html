@@ -1368,36 +1368,36 @@
 
     <!-- Подмодальное окно для выбора срока подписки Stars -->
     <div id="starsPurchaseModal" class="modal" style="display: none; z-index: 10001;">
-        <div class="modal-content" style="max-width: 400px;">
-            <div class="modal-header">
-                <h2>⭐ Покупка PRO</h2>
+        <div class="modal-content" style="max-width: 360px;">
+            <div class="modal-header" style="padding: 15px 20px;">
+                <h2 style="font-size: 1.3rem; margin: 0;">⭐ Покупка PRO</h2>
                 <button class="modal-close" onclick="closeStarsPurchaseModal()">×</button>
             </div>
-            <div class="modal-body" style="padding: 20px;">
+            <div class="modal-body" style="padding: 15px 20px 20px;">
                 <!-- Slider для выбора срока -->
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <div id="premiumDurationLabel" style="color: var(--neon-pink); font-size: 1.8rem; font-weight: bold; margin-bottom: 10px;">1 месяц</div>
+                <div style="text-align: center; margin-bottom: 12px;">
+                    <div id="premiumDurationLabel" style="color: var(--neon-pink); font-size: 1.4rem; font-weight: bold;">1 месяц</div>
                 </div>
                 
                 <input type="range" id="premiumSlider" min="1" max="12" value="1" step="1" 
-                    style="width: 100%; height: 6px; border-radius: 5px; background: linear-gradient(to right, #00d9ff, #8338ec); outline: none; cursor: pointer;" 
+                    style="width: 100%; height: 5px; border-radius: 5px; background: linear-gradient(to right, #00d9ff, #8338ec); outline: none; cursor: pointer;" 
                     oninput="updatePremiumPricing(this.value)">
-                <div style="display: flex; justify-content: space-between; color: rgba(255,255,255,0.5); font-size: 0.75rem; margin-top: 8px; margin-bottom: 25px;">
+                <div style="display: flex; justify-content: space-between; color: rgba(255,255,255,0.5); font-size: 0.7rem; margin-top: 6px; margin-bottom: 15px;">
                     <span>1м</span>
                     <span>3м</span>
                     <span>6м</span>
                     <span>12м</span>
                 </div>
 
-                <!-- Блок с ценой -->
-                <div style="background: rgba(131,56,236,0.15); border: 2px solid var(--neon-purple); border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center;">
-                    <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 8px;">Стоимость</div>
-                    <div id="premiumPrice" style="color: var(--neon-pink); font-size: 2.5rem; font-weight: bold;">50 ⭐</div>
-                    <div id="premiumDiscount" style="color: var(--neon-cyan); font-size: 1.1rem; font-weight: bold; margin-top: 10px; min-height: 24px;"></div>
+                <!-- Блок с ценой (фиксированная высота) -->
+                <div style="background: rgba(131,56,236,0.15); border: 2px solid var(--neon-purple); border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: center; height: 110px; display: flex; flex-direction: column; justify-content: center;">
+                    <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-bottom: 5px;">Стоимость</div>
+                    <div id="premiumPrice" style="color: var(--neon-pink); font-size: 2.2rem; font-weight: bold; line-height: 1;">50 ⭐</div>
+                    <div id="premiumDiscount" style="color: var(--neon-cyan); font-size: 0.95rem; font-weight: bold; margin-top: 8px; height: 20px; line-height: 20px;"></div>
                 </div>
 
                 <!-- Кнопка покупки -->
-                <button class="neon-button primary" onclick="buyPremiumWithDuration()" style="width: 100%; padding: 14px; font-size: 1.1rem;">
+                <button class="neon-button primary" onclick="buyPremiumWithDuration()" style="width: 100%; padding: 12px; font-size: 1rem;">
                     💳 Купить PRO
                 </button>
             </div>
