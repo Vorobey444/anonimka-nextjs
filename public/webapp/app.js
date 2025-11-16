@@ -11375,6 +11375,58 @@ async function submitReport() {
 // Заменяем старую функцию worldChatReportUser
 window.worldChatReportUser = reportUserFromWorldChat;
 
+// ============= ПОКУПКА PRO ЧЕРЕЗ TELEGRAM STARS =============
 
-
-
+/**
+ * Покупка PRO подписки через Telegram Stars
+ * Перенаправляет пользователя в бота для оплаты
+ */
+async function buyPremiumViaTelegram() {
+    try {
+        // Проверяем авторизацию
+        if (!isTelegramWebApp) {
+            tg.showAlert('💳 Покупка доступна только в Telegram!\n\nОткройте приложение через @anonimka_kz_bot');
+            return;
+        }
+        
+        const userId = getCurrentUserId();
+        if (!userId || userId.startsWith('web_')) {
+            tg.showAlert('Необходима авторизация через Telegram');
+            return;
+        }
+        
+        // Закрываем модалку Premium
+        closePremiumModal();
+        
+        // Показываем информацию о покупке
+        tg.showConfirm(
+            '💳 Покупка PRO подписки\n\n' +
+            '💰 Стоимость: 50 Stars (~499₸)\n' +
+            '⏱️ Срок: 1 месяц\n\n' +
+            '✨ Что входит:\n' +
+            '• 3 анкеты/день\n' +
+            '• Безлимит фото\n' +
+            '• Закрепление 3×1ч/день\n' +
+            '• Значок PRO\n\n' +
+            '💡 Также доступны:\n' +
+            '• 3 месяца - 130 Stars (-17%)\n' +
+            '• 6 месяцев - 215 Stars (-30%)\n' +
+            '• 12 месяцев - 360 Stars (-41%)\n\n' +
+            'Открыть бота для оплаты?',
+            (confirmed) => {
+                if (confirmed) {
+                    // Открываем бота
+                    const botUrl = 'https://t.me/anonimka_kz_bot?start=buy_premium';
+                    if (window.Telegram?.WebApp) {
+                        window.Telegram.WebApp.openTelegramLink(botUrl);
+                    } else {
+                        window.open(botUrl, '_blank');
+                    }
+                }
+            }
+        );
+    } catch (error) {
+        console.error('Ошибка покупки PRO:', error);
+        tg.showAlert('Ошибка при переходе к оплате. Попробуйте позже.');
+    }
+}
