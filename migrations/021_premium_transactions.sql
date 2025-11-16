@@ -4,8 +4,11 @@
 
 BEGIN;
 
--- Таблица транзакций PRO подписки
-CREATE TABLE IF NOT EXISTS premium_transactions (
+-- Удаляем старую таблицу если она существует с неправильной структурой
+DROP TABLE IF EXISTS premium_transactions CASCADE;
+
+-- Создаём таблицу транзакций PRO подписки заново
+CREATE TABLE premium_transactions (
   id SERIAL PRIMARY KEY,
   
   -- Пользователь
@@ -25,12 +28,12 @@ CREATE TABLE IF NOT EXISTS premium_transactions (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Индексы для быстрого поиска
-CREATE INDEX IF NOT EXISTS idx_premium_trans_user ON premium_transactions(user_id);
-CREATE INDEX IF NOT EXISTS idx_premium_trans_telegram_id ON premium_transactions(telegram_id);
-CREATE INDEX IF NOT EXISTS idx_premium_trans_created ON premium_transactions(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_premium_trans_transaction_id ON premium_transactions(transaction_id);
-CREATE INDEX IF NOT EXISTS idx_premium_trans_status ON premium_transactions(status);
+-- Индексы для быстрого поиска (создаём после таблицы)
+CREATE INDEX idx_premium_trans_user ON premium_transactions(user_id);
+CREATE INDEX idx_premium_trans_telegram_id ON premium_transactions(telegram_id);
+CREATE INDEX idx_premium_trans_created ON premium_transactions(created_at DESC);
+CREATE INDEX idx_premium_trans_transaction_id ON premium_transactions(transaction_id);
+CREATE INDEX idx_premium_trans_status ON premium_transactions(status);
 
 -- Комментарии
 COMMENT ON TABLE premium_transactions IS 'История покупок PRO подписки через Telegram Stars';
