@@ -49,10 +49,16 @@ export async function POST(req: NextRequest) {
     // чтобы он был одинаковым на всех устройствах до публикации первого объявления.
     if (!userToken) {
       const crypto = require('crypto');
-      const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET || 'dev-temp-secret';
-      if (!process.env.USER_TOKEN_SECRET && !process.env.TOKEN_SECRET) {
-        console.warn('[USERS API] ВНИМАНИЕ: USER_TOKEN_SECRET не задан — используется временный dev-секрет. Задайте переменную окружения в проде.');
+      const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET;
+      
+      if (!secret) {
+        console.error('[USERS API] КРИТИЧЕСКАЯ ОШИБКА: USER_TOKEN_SECRET не задан в переменных окружения!');
+        return NextResponse.json(
+          { success: false, error: 'Ошибка конфигурации сервера' },
+          { status: 500 }
+        );
       }
+      
       const hmac = crypto.createHmac('sha256', secret);
       hmac.update(String(tgId));
       hmac.update(':v1'); // версия формулы на будущее
