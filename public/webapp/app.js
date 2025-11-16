@@ -8712,60 +8712,38 @@ function closePremiumModal() {
 // Обновить кнопки в модальном окне
 function updatePremiumModalButtons() {
     const freeBtn = document.querySelector('.pricing-card:not(.featured) .pricing-btn');
-    const proBtn = document.getElementById('activatePremiumBtn');
-    const referralInfo = document.getElementById('referralInfo');
+    const buyBtn = document.getElementById('buyPremiumBtn');
+    const referralBtn = document.getElementById('referralBtn');
     const trialBtn = document.getElementById('trialBtn');
+    const referralInfo = document.getElementById('referralInfo');
     
     if (userPremiumStatus.isPremium) {
-        // Пользователь PRO - показываем статус
+        // Пользователь PRO - показываем что он активен
         if (freeBtn) {
-            freeBtn.textContent = '✅ FREE недоступен';
+            freeBtn.textContent = '✅ У вас PRO подписка';
             freeBtn.disabled = true;
-            freeBtn.classList.add('disabled');
+            freeBtn.classList.add('active');
+            freeBtn.classList.remove('disabled');
         }
-        if (proBtn) {
-            const until = userPremiumStatus.premiumUntil ? new Date(userPremiumStatus.premiumUntil) : null;
-            const formattedDate = until ? until.toLocaleDateString('ru-RU', { 
-                day: '2-digit', 
-                month: '2-digit', 
-                year: 'numeric' 
-            }) : '';
-            
-            if (userPremiumStatus.trial) {
-                let timeLeft = '';
-                if (until) {
-                    const diff = until.getTime() - Date.now();
-                    if (diff > 0) {
-                        const hours = Math.floor(diff / (1000*60*60));
-                        const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
-                        timeLeft = ` ⏳ ${hours}ч ${mins}м`; 
-                    }
-                }
-                proBtn.textContent = '✅ PRO триал активен' + timeLeft + (formattedDate ? `\nдо ${formattedDate}` : '');
-            } else {
-                proBtn.textContent = '✅ PRO активен' + (formattedDate ? `\nдо ${formattedDate}` : '');
-            }
-            proBtn.disabled = true;
-            proBtn.classList.add('active');
-        }
-        // Скрываем кнопку триала и реферальную инфу
+        
+        // Скрываем все кнопки покупки/триала
+        if (buyBtn) buyBtn.style.display = 'none';
+        if (referralBtn) referralBtn.style.display = 'none';
         if (trialBtn) trialBtn.style.display = 'none';
         if (referralInfo) referralInfo.style.display = 'none';
     } else {
-        // Пользователь FREE - показываем кнопки покупки, trial (если не использован) и реферала
+        // Пользователь FREE - показываем кнопки покупки
         if (freeBtn) {
             freeBtn.textContent = 'Текущий план (FREE)';
             freeBtn.disabled = true;
             freeBtn.classList.add('active');
         }
-        if (proBtn) {
-            proBtn.textContent = '🔥 Оформить PRO';
-            proBtn.disabled = false;
-            proBtn.classList.remove('locked', 'active');
-            proBtn.title = 'Не всё можно купить за деньги... но попробуй 😏';
-        }
         
-        // Показываем кнопку trial только если пользователь ещё не использовал её
+        // Показываем кнопки
+        if (buyBtn) buyBtn.style.display = 'block';
+        if (referralBtn) referralBtn.style.display = 'block';
+        
+        // Trial показываем только если не использован
         const trial7hUsed = userPremiumStatus.trial7h_used || false;
         if (trialBtn) {
             trialBtn.style.display = trial7hUsed ? 'none' : 'block';
