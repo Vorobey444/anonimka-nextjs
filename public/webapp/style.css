@@ -107,7 +107,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     position: relative;
     min-height: 40px;
     padding-top: 5px;
@@ -140,7 +140,7 @@ body {
 .logo {
     text-align: center;
     width: 100%;
-    padding-top: 35px;
+    padding-top: 25px;
 }
 
 .logo p {
@@ -1517,11 +1517,21 @@ h3 {
 /* Отображение текущей локации в главном меню */
 .user-location {
     margin-top: 0.5rem;
+    cursor: pointer;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.user-location:hover {
+    background: rgba(0, 217, 255, 0.1);
+    transform: scale(1.02);
 }
 
 .location-info {
     color: var(--neon-cyan);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     opacity: 0.8;
 }
 
@@ -1531,11 +1541,11 @@ h3 {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    margin-top: 0.8rem;
-    padding: 0.5rem 1rem;
+    margin-top: 0.6rem;
+    padding: 0.4rem 0.8rem;
     background: rgba(255, 0, 110, 0.1);
     border: 1px solid rgba(255, 0, 110, 0.3);
-    border-radius: 20px;
+    border-radius: 16px;
     backdrop-filter: blur(10px);
 }
 
@@ -2312,8 +2322,8 @@ h3 {
 /* Кнопка гамбургер-меню */
 .hamburger-menu {
     position: absolute;
-    top: 20px;
-    left: 20px;
+    top: 15px;
+    left: 10px;
     width: 40px;
     height: 40px;
     background: transparent;

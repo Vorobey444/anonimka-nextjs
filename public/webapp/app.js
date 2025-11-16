@@ -4845,6 +4845,17 @@ function displayUserLocation() {
 // Алиас для обратной совместимости
 const updateUserLocationDisplay = displayUserLocation;
 
+// Делаем локацию кликабельной для быстрой смены города
+document.addEventListener('DOMContentLoaded', function() {
+    const locationDisplay = document.getElementById('userLocationDisplay');
+    if (locationDisplay) {
+        locationDisplay.parentElement.addEventListener('click', function() {
+            // Открываем экран смены локации
+            showScreen('locationSetup');
+        });
+    }
+});
+
 // Сохранение локации пользователя
 async function saveUserLocation(country, region, city) {
     currentUserLocation = {
