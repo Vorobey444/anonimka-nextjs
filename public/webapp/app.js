@@ -11593,96 +11593,24 @@ async function buyPremiumViaTelegram() {
     await buyPremiumWithDuration();
 }
 
-// ============= PWA: УСТАНОВКА НА РАБОЧИЙ СТОЛ =============
-let deferredPrompt = null;
-
-// Регистрируем Service Worker
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-        .then(() => console.log('Service Worker зарегистрирован'))
-        .catch((err) => console.error('Ошибка регистрации Service Worker:', err));
-}
-
-// Перехватываем событие beforeinstallprompt
-window.addEventListener('beforeinstallprompt', (e) => {
-    // Предотвращаем автоматический показ браузерного промпта
-    e.preventDefault();
-    deferredPrompt = e;
-    
-    // Показываем кнопку "Установить на рабочий стол" в меню
-    const installBtn = document.getElementById('installAppBtn');
-    if (installBtn) {
-        installBtn.style.display = 'block';
-    }
-    
-    console.log('PWA готов к установке');
-});
-
-// Функция для показа промпта установки
-async function promptInstallApp() {
-    if (!deferredPrompt) {
-        // Если промпт недоступен (iOS или уже установлено)
-        showIOSInstallInstructions();
-        return;
-    }
-    
-    // Показываем браузерный промпт
-    deferredPrompt.prompt();
-    
-    // Ждем ответа пользователя
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`Пользователь ${outcome === 'accepted' ? 'принял' : 'отклонил'} установку`);
-    
-    if (outcome === 'accepted') {
-        tg.showAlert('✅ Приложение установлено! Теперь его можно запустить с рабочего стола.');
-    }
-    
-    // Очищаем промпт
-    deferredPrompt = null;
-    
-    // Скрываем кнопку
-    const installBtn = document.getElementById('installAppBtn');
-    if (installBtn) {
-        installBtn.style.display = 'none';
-    }
-}
-
-// Инструкции для iOS (Safari не поддерживает beforeinstallprompt)
-function showIOSInstallInstructions() {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
-    
-    if (isIOS && !isInStandaloneMode) {
-        // iOS инструкции
-        tg.showAlert(
-            '📱 Установка на iPhone/iPad:\n\n' +
-            '1. Нажмите кнопку "Поделиться" внизу экрана\n' +
-            '2. Прокрутите вниз и выберите "На экран «Домой»"\n' +
-            '3. Нажмите "Добавить"'
-        );
-    } else if (isInStandaloneMode) {
-        tg.showAlert('✅ Приложение уже установлено на вашем устройстве!');
-    } else {
-        // Android или другие платформы
-        tg.showAlert(
-            '📱 Установка приложения:\n\n' +
-            '• Android (Chrome): Нажмите ⋮ → "Установить приложение"\n' +
-            '• Android (Firefox): Нажмите ⋮ → "Установить"\n' +
-            '• Другие браузеры: Используйте меню браузера для добавления на главный экран'
-        );
-    }
-}
-
-// Показываем кнопку установки для iOS сразу
-window.addEventListener('load', () => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
-    
-    // Для iOS всегда показываем кнопку (если не в standalone режиме)
-    if (isIOS && !isInStandaloneMode) {
-        const installBtn = document.getElementById('installAppBtn');
-        if (installBtn) {
-            installBtn.style.display = 'block';
+// ============= TELEGRAM: СОЗДАТЬ ЯРЛЫК НА РАБОЧИЙ СТОЛ =============
+function promptInstallApp() {
+    // Используем встроенную функцию Telegram WebApp для создания ярлыка
+    if (window.Telegram?.WebApp?.addToHomeScreen) {
+        try {
+            window.Telegram.WebApp.addToHomeScreen();
+            console.log('Telegram добавление на рабочий стол вызвано');
+        } catch (error) {
+            console.error('Ошибка создания ярлыка:', error);
+            tg.showAlert('❌ Не удалось создать ярлык. Попробуйте через меню Telegram (⋮).');
         }
+    } else {
+        // Если функция недоступна, показываем инструкцию
+        tg.showAlert(
+            '📲 Создание ярлыка:\n\n' +
+            '1. Откройте меню Telegram (⋮ в правом верхнем углу)\n' +
+            '2. Выберите "Создать ярлык"\n' +
+            '3. Подтвердите добавление на рабочий стол'
+        );
     }
-});
+}
