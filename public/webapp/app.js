@@ -8767,7 +8767,15 @@ function updateCurrentSubscriptionInfo() {
             }
         }
         
-        const subscriptionType = userPremiumStatus.trial ? '🎁 Триал' : '⭐ Оплачено через Stars';
+        // Определяем тип подписки
+        let subscriptionType = '⭐ PRO подписка';
+        if (userPremiumStatus.subscriptionSource === 'trial') {
+            subscriptionType = '🎁 Пробный период';
+        } else if (userPremiumStatus.subscriptionSource === 'referral') {
+            subscriptionType = '🎉 Реферальная программа';
+        } else if (userPremiumStatus.subscriptionSource === 'stars') {
+            subscriptionType = '⭐ Оплачено через Stars';
+        }
         
         detailsDiv.innerHTML = `
             <div style="margin-bottom: 3px;">${subscriptionType}</div>

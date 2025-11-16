@@ -178,6 +178,8 @@ export async function POST(request: NextRequest) {
         const userData = user.rows[0];
         let limitsData = limits.rows[0];
         let isPremium = userData.is_premium || false;
+        let subscriptionSource: string | null = null;
+        
         // Автоотключение PRO, если premium_until истекло
         if (isPremium && userData.premium_until) {
           const now = new Date();
@@ -188,6 +190,37 @@ export async function POST(request: NextRequest) {
               UPDATE users SET is_premium = false, premium_until = NULL WHERE id = ${numericUserId}
             `;
             isPremium = false;
+          } else {
+            // Определяем источник подписки только если она активна
+            // 1. Проверяем Stars платежи
+            const starsCheck = await sql`
+              SELECT id FROM premium_transactions 
+              WHERE telegram_id = ${numericUserId} 
+              ORDER BY created_at DESC 
+              LIMIT 1
+            `;
+            if (starsCheck.rows.length > 0) {
+              subscriptionSource = 'stars';
+            } else {
+              // 2. Проверяем реферальную программу
+              const referralCheck = await sql`
+                SELECT id FROM referrals 
+                WHERE referrer_id = ${numericUserId} AND reward_given = true
+                LIMIT 1
+              `;
+              if (referralCheck.rows.length > 0) {
+                subscriptionSource = 'referral';
+              } else {
+                // 3. Проверяем триал (7 часов)
+                if (userData.trial7h_used) {
+                  const premiumDuration = until.getTime() - now.getTime();
+                  const hours = premiumDuration / (1000 * 60 * 60);
+                  if (hours <= 7) {
+                    subscriptionSource = 'trial';
+                  }
+                }
+              }
+            }
           }
         }
         
@@ -216,6 +249,7 @@ export async function POST(request: NextRequest) {
           data: {
             isPremium,
             premiumUntil: userData.premium_until,
+            subscriptionSource,
             trial7h_used: userData.trial7h_used || false,
             country: userData.country || 'KZ',
             limits: {
