@@ -8779,6 +8779,9 @@ function updatePremiumModalButtons() {
 function updateCurrentSubscriptionInfo() {
     const infoBlock = document.getElementById('currentSubscriptionInfo');
     const detailsDiv = document.getElementById('subscriptionDetails');
+    const buyBtn = document.getElementById('buyPremiumBtn');
+    const referralBtn = document.getElementById('referralBtn');
+    const trialBtn = document.getElementById('trialBtn');
     
     if (!infoBlock || !detailsDiv) return;
     
@@ -8816,8 +8819,21 @@ function updateCurrentSubscriptionInfo() {
         `;
         
         infoBlock.style.display = 'block';
+        
+        // Скрываем все кнопки покупки/триала когда подписка активна
+        if (buyBtn) buyBtn.style.display = 'none';
+        if (referralBtn) referralBtn.style.display = 'none';
+        if (trialBtn) trialBtn.style.display = 'none';
     } else {
         infoBlock.style.display = 'none';
+        
+        // Показываем кнопки когда подписки нет
+        if (buyBtn) buyBtn.style.display = 'block';
+        if (referralBtn) referralBtn.style.display = 'block';
+        // Trial показываем только если не использован
+        if (trialBtn) {
+            trialBtn.style.display = (userPremiumStatus.trial7h_used ? 'none' : 'block');
+        }
     }
 }
 
