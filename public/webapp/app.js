@@ -8659,31 +8659,8 @@ async function showPremiumModal() {
     
     console.log('💰 Итоговая валюта:', currency, 'Цена:', proPrice);
     
-    // Обновляем валюту в FREE тарифе
-    const freeCurrencyElement = document.querySelector('.pricing-card:not(.featured) .price-currency');
-    if (freeCurrencyElement) {
-        freeCurrencyElement.textContent = currency;
-    }
-    
-    // Обновляем цену и валюту в PRO тарифе
-    document.getElementById('proPriceAmount').textContent = proPrice;
-    document.getElementById('proPriceCurrency').textContent = currency;
-    
-    // Если пользователь PRO - показываем дату окончания
-    const proPricePeriod = document.getElementById('proPricePeriod');
-    if (userPremiumStatus.isPremium && userPremiumStatus.premiumUntil && proPricePeriod) {
-        const expiryDate = new Date(userPremiumStatus.premiumUntil);
-        const formattedDate = expiryDate.toLocaleDateString('ru-RU', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric' 
-        });
-        proPricePeriod.textContent = `активен до ${formattedDate}`;
-        proPricePeriod.style.color = 'var(--neon-cyan)';
-    } else if (proPricePeriod) {
-        proPricePeriod.textContent = 'в месяц';
-        proPricePeriod.style.color = '';
-    }
+    // Удалены старые элементы proPriceAmount/proPriceCurrency - их нет в HTML
+    // Цены теперь только в Stars, отображаются в подмодальном окне
     
     // Обновляем кнопки в зависимости от текущего статуса
     updatePremiumModalButtons();
