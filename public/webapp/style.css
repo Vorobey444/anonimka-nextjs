@@ -516,7 +516,7 @@ h3 {
 .menu-buttons {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     max-width: 260px;
     margin: 0 auto;
     position: relative;
@@ -5067,7 +5067,7 @@ h3 {
 
 .premium-toggle {
     position: fixed;
-    top: 15px;
+    top: 8px;
     right: 8px;
     z-index: 999;
     display: flex;
