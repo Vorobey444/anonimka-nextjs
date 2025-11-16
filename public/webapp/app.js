@@ -8688,6 +8688,9 @@ async function showPremiumModal() {
     // Обновляем кнопки в зависимости от текущего статуса
     updatePremiumModalButtons();
     
+    // Показываем информацию о текущей подписке
+    updateCurrentSubscriptionInfo();
+    
     // Устанавливаем активную кнопку валюты
     const currencyToSet = (currency === '₽') ? 'rub' : 'kzt';
     document.querySelectorAll('.currency-btn').forEach(btn => {
@@ -8769,6 +8772,52 @@ function updatePremiumModalButtons() {
         }
         
         if (referralInfo) referralInfo.style.display = 'block';
+    }
+}
+
+// Обновить информацию о текущей подписке
+function updateCurrentSubscriptionInfo() {
+    const infoBlock = document.getElementById('currentSubscriptionInfo');
+    const detailsDiv = document.getElementById('subscriptionDetails');
+    
+    if (!infoBlock || !detailsDiv) return;
+    
+    if (userPremiumStatus.isPremium && userPremiumStatus.premiumUntil) {
+        const until = new Date(userPremiumStatus.premiumUntil);
+        const formattedDate = until.toLocaleDateString('ru-RU', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // Вычисляем оставшееся время
+        const diff = until.getTime() - Date.now();
+        let timeLeftText = '';
+        if (diff > 0) {
+            const days = Math.floor(diff / (1000*60*60*24));
+            const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+            
+            if (days > 0) {
+                timeLeftText = `Осталось: ${days} дн. ${hours} ч.`;
+            } else {
+                const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
+                timeLeftText = `Осталось: ${hours} ч. ${mins} м.`;
+            }
+        }
+        
+        const subscriptionType = userPremiumStatus.trial ? '🎁 Триал' : '⭐ Оплачено через Stars';
+        
+        detailsDiv.innerHTML = `
+            <div style="margin-bottom: 3px;">${subscriptionType}</div>
+            <div style="margin-bottom: 3px;">📅 Активен до: ${formattedDate}</div>
+            <div style="color: var(--neon-pink);">${timeLeftText}</div>
+        `;
+        
+        infoBlock.style.display = 'block';
+    } else {
+        infoBlock.style.display = 'none';
     }
 }
 
