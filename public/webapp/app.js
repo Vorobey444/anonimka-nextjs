@@ -4847,9 +4847,13 @@ const updateUserLocationDisplay = displayUserLocation;
 
 // Делаем локацию кликабельной для быстрой смены города
 document.addEventListener('DOMContentLoaded', function() {
-    const locationDisplay = document.getElementById('userLocationDisplay');
-    if (locationDisplay) {
-        locationDisplay.parentElement.addEventListener('click', function() {
+    const locationContainer = document.querySelector('.user-location');
+    if (locationContainer) {
+        locationContainer.style.cursor = 'pointer';
+        locationContainer.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Клик по локации - открываем смену локации');
             // Открываем экран смены локации
             showScreen('locationSetup');
         });
