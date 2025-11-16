@@ -8717,6 +8717,8 @@ function updatePremiumModalButtons() {
     const trialBtn = document.getElementById('trialBtn');
     const referralInfo = document.getElementById('referralInfo');
     
+    console.log('🔍 updatePremiumModalButtons:', userPremiumStatus);
+    
     if (userPremiumStatus.isPremium) {
         // Пользователь PRO - показываем что он активен
         if (freeBtn) {
