@@ -11526,16 +11526,28 @@ async function buyPremiumWithDuration() {
         tg.showConfirm(confirmText, (confirmed) => {
             if (confirmed) {
                 // Открываем бота с параметром количества месяцев
-                const botUrl = `https://t.me/anonimka_kz_bot?start=buy_premium_${selectedPremiumMonths}m`;
-                console.log('Открываем бота для оплаты:', botUrl);
+                const startParam = `buy_premium_${selectedPremiumMonths}m`;
+                console.log('Открываем бота для оплаты с параметром:', startParam);
                 
-                // Используем правильный метод для открытия Telegram ссылки
-                if (tg.openTelegramLink) {
-                    tg.openTelegramLink(botUrl);
-                } else if (window.Telegram?.WebApp?.openTelegramLink) {
-                    window.Telegram.WebApp.openTelegramLink(botUrl);
-                } else {
-                    window.open(botUrl, '_blank');
+                // Закрываем WebApp и открываем чат с ботом
+                try {
+                    // Сначала закрываем WebApp
+                    tg.close();
+                    
+                    // Открываем чат с ботом через switchInlineQuery или openTelegramLink
+                    const botUrl = `https://t.me/anonimka_kz_bot?start=${startParam}`;
+                    if (tg.openTelegramLink) {
+                        tg.openTelegramLink(botUrl);
+                    } else if (window.Telegram?.WebApp?.openTelegramLink) {
+                        window.Telegram.WebApp.openTelegramLink(botUrl);
+                    } else {
+                        window.open(botUrl, '_blank');
+                    }
+                } catch (error) {
+                    console.error('Ошибка открытия бота:', error);
+                    // Если не получилось закрыть, просто открываем ссылку
+                    const botUrl = `https://t.me/anonimka_kz_bot?start=${startParam}`;
+                    window.location.href = botUrl;
                 }
             }
         });
