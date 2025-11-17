@@ -27,23 +27,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Также очищаем связанные чаты для удаленных анкет
-        let deletedChatsCount = 0;
-        if (deletedIds.length > 0) {
-            const deleteChatsResult = await sql`
-                DELETE FROM private_chats 
-                WHERE ad_id = ANY(${deletedIds})
-                RETURNING id
-            `;
-            
-            deletedChatsCount = deleteChatsResult.rowCount || 0;
-            console.log(`[CLEANUP] Удалено чатов: ${deletedChatsCount}`);
-        }
+        // Пропускаем удаление чатов, т.к. они удаляются автоматически через CASCADE
+        console.log('[CLEANUP] Связанные чаты будут удалены автоматически через CASCADE');
 
         return NextResponse.json({
             success: true,
             deletedAds: deletedCount,
-            deletedChats: deletedChatsCount,
-            message: `Удалено ${deletedCount} анкет старше 7 дней`
+            message: `Удалено ${deletedCount} анкет старше 7 дней (чаты удалены через CASCADE)`
         });
 
     } catch (error: any) {
