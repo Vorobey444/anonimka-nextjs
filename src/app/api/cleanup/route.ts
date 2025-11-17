@@ -9,19 +9,25 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: NextRequest) {
     try {
-        // Проверка авторизации (можно добавить секретный ключ)
-        const authHeader = request.headers.get('authorization');
-        const cronSecret = process.env.CRON_SECRET || 'your-secret-key';
+        // Vercel Cron автоматически передаёт заголовок x-vercel-cron: 1
+        const isVercelCron = request.headers.get('x-vercel-cron') === '1';
         
-        if (authHeader !== `Bearer ${cronSecret}`) {
-            console.log('[CLEANUP] Неавторизованный запрос');
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
+        // Если это не Vercel Cron, проверяем secret через query параметр
+        if (!isVercelCron) {
+            const url = new URL(request.url);
+            const secret = url.searchParams.get('secret');
+            const cronSecret = process.env.CRON_SECRET;
+            
+            if (!cronSecret || secret !== cronSecret) {
+                console.log('[CLEANUP] Неавторизованный запрос (не Vercel Cron и неверный secret)');
+                return NextResponse.json(
+                    { error: 'Unauthorized' },
+                    { status: 401 }
+                );
+            }
         }
 
-        console.log('[CLEANUP] Начало очистки старых анкет...');
+        console.log('[CLEANUP] Начало очистки старых анкет... (Vercel Cron:', isVercelCron, ')');
 
         // Удаляем анкеты старше 7 дней
         const deleteResult = await sql`
