@@ -317,6 +317,10 @@
                         <span class="hamburger-icon">📲</span>
                         Установить на рабочий стол
                     </a>
+                    <a href="#" class="hamburger-item" onclick="showAffiliateInfo(); return false;">
+                        <span class="hamburger-icon">💰</span>
+                        Хочешь заработать?
+                    </a>
                     <a href="#" class="hamburger-item logout-item" id="logoutBtn" onclick="handleLogout()" style="display: none;">
                         <span class="hamburger-icon">🚪</span>
                         Выйти из аккаунта
@@ -366,6 +370,74 @@
                         🔒 Политика конфиденциальности
                     </a>
                 </div>
+            </div>
+        </div>
+
+        <!-- Партнерская программа -->
+        <div id="affiliateInfo" class="screen info-screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>💰 Заработай на партнерской программе</h2>
+            </div>
+            <div class="info-content" style="padding: 2rem 1.5rem;">
+                <div style="background: linear-gradient(135deg, rgba(255,0,110,0.1), rgba(110,0,255,0.1)); border: 2px solid var(--neon-pink); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                    <h3 style="color: var(--neon-pink); margin-bottom: 1rem; font-size: 1.3rem;">⭐ Партнерская программа Telegram Stars</h3>
+                    <p style="font-size: 1.1rem; line-height: 1.6; color: var(--text-primary); margin-bottom: 0.5rem;">
+                        <strong style="color: var(--neon-cyan);">Получай 30% комиссии</strong> с каждой покупки PRO подписки друзьями!
+                    </p>
+                    <p style="color: var(--text-gray); font-size: 0.95rem;">
+                        ⏰ Действует <strong>1 год</strong> с момента присоединения
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--neon-cyan); margin-bottom: 1rem; font-size: 1.1rem;">📋 Как подключиться:</h3>
+                    <div style="background: rgba(0,0,0,0.3); border-left: 3px solid var(--neon-cyan); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <p style="margin-bottom: 0.8rem; line-height: 1.6;">
+                            <strong style="color: var(--neon-pink);">1.</strong> Откройте Telegram и найдите <strong>@BotFather</strong>
+                        </p>
+                        <p style="margin-bottom: 0.8rem; line-height: 1.6;">
+                            <strong style="color: var(--neon-pink);">2.</strong> Отправьте команду <code style="background: rgba(255,0,110,0.2); padding: 2px 8px; border-radius: 4px; color: var(--neon-cyan);">/mybots</code>
+                        </p>
+                        <p style="margin-bottom: 0.8rem; line-height: 1.6;">
+                            <strong style="color: var(--neon-pink);">3.</strong> Выберите <strong>Anonimka</strong> из списка ботов
+                        </p>
+                        <p style="margin-bottom: 0.8rem; line-height: 1.6;">
+                            <strong style="color: var(--neon-pink);">4.</strong> Нажмите <strong>Affiliate Program</strong>
+                        </p>
+                        <p style="line-height: 1.6;">
+                            <strong style="color: var(--neon-pink);">5.</strong> Нажмите кнопку <strong style="color: var(--neon-cyan);">Participate</strong> (Участвовать)
+                        </p>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--neon-cyan); margin-bottom: 1rem; font-size: 1.1rem;">💡 Как работает:</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 0.8rem; margin-bottom: 0.5rem; background: rgba(110,0,255,0.1); border-radius: 8px; border-left: 3px solid var(--neon-purple);">
+                            ✅ Получишь уникальную реферальную ссылку
+                        </li>
+                        <li style="padding: 0.8rem; margin-bottom: 0.5rem; background: rgba(110,0,255,0.1); border-radius: 8px; border-left: 3px solid var(--neon-purple);">
+                            📤 Делись ссылкой с друзьями
+                        </li>
+                        <li style="padding: 0.8rem; margin-bottom: 0.5rem; background: rgba(110,0,255,0.1); border-radius: 8px; border-left: 3px solid var(--neon-purple);">
+                            💰 За каждую покупку получай <strong style="color: var(--neon-pink);">30% в Stars</strong>
+                        </li>
+                        <li style="padding: 0.8rem; background: rgba(110,0,255,0.1); border-radius: 8px; border-left: 3px solid var(--neon-purple);">
+                            🚀 Stars можно вывести реальными деньгами
+                        </li>
+                    </ul>
+                </div>
+
+                <div style="background: rgba(255,0,110,0.05); border: 1px solid rgba(255,0,110,0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <p style="color: var(--text-gray); font-size: 0.9rem; line-height: 1.5; margin: 0;">
+                        <strong style="color: var(--neon-pink);">💡 Совет:</strong> Чем больше друзей покупают PRO по твоей ссылке, тем больше зарабатываешь. Партнерская программа - отличный способ монетизировать свою аудиторию!
+                    </p>
+                </div>
+
+                <button onclick="window.open('https://t.me/BotFather', '_blank')" class="neon-button" style="width: 100%; padding: 1rem; font-size: 1.1rem; margin-top: 1rem;">
+                    🤖 Открыть @BotFather
+                </button>
             </div>
         </div>
 

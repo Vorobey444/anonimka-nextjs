@@ -11627,3 +11627,10 @@ function promptInstallApp() {
         }
     }
 }
+
+// ============= ПАРТНЕРСКАЯ ПРОГРАММА =============
+function showAffiliateInfo() {
+    hideAllScreens();
+    document.getElementById('affiliateInfo').classList.add('active');
+    closeHamburgerMenu();
+}
