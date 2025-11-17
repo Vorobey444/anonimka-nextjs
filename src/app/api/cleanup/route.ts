@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         let deletedChatsCount = 0;
         if (deletedIds.length > 0) {
             const deleteChatsResult = await sql`
-                DELETE FROM chats 
+                DELETE FROM private_chats 
                 WHERE ad_id = ANY(${deletedIds})
                 RETURNING id
             `;
