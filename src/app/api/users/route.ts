@@ -99,9 +99,9 @@ export async function POST(req: NextRequest) {
 
     // Создаём запись в user_limits если её нет
     await sql`
-      INSERT INTO user_limits (telegram_id, ads_created_today, photos_sent_today, ads_last_reset, photos_last_reset)
+      INSERT INTO user_limits (user_id, ads_created_today, photos_sent_today, ads_last_reset, photos_last_reset)
       VALUES (${tgId}, 0, 0, CURRENT_DATE, CURRENT_DATE)
-      ON CONFLICT (telegram_id) DO NOTHING
+      ON CONFLICT (user_id) DO NOTHING
     `;
 
     console.log('[USERS API] ✅ Пользователь инициализирован (token выдан)');

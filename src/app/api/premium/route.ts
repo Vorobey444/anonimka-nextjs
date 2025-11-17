@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
         
         // Получаем или создаём лимиты
         let limits = await sql`
-          SELECT * FROM user_limits WHERE telegram_id = ${numericUserId}
+          SELECT * FROM user_limits WHERE user_id = ${numericUserId}
         `;
         
         if (limits.rows.length === 0) {
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
             WHERE telegram_id = ${numericUserId}
           `;
           // Перезагружаем актуальные данные
-          limits = await sql`SELECT * FROM user_limits WHERE telegram_id = ${numericUserId}`;
+          limits = await sql`SELECT * FROM user_limits WHERE user_id = ${numericUserId}`;
           limitsData = limits.rows[0];
         }
         
@@ -313,7 +313,7 @@ export async function POST(request: NextRequest) {
         // Получаем счетчик фото
         if (numericUserId && numericUserId > 0) {
           // Telegram пользователь
-          const limits = await sql`SELECT photos_sent_today FROM user_limits WHERE telegram_id = ${numericUserId}`;
+          const limits = await sql`SELECT photos_sent_today FROM user_limits WHERE user_id = ${numericUserId}`;
           photosToday = limits.rows[0]?.photos_sent_today || 0;
         } else if (isToken) {
           // Веб-пользователь
@@ -354,7 +354,7 @@ export async function POST(request: NextRequest) {
         }
         
         await sql`
-          INSERT INTO user_limits (telegram_id, photos_sent_today, photos_last_reset)
+          INSERT INTO user_limits (user_id, photos_sent_today, photos_last_reset)
           VALUES (${numericUserId}, 1, CURRENT_DATE)
           ON CONFLICT (telegram_id) DO UPDATE
           SET photos_sent_today = CASE
