@@ -150,21 +150,21 @@ export async function POST(request: NextRequest) {
         
         // Получаем или создаём пользователя
         let user = await sql`
-          SELECT * FROM users WHERE id = ${numericUserId}
+          SELECT * FROM users WHERE telegram_id = ${numericUserId}
         `;
         
         if (user.rows.length === 0) {
           // Создаём нового пользователя
           await sql`
-            INSERT INTO users (id, is_premium)
+            INSERT INTO users (telegram_id, is_premium)
             VALUES (${numericUserId}, false)
           `;
-          user = await sql`SELECT * FROM users WHERE id = ${numericUserId}`;
+          user = await sql`SELECT * FROM users WHERE telegram_id = ${numericUserId}`;
         }
         
         // Получаем или создаём лимиты
         let limits = await sql`
-          SELECT * FROM user_limits WHERE user_id = ${numericUserId}
+          SELECT * FROM user_limits WHERE telegram_id = ${numericUserId}
         `;
         
         if (limits.rows.length === 0) {
@@ -180,14 +180,14 @@ export async function POST(request: NextRequest) {
         let isPremium = userData.is_premium || false;
         let subscriptionSource: string | null = null;
         
-        // Автоотключение PRO, если premium_until истекло
+          // Автоотключение PRO, если premium_until истекло
         if (isPremium && userData.premium_until) {
           const now = new Date();
           const until = new Date(userData.premium_until);
           if (now > until) {
             // Сбросить PRO
             await sql`
-              UPDATE users SET is_premium = false, premium_until = NULL WHERE id = ${numericUserId}
+              UPDATE users SET is_premium = false, premium_until = NULL WHERE telegram_id = ${numericUserId}
             `;
             isPremium = false;
           } else {
@@ -238,10 +238,10 @@ export async function POST(request: NextRequest) {
             SET ads_created_today = 0,
                 ads_last_reset = ${currentDate}::date,
                 updated_at = NOW()
-            WHERE user_id = ${numericUserId}
+            WHERE telegram_id = ${numericUserId}
           `;
           // Перезагружаем актуальные данные
-          limits = await sql`SELECT * FROM user_limits WHERE user_id = ${numericUserId}`;
+          limits = await sql`SELECT * FROM user_limits WHERE telegram_id = ${numericUserId}`;
           limitsData = limits.rows[0];
         }
         
@@ -306,14 +306,14 @@ export async function POST(request: NextRequest) {
             isPremium = premiumTokenResult.rows[0].is_premium || false;
           }
         } else if (numericUserId && numericUserId > 0) {
-          const user = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
+          const user = await sql`SELECT is_premium FROM users WHERE telegram_id = ${numericUserId}`;
           isPremium = user.rows[0]?.is_premium || false;
         }
         
         // Получаем счетчик фото
         if (numericUserId && numericUserId > 0) {
           // Telegram пользователь
-          const limits = await sql`SELECT photos_sent_today FROM user_limits WHERE user_id = ${numericUserId}`;
+          const limits = await sql`SELECT photos_sent_today FROM user_limits WHERE telegram_id = ${numericUserId}`;
           photosToday = limits.rows[0]?.photos_sent_today || 0;
         } else if (isToken) {
           // Веб-пользователь
@@ -354,9 +354,9 @@ export async function POST(request: NextRequest) {
         }
         
         await sql`
-          INSERT INTO user_limits (user_id, photos_sent_today, photos_last_reset)
+          INSERT INTO user_limits (telegram_id, photos_sent_today, photos_last_reset)
           VALUES (${numericUserId}, 1, CURRENT_DATE)
-          ON CONFLICT (user_id) DO UPDATE
+          ON CONFLICT (telegram_id) DO UPDATE
           SET photos_sent_today = CASE
               WHEN user_limits.photos_last_reset < CURRENT_DATE THEN 1
               ELSE user_limits.photos_sent_today + 1
@@ -388,7 +388,7 @@ export async function POST(request: NextRequest) {
           numericUserId = Number(userId);
         }
         
-        const user = await sql`SELECT is_premium, trial7h_used FROM users WHERE id = ${numericUserId}`;
+        const user = await sql`SELECT is_premium, trial7h_used FROM users WHERE telegram_id = ${numericUserId}`;
         const currentStatus = user.rows[0]?.is_premium || false;
         const trial7hUsed = user.rows[0]?.trial7h_used || false;
         
@@ -416,7 +416,7 @@ export async function POST(request: NextRequest) {
                 premium_until = ${premiumUntil},
                 trial7h_used = true,
                 updated_at = NOW()
-            WHERE id = ${numericUserId}
+            WHERE telegram_id = ${numericUserId}
           `;
         } else {
           await sql`
@@ -424,7 +424,7 @@ export async function POST(request: NextRequest) {
             SET is_premium = ${!currentStatus},
                 premium_until = ${premiumUntil},
                 updated_at = NOW()
-            WHERE id = ${numericUserId}
+            WHERE telegram_id = ${numericUserId}
           `;
         }
         
