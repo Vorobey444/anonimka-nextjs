@@ -11630,9 +11630,21 @@ function promptInstallApp() {
 
 // ============= ПАРТНЕРСКАЯ ПРОГРАММА =============
 function showAffiliateInfo() {
-    hideAllScreens();
-    document.getElementById('affiliateInfo').classList.add('active');
-    closeHamburgerMenu();
+    // Скрываем все экраны
+    const screens = document.querySelectorAll('.screen');
+    screens.forEach(screen => screen.classList.remove('active'));
+    
+    // Показываем экран партнерской программы
+    const affiliateScreen = document.getElementById('affiliateInfo');
+    if (affiliateScreen) {
+        affiliateScreen.classList.add('active');
+    }
+    
+    // Закрываем гамбургер меню
+    const hamburgerOverlay = document.getElementById('hamburgerMenuOverlay');
+    if (hamburgerOverlay) {
+        hamburgerOverlay.classList.remove('active');
+    }
 }
 
 function openAffiliateProgram() {
