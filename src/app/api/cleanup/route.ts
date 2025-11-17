@@ -29,12 +29,11 @@ export async function POST(request: NextRequest) {
         // Также очищаем связанные чаты для удаленных анкет
         let deletedChatsCount = 0;
         if (deletedIds.length > 0) {
-            // Используем IN вместо ANY для совместимости
-            const placeholders = deletedIds.map((_: any, i: number) => `$${i + 1}`).join(',');
-            const deleteChatsResult = await sql.query(
-                `DELETE FROM chats WHERE ad_id IN (${placeholders}) RETURNING id`,
-                deletedIds
-            );
+            const deleteChatsResult = await sql`
+                DELETE FROM chats 
+                WHERE ad_id = ANY(${deletedIds})
+                RETURNING id
+            `;
             
             deletedChatsCount = deleteChatsResult.rowCount || 0;
             console.log(`[CLEANUP] Удалено чатов: ${deletedChatsCount}`);
