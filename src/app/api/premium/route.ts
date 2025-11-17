@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
             // 1. Проверяем Stars платежи
             const starsCheck = await sql`
               SELECT id FROM premium_transactions 
-              WHERE id = ${numericUserId} 
+              WHERE telegram_id = ${numericUserId} 
               ORDER BY created_at DESC 
               LIMIT 1
             `;

@@ -8373,16 +8373,15 @@ let userPremiumStatus = {
 // Загрузить статус Premium при запуске приложения
 async function loadPremiumStatus() {
     try {
-        // ПРИОРИТЕТ: используем user_token (для проверки premium_tokens)
-        const userToken = localStorage.getItem('user_token');
-        const userId = userToken || getCurrentUserId();
+        // Для get-user-status ВСЕГДА используем tgId (числовой ID)
+        const userId = getCurrentUserId();
         
         if (!userId || userId.startsWith('web_')) {
             console.log('⚠️ Пользователь не авторизован, Premium статус недоступен');
             return;
         }
         
-        safeLog('💎 Загружаем Premium статус для:', userId.substring(0, 16) + '...');
+        safeLog('💎 Загружаем Premium статус для:', userId);
         
         // Анти-кэш: добавляем уникальный параметр запроса
         const antiCache = Date.now();
