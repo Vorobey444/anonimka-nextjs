@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     // Проверяем не забанен ли пользователь
     const banCheck = await sql`
-      SELECT is_banned, ban_reason FROM users WHERE id = ${tgId}
+      SELECT is_banned, ban_reason FROM users WHERE telegram_id = ${tgId}
     `;
     
     if (banCheck.rows.length > 0 && banCheck.rows[0].is_banned) {
@@ -85,9 +85,9 @@ export async function POST(req: NextRequest) {
 
     // Создаём/обновляем запись в users
     await sql`
-      INSERT INTO users (id, display_nickname, country, created_at, updated_at)
+      INSERT INTO users (telegram_id, display_nickname, country, created_at, updated_at)
       VALUES (${tgId}, ${nickname || null}, ${country}, NOW(), NOW())
-      ON CONFLICT (id) DO UPDATE SET
+      ON CONFLICT (telegram_id) DO UPDATE SET
         -- Не перезаписываем уже существующий никнейм на сервера локальным значением
         display_nickname = CASE 
           WHEN users.display_nickname IS NULL OR users.display_nickname = '' THEN COALESCE(EXCLUDED.display_nickname, users.display_nickname)
@@ -99,9 +99,9 @@ export async function POST(req: NextRequest) {
 
     // Создаём запись в user_limits если её нет
     await sql`
-      INSERT INTO user_limits (user_id, ads_created_today, photos_sent_today, ads_last_reset, photos_last_reset)
+      INSERT INTO user_limits (telegram_id, ads_created_today, photos_sent_today, ads_last_reset, photos_last_reset)
       VALUES (${tgId}, 0, 0, CURRENT_DATE, CURRENT_DATE)
-      ON CONFLICT (user_id) DO NOTHING
+      ON CONFLICT (telegram_id) DO NOTHING
     `;
 
     console.log('[USERS API] ✅ Пользователь инициализирован (token выдан)');
@@ -145,7 +145,7 @@ export async function GET(req: NextRequest) {
       }
 
       const res = await sql`
-        SELECT display_nickname FROM users WHERE id = ${tgId}
+        SELECT display_nickname FROM users WHERE telegram_id = ${tgId}
       `;
       displayNickname = res.rows[0]?.display_nickname || null;
     } else if (userToken) {
@@ -153,7 +153,7 @@ export async function GET(req: NextRequest) {
       const res = await sql`
         SELECT u.display_nickname
         FROM users u
-        WHERE u.id IN (
+        WHERE u.telegram_id IN (
           SELECT tg_id FROM ads WHERE user_token = ${userToken} AND tg_id IS NOT NULL LIMIT 1
         )
       `;
@@ -206,8 +206,8 @@ export async function PATCH(req: NextRequest) {
       const upd = await sql`
         UPDATE users
         SET display_nickname = ${nickname.trim()}, updated_at = NOW()
-        WHERE id = ${idNum}
-        RETURNING id
+        WHERE telegram_id = ${idNum}
+        RETURNING telegram_id
       `;
       console.log('[USERS API] set-nickname by tgId updated:', upd.rows.length);
       return NextResponse.json({ success: true, updated: upd.rows.length > 0 });
@@ -234,8 +234,8 @@ export async function PATCH(req: NextRequest) {
       const upd = await sql`
         UPDATE users
         SET display_nickname = ${nickname.trim()}, updated_at = NOW()
-        WHERE id = ${tgFromAds}
-        RETURNING id
+        WHERE telegram_id = ${tgFromAds}
+        RETURNING telegram_id
       `;
       console.log('[USERS API] set-nickname by token updated:', upd.rows.length);
       return NextResponse.json({ success: true, updated: upd.rows.length > 0 });
