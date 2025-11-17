@@ -11634,3 +11634,16 @@ function showAffiliateInfo() {
     document.getElementById('affiliateInfo').classList.add('active');
     closeHamburgerMenu();
 }
+
+function openAffiliateProgram() {
+    // Открываем профиль бота где есть кнопка "Партнёрская программа"
+    const botUsername = 'anonimka_kz_bot';
+    const botProfileUrl = `https://t.me/${botUsername}`;
+    
+    // Используем Telegram WebApp API если доступен
+    if (window.Telegram?.WebApp?.openTelegramLink) {
+        window.Telegram.WebApp.openTelegramLink(botProfileUrl);
+    } else {
+        window.open(botProfileUrl, '_blank');
+    }
+}
