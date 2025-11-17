@@ -70,9 +70,9 @@ export async function POST(request: NextRequest) {
     if (userId && userId !== 'anonymous') {
       try {
         await sql`
-          INSERT INTO users (telegram_id, created_at, updated_at)
+          INSERT INTO users (id, created_at, updated_at)
           VALUES (${userId}, NOW(), NOW())
-          ON CONFLICT (telegram_id) DO UPDATE
+          ON CONFLICT (id) DO UPDATE
           SET updated_at = NOW()
         `;
       } catch (userError) {
