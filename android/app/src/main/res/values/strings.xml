@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Anonimka</string>
+    <string name="title_activity_main">Anonimka</string>
+    <string name="package_name">kz.anonimka.app</string>
+    <string name="custom_url_scheme">kz.anonimka.app</string>
+</resources>
