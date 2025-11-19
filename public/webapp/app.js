@@ -10547,6 +10547,12 @@ function createWorldChatMessageHtml(msg) {
         const userToken = msg.user_token || msg.userToken;
         const isOwnMessage = userToken === currentUserToken;
         
+        // Для своих личных сообщений при клике подставляем собеседника, а не себя
+        let clickableNickname = msg.nickname;
+        if (isOwnMessage && msg.type === 'private' && (msg.target_nickname || msg.targetNickname)) {
+            clickableNickname = msg.target_nickname || msg.targetNickname;
+        }
+        
         // Применяем цензуру к сообщению
         let censoredMessage = censorMessage(msg.message);
         
@@ -10562,7 +10568,7 @@ function createWorldChatMessageHtml(msg) {
                          data-nickname="${escapeHtml(msg.nickname)}"
                          data-user-token="${userToken}"
                          data-is-own="${isOwnMessage}"
-                         onclick="clickWorldChatNickname('${escapeHtml(msg.nickname)}')"
+                         onclick="clickWorldChatNickname('${escapeHtml(clickableNickname)}')"
                          oncontextmenu="return showWorldChatContextMenu(event, '${escapeHtml(msg.nickname)}', '${userToken}', ${isOwnMessage})">
                         ${escapeHtml(msg.nickname)}${proБадge}${targetInfo}
                     </div>
