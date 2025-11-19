@@ -169,14 +169,45 @@ export async function POST(request: NextRequest) {
     const telegramResult = await telegramResponse.json();
 
     if (!telegramResult.ok) {
+      // Обрабатываем разные типы ошибок
+      const errorCode = telegramResult.error_code;
+      const errorDesc = telegramResult.description;
+      
+      // 403 - бот заблокирован пользователем (обычная ситуация)
+      if (errorCode === 403) {
+        console.log(`[SEND-NOTIFICATION] Пользователь ${recipientTgId} заблокировал бота - пропускаем уведомление`);
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Bot blocked by user',
+            details: 'Пользователь заблокировал бота. Уведомление не отправлено.'
+          },
+          { status: 200 }
+        );
+      }
+      
+      // 400 - неверный chat_id или другие параметры
+      if (errorCode === 400) {
+        console.warn(`[SEND-NOTIFICATION] Некорректные параметры для ${recipientTgId}:`, errorDesc);
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Invalid parameters',
+            details: errorDesc
+          },
+          { status: 200 }
+        );
+      }
+      
+      // Остальные ошибки логируем как критичные
       console.error('[SEND-NOTIFICATION] Telegram API ошибка:', telegramResult);
       return NextResponse.json(
         { 
           success: false, 
           error: 'Failed to send Telegram notification',
-          details: telegramResult.description 
+          details: errorDesc
         },
-        { status: 200 } // 200 чтобы не блокировать создание чата
+        { status: 200 }
       );
     }
 
