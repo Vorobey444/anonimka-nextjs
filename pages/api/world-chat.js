@@ -324,8 +324,12 @@ async function sendMessage(params, res) {
     targetNickname = match[1];
     cleanMessage = match[2];
 
+    // Ищем пользователя сначала в чате, затем в объявлениях
     const targetUserResult = await sql`
-      SELECT DISTINCT user_token FROM ads WHERE nickname = ${targetNickname} LIMIT 1
+      SELECT DISTINCT user_token FROM world_chat_messages WHERE nickname = ${targetNickname}
+      UNION
+      SELECT DISTINCT user_token FROM ads WHERE nickname = ${targetNickname}
+      LIMIT 1
     `;
 
     if (targetUserResult.length === 0) {
