@@ -18,8 +18,28 @@ let tg = window.Telegram?.WebApp || {
         user: null
     },
     ready: () => {},
-    close: () => {}
+    close: () => {},
+    showAlert: (message) => alert(message)
 };
+
+// Глобальная переменная для PWA установки
+let deferredPWAPrompt = null;
+
+// Слушаем событие установки PWA (для браузерной версии)
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('📥 PWA готово к установке');
+    e.preventDefault();
+    deferredPWAPrompt = e;
+});
+
+// Регистрация Service Worker для PWA
+if ('serviceWorker' in navigator && !window.Telegram?.WebApp) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ Service Worker зарегистрирован:', reg.scope))
+            .catch(err => console.error('❌ Ошибка регистрации Service Worker:', err));
+    });
+}
 
 // ============= БЕЗОПАСНОСТЬ: СКРЫТИЕ ЧУВСТВИТЕЛЬНЫХ ДАННЫХ В ЛОГАХ =============
 // Функция для хеширования чувствительных данных в логах
@@ -11619,8 +11639,45 @@ async function buyPremiumViaTelegram() {
 // ============= TELEGRAM: СОЗДАТЬ ЯРЛЫК НА РАБОЧИЙ СТОЛ =============
 function promptInstallApp() {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isTelegramWebApp = window.Telegram?.WebApp?.platform !== 'unknown';
     
-    // Используем встроенную функцию Telegram WebApp для создания ярлыка (только Android)
+    // 1. Для браузерной версии (Desktop/Mobile) используем PWA
+    if (!isTelegramWebApp && deferredPWAPrompt) {
+        deferredPWAPrompt.prompt();
+        deferredPWAPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('✅ PWA установлено');
+            } else {
+                console.log('❌ Установка PWA отменена');
+            }
+            deferredPWAPrompt = null;
+        });
+        return;
+    }
+    
+    // 2. Для браузера без поддержки PWA - показываем инструкцию
+    if (!isTelegramWebApp && !deferredPWAPrompt) {
+        if (isIOS) {
+            tg.showAlert(
+                '📲 Установка на iPhone (Safari):\n\n' +
+                '1️⃣ Нажмите кнопку "Поделиться" (квадрат со стрелкой)\n\n' +
+                '2️⃣ Прокрутите вниз и выберите "На экран Домой"\n\n' +
+                '3️⃣ Нажмите "Добавить"\n\n' +
+                '✨ Готово! Иконка появится на рабочем столе'
+            );
+        } else {
+            tg.showAlert(
+                '📲 Установка в браузере:\n\n' +
+                '1. Откройте меню браузера (⋮ или ⚙️)\n' +
+                '2. Выберите "Установить приложение" или "Добавить на главный экран"\n' +
+                '3. Подтвердите установку\n\n' +
+                '💡 Также можно использовать значок установки в адресной строке'
+            );
+        }
+        return;
+    }
+    
+    // 3. Для Telegram WebApp используем встроенную функцию (только Android)
     if (window.Telegram?.WebApp?.addToHomeScreen && !isIOS) {
         try {
             window.Telegram.WebApp.addToHomeScreen();
@@ -11630,7 +11687,7 @@ function promptInstallApp() {
             tg.showAlert('❌ Не удалось создать ярлык. Попробуйте через меню Telegram (⋮).');
         }
     } else {
-        // Для iOS показываем подробную инструкцию (автоматическое добавление недоступно)
+        // 4. Для iOS в Telegram - показываем инструкцию
         if (isIOS) {
             tg.showAlert(
                 '📲 Установка на iPhone:\n\n' +
@@ -11640,7 +11697,7 @@ function promptInstallApp() {
                 '✨ Готово! Иконка появится на рабочем столе'
             );
         } else {
-            // Android без поддержки API
+            // 5. Android в Telegram без поддержки API
             tg.showAlert(
                 '📲 Создание ярлыка:\n\n' +
                 '1. Откройте меню Telegram (⋮ в правом верхнем углу)\n' +
