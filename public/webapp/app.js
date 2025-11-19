@@ -1562,18 +1562,23 @@ async function completeOnboarding() {
         }
         
         // 2. Сохраняем согласие с условиями
-        const agreeResponse = await fetch('/api/onboarding', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                tgId: tgId,
-                agreed: true
-            })
-        });
-        
-        const agreeData = await agreeResponse.json();
-        if (!agreeData.success) {
-            console.warn('Ошибка сохранения согласия:', agreeData.error);
+        const userToken = localStorage.getItem('user_token');
+        if (userToken) {
+            const agreeResponse = await fetch('/api/onboarding', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userToken: userToken,
+                    agreed: true
+                })
+            });
+            
+            const agreeData = await agreeResponse.json();
+            if (!agreeData.success) {
+                console.warn('Ошибка сохранения согласия:', agreeData.error);
+            }
+        } else {
+            console.warn('user_token не найден, пропускаем сохранение согласия');
         }
         
         // 3. Сохраняем локально
