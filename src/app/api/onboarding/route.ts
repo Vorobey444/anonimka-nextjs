@@ -5,24 +5,21 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { tgId, agreed } = body;
+        const { userToken, agreed } = body;
 
-        if (!tgId) {
+        if (!userToken) {
             return NextResponse.json(
-                { success: false, error: 'tgId обязателен' },
+                { success: false, error: 'userToken обязателен' },
                 { status: 400 }
             );
         }
 
-        // Обновляем статус согласия (все поля для совместимости)
+        // Обновляем статус согласия в таблице ads (основная таблица пользователей)
         await sql`
-            UPDATE users 
+            UPDATE ads 
             SET agreed_to_terms = ${agreed},
-                agreed_to_rules = ${agreed},
-                agreed_to_privacy = ${agreed},
-                agreements_accepted = ${agreed},
                 agreed_at = NOW()
-            WHERE tg_id = ${tgId}
+            WHERE user_token = ${userToken}
         `;
 
         return NextResponse.json({
@@ -42,19 +39,20 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
-        const tgId = searchParams.get('tgId');
+        const userToken = searchParams.get('userToken');
 
-        if (!tgId) {
+        if (!userToken) {
             return NextResponse.json(
-                { success: false, error: 'tgId обязателен' },
+                { success: false, error: 'userToken обязателен' },
                 { status: 400 }
             );
         }
 
         const result = await sql`
             SELECT agreed_to_terms, agreed_at 
-            FROM users 
-            WHERE tg_id = ${tgId}
+            FROM ads 
+            WHERE user_token = ${userToken}
+            LIMIT 1
         `;
 
         if (result.rows.length === 0) {
