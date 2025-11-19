@@ -1,7 +1,7 @@
 {
-  "name": "Anonimka - Анонимные знакомства",
+  "name": "Anonimka - Анонимный чат",
   "short_name": "Anonimka",
-  "description": "Анонимные знакомства без фильтров",
+  "description": "Анонимный чат без фильтров",
   "start_url": "/webapp/",
   "display": "standalone",
   "background_color": "#0a0a0a",

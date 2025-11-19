@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       console.log('[SEND-NOTIFICATION] Получаем tg_id по токену:', receiverToken);
       
       try {
-        // Сначала пробуем найти в таблице ads (там всегда есть tg_id)
+        // Ищем ТОЛЬКО в таблице ads - уведомления только для тех, у кого есть анкеты
         const adResult = await sql`
           SELECT tg_id 
           FROM ads 
@@ -43,18 +43,15 @@ export async function POST(request: NextRequest) {
           recipientTgId = adResult.rows[0].tg_id;
           console.log('[SEND-NOTIFICATION] Найден tg_id в ads:', recipientTgId);
         } else {
-          // Пробуем users таблицу
-          const userResult = await sql`
-            SELECT id 
-            FROM users 
-            WHERE user_token = ${receiverToken} 
-            LIMIT 1
-          `;
-
-          if (userResult.rows.length > 0) {
-            recipientTgId = userResult.rows[0].id;
-            console.log('[SEND-NOTIFICATION] Найден tg_id в users:', recipientTgId);
-          }
+          console.warn('[SEND-NOTIFICATION] У пользователя нет анкет - уведомление не отправляется');
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: 'Recipient has no ads',
+              details: 'Пользователь не имеет анкет. Уведомление не отправлено.'
+            },
+            { status: 200 } // 200 чтобы не блокировать создание чата
+          );
         }
       } catch (dbError) {
         console.error('[SEND-NOTIFICATION] Ошибка запроса к БД:', dbError);
