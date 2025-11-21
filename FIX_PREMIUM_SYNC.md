@@ -1,19 +1,37 @@
 # Исправление синхронизации Premium между Telegram и Web версиями
 
-## Проблема
-Premium показывал разные данные:
-- **Telegram**: до 12.12.2025 ✅ (правильно в `users`)
-- **Web**: 7-час триал ❌ (старые данные в `premium_tokens`)
+## Проблемы
+1. Premium показывал разные данные:
+   - **Telegram**: до 12.12.2025 ✅ (правильно в `users`)
+   - **Web**: 7-час триал ❌ (старые данные в `premium_tokens`)
 
-## Причина
-Поле `users.user_token` было NULL → синхронизация не работала → Web читал старые данные из `premium_tokens`
+2. Аналитика не работала:
+   - Ошибка: `column "user_token" of relation "page_visits" does not exist`
+
+## Причины
+- Поле `users.user_token` было NULL → синхронизация не работала
+- Миграция 023 (user_token в page_visits) не была выполнена в БД
 
 ## Решение
 
-### 1. Выполните миграцию 024 в Neon Console
+### 1. ⚡ Выполните СРОЧНУЮ миграцию в Neon Console
+
+**Файл:** `migrations/EXECUTE_NOW_analytics_and_users.sql`
+
+Эта миграция исправляет ОБЕ проблемы:
+- Добавляет `user_token` в `page_visits` (миграция 023)
+- Заполняет `users.user_token` из `ads` (миграция 024)
 
 ```sql
--- Migration 024: Синхронизация user_token между ads и users
+BEGIN;
+
+-- 1️⃣ Добавление user_token в page_visits
+ALTER TABLE page_visits
+ADD COLUMN IF NOT EXISTS user_token VARCHAR(64);
+
+CREATE INDEX IF NOT EXISTS idx_page_visits_user_token ON page_visits(user_token);
+
+-- 2️⃣ Синхронизация user_token в users
 UPDATE users u
 SET user_token = (
     SELECT a.user_token 
@@ -25,23 +43,30 @@ SET user_token = (
 WHERE u.user_token IS NULL
   AND EXISTS (SELECT 1 FROM ads WHERE ads.tg_id = u.id);
 
--- Индекс для ускорения синхронизации
 CREATE INDEX IF NOT EXISTS idx_users_user_token ON users(user_token) WHERE user_token IS NOT NULL;
+
+COMMIT;
 ```
 
-### 2. Проверьте результат
+### 2. Проверьте результат (автоматически выполнится в конце миграции)
 
 ```sql
--- Проверка вашего аккаунта
+-- Проверка 1: user_token добавлен в page_visits
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'page_visits' AND column_name = 'user_token';
+
+-- Проверка 2: Статистика заполнения user_token в users
+SELECT 
+    COUNT(*) FILTER (WHERE user_token IS NOT NULL) as filled,
+    COUNT(*) FILTER (WHERE user_token IS NULL) as empty,
+    COUNT(*) as total
+FROM users;
+
+-- Проверка 3: Ваш аккаунт (должен быть user_token)
 SELECT id, user_token, is_premium, premium_until 
 FROM users 
 WHERE id = 884253640;
-
--- Должно показать:
--- id: 884253640
--- user_token: 8e1e59ba9cddb0bddc73e422616896cf766eb6033f155c43d63ede2e8fa36dbe
--- is_premium: true
--- premium_until: 2025-12-11 23:59:59
 ```
 
 ### 3. Очистите кеш браузера
@@ -55,14 +80,20 @@ localStorage.clear();
 location.reload();
 ```
 
-### 4. Проверьте синхронизацию
+### 4. Проверьте работу системы
 
-После входа на сайт проверьте в консоли:
+**Premium:**
+- Telegram и Web версии должны показывать одинаковый срок (12.12.2025)
+
+**Аналитика:**
+- В консоли браузера не должно быть ошибок `column "user_token" does not exist`
+- В Vercel Logs должны появиться логи синхронизации Premium
+
+**User token:**
 ```javascript
 console.log('User token:', localStorage.getItem('user_token'));
+// Должен вернуть хеш (64 символа)
 ```
-
-Должно быть: `8e1e59ba9cddb0bddc73e422616896cf766eb6033f155c43d63ede2e8fa36dbe`
 
 ## Что исправлено в коде
 
