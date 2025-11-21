@@ -50,10 +50,15 @@ export async function POST(request: NextRequest) {
           const isPremiumToken = prem.rows[0]?.is_premium || false;
           const premiumUntilToken = prem.rows[0]?.premium_until || null;
 
-          console.log('[PREMIUM API] isPremiumToken:', isPremiumToken, 'premiumUntil:', premiumUntilToken);
+          // Проверяем не истёк ли срок Premium
+          const now = new Date();
+          const premiumExpired = premiumUntilToken ? new Date(premiumUntilToken) <= now : false;
+          const isPremiumActive = isPremiumToken && !premiumExpired;
 
-          // Если есть PRO по токену, используем его независимо от наличия tg_id
-          if (isPremiumToken) {
+          console.log('[PREMIUM API] isPremiumToken:', isPremiumToken, 'premiumUntil:', premiumUntilToken, 'expired:', premiumExpired, 'active:', isPremiumActive);
+
+          // Если есть PRO по токену и он не истёк
+          if (isPremiumActive) {
             console.log('[PREMIUM API] ✅ PRO найден в premium_tokens, возвращаем PRO статус');
             // Считаем объявления по токену за сегодня (АЛМАТЫ UTC+5)
             const nowUTC = new Date();
