@@ -392,27 +392,51 @@ export async function POST(request: NextRequest) {
         let photosToday = 0;
         
         if (isToken) {
-          const adResult = await sql`
-            SELECT tg_id FROM ads WHERE user_token = ${userId} LIMIT 1
+          // Ищем tg_id через users.user_token (не через ads!)
+          const userLookup = await sql`
+            SELECT id FROM users WHERE user_token = ${userId} LIMIT 1
           `;
-          if (adResult.rows.length > 0 && adResult.rows[0].tg_id) {
-            numericUserId = Number(adResult.rows[0].tg_id);
+          if (userLookup.rows.length > 0) {
+            numericUserId = Number(userLookup.rows[0].id);
           }
         } else {
           numericUserId = Number(userId);
         }
         
-        // Проверяем premium статус
+        // Проверяем premium статус: users → premium_tokens
         if (isToken) {
-          const premiumTokenResult = await sql`
-            SELECT is_premium FROM premium_tokens WHERE user_token = ${userId} LIMIT 1
-          `;
-          if (premiumTokenResult.rows.length > 0) {
-            isPremium = premiumTokenResult.rows[0].is_premium || false;
+          // Сначала проверяем users (источник истины)
+          if (numericUserId && numericUserId > 0) {
+            const user = await sql`SELECT is_premium, premium_until FROM users WHERE id = ${numericUserId}`;
+            if (user.rows.length > 0) {
+              const userPremium = user.rows[0].is_premium || false;
+              const userPremiumUntil = user.rows[0].premium_until;
+              const now = new Date();
+              const premiumExpired = userPremiumUntil ? new Date(userPremiumUntil) <= now : false;
+              isPremium = userPremium && !premiumExpired;
+            }
+          } else {
+            // Web пользователь - проверяем premium_tokens
+            const premiumTokenResult = await sql`
+              SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${userId} LIMIT 1
+            `;
+            if (premiumTokenResult.rows.length > 0) {
+              const tokenPremium = premiumTokenResult.rows[0].is_premium || false;
+              const tokenPremiumUntil = premiumTokenResult.rows[0].premium_until;
+              const now = new Date();
+              const premiumExpired = tokenPremiumUntil ? new Date(tokenPremiumUntil) <= now : false;
+              isPremium = tokenPremium && !premiumExpired;
+            }
           }
         } else if (numericUserId && numericUserId > 0) {
-          const user = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
-          isPremium = user.rows[0]?.is_premium || false;
+          const user = await sql`SELECT is_premium, premium_until FROM users WHERE id = ${numericUserId}`;
+          if (user.rows.length > 0) {
+            const userPremium = user.rows[0].is_premium || false;
+            const userPremiumUntil = user.rows[0].premium_until;
+            const now = new Date();
+            const premiumExpired = userPremiumUntil ? new Date(userPremiumUntil) <= now : false;
+            isPremium = userPremium && !premiumExpired;
+          }
         }
         
         // Получаем счетчик фото
@@ -444,31 +468,52 @@ export async function POST(request: NextRequest) {
         
         // Определяем, это токен или числовой ID
         const isToken = userId && typeof userId === 'string' && userId.length > 20;
-        let numericUserId: number;
+        let numericUserId: number | null = null;
         
         if (isToken) {
-          const adResult = await sql`
-            SELECT tg_id FROM ads WHERE user_token = ${userId} LIMIT 1
+          // Ищем через users.user_token
+          const userLookup = await sql`
+            SELECT id FROM users WHERE user_token = ${userId} LIMIT 1
           `;
-          if (adResult.rows.length === 0) {
-            return NextResponse.json({ data: { success: false }, error: { message: 'User not found' } }, { status: 404 });
+          if (userLookup.rows.length > 0) {
+            numericUserId = Number(userLookup.rows[0].id);
           }
-          numericUserId = Number(adResult.rows[0].tg_id);
         } else {
           numericUserId = Number(userId);
         }
         
-        await sql`
-          INSERT INTO user_limits (user_id, photos_sent_today, photos_last_reset)
-          VALUES (${numericUserId}, 1, CURRENT_DATE)
-          ON CONFLICT (user_id) DO UPDATE
-          SET photos_sent_today = CASE
-              WHEN user_limits.photos_last_reset < CURRENT_DATE THEN 1
-              ELSE user_limits.photos_sent_today + 1
-            END,
-            photos_last_reset = CURRENT_DATE,
-            updated_at = NOW()
-        `;
+        // Получаем текущую дату по Алматы (UTC+5)
+        const nowUTC = new Date();
+        const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+        const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+        
+        if (numericUserId !== null && numericUserId > 0) {
+          // Telegram пользователь → user_limits
+          await sql`
+            INSERT INTO user_limits (user_id, photos_sent_today, photos_last_reset)
+            VALUES (${numericUserId}, 1, ${currentAlmatyDate}::date)
+            ON CONFLICT (user_id) DO UPDATE
+            SET photos_sent_today = CASE
+                WHEN user_limits.photos_last_reset::text < ${currentAlmatyDate} THEN 1
+                ELSE user_limits.photos_sent_today + 1
+              END,
+              photos_last_reset = ${currentAlmatyDate}::date,
+              updated_at = NOW()
+          `;
+        } else if (isToken) {
+          // Web пользователь → web_user_limits
+          await sql`
+            INSERT INTO web_user_limits (user_token, photos_sent_today, photos_last_reset)
+            VALUES (${userId}, 1, ${currentAlmatyDate}::date)
+            ON CONFLICT (user_token) DO UPDATE
+            SET photos_sent_today = CASE
+                WHEN web_user_limits.photos_last_reset::text < ${currentAlmatyDate} THEN 1
+                ELSE web_user_limits.photos_sent_today + 1
+              END,
+              photos_last_reset = ${currentAlmatyDate}::date,
+              updated_at = NOW()
+          `;
+        }
         
         return NextResponse.json({ data: { success: true }, error: null });
       }
@@ -479,16 +524,20 @@ export async function POST(request: NextRequest) {
         
         // Определяем, это токен или числовой ID
         const isToken = userId && typeof userId === 'string' && userId.length > 20;
-        let numericUserId: number;
+        let numericUserId: number | null = null;
         
         if (isToken) {
-          const adResult = await sql`
-            SELECT tg_id FROM ads WHERE user_token = ${userId} LIMIT 1
+          // Ищем через users.user_token
+          const userLookup = await sql`
+            SELECT id FROM users WHERE user_token = ${userId} LIMIT 1
           `;
-          if (adResult.rows.length === 0) {
+          if (userLookup.rows.length > 0) {
+            numericUserId = Number(userLookup.rows[0].id);
+          }
+          
+          if (!numericUserId) {
             return NextResponse.json({ data: { success: false }, error: { message: 'User not found' } }, { status: 404 });
           }
-          numericUserId = Number(adResult.rows[0].tg_id);
         } else {
           numericUserId = Number(userId);
         }

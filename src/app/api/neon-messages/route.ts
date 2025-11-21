@@ -59,18 +59,42 @@ export async function POST(request: NextRequest) {
             numericUserId = Number(senderId);
           }
           
-          // Проверяем premium статус
+          // Проверяем Premium: users (источник истины) → premium_tokens
           if (isToken && senderId) {
-            const premiumTokenResult = await sql`
-              SELECT is_premium FROM premium_tokens WHERE user_token = ${senderId} LIMIT 1
-            `;
-            if (premiumTokenResult.rows.length > 0) {
-              isPremium = premiumTokenResult.rows[0].is_premium || false;
-              console.log('[MESSAGES API] PRO проверен через premium_tokens:', isPremium);
+            // Сначала проверяем users (если есть tg_id)
+            if (numericUserId && numericUserId > 0) {
+              const user = await sql`SELECT is_premium, premium_until FROM users WHERE id = ${numericUserId}`;
+              if (user.rows.length > 0) {
+                const userPremium = user.rows[0].is_premium || false;
+                const userPremiumUntil = user.rows[0].premium_until;
+                const now = new Date();
+                const premiumExpired = userPremiumUntil ? new Date(userPremiumUntil) <= now : false;
+                isPremium = userPremium && !premiumExpired;
+                console.log('[MESSAGES API] PRO из users:', { isPremium, expired: premiumExpired });
+              }
+            } else {
+              // Web пользователь - проверяем premium_tokens
+              const premiumTokenResult = await sql`
+                SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${senderId} LIMIT 1
+              `;
+              if (premiumTokenResult.rows.length > 0) {
+                const tokenPremium = premiumTokenResult.rows[0].is_premium || false;
+                const tokenPremiumUntil = premiumTokenResult.rows[0].premium_until;
+                const now = new Date();
+                const premiumExpired = tokenPremiumUntil ? new Date(tokenPremiumUntil) <= now : false;
+                isPremium = tokenPremium && !premiumExpired;
+                console.log('[MESSAGES API] PRO из premium_tokens (Web):', { isPremium, expired: premiumExpired });
+              }
             }
           } else if (numericUserId && numericUserId > 0) {
-            const userResult = await sql`SELECT is_premium FROM users WHERE id = ${numericUserId}`;
-            isPremium = userResult.rows[0]?.is_premium || false;
+            const user = await sql`SELECT is_premium, premium_until FROM users WHERE id = ${numericUserId}`;
+            if (user.rows.length > 0) {
+              const userPremium = user.rows[0].is_premium || false;
+              const userPremiumUntil = user.rows[0].premium_until;
+              const now = new Date();
+              const premiumExpired = userPremiumUntil ? new Date(userPremiumUntil) <= now : false;
+              isPremium = userPremium && !premiumExpired;
+            }
           }
           
           // Получаем счетчик фото в зависимости от типа пользователя
@@ -159,31 +183,35 @@ export async function POST(request: NextRequest) {
               numericUserId = Number(senderId);
             }
           
-            // Обновляем счетчик в зависимости от типа пользователя
+            // Обновляем счетчик в зависимости от типа пользователя (АЛМАТЫ UTC+5)
+            const nowUTC = new Date();
+            const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+            const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+            
             if (numericUserId && numericUserId > 0) {
               // Telegram пользователь - обновляем user_limits
               await sql`
                 INSERT INTO user_limits (user_id, photos_sent_today, photos_last_reset)
-                VALUES (${numericUserId}, 1, CURRENT_DATE)
+                VALUES (${numericUserId}, 1, ${currentAlmatyDate}::date)
                 ON CONFLICT (user_id) DO UPDATE
                 SET photos_sent_today = CASE
-                    WHEN user_limits.photos_last_reset < CURRENT_DATE THEN 1
+                    WHEN user_limits.photos_last_reset::text < ${currentAlmatyDate} THEN 1
                     ELSE user_limits.photos_sent_today + 1
                   END,
-                  photos_last_reset = CURRENT_DATE,
+                  photos_last_reset = ${currentAlmatyDate}::date,
                   updated_at = NOW()
               `;
             } else if (isToken && senderId) {
               // Веб-пользователь без tg_id - обновляем web_user_limits
               await sql`
                 INSERT INTO web_user_limits (user_token, photos_sent_today, photos_last_reset)
-                VALUES (${senderId}, 1, CURRENT_DATE)
+                VALUES (${senderId}, 1, ${currentAlmatyDate}::date)
                 ON CONFLICT (user_token) DO UPDATE
                 SET photos_sent_today = CASE
-                    WHEN web_user_limits.photos_last_reset < CURRENT_DATE THEN 1
+                    WHEN web_user_limits.photos_last_reset::text < ${currentAlmatyDate} THEN 1
                     ELSE web_user_limits.photos_sent_today + 1
                   END,
-                  photos_last_reset = CURRENT_DATE,
+                  photos_last_reset = ${currentAlmatyDate}::date,
                   updated_at = NOW()
               `;
               console.log('[MESSAGES API] Счетчик фото обновлен для веб-пользователя:', senderId?.substring(0, 16) + '...');

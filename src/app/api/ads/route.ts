@@ -239,16 +239,41 @@ export async function POST(req: NextRequest) {
         `;
       }
       
-      let isPremium = userResult.rows[0]?.is_premium || false;
+      let isPremium = false;
       
-      // ПРИОРИТЕТ: проверяем premium_tokens если есть user_token
-      if (finalUserToken) {
+      // Проверяем Premium: users (источник истины) → premium_tokens (синхронизация)
+      if (finalUserToken && numericTgId !== null) {
+        // Telegram пользователь: проверяем users, синхронизируем в premium_tokens
+        const userPremium = userResult.rows[0]?.is_premium || false;
+        const userPremiumUntil = userResult.rows[0]?.premium_until;
+        const now = new Date();
+        const premiumExpired = userPremiumUntil ? new Date(userPremiumUntil) <= now : false;
+        
+        isPremium = userPremium && !premiumExpired;
+        console.log('[ADS API] PRO из users:', { isPremium, premium_until: userPremiumUntil, expired: premiumExpired });
+        
+        // Синхронизируем premium_tokens
+        if (isPremium) {
+          await sql`
+            INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
+            VALUES (${finalUserToken}, true, ${userPremiumUntil}, NOW())
+            ON CONFLICT (user_token) DO UPDATE
+            SET is_premium = true, premium_until = ${userPremiumUntil}, updated_at = NOW()
+          `;
+        }
+      } else if (finalUserToken) {
+        // Web пользователь: проверяем только premium_tokens
         const premiumTokenResult = await sql`
-          SELECT is_premium FROM premium_tokens WHERE user_token = ${finalUserToken} LIMIT 1
+          SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${finalUserToken} LIMIT 1
         `;
         if (premiumTokenResult.rows.length > 0) {
-          isPremium = premiumTokenResult.rows[0].is_premium || false;
-          console.log('[ADS API] PRO проверен через premium_tokens:', isPremium);
+          const tokenPremium = premiumTokenResult.rows[0].is_premium || false;
+          const tokenPremiumUntil = premiumTokenResult.rows[0].premium_until;
+          const now = new Date();
+          const premiumExpired = tokenPremiumUntil ? new Date(tokenPremiumUntil) <= now : false;
+          
+          isPremium = tokenPremium && !premiumExpired;
+          console.log('[ADS API] PRO из premium_tokens (Web):', { isPremium, expired: premiumExpired });
         }
       }
       
@@ -273,26 +298,65 @@ export async function POST(req: NextRequest) {
     }
 
     // Ограничение на количество объявлений для веб-пользователей (без tgId) - АЛМАТЫ UTC+5
-    if (numericTgId === null) {
-      // Получаем текущую дату по Алматы (UTC+5)
+    if (numericTgId === null && finalUserToken) {
+      // Проверяем Premium для Web-пользователя
+      let isPremiumWeb = false;
+      const premiumCheckWeb = await sql`
+        SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${finalUserToken} LIMIT 1
+      `;
+      if (premiumCheckWeb.rows.length > 0) {
+        const webPremium = premiumCheckWeb.rows[0].is_premium || false;
+        const webPremiumUntil = premiumCheckWeb.rows[0].premium_until;
+        const now = new Date();
+        const premiumExpired = webPremiumUntil ? new Date(webPremiumUntil) <= now : false;
+        isPremiumWeb = webPremium && !premiumExpired;
+      }
+      
+      // Получаем/создаем лимиты
       const nowUTC = new Date();
       const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
       const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
       
-      const countRes = await sql`
-        SELECT COUNT(*)::int AS c
-        FROM ads
-        WHERE user_token = ${finalUserToken}
-          AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Almaty') = ${currentAlmatyDate}::date
+      await sql`
+        INSERT INTO web_user_limits (user_token, ads_created_today, ads_last_reset)
+        VALUES (${finalUserToken}, 0, ${currentAlmatyDate}::date)
+        ON CONFLICT (user_token) DO NOTHING
       `;
-      const used = countRes.rows[0]?.c ?? 0;
-      const maxAds = 1; // FREE для веб-пользователей
+      
+      let webLimitsResult = await sql`
+        SELECT ads_created_today, ads_last_reset FROM web_user_limits WHERE user_token = ${finalUserToken}
+      `;
+      
+      // Сброс если новый день
+      const lastResetDate = webLimitsResult.rows[0]?.ads_last_reset ? 
+        new Date(webLimitsResult.rows[0].ads_last_reset).toISOString().split('T')[0] : null;
+      
+      if (lastResetDate !== currentAlmatyDate) {
+        console.log('[ADS API] Сброс счетчика объявлений для Web (новый день):', { lastResetDate, currentAlmatyDate });
+        await sql`
+          UPDATE web_user_limits
+          SET ads_created_today = 0,
+              ads_last_reset = ${currentAlmatyDate}::date,
+              updated_at = NOW()
+          WHERE user_token = ${finalUserToken}
+        `;
+        webLimitsResult = await sql`
+          SELECT ads_created_today FROM web_user_limits WHERE user_token = ${finalUserToken}
+        `;
+      }
+      
+      const used = webLimitsResult.rows[0]?.ads_created_today || 0;
+      const maxAds = isPremiumWeb ? 3 : 1;
+      
       if (used >= maxAds) {
         return NextResponse.json(
           {
             success: false,
             limit: true,
-            error: 'Лимит объявлений на сегодня исчерпан (1/1). Вернитесь завтра или оформите PRO в Telegram-версии.'
+            isPremium: isPremiumWeb,
+            error: isPremiumWeb 
+              ? 'Вы уже создали 3 объявления сегодня (лимит PRO)'
+              : 'Лимит объявлений на сегодня исчерпан (1/1). Вернитесь завтра или оформите PRO в Telegram-версии.'
           },
           { status: 429 }
         );
@@ -321,14 +385,14 @@ export async function POST(req: NextRequest) {
 
     const newAd = result.rows[0];
     
-    // Увеличиваем счётчик объявлений (только для валидного userId) - АЛМАТЫ UTC+5
+    // Увеличиваем счётчик объявлений - АЛМАТЫ UTC+5
+    const nowUTC = new Date();
+    const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+    const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+    
     if (numericTgId !== null) {
+      // Telegram пользователь → user_limits
       const userId = numericTgId;
-      // Получаем текущую дату по Алматы (UTC+5)
-      const nowUTC = new Date();
-      const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
-      const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
-      
       await sql`
         INSERT INTO user_limits (user_id, ads_created_today, ads_last_reset)
         VALUES (${userId}, 1, ${currentAlmatyDate}::date)
@@ -336,6 +400,19 @@ export async function POST(req: NextRequest) {
         SET ads_created_today = CASE
             WHEN user_limits.ads_last_reset::text < ${currentAlmatyDate} THEN 1
             ELSE user_limits.ads_created_today + 1
+          END,
+          ads_last_reset = ${currentAlmatyDate}::date,
+          updated_at = NOW()
+      `;
+    } else if (finalUserToken) {
+      // Web пользователь → web_user_limits
+      await sql`
+        INSERT INTO web_user_limits (user_token, ads_created_today, ads_last_reset)
+        VALUES (${finalUserToken}, 1, ${currentAlmatyDate}::date)
+        ON CONFLICT (user_token) DO UPDATE
+        SET ads_created_today = CASE
+            WHEN web_user_limits.ads_last_reset::text < ${currentAlmatyDate} THEN 1
+            ELSE web_user_limits.ads_created_today + 1
           END,
           ads_last_reset = ${currentAlmatyDate}::date,
           updated_at = NOW()
@@ -681,16 +758,41 @@ export async function PATCH(req: NextRequest) {
       `;
       const userToken = adTokenResult.rows[0]?.user_token;
       
-      let isPremium = userResult.rows[0]?.is_premium || false;
+      let isPremium = false;
       
-      // Если есть токен, проверяем premium_tokens (приоритет над users.is_premium)
-      if (userToken) {
+      // Проверяем Premium: users (источник истины) → premium_tokens (синхронизация)
+      if (userToken && userId !== null) {
+        // Telegram пользователь
+        const userPremium = userResult.rows[0]?.is_premium || false;
+        const userPremiumUntil = userResult.rows[0]?.premium_until;
+        const now = new Date();
+        const premiumExpired = userPremiumUntil ? new Date(userPremiumUntil) <= now : false;
+        
+        isPremium = userPremium && !premiumExpired;
+        console.log('[ADS API PIN] PRO из users:', { isPremium, expired: premiumExpired });
+        
+        // Синхронизируем premium_tokens
+        if (isPremium) {
+          await sql`
+            INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
+            VALUES (${userToken}, true, ${userPremiumUntil}, NOW())
+            ON CONFLICT (user_token) DO UPDATE
+            SET is_premium = true, premium_until = ${userPremiumUntil}, updated_at = NOW()
+          `;
+        }
+      } else if (userToken) {
+        // Web пользователь
         const premiumTokenResult = await sql`
-          SELECT is_premium FROM premium_tokens WHERE user_token = ${userToken} LIMIT 1
+          SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${userToken} LIMIT 1
         `;
         if (premiumTokenResult.rows.length > 0) {
-          isPremium = premiumTokenResult.rows[0].is_premium || false;
-          console.log('[ADS API] PRO проверен через premium_tokens:', isPremium);
+          const tokenPremium = premiumTokenResult.rows[0].is_premium || false;
+          const tokenPremiumUntil = premiumTokenResult.rows[0].premium_until;
+          const now = new Date();
+          const premiumExpired = tokenPremiumUntil ? new Date(tokenPremiumUntil) <= now : false;
+          
+          isPremium = tokenPremium && !premiumExpired;
+          console.log('[ADS API PIN] PRO из premium_tokens (Web):', { isPremium, expired: premiumExpired });
         }
       }
       
@@ -737,16 +839,20 @@ export async function PATCH(req: NextRequest) {
         }
       }
       
-      // Увеличиваем счётчик закрепления
+      // Увеличиваем счётчик закрепления (АЛМАТЫ UTC+5)
+      const nowUTC = new Date();
+      const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+      const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+      
       await sql`
         INSERT INTO user_limits (user_id, pin_uses_today, pin_last_reset, last_pin_time)
-        VALUES (${userId}, 1, CURRENT_DATE, NOW())
+        VALUES (${userId}, 1, ${currentAlmatyDate}::date, NOW())
         ON CONFLICT (user_id) DO UPDATE
         SET pin_uses_today = CASE
-            WHEN user_limits.pin_last_reset < CURRENT_DATE THEN 1
+            WHEN user_limits.pin_last_reset::text < ${currentAlmatyDate} THEN 1
             ELSE user_limits.pin_uses_today + 1
           END,
-          pin_last_reset = CURRENT_DATE,
+          pin_last_reset = ${currentAlmatyDate}::date,
           last_pin_time = NOW(),
           updated_at = NOW()
       `;
