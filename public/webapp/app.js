@@ -914,23 +914,30 @@ async function loadSiteStats() {
         // Проверяем is_admin только один раз при первой загрузке
         if (!adminCheckCompleted) {
             const userId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
+            console.log('[ADMIN STATS] Проверка админа для user_id:', userId);
             
             if (userId) {
                 try {
                     const userStatusResponse = await fetch(`/api/users?action=check-admin&user_id=${userId}`);
                     const userStatusData = await userStatusResponse.json();
+                    console.log('[ADMIN STATS] Ответ API:', userStatusData);
                     isAdminUser = userStatusData.is_admin === true;
+                    console.log('[ADMIN STATS] isAdminUser:', isAdminUser);
                 } catch (err) {
-                    console.error('Ошибка проверки статуса админа:', err);
+                    console.error('[ADMIN STATS] Ошибка проверки статуса админа:', err);
                 }
+            } else {
+                console.warn('[ADMIN STATS] userId не найден');
             }
             
             adminCheckCompleted = true;
             
             // Скрываем/показываем блок статистики
             const adminStatsEl = document.getElementById('adminStats');
+            console.log('[ADMIN STATS] Элемент adminStats найден:', !!adminStatsEl);
             if (adminStatsEl) {
                 adminStatsEl.style.display = isAdminUser ? 'flex' : 'none';
+                console.log('[ADMIN STATS] Установлен display:', adminStatsEl.style.display);
             }
         }
         
