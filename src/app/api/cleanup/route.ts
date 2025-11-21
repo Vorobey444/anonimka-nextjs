@@ -5,16 +5,16 @@ export const dynamic = 'force-dynamic';
 
 /**
  * API для автоматической очистки старых анкет
- * Удаляет анкеты старше 7 дней
+ * Удаляет анкеты старше 30 дней
  */
 export async function POST(request: NextRequest) {
     try {
         console.log('[CLEANUP] Начало очистки старых анкет...');
 
-        // Удаляем анкеты старше 7 дней
+        // Удаляем анкеты старше 30 дней
         const deleteResult = await sql`
             DELETE FROM ads
-            WHERE created_at < NOW() - INTERVAL '7 days'
+            WHERE created_at < NOW() - INTERVAL '30 days'
             RETURNING id, created_at
         `;
 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             deletedAds: deletedCount,
-            message: `Удалено ${deletedCount} анкет старше 7 дней (чаты удалены через CASCADE)`
+            message: `Удалено ${deletedCount} анкет старше 30 дней (чаты удалены через CASCADE)`
         });
 
     } catch (error: any) {
@@ -53,11 +53,11 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
     try {
-        // Получаем количество анкет старше 7 дней
+        // Получаем количество анкет старше 30 дней
         const result = await sql`
             SELECT COUNT(*) as count
             FROM ads
-            WHERE created_at < NOW() - INTERVAL '7 days'
+            WHERE created_at < NOW() - INTERVAL '30 days'
         `;
 
         const oldAdsCount = parseInt(result.rows[0]?.count || '0');
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             success: true,
             oldAdsCount,
-            message: `Найдено ${oldAdsCount} анкет старше 7 дней, готовых к удалению`
+            message: `Найдено ${oldAdsCount} анкет старше 30 дней, готовых к удалению`
         });
 
     } catch (error: any) {
