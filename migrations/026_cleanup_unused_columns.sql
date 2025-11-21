@@ -15,7 +15,13 @@ DROP COLUMN IF EXISTS agreed_to_rules CASCADE,
 DROP COLUMN IF EXISTS agreed_to_privacy CASCADE,
 DROP COLUMN IF EXISTS agreements_accepted_at CASCADE;
 
--- 2️⃣ Обновляем комментарий к таблице
+-- 2️⃣ Проставляем всем пользователям agreed_to_terms = TRUE
+-- (раз они уже зарегистрированы, значит согласились)
+UPDATE users 
+SET agreed_to_terms = TRUE 
+WHERE agreed_to_terms = FALSE OR agreed_to_terms IS NULL;
+
+-- 3️⃣ Обновляем комментарий к таблице
 COMMENT ON TABLE users IS 'Пользователи (минимальная схема: только используемые поля)';
 
 COMMIT;
