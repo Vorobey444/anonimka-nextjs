@@ -171,6 +171,7 @@ export async function POST(request: NextRequest) {
           await sql`
             INSERT INTO user_limits (user_id)
             VALUES (${numericUserId})
+            ON CONFLICT (user_id) DO NOTHING
           `;
           limits = await sql`SELECT * FROM user_limits WHERE user_id = ${numericUserId}`;
         }
