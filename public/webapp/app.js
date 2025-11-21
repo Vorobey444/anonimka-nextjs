@@ -676,6 +676,19 @@ function initializeApp() {
         }
         
         try {
+            // Автоматическое определение геолокации если её нет
+            const userLocation = localStorage.getItem('userLocation');
+            if (!userLocation) {
+                console.log('📍 Локация не найдена, запускаем автоопределение по IP');
+                autoDetectLocation();
+            } else {
+                console.log('📍 Локация уже сохранена:', userLocation);
+            }
+        } catch (e) {
+            console.error('❌ Ошибка автоопределения локации:', e);
+        }
+        
+        try {
             loadWorldChatPreview(); // Загружаем превью последнего сообщения для кнопки
             // Обновляем превью каждые 10 секунд
             setInterval(() => {
@@ -4183,6 +4196,76 @@ async function detectLocationByIP() {
     } catch (error) {
         console.error('Ошибка определения локации по IP:', error);
         showPopularLocations();
+    }
+}
+
+// Автоматическое определение локации в фоне (без UI)
+async function autoDetectLocation() {
+    try {
+        console.log('🌍 Автоопределение локации...');
+        
+        let locationData = null;
+        
+        // Пробуем ipinfo.io
+        try {
+            const response = await fetch('https://ipinfo.io/json');
+            const data = await response.json();
+            if (data && data.country) {
+                locationData = {
+                    country_code: data.country,
+                    country_name: data.country,
+                    region: data.region,
+                    city: data.city,
+                    source: 'ipinfo.io'
+                };
+                console.log('✅ Локация получена от ipinfo.io:', locationData);
+            }
+        } catch (e) {
+            console.log('⚠️ ipinfo.io недоступен');
+        }
+        
+        // Если не сработало, пробуем ip-api.com
+        if (!locationData) {
+            try {
+                const response = await fetch('http://ip-api.com/json/?fields=status,country,countryCode,region,regionName,city');
+                const data = await response.json();
+                if (data && data.status === 'success') {
+                    locationData = {
+                        country_code: data.countryCode,
+                        country_name: data.country,
+                        region: data.regionName,
+                        city: data.city,
+                        source: 'ip-api.com'
+                    };
+                    console.log('✅ Локация получена от ip-api.com:', locationData);
+                }
+            } catch (e) {
+                console.log('⚠️ ip-api.com недоступен');
+            }
+        }
+        
+        // Если не сработало, определяем по часовому поясу
+        if (!locationData) {
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            locationData = guessLocationByTimezone(timezone);
+            if (locationData) {
+                locationData.source = 'timezone';
+                console.log('✅ Локация определена по часовому поясу:', locationData);
+            }
+        }
+        
+        // Сохраняем локацию если удалось определить
+        if (locationData && locationData.country_code) {
+            const detectedLocation = processIPLocation(locationData);
+            if (detectedLocation) {
+                await displayUserLocation(detectedLocation.country, detectedLocation.region, detectedLocation.city);
+                console.log('✅ Локация автоматически сохранена:', detectedLocation);
+            }
+        } else {
+            console.log('⚠️ Не удалось автоматически определить локацию');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка автоопределения локации:', error);
     }
 }
 
