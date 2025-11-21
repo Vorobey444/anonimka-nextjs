@@ -83,10 +83,10 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
 
-    // Создаём/обновляем запись в users
+    // Создаём/обновляем запись в users (ВСЕГДА обновляем user_token для синхронизации Premium)
     await sql`
-      INSERT INTO users (id, display_nickname, country, created_at, updated_at)
-      VALUES (${tgId}, ${nickname || null}, ${country}, NOW(), NOW())
+      INSERT INTO users (id, display_nickname, country, user_token, created_at, updated_at)
+      VALUES (${tgId}, ${nickname || null}, ${country}, ${userToken}, NOW(), NOW())
       ON CONFLICT (id) DO UPDATE SET
         -- Не перезаписываем уже существующий никнейм на сервера локальным значением
         display_nickname = CASE 
@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
           ELSE users.display_nickname
         END,
         country = COALESCE(EXCLUDED.country, users.country),
+        user_token = ${userToken},
         updated_at = NOW()
     `;
 
