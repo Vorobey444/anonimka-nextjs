@@ -30,6 +30,14 @@ CREATE INDEX IF NOT EXISTS idx_users_user_token ON users(user_token) WHERE user_
 
 COMMENT ON COLUMN users.user_token IS 'Токен для синхронизации Premium между Telegram и Web версиями';
 
+-- 3️⃣ Проверка наличия nickname_changed_at для лимита смены никнейма
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS nickname_changed_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_users_nickname_changed_at ON users(nickname_changed_at);
+
+COMMENT ON COLUMN users.nickname_changed_at IS 'Timestamp of last nickname change (FREE: раз, PRO: раз в 24 часа)';
+
 COMMIT;
 
 -- ============================================
@@ -50,8 +58,13 @@ SELECT
 FROM users;
 
 -- Проверка 3: Ваш аккаунт (должен быть user_token)
-SELECT id, user_token, is_premium, premium_until 
+SELECT id, user_token, is_premium, premium_until, nickname_changed_at
 FROM users 
 WHERE id = 884253640;
 
--- ✅ Если все 3 проверки прошли - миграция успешна!
+-- Проверка 4: Колонка nickname_changed_at добавлена
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'users' AND column_name = 'nickname_changed_at';
+
+-- ✅ Если все 4 проверки прошли - миграция успешна!

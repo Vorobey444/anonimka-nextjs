@@ -204,9 +204,75 @@ export async function PATCH(req: NextRequest) {
     // Приоритетное обновление по tgId (надёжно и не требует объявлений)
     if (tgId && Number.isFinite(Number(tgId))) {
       const idNum = Number(tgId);
+      
+      // Проверяем Premium и лимит смены никнейма
+      const userCheck = await sql`
+        SELECT is_premium, premium_until, nickname_changed_at, display_nickname
+        FROM users 
+        WHERE id = ${idNum}
+      `;
+      
+      if (userCheck.rows.length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'Пользователь не найден' },
+          { status: 404 }
+        );
+      }
+      
+      const user = userCheck.rows[0];
+      const now = new Date();
+      const userPremium = user.is_premium || false;
+      const premiumUntil = user.premium_until;
+      const premiumExpired = premiumUntil ? new Date(premiumUntil) <= now : false;
+      const isPremium = userPremium && !premiumExpired;
+      const lastChanged = user.nickname_changed_at;
+      const currentNickname = user.display_nickname;
+      
+      console.log('[USERS API] Проверка лимита смены никнейма:', { 
+        isPremium, 
+        lastChanged, 
+        currentNickname 
+      });
+      
+      // FREE: никнейм можно установить только один раз
+      if (!isPremium) {
+        if (currentNickname && currentNickname.trim() !== '') {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: 'FREE пользователи могут установить никнейм только один раз. Оформите PRO для смены никнейма!',
+              limit: true,
+              isPremium: false
+            },
+            { status: 429 }
+          );
+        }
+      } else {
+        // PRO: можно менять раз в 24 часа
+        if (lastChanged) {
+          const hoursSinceChange = (now.getTime() - new Date(lastChanged).getTime()) / (1000 * 60 * 60);
+          if (hoursSinceChange < 24) {
+            const hoursLeft = Math.ceil(24 - hoursSinceChange);
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: `Смена никнейма доступна через ${hoursLeft}ч. PRO пользователи могут менять никнейм раз в 24 часа.`,
+                limit: true,
+                isPremium: true,
+                hoursLeft
+              },
+              { status: 429 }
+            );
+          }
+        }
+      }
+      
+      // Обновляем никнейм и время последней смены
       const upd = await sql`
         UPDATE users
-        SET display_nickname = ${nickname.trim()}, updated_at = NOW()
+        SET display_nickname = ${nickname.trim()}, 
+            nickname_changed_at = NOW(),
+            updated_at = NOW()
         WHERE id = ${idNum}
         RETURNING id
       `;
@@ -214,28 +280,78 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: true, updated: upd.rows.length > 0 });
     }
 
-    // Если пришёл только userToken — попробуем найти связанный tg_id через объявления
+    // Если пришёл только userToken — попробуем найти связанный tg_id через users.user_token
     if (userToken && typeof userToken === 'string') {
       const res = await sql`
-        SELECT tg_id
-        FROM ads
+        SELECT id
+        FROM users
         WHERE user_token = ${userToken}
-        AND tg_id IS NOT NULL
-        ORDER BY created_at DESC
         LIMIT 1
       `;
-      const tgFromAds = res.rows[0]?.tg_id;
-      if (!tgFromAds) {
+      const tgFromUsers = res.rows[0]?.id;
+      if (!tgFromUsers) {
         console.warn('[USERS API] set-nickname: no tg_id found by userToken');
         return NextResponse.json(
           { success: false, error: 'Не удалось определить пользователя по токену. Передайте tgId.' },
           { status: 404 }
         );
       }
+      
+      // Проверяем Premium и лимит смены никнейма
+      const userCheck = await sql`
+        SELECT is_premium, premium_until, nickname_changed_at, display_nickname
+        FROM users 
+        WHERE id = ${tgFromUsers}
+      `;
+      
+      const user = userCheck.rows[0];
+      const now = new Date();
+      const userPremium = user.is_premium || false;
+      const premiumUntil = user.premium_until;
+      const premiumExpired = premiumUntil ? new Date(premiumUntil) <= now : false;
+      const isPremium = userPremium && !premiumExpired;
+      const lastChanged = user.nickname_changed_at;
+      const currentNickname = user.display_nickname;
+      
+      // FREE: никнейм можно установить только один раз
+      if (!isPremium) {
+        if (currentNickname && currentNickname.trim() !== '') {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: 'FREE пользователи могут установить никнейм только один раз. Оформите PRO для смены никнейма!',
+              limit: true,
+              isPremium: false
+            },
+            { status: 429 }
+          );
+        }
+      } else {
+        // PRO: можно менять раз в 24 часа
+        if (lastChanged) {
+          const hoursSinceChange = (now.getTime() - new Date(lastChanged).getTime()) / (1000 * 60 * 60);
+          if (hoursSinceChange < 24) {
+            const hoursLeft = Math.ceil(24 - hoursSinceChange);
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: `Смена никнейма доступна через ${hoursLeft}ч. PRO пользователи могут менять никнейм раз в 24 часа.`,
+                limit: true,
+                isPremium: true,
+                hoursLeft
+              },
+              { status: 429 }
+            );
+          }
+        }
+      }
+      
       const upd = await sql`
         UPDATE users
-        SET display_nickname = ${nickname.trim()}, updated_at = NOW()
-        WHERE id = ${tgFromAds}
+        SET display_nickname = ${nickname.trim()}, 
+            nickname_changed_at = NOW(),
+            updated_at = NOW()
+        WHERE id = ${tgFromUsers}
         RETURNING id
       `;
       console.log('[USERS API] set-nickname by token updated:', upd.rows.length);
