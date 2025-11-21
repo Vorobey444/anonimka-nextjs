@@ -31,37 +31,43 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Сохраняем в таблицу user_agreements
-        await sql`
-            INSERT INTO user_agreements (user_token, agreed_to_terms, agreed_at, updated_at)
-            VALUES (
-                ${userToken}, 
-                ${agreed}, 
-                NOW(), 
-                NOW()
-            )
-            ON CONFLICT (user_token) DO UPDATE
-            SET agreed_to_terms = ${agreed},
-                agreed_at = CASE 
-                    WHEN ${agreed} = true THEN NOW() 
-                    ELSE user_agreements.agreed_at 
-                END,
-                updated_at = NOW()
-        `;
-
-        console.log(`[ONBOARDING] Согласие сохранено для user_token ${userToken.substring(0, 8)}...`);
-
-        // Дополнительно синхронизируем в users для Telegram пользователей
+        // Сохраняем в таблицу users (единственное место хранения)
         if (tgId) {
+            // Telegram пользователь - сохраняем по id
             const userId = Number(tgId);
             await sql`
-                INSERT INTO users (id, agreed_to_terms, agreed_at, updated_at)
-                VALUES (${userId}, ${agreed}, NOW(), NOW())
+                INSERT INTO users (id, user_token, agreed_to_terms, agreed_at, updated_at)
+                VALUES (${userId}, ${userToken}, ${agreed}, NOW(), NOW())
                 ON CONFLICT (id) DO UPDATE
-                SET agreed_to_terms = ${agreed},
+                SET user_token = ${userToken},
+                    agreed_to_terms = ${agreed},
                     agreed_at = CASE WHEN ${agreed} = true THEN NOW() ELSE users.agreed_at END,
                     updated_at = NOW()
             `;
+            console.log(`[ONBOARDING] Согласие сохранено для Telegram пользователя ${userId}`);
+        } else {
+            // Web пользователь - ищем по user_token или создаем с id=NULL
+            const existingUser = await sql`
+                SELECT id FROM users WHERE user_token = ${userToken} LIMIT 1
+            `;
+            
+            if (existingUser.rows.length > 0) {
+                // Обновляем существующего
+                await sql`
+                    UPDATE users
+                    SET agreed_to_terms = ${agreed},
+                        agreed_at = CASE WHEN ${agreed} = true THEN NOW() ELSE users.agreed_at END,
+                        updated_at = NOW()
+                    WHERE user_token = ${userToken}
+                `;
+            } else {
+                // Создаем нового web-пользователя
+                await sql`
+                    INSERT INTO users (user_token, agreed_to_terms, agreed_at, created_at, updated_at)
+                    VALUES (${userToken}, ${agreed}, NOW(), NOW(), NOW())
+                `;
+            }
+            console.log(`[ONBOARDING] Согласие сохранено для Web пользователя ${userToken.substring(0, 8)}...`);
         }
 
         return NextResponse.json({
@@ -104,13 +110,26 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Проверяем в таблице user_agreements
-        const result = await sql`
-            SELECT agreed_to_terms, agreed_at 
-            FROM user_agreements 
-            WHERE user_token = ${finalUserToken}
-            LIMIT 1
-        `;
+        // Проверяем в таблице users (единственное место хранения)
+        let result;
+        
+        if (tgId) {
+            // Telegram пользователь - ищем по id
+            result = await sql`
+                SELECT agreed_to_terms, agreed_at 
+                FROM users 
+                WHERE id = ${Number(tgId)}
+                LIMIT 1
+            `;
+        } else {
+            // Web пользователь - ищем по user_token
+            result = await sql`
+                SELECT agreed_to_terms, agreed_at 
+                FROM users 
+                WHERE user_token = ${finalUserToken}
+                LIMIT 1
+            `;
+        }
 
         if (result.rows.length === 0) {
             return NextResponse.json({
