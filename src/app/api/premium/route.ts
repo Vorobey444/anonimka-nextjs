@@ -100,96 +100,91 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          // Получаем tg_id для синхронизации с users (если нет PRO по токену)
-          const adResult = await sql`
-            SELECT tg_id FROM ads WHERE user_token = ${userId} ORDER BY created_at DESC LIMIT 1
+          // СИНХРОНИЗАЦИЯ: Ищем пользователя в users по user_token напрямую
+          const userResult = await sql`
+            SELECT id, is_premium, premium_until FROM users WHERE user_token = ${userId} LIMIT 1
           `;
 
-          const tgId = adResult.rows[0]?.tg_id as number | null | undefined;
+          const tgId = userResult.rows.length > 0 ? userResult.rows[0].id : null;
 
-          // СИНХРОНИЗАЦИЯ: Если есть tg_id, проверяем Premium в users и синхронизируем
+          // Если нашли пользователя в users, синхронизируем Premium
           if (tgId) {
-            console.log('[PREMIUM API] Найден tg_id для user_token, проверяем синхронизацию:', tgId);
+            console.log('[PREMIUM API] Найден пользователь в users по user_token, проверяем синхронизацию:', tgId);
             
-            const userPremium = await sql`
-              SELECT is_premium, premium_until FROM users WHERE id = ${tgId} LIMIT 1
-            `;
+            // Данные уже получены из userResult
+            const userIsPremium = userResult.rows[0].is_premium || false;
+            const userPremiumUntil = userResult.rows[0].premium_until;
+            const now = new Date();
+            const premiumExpired = userPremiumUntil ? new Date(userPremiumUntil) <= now : false;
             
-            if (userPremium.rows.length > 0) {
-              const userIsPremium = userPremium.rows[0].is_premium || false;
-              const userPremiumUntil = userPremium.rows[0].premium_until;
-              const now = new Date();
-              const premiumExpired = userPremiumUntil ? new Date(userPremiumUntil) <= now : false;
+            console.log('[PREMIUM API] Premium в users:', {
+              is_premium: userIsPremium,
+              premium_until: userPremiumUntil,
+              expired: premiumExpired
+            });
+            
+            // Синхронизируем premium_tokens с users (users - источник истины для Telegram пользователей)
+            if (userIsPremium && !premiumExpired) {
+              console.log('[PREMIUM API] Синхронизируем premium_tokens с users');
               
-              console.log('[PREMIUM API] Premium в users:', {
-                is_premium: userIsPremium,
-                premium_until: userPremiumUntil,
-                expired: premiumExpired
-              });
+              await sql`
+                INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
+                VALUES (${userId}, true, ${userPremiumUntil}, NOW())
+                ON CONFLICT (user_token) DO UPDATE
+                SET is_premium = true,
+                    premium_until = ${userPremiumUntil},
+                    updated_at = NOW()
+              `;
               
-              // Синхронизируем premium_tokens с users (users - источник истины для Telegram пользователей)
-              if (userIsPremium && !premiumExpired) {
-                console.log('[PREMIUM API] Синхронизируем premium_tokens с users');
-                
-                await sql`
-                  INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
-                  VALUES (${userId}, true, ${userPremiumUntil}, NOW())
-                  ON CONFLICT (user_token) DO UPDATE
-                  SET is_premium = true,
-                      premium_until = ${userPremiumUntil},
-                      updated_at = NOW()
-                `;
-                
-                // Возвращаем PRO статус
-                const nowUTC = new Date();
-                const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
-                const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
-                
-                const countRes = await sql`
-                  SELECT COUNT(*)::int AS c
-                  FROM ads
-                  WHERE user_token = ${userId}
-                    AND (created_at AT TIME ZONE 'Asia/Almaty')::date = ${currentAlmatyDate}::date
-                `;
-                const used = countRes.rows[0]?.c ?? 0;
+              // Возвращаем PRO статус
+              const nowUTC = new Date();
+              const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+              const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+              
+              const countRes = await sql`
+                SELECT COUNT(*)::int AS c
+                FROM ads
+                WHERE user_token = ${userId}
+                  AND (created_at AT TIME ZONE 'Asia/Almaty')::date = ${currentAlmatyDate}::date
+              `;
+              const used = countRes.rows[0]?.c ?? 0;
 
-                return NextResponse.json({
-                  data: {
-                    isPremium: true,
-                    premiumUntil: userPremiumUntil,
-                    country: 'KZ',
-                    limits: {
-                      photos: {
-                        used: 0,
-                        max: LIMITS.PRO.photos_per_day,
-                        remaining: 999999
-                      },
-                      ads: {
-                        used,
-                        max: LIMITS.PRO.ads_per_day,
-                        remaining: Math.max(0, LIMITS.PRO.ads_per_day - used)
-                      },
-                      pin: {
-                        used: 0,
-                        max: LIMITS.PRO.pin_per_day,
-                        canUse: true
-                      }
+              return NextResponse.json({
+                data: {
+                  isPremium: true,
+                  premiumUntil: userPremiumUntil,
+                  country: 'KZ',
+                  limits: {
+                    photos: {
+                      used: 0,
+                      max: LIMITS.PRO.photos_per_day,
+                      remaining: 999999
+                    },
+                    ads: {
+                      used,
+                      max: LIMITS.PRO.ads_per_day,
+                      remaining: Math.max(0, LIMITS.PRO.ads_per_day - used)
+                    },
+                    pin: {
+                      used: 0,
+                      max: LIMITS.PRO.pin_per_day,
+                      canUse: true
                     }
-                  },
-                  error: null
-                });
-              } else {
-                // Premium истёк или не активен - очищаем premium_tokens
-                console.log('[PREMIUM API] Premium истёк в users, очищаем premium_tokens');
-                
-                await sql`
-                  UPDATE premium_tokens
-                  SET is_premium = false,
-                      premium_until = NULL,
-                      updated_at = NOW()
-                  WHERE user_token = ${userId}
-                `;
-              }
+                  }
+                },
+                error: null
+              });
+            } else {
+              // Premium истёк или не активен - очищаем premium_tokens
+              console.log('[PREMIUM API] Premium истёк в users, очищаем premium_tokens');
+              
+              await sql`
+                UPDATE premium_tokens
+                SET is_premium = false,
+                    premium_until = NULL,
+                    updated_at = NOW()
+                WHERE user_token = ${userId}
+              `;
             }
           }
 
