@@ -40,78 +40,21 @@ export async function POST(request: NextRequest) {
         const isToken = userId && typeof userId === 'string' && userId.length > 20;
         let numericUserId: number | null = null;
         
-        // ПРИОРИТЕТ 1: Проверяем premium_tokens для пользователей с токеном
+        // ПРИОРИТЕТ 1: Ищем пользователя в users по user_token (источник истины для Telegram пользователей)
         if (isToken) {
-          console.log('[PREMIUM API] Проверка premium_tokens для токена:', userId.substring(0, 16) + '...');
-          const prem = await sql`
-            SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${userId} LIMIT 1
-          `;
-          console.log('[PREMIUM API] Результат premium_tokens:', prem.rows);
-          const isPremiumToken = prem.rows[0]?.is_premium || false;
-          const premiumUntilToken = prem.rows[0]?.premium_until || null;
-
-          // Проверяем не истёк ли срок Premium
-          const now = new Date();
-          const premiumExpired = premiumUntilToken ? new Date(premiumUntilToken) <= now : false;
-          const isPremiumActive = isPremiumToken && !premiumExpired;
-
-          console.log('[PREMIUM API] isPremiumToken:', isPremiumToken, 'premiumUntil:', premiumUntilToken, 'expired:', premiumExpired, 'active:', isPremiumActive);
-
-          // Если есть PRO по токену и он не истёк
-          if (isPremiumActive) {
-            console.log('[PREMIUM API] ✅ PRO найден в premium_tokens, возвращаем PRO статус');
-            // Считаем объявления по токену за сегодня (АЛМАТЫ UTC+5)
-            const nowUTC = new Date();
-            const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
-            const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
-            
-            const countRes = await sql`
-              SELECT COUNT(*)::int AS c
-              FROM ads
-              WHERE user_token = ${userId}
-                AND (created_at AT TIME ZONE 'Asia/Almaty')::date = ${currentAlmatyDate}::date
-            `;
-            const used = countRes.rows[0]?.c ?? 0;
-
-            return NextResponse.json({
-              data: {
-                isPremium: true,
-                premiumUntil: premiumUntilToken,
-                country: 'KZ',
-                limits: {
-                  photos: {
-                    used: 0,
-                    max: LIMITS.PRO.photos_per_day,
-                    remaining: 999999
-                  },
-                  ads: {
-                    used,
-                    max: LIMITS.PRO.ads_per_day,
-                    remaining: Math.max(0, LIMITS.PRO.ads_per_day - used)
-                  },
-                  pin: {
-                    used: 0,
-                    max: LIMITS.PRO.pin_per_day,
-                    canUse: true
-                  }
-                }
-              },
-              error: null
-            });
-          }
-
-          // СИНХРОНИЗАЦИЯ: Ищем пользователя в users по user_token напрямую
+          console.log('[PREMIUM API] Проверка для токена:', userId.substring(0, 16) + '...');
+          
+          // Сначала проверяем users (источник истины)
           const userResult = await sql`
             SELECT id, is_premium, premium_until FROM users WHERE user_token = ${userId} LIMIT 1
           `;
 
           const tgId = userResult.rows.length > 0 ? userResult.rows[0].id : null;
 
-          // Если нашли пользователя в users, синхронизируем Premium
+          // СЛУЧАЙ 1: Пользователь найден в users (Telegram пользователь)
           if (tgId) {
-            console.log('[PREMIUM API] Найден пользователь в users по user_token, проверяем синхронизацию:', tgId);
+            console.log('[PREMIUM API] ✅ Найден Telegram пользователь в users:', tgId);
             
-            // Данные уже получены из userResult
             const userIsPremium = userResult.rows[0].is_premium || false;
             const userPremiumUntil = userResult.rows[0].premium_until;
             const now = new Date();
@@ -123,9 +66,9 @@ export async function POST(request: NextRequest) {
               expired: premiumExpired
             });
             
-            // Синхронизируем premium_tokens с users (users - источник истины для Telegram пользователей)
+            // Синхронизируем premium_tokens с users (users - источник истины)
             if (userIsPremium && !premiumExpired) {
-              console.log('[PREMIUM API] Синхронизируем premium_tokens с users');
+              console.log('[PREMIUM API] 🔄 Синхронизируем premium_tokens ← users');
               
               await sql`
                 INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
@@ -176,7 +119,7 @@ export async function POST(request: NextRequest) {
               });
             } else {
               // Premium истёк или не активен - очищаем premium_tokens
-              console.log('[PREMIUM API] Premium истёк в users, очищаем premium_tokens');
+              console.log('[PREMIUM API] ⚠️ Premium неактивен в users, очищаем premium_tokens');
               
               await sql`
                 UPDATE premium_tokens
@@ -188,8 +131,66 @@ export async function POST(request: NextRequest) {
             }
           }
 
+          // СЛУЧАЙ 2: Пользователь НЕ найден в users (чистый Web-пользователь)
           if (!tgId) {
-            // Веб-пользователь без PRO и без tg_id (АЛМАТЫ UTC+5)
+            console.log('[PREMIUM API] 🌐 Web-пользователь (без Telegram), проверяем premium_tokens');
+            
+            // Проверяем premium_tokens
+            const prem = await sql`
+              SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${userId} LIMIT 1
+            `;
+            
+            const isPremiumToken = prem.rows[0]?.is_premium || false;
+            const premiumUntilToken = prem.rows[0]?.premium_until || null;
+            const now = new Date();
+            const premiumExpired = premiumUntilToken ? new Date(premiumUntilToken) <= now : false;
+            const isPremiumActive = isPremiumToken && !premiumExpired;
+            
+            if (isPremiumActive) {
+              console.log('[PREMIUM API] ✅ PRO активен в premium_tokens до:', premiumUntilToken);
+              
+              const nowUTC = new Date();
+              const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
+              const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+              
+              const countRes = await sql`
+                SELECT COUNT(*)::int AS c
+                FROM ads
+                WHERE user_token = ${userId}
+                  AND (created_at AT TIME ZONE 'Asia/Almaty')::date = ${currentAlmatyDate}::date
+              `;
+              const used = countRes.rows[0]?.c ?? 0;
+
+              return NextResponse.json({
+                data: {
+                  isPremium: true,
+                  premiumUntil: premiumUntilToken,
+                  country: 'KZ',
+                  limits: {
+                    photos: {
+                      used: 0,
+                      max: LIMITS.PRO.photos_per_day,
+                      remaining: 999999
+                    },
+                    ads: {
+                      used,
+                      max: LIMITS.PRO.ads_per_day,
+                      remaining: Math.max(0, LIMITS.PRO.ads_per_day - used)
+                    },
+                    pin: {
+                      used: 0,
+                      max: LIMITS.PRO.pin_per_day,
+                      canUse: true
+                    }
+                  }
+                },
+                error: null
+              });
+            }
+            
+            console.log('[PREMIUM API] ℹ️ Web-пользователь без Premium');
+            
+            // Возвращаем FREE статус (АЛМАТЫ UTC+5)
             const nowUTC = new Date();
             const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
             const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
