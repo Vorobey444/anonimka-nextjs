@@ -11,7 +11,13 @@ export async function GET(request: NextRequest) {
     try {
         // Получаем пользователей без анкет, зарегистрированных менее 24 часов назад
         const result = await sql`
-            SELECT u.id, u.created_at, u.country
+            SELECT 
+                u.id, 
+                u.created_at, 
+                u.country,
+                u.first_reminder_sent,
+                u.second_reminder_sent,
+                u.reminder_message_variant
             FROM users u
             LEFT JOIN ads a ON u.id = a.tg_id
             WHERE a.id IS NULL

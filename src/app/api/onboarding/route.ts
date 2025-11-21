@@ -36,12 +36,11 @@ export async function POST(request: NextRequest) {
             // Telegram пользователь - сохраняем по id
             const userId = Number(tgId);
             await sql`
-                INSERT INTO users (id, user_token, agreed_to_terms, agreed_at, updated_at)
-                VALUES (${userId}, ${userToken}, ${agreed}, NOW(), NOW())
+                INSERT INTO users (id, user_token, agreed_to_terms, updated_at)
+                VALUES (${userId}, ${userToken}, ${agreed}, NOW())
                 ON CONFLICT (id) DO UPDATE
                 SET user_token = ${userToken},
                     agreed_to_terms = ${agreed},
-                    agreed_at = CASE WHEN ${agreed} = true THEN NOW() ELSE users.agreed_at END,
                     updated_at = NOW()
             `;
             console.log(`[ONBOARDING] Согласие сохранено для Telegram пользователя ${userId}`);
@@ -56,15 +55,14 @@ export async function POST(request: NextRequest) {
                 await sql`
                     UPDATE users
                     SET agreed_to_terms = ${agreed},
-                        agreed_at = CASE WHEN ${agreed} = true THEN NOW() ELSE users.agreed_at END,
                         updated_at = NOW()
                     WHERE user_token = ${userToken}
                 `;
             } else {
                 // Создаем нового web-пользователя
                 await sql`
-                    INSERT INTO users (user_token, agreed_to_terms, agreed_at, created_at, updated_at)
-                    VALUES (${userToken}, ${agreed}, NOW(), NOW(), NOW())
+                    INSERT INTO users (user_token, agreed_to_terms, created_at, updated_at)
+                    VALUES (${userToken}, ${agreed}, NOW(), NOW())
                 `;
             }
             console.log(`[ONBOARDING] Согласие сохранено для Web пользователя ${userToken.substring(0, 8)}...`);
@@ -116,7 +114,7 @@ export async function GET(request: NextRequest) {
         if (tgId) {
             // Telegram пользователь - ищем по id
             result = await sql`
-                SELECT agreed_to_terms, agreed_at 
+                SELECT agreed_to_terms
                 FROM users 
                 WHERE id = ${Number(tgId)}
                 LIMIT 1
@@ -124,7 +122,7 @@ export async function GET(request: NextRequest) {
         } else {
             // Web пользователь - ищем по user_token
             result = await sql`
-                SELECT agreed_to_terms, agreed_at 
+                SELECT agreed_to_terms
                 FROM users 
                 WHERE user_token = ${finalUserToken}
                 LIMIT 1
@@ -140,8 +138,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            agreed: result.rows[0].agreed_to_terms || false,
-            agreedAt: result.rows[0].agreed_at
+            agreed: result.rows[0].agreed_to_terms || false
         });
     } catch (error) {
         console.error('Ошибка проверки согласия:', error);
