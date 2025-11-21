@@ -904,32 +904,38 @@ async function trackPageVisit(page = 'home') {
     }
 }
 
+// Переменная для хранения статуса админа (проверяется один раз)
+let isAdminUser = false;
+let adminCheckCompleted = false;
+
 // Функция для загрузки статистики
 async function loadSiteStats() {
     try {
-        // Проверяем is_admin из users таблицы
-        const userId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
-        
-        // Загружаем статус админа из API
-        let isAdmin = false;
-        if (userId) {
-            try {
-                const userStatusResponse = await fetch(`/api/users?action=check-admin&user_id=${userId}`);
-                const userStatusData = await userStatusResponse.json();
-                isAdmin = userStatusData.is_admin === true;
-            } catch (err) {
-                console.error('Ошибка проверки статуса админа:', err);
+        // Проверяем is_admin только один раз при первой загрузке
+        if (!adminCheckCompleted) {
+            const userId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
+            
+            if (userId) {
+                try {
+                    const userStatusResponse = await fetch(`/api/users?action=check-admin&user_id=${userId}`);
+                    const userStatusData = await userStatusResponse.json();
+                    isAdminUser = userStatusData.is_admin === true;
+                } catch (err) {
+                    console.error('Ошибка проверки статуса админа:', err);
+                }
+            }
+            
+            adminCheckCompleted = true;
+            
+            // Скрываем/показываем блок статистики
+            const adminStatsEl = document.getElementById('adminStats');
+            if (adminStatsEl) {
+                adminStatsEl.style.display = isAdminUser ? 'flex' : 'none';
             }
         }
         
-        // Скрываем/показываем блок статистики
-        const adminStatsEl = document.getElementById('adminStats');
-        if (adminStatsEl) {
-            adminStatsEl.style.display = isAdmin ? 'flex' : 'none';
-        }
-        
         // Загружаем данные только для админа
-        if (!isAdmin) return;
+        if (!isAdminUser) return;
         
         const response = await fetch('/api/analytics?metric=all');
         const data = await response.json();
@@ -958,6 +964,19 @@ async function loadSiteStats() {
     }
 }
 
+// Запускаем автоматическое обновление статистики каждые 10 секунд для админа
+function startStatsAutoUpdate() {
+    // Первая загрузка сразу
+    loadSiteStats();
+    
+    // Обновляем каждые 10 секунд
+    setInterval(() => {
+        if (isAdminUser) {
+            loadSiteStats();
+        }
+    }, 10000);
+}
+
 // Форматирование чисел (1234 -> 1.2K)
 function formatNumber(num) {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -979,8 +998,8 @@ function initializeTelegramWebApp() {
     // Отслеживаем визит при загрузке
     trackPageVisit('home');
     
-    // Загружаем статистику
-    loadSiteStats();
+    // Запускаем автоматическое обновление статистики
+    startStatsAutoUpdate();
     
     // Настройка темы
     tg.setHeaderColor('#0a0a0f');
