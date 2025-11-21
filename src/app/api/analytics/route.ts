@@ -58,13 +58,16 @@ export async function POST(request: NextRequest) {
     await ensureTablesExist();
     
     const body = await request.json();
-    const { userId, page, country, city } = body;
+    const { userId, userToken, page, country, city } = body;
 
     // Получаем данные из заголовков
     const userAgent = request.headers.get('user-agent') || 'Unknown';
     const ip = request.headers.get('x-forwarded-for') || 
                request.headers.get('x-real-ip') || 
                'Unknown';
+
+    // Определяем идентификатор: userId (Telegram) или userToken (веб)
+    const identifier = userId || userToken || null;
 
     // Если есть userId, проверяем/создаем пользователя в БД
     if (userId && userId !== 'anonymous') {
@@ -80,10 +83,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Записываем визит
+    // Записываем визит с user_id и user_token
     await sql`
-      INSERT INTO page_visits (user_id, page, user_agent, ip_address, country, city)
-      VALUES (${userId || null}, ${page}, ${userAgent}, ${ip}, ${country || null}, ${city || null})
+      INSERT INTO page_visits (user_id, user_token, page, user_agent, ip_address, country, city)
+      VALUES (${userId || null}, ${userToken || null}, ${page}, ${userAgent}, ${ip}, ${country || null}, ${city || null})
     `;
     
     // Обновляем счетчик

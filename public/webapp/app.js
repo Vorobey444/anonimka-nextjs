@@ -885,6 +885,7 @@ if (document.readyState === 'loading') {
 async function trackPageVisit(page = 'home') {
     try {
         const userId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
+        const userToken = localStorage.getItem('user_token');
         const userLocation = getUserLocation();
         
         await fetch('/api/analytics', {
@@ -892,6 +893,7 @@ async function trackPageVisit(page = 'home') {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 userId: userId ? parseInt(userId) : null,
+                userToken: userToken || null,
                 page: page,
                 country: userLocation?.country || null,
                 city: userLocation?.city || null
