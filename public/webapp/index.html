@@ -162,8 +162,8 @@
                     <div class="user-location" onclick="showScreen('locationSetup')">
                         <span class="location-info" id="userLocationDisplay"></span>
                     </div>
-                    <!-- Счетчик посещений -->
-                    <div class="site-stats">
+                    <!-- Счетчик посещений (только для админов) -->
+                    <div class="site-stats" id="adminStats" style="display: none;">
                         <span class="stat-item">
                             <span class="stat-icon">👥</span>
                             <span class="stat-value" id="totalVisits">...</span>
@@ -172,6 +172,11 @@
                         <span class="stat-item">
                             <span class="stat-icon">🔥</span>
                             <span class="stat-value" id="onlineNow">...</span>
+                        </span>
+                        <span class="stat-divider">•</span>
+                        <span class="stat-item">
+                            <span class="stat-icon">📢</span>
+                            <span class="stat-value" id="totalAds">...</span>
                         </span>
                     </div>
                 </div>

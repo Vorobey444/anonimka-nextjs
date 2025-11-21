@@ -135,10 +135,17 @@ export async function GET(request: NextRequest) {
         WHERE updated_at >= (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Almaty') - INTERVAL '24 hours'
       `;
 
+      // Общее количество анкет (всех, включая удаленные)
+      const totalAds = await sql`
+        SELECT COUNT(*) as count
+        FROM ads
+      `;
+
       return NextResponse.json({
         stats: stats.rows,
         total_unique_users: parseInt(totalUniqueUsers.rows[0]?.count || 0),
-        unique_last_24h: parseInt(uniqueLast24h.rows[0]?.count || 0)
+        unique_last_24h: parseInt(uniqueLast24h.rows[0]?.count || 0),
+        total_ads: parseInt(totalAds.rows[0]?.count || 0)
       });
     } else {
       // Получаем конкретную метрику

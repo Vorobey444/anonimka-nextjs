@@ -127,12 +127,35 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET - получить публичные данные пользователя (например, display_nickname)
+// GET - получить публичные данные пользователя (например, display_nickname) или проверить админа
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const action = searchParams.get('action');
     const tgIdParam = searchParams.get('tgId');
+    const userIdParam = searchParams.get('user_id');
     const userToken = searchParams.get('userToken');
+
+    // Проверка статуса админа
+    if (action === 'check-admin') {
+      const userId = userIdParam || tgIdParam;
+      if (!userId) {
+        return NextResponse.json({ is_admin: false });
+      }
+
+      const userIdNum = Number(userId);
+      if (!Number.isFinite(userIdNum)) {
+        return NextResponse.json({ is_admin: false });
+      }
+
+      const result = await sql`
+        SELECT is_admin FROM users WHERE id = ${userIdNum}
+      `;
+
+      return NextResponse.json({ 
+        is_admin: result.rows[0]?.is_admin === true 
+      });
+    }
 
     let displayNickname: string | null = null;
 

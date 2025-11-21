@@ -907,14 +907,25 @@ async function trackPageVisit(page = 'home') {
 // Функция для загрузки статистики
 async function loadSiteStats() {
     try {
-        // Проверяем ID пользователя - статистика только для админа
+        // Проверяем is_admin из users таблицы
         const userId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
-        const isAdmin = userId && parseInt(userId) === 884253640;
+        
+        // Загружаем статус админа из API
+        let isAdmin = false;
+        if (userId) {
+            try {
+                const userStatusResponse = await fetch(`/api/users?action=check-admin&user_id=${userId}`);
+                const userStatusData = await userStatusResponse.json();
+                isAdmin = userStatusData.is_admin === true;
+            } catch (err) {
+                console.error('Ошибка проверки статуса админа:', err);
+            }
+        }
         
         // Скрываем/показываем блок статистики
-        const siteStatsEl = document.querySelector('.site-stats');
-        if (siteStatsEl) {
-            siteStatsEl.style.display = isAdmin ? 'flex' : 'none';
+        const adminStatsEl = document.getElementById('adminStats');
+        if (adminStatsEl) {
+            adminStatsEl.style.display = isAdmin ? 'flex' : 'none';
         }
         
         // Загружаем данные только для админа
@@ -926,6 +937,7 @@ async function loadSiteStats() {
         // Обновляем счетчики на странице если они есть
         const totalVisitsEl = document.getElementById('totalVisits');
         const onlineNowEl = document.getElementById('onlineNow');
+        const totalAdsEl = document.getElementById('totalAds');
         
         // 👥 - Общее количество уникальных пользователей за все время
         if (totalVisitsEl && data.total_unique_users !== undefined) {
@@ -935,6 +947,11 @@ async function loadSiteStats() {
         // 🔥 - Уникальные пользователи за последние 24 часа
         if (onlineNowEl && data.unique_last_24h !== undefined) {
             onlineNowEl.textContent = formatNumber(data.unique_last_24h);
+        }
+        
+        // 📢 - Общее количество анкет
+        if (totalAdsEl && data.total_ads !== undefined) {
+            totalAdsEl.textContent = formatNumber(data.total_ads);
         }
     } catch (error) {
         console.error('Ошибка загрузки статистики:', error);
