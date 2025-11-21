@@ -2168,6 +2168,14 @@ function handleBackButton() {
 }
 
 function showMainMenu() {
+    // КРИТИЧНО: Проверяем никнейм перед показом главного меню
+    const nickname = localStorage.getItem('userNickname');
+    if (!nickname || nickname.trim() === '') {
+        console.warn('⚠️ Попытка открыть главное меню без никнейма - блокируем');
+        showOnboardingScreen();
+        return;
+    }
+    
     showScreen('mainMenu');
     resetForm();
     updateChatBadge(); // Обновляем счетчик запросов
@@ -2175,6 +2183,15 @@ function showMainMenu() {
 }
 
 function showCreateAd() {
+    // КРИТИЧНО: Проверяем никнейм перед созданием объявления
+    const nickname = localStorage.getItem('userNickname');
+    if (!nickname || nickname.trim() === '') {
+        console.warn('⚠️ Попытка создать объявление без никнейма - блокируем');
+        tg.showAlert('Сначала выберите никнейм');
+        showOnboardingScreen();
+        return;
+    }
+    
     if (!currentUserLocation) {
         tg.showAlert('Сначала выберите ваш город');
         showLocationSetup();
@@ -3982,6 +3999,14 @@ async function checkUserLocation() {
 async function checkOnboardingStatus() {
     console.log('checkOnboardingStatus вызвана');
     try {
+        // Сначала проверяем локальное хранилище
+        const localNickname = localStorage.getItem('userNickname');
+        if (localNickname && localNickname.trim() !== '') {
+            console.log('✅ Никнейм найден в localStorage:', localNickname);
+            showMainMenu();
+            return;
+        }
+        
         // Получаем tgId пользователя
         let tgId = null;
         if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
@@ -4001,8 +4026,8 @@ async function checkOnboardingStatus() {
         console.log('checkOnboardingStatus - tgId:', tgId);
         
         if (!tgId) {
-            // Если нет tgId, сразу показываем онбординг
-            console.log('Нет tgId, показываем онбординг');
+            // Если нет tgId, проверяем есть ли никнейм локально
+            console.log('❌ Нет tgId, показываем онбординг');
             showOnboardingScreen();
             return;
         }
@@ -4011,19 +4036,20 @@ async function checkOnboardingStatus() {
         const response = await fetch(`/api/nickname?tgId=${tgId}`);
         const data = await response.json();
         
-        console.log('Статус никнейма:', data);
+        console.log('Статус никнейма из БД:', data);
         
         if (data.nickname && data.nickname.trim() !== '') {
-            // Пользователь уже прошёл онбординг
-            console.log('Пользователь уже прошёл онбординг, показываем меню');
+            // Сохраняем никнейм локально
+            localStorage.setItem('userNickname', data.nickname);
+            console.log('✅ Пользователь прошёл онбординг, никнейм:', data.nickname);
             showMainMenu();
         } else {
-            // Показываем экран онбординга
-            console.log('Пользователь не прошёл онбординг, показываем экран');
+            // Показываем экран онбординга (БЛОКИРУЕМ доступ)
+            console.log('⚠️ У пользователя нет никнейма, БЛОКИРУЕМ доступ');
             showOnboardingScreen();
         }
     } catch (error) {
-        console.error('Ошибка при проверке статуса онбординга:', error);
+        console.error('❌ Ошибка при проверке статуса онбординга:', error);
         // В случае ошибки показываем онбординг для безопасности
         showOnboardingScreen();
     }
@@ -6545,6 +6571,15 @@ let myChatsPollingInterval = null;
 
 // Показать список чатов
 async function showMyChats() {
+    // КРИТИЧНО: Проверяем никнейм перед показом чатов
+    const nickname = localStorage.getItem('userNickname');
+    if (!nickname || nickname.trim() === '') {
+        console.warn('⚠️ Попытка открыть чаты без никнейма - блокируем');
+        tg.showAlert('Сначала выберите никнейм');
+        showOnboardingScreen();
+        return;
+    }
+    
     showScreen('myChats');
     await loadMyChats();
     
