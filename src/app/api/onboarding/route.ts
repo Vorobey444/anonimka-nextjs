@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
             VALUES (
                 ${userToken}, 
                 ${agreed}, 
-                ${agreed ? sql`NOW()` : null}, 
+                NOW(), 
                 NOW()
             )
             ON CONFLICT (user_token) DO UPDATE
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
             const userId = Number(tgId);
             await sql`
                 INSERT INTO users (id, agreed_to_terms, agreed_at, updated_at)
-                VALUES (${userId}, ${agreed}, ${agreed ? sql`NOW()` : null}, NOW())
+                VALUES (${userId}, ${agreed}, NOW(), NOW())
                 ON CONFLICT (id) DO UPDATE
                 SET agreed_to_terms = ${agreed},
                     agreed_at = CASE WHEN ${agreed} = true THEN NOW() ELSE users.agreed_at END,
