@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
+import { generateUserToken } from '@/lib/userToken';
 
 /**
  * POST /api/premium/activate
@@ -135,12 +136,13 @@ export async function POST(request: NextRequest) {
       // Пользователь не существует - создаём нового
       console.log('[PREMIUM ACTIVATE] Создаём нового пользователя:', telegram_id);
       
+      const token = generateUserToken(telegram_id);
       newPremiumUntil = new Date(now);
       newPremiumUntil.setMonth(newPremiumUntil.getMonth() + months);
       
       await sql`
-        INSERT INTO users (id, is_premium, premium_until, created_at, updated_at)
-        VALUES (${telegram_id}, true, ${newPremiumUntil.toISOString()}, NOW(), NOW())
+        INSERT INTO users (id, user_token, is_premium, premium_until, created_at, updated_at)
+        VALUES (${telegram_id}, ${token}, true, ${newPremiumUntil.toISOString()}, NOW(), NOW())
       `;
       
       console.log('[PREMIUM ACTIVATE] ✅ Новый пользователь создан с PRO до:', newPremiumUntil.toISOString());

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
+import { generateUserToken } from '@/lib/userToken';
 
 export const dynamic = 'force-dynamic';
 
@@ -242,9 +243,10 @@ export async function POST(request: NextRequest) {
         
         if (user.rows.length === 0) {
           // Создаём нового пользователя
+          const token = generateUserToken(numericUserId);
           await sql`
-            INSERT INTO users (id, is_premium)
-            VALUES (${numericUserId}, false)
+            INSERT INTO users (id, user_token, is_premium)
+            VALUES (${numericUserId}, ${token}, false)
           `;
           user = await sql`SELECT * FROM users WHERE id = ${numericUserId}`;
         }

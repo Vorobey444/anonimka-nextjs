@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from '@vercel/postgres';
+import { generateUserToken } from '@/lib/userToken';
 
 export const dynamic = 'force-dynamic';
 
@@ -195,9 +196,10 @@ export async function POST(req: NextRequest) {
       // Если пользователя нет в БД (не прошёл инициализацию) — создаём запись
       if (userResult.rows.length === 0) {
         console.warn('[ADS API] Пользователь не найден, создаём запись (fallback)');
+        const token = generateUserToken(userId);
         await sql`
-          INSERT INTO users (id, display_nickname, created_at, updated_at)
-          VALUES (${userId}, ${nickname || null}, NOW(), NOW())
+          INSERT INTO users (id, user_token, display_nickname, created_at, updated_at)
+          VALUES (${userId}, ${token}, ${nickname || null}, NOW(), NOW())
           ON CONFLICT (id) DO NOTHING
         `;
         await sql`

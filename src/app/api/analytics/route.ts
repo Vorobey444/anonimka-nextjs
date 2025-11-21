@@ -1,5 +1,6 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
+import { generateUserToken } from '@/lib/userToken';
 
 // Проверка и создание таблиц если их нет
 async function ensureTablesExist() {
@@ -72,11 +73,13 @@ export async function POST(request: NextRequest) {
     // Если есть userId, проверяем/создаем пользователя в БД
     if (userId && userId !== 'anonymous') {
       try {
+        const token = generateUserToken(userId);
         await sql`
-          INSERT INTO users (id, created_at, updated_at)
-          VALUES (${userId}, NOW(), NOW())
+          INSERT INTO users (id, user_token, created_at, updated_at)
+          VALUES (${userId}, ${token}, NOW(), NOW())
           ON CONFLICT (id) DO UPDATE
-          SET updated_at = NOW()
+          SET user_token = COALESCE(users.user_token, ${token}),
+              updated_at = NOW()
         `;
       } catch (userError) {
         console.log('User already exists or error creating:', userError);

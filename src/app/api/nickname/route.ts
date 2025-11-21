@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
+import { generateUserToken } from '@/lib/userToken';
 
 export const dynamic = 'force-dynamic';
 
@@ -219,11 +220,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Обновляем/создаем пользователя с никнеймом
+    const token = generateUserToken(userId);
     await sql`
-      INSERT INTO users (id, display_nickname, nickname_changed_at, created_at, updated_at)
-      VALUES (${userId}, ${nickname}, NOW(), NOW(), NOW())
+      INSERT INTO users (id, user_token, display_nickname, nickname_changed_at, created_at, updated_at)
+      VALUES (${userId}, ${token}, ${nickname}, NOW(), NOW(), NOW())
       ON CONFLICT (id) DO UPDATE
       SET 
+        user_token = COALESCE(users.user_token, ${token}),
         display_nickname = ${nickname}, 
         nickname_changed_at = NOW(),
         updated_at = NOW()
