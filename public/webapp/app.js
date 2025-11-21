@@ -1563,22 +1563,39 @@ async function completeOnboarding() {
         
         // 2. Сохраняем согласие с условиями
         const userToken = localStorage.getItem('user_token');
-        if (userToken) {
+        const tgIdForAgreement = tg?.initDataUnsafe?.user?.id || null;
+        
+        // Если есть userToken или tgId - сохраняем согласие
+        if (userToken || tgIdForAgreement) {
+            const payload = {
+                agreed: true
+            };
+            
+            if (userToken) {
+                payload.userToken = userToken;
+            }
+            if (tgIdForAgreement) {
+                payload.tgId = tgIdForAgreement;
+            }
+            
             const agreeResponse = await fetch('/api/onboarding', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userToken: userToken,
-                    agreed: true
-                })
+                body: JSON.stringify(payload)
             });
             
             const agreeData = await agreeResponse.json();
-            if (!agreeData.success) {
+            if (agreeData.success) {
+                // Сохраняем userToken, если сервер вернул новый
+                if (agreeData.userToken && !userToken) {
+                    localStorage.setItem('user_token', agreeData.userToken);
+                    console.log('✅ Получен user_token при сохранении согласия');
+                }
+            } else {
                 console.warn('Ошибка сохранения согласия:', agreeData.error);
             }
         } else {
-            console.warn('user_token не найден, пропускаем сохранение согласия');
+            console.warn('Нет user_token и tg_id, согласие сохранено только локально');
         }
         
         // 3. Сохраняем локально
