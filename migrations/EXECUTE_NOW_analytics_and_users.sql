@@ -38,15 +38,13 @@ CREATE INDEX IF NOT EXISTS idx_users_nickname_changed_at ON users(nickname_chang
 
 COMMENT ON COLUMN users.nickname_changed_at IS 'Timestamp of last nickname change (FREE: раз, PRO: раз в 24 часа)';
 
--- 4️⃣ Убедимся что agreed_to_terms и agreed_at есть в users (единственное место хранения)
+-- 4️⃣ Убедимся что agreed_to_terms есть в users (единственное поле для согласий)
 ALTER TABLE users 
-ADD COLUMN IF NOT EXISTS agreed_to_terms BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS agreed_at TIMESTAMPTZ;
+ADD COLUMN IF NOT EXISTS agreed_to_terms BOOLEAN DEFAULT FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_users_agreed_to_terms ON users(agreed_to_terms);
 
-COMMENT ON COLUMN users.agreed_to_terms IS 'Пользователь согласился с условиями использования (единственное место хранения)';
-COMMENT ON COLUMN users.agreed_at IS 'Дата и время согласия с условиями';
+COMMENT ON COLUMN users.agreed_to_terms IS 'Пользователь согласился с условиями использования (единственное поле для согласий, без timestamp)';
 
 COMMIT;
 
@@ -77,11 +75,10 @@ SELECT column_name, data_type
 FROM information_schema.columns 
 WHERE table_name = 'users' AND column_name = 'nickname_changed_at';
 
--- Проверка 5: Колонки agreed_to_terms и agreed_at есть в users
+-- Проверка 5: Колонка agreed_to_terms есть в users
 SELECT column_name, data_type, is_nullable
 FROM information_schema.columns 
 WHERE table_name = 'users' 
-AND column_name IN ('agreed_to_terms', 'agreed_at')
-ORDER BY column_name;
+AND column_name = 'agreed_to_terms';
 
 -- ✅ Если все 5 проверок прошли - миграция успешна!
