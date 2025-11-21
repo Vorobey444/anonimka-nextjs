@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         newPremiumUntil.setMonth(newPremiumUntil.getMonth() + months);
         
         await sql`
-          INSERT INTO premium_tokens (user_token, is_premium, premium_until, created_at)
+          INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
           VALUES (${user_token}, true, ${newPremiumUntil.toISOString()}, NOW())
         `;
         
