@@ -103,7 +103,21 @@ export async function POST(request: NextRequest) {
           const tgId = adResult.rows[0]?.tg_id as number | null | undefined;
 
           if (!tgId) {
-            // Веб-пользователь без PRO и без tg_id (АЛМАТЫ UTC+5)
+            // Веб-пользователь без tg_id - создаём Premium автоматически (если еще нет записи)
+            console.log('[PREMIUM API] Веб-пользователь без tg_id, создаём Premium автоматически');
+            
+            await sql`
+              INSERT INTO premium_tokens (user_token, is_premium, premium_until, created_at)
+              VALUES (
+                ${userId},
+                true,
+                NOW() + INTERVAL '365 days',
+                NOW()
+              )
+              ON CONFLICT (user_token) DO NOTHING
+            `;
+            
+            // Считаем объявления по токену за сегодня (АЛМАТЫ UTC+5)
             const nowUTC = new Date();
             const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
             const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
@@ -118,23 +132,23 @@ export async function POST(request: NextRequest) {
 
             return NextResponse.json({
               data: {
-                isPremium: false,
-                premiumUntil: null,
+                isPremium: true,
+                premiumUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
                 country: 'KZ',
                 limits: {
                   photos: {
                     used: 0,
-                    max: LIMITS.FREE.photos_per_day,
-                    remaining: LIMITS.FREE.photos_per_day
+                    max: LIMITS.PRO.photos_per_day,
+                    remaining: 999999
                   },
                   ads: {
                     used,
-                    max: LIMITS.FREE.ads_per_day,
-                    remaining: Math.max(0, LIMITS.FREE.ads_per_day - used)
+                    max: LIMITS.PRO.ads_per_day,
+                    remaining: Math.max(0, LIMITS.PRO.ads_per_day - used)
                   },
                   pin: {
                     used: 0,
-                    max: LIMITS.FREE.pin_per_3days,
+                    max: LIMITS.PRO.pin_per_day,
                     canUse: true
                   }
                 }
