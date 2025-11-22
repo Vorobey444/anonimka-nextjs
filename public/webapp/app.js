@@ -721,14 +721,14 @@ function initializeApp() {
         console.error('❌ Ошибка setupContactsEventListeners:', e);
     }
     
-    // Периодическое обновление счетчика новых запросов (каждые 30 секунд)
+    // Периодическое обновление счетчика новых запросов (каждые 10 секунд)
     setInterval(() => {
         try {
             updateChatBadge();
         } catch (e) {
             console.error('❌ Ошибка updateChatBadge в интервале:', e);
         }
-    }, 30000);
+    }, 10000);
     
     // Периодическая проверка Premium статуса (каждые 5 минут)
     setInterval(() => {
