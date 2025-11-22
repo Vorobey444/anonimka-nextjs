@@ -31,24 +31,53 @@ let adminCheckCompleted = false;
 
 // ============= СИСТЕМА ЛОГИРОВАНИЯ ОШИБОК =============
 // Отправка ошибки на сервер
-const errorLogCache = new Set(); // Кеш для предотвращения дублирования
-const ERROR_CACHE_TTL = 10000; // 10 секунд (для тестирования, в продакшене можно увеличить)
+const errorLogCache = new Map(); // Кеш с временными метками
+const ERROR_CACHE_TTL = 30000; // 30 секунд
+const ENABLE_ERROR_DEBUG = true; // Отладка системы логирования
 
 async function logErrorToServer(error, type = 'error') {
     try {
-        const errorKey = `${type}:${error.message}:${error.stack?.substring(0, 100)}`;
+        // Создаем более точный ключ кеша
+        const errorMessage = error.message || String(error);
+        const errorStack = error.stack || '';
+        // Берем только первую строку stack trace (место возникновения ошибки)
+        const stackFirstLine = errorStack.split('\n')[1]?.trim() || '';
+        const errorKey = `${type}:${errorMessage}:${stackFirstLine}`;
         
-        // Проверяем кеш чтобы не отправлять одинаковые ошибки слишком часто
-        if (errorLogCache.has(errorKey)) {
+        if (ENABLE_ERROR_DEBUG) {
+            console.log('[ERROR LOG] Обработка ошибки:', errorMessage);
+            console.log('[ERROR LOG] Ключ кеша:', errorKey);
+        }
+        
+        // Проверяем кеш с учетом времени
+        const now = Date.now();
+        const cachedTime = errorLogCache.get(errorKey);
+        
+        if (cachedTime && (now - cachedTime) < ERROR_CACHE_TTL) {
+            if (ENABLE_ERROR_DEBUG) {
+                const remainingTime = Math.ceil((ERROR_CACHE_TTL - (now - cachedTime)) / 1000);
+                console.log(`[ERROR LOG] Ошибка в кеше, осталось ${remainingTime} сек до повторной отправки`);
+            }
             return;
         }
         
-        errorLogCache.add(errorKey);
-        setTimeout(() => errorLogCache.delete(errorKey), ERROR_CACHE_TTL);
+        // Обновляем кеш
+        errorLogCache.set(errorKey, now);
+        
+        // Очищаем старые записи из кеша (оптимизация памяти)
+        if (errorLogCache.size > 50) {
+            const keysToDelete = [];
+            for (const [key, time] of errorLogCache.entries()) {
+                if (now - time > ERROR_CACHE_TTL) {
+                    keysToDelete.push(key);
+                }
+            }
+            keysToDelete.forEach(key => errorLogCache.delete(key));
+        }
         
         const errorData = {
-            message: error.message || String(error),
-            stack: error.stack || '',
+            message: errorMessage,
+            stack: errorStack,
             url: window.location.href,
             userAgent: navigator.userAgent,
             userId: tg.initDataUnsafe?.user?.id,
@@ -57,12 +86,28 @@ async function logErrorToServer(error, type = 'error') {
             type: type
         };
         
+        if (ENABLE_ERROR_DEBUG) {
+            console.log('[ERROR LOG] Отправка на сервер...');
+        }
+        
         // Отправляем асинхронно, не блокируем UI
         fetch('/api/log-error', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(errorData)
-        }).catch(err => console.error('[ERROR LOG] Не удалось отправить лог:', err));
+        })
+        .then(response => {
+            if (ENABLE_ERROR_DEBUG) {
+                console.log('[ERROR LOG] Ответ сервера:', response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (ENABLE_ERROR_DEBUG) {
+                console.log('[ERROR LOG] Результат:', data);
+            }
+        })
+        .catch(err => console.error('[ERROR LOG] Не удалось отправить лог:', err));
         
     } catch (logError) {
         console.error('[ERROR LOG] Ошибка при логировании:', logError);
@@ -90,7 +135,24 @@ window.logError = function(message, error) {
     logErrorToServer(error || { message, stack: '' }, 'manual');
 };
 
+// Утилиты для управления системой логирования
+window.clearErrorCache = function() {
+    errorLogCache.clear();
+    console.log('[ERROR LOG] ✅ Кеш очищен');
+};
+
+window.getErrorCacheInfo = function() {
+    console.log('[ERROR LOG] Размер кеша:', errorLogCache.size);
+    const now = Date.now();
+    console.log('[ERROR LOG] Записи в кеше:');
+    for (const [key, time] of errorLogCache.entries()) {
+        const age = Math.ceil((now - time) / 1000);
+        console.log(`  - ${key.substring(0, 60)}... (${age} сек назад)`);
+    }
+};
+
 console.log('✅ Система логирования ошибок инициализирована');
+console.log('💡 Доступные команды: window.logError(), window.clearErrorCache(), window.getErrorCacheInfo()');
 
 // Слушаем событие установки PWA (для браузерной версии)
 window.addEventListener('beforeinstallprompt', (e) => {
