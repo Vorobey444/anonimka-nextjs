@@ -951,6 +951,7 @@ async function loadSiteStats() {
         const totalVisitsEl = document.getElementById('totalVisits');
         const onlineNowEl = document.getElementById('onlineNow');
         const totalAdsEl = document.getElementById('totalAds');
+        const blockedUsersEl = document.getElementById('blockedUsers');
         
         // 👥 - Общее количество уникальных пользователей за все время
         if (totalVisitsEl && data.total_unique_users !== undefined) {
@@ -965,6 +966,11 @@ async function loadSiteStats() {
         // 📢 - Общее количество анкет
         if (totalAdsEl && data.total_ads !== undefined) {
             totalAdsEl.textContent = formatNumber(data.total_ads);
+        }
+        
+        // 🚫 - Заблокировали бота
+        if (blockedUsersEl && data.blocked_users !== undefined) {
+            blockedUsersEl.textContent = formatNumber(data.blocked_users);
         }
     } catch (error) {
         console.error('Ошибка загрузки статистики:', error);

@@ -144,10 +144,18 @@ export async function GET(request: NextRequest) {
         FROM ads
       `;
 
+      // Количество пользователей, заблокировавших бота
+      const blockedUsers = await sql`
+        SELECT COUNT(*) as count
+        FROM users
+        WHERE is_bot_blocked = true
+      `;
+
       return NextResponse.json({
         stats: stats.rows,
         total_unique_users: parseInt(totalUniqueUsers.rows[0]?.count || 0),
         unique_last_24h: parseInt(uniqueLast24h.rows[0]?.count || 0),
+        blocked_users: parseInt(blockedUsers.rows[0]?.count || 0),
         total_ads: parseInt(totalAds.rows[0]?.count || 0)
       });
     } else {
