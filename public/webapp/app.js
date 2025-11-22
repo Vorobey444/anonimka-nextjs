@@ -32,7 +32,7 @@ let adminCheckCompleted = false;
 // ============= СИСТЕМА ЛОГИРОВАНИЯ ОШИБОК =============
 // Отправка ошибки на сервер
 const errorLogCache = new Set(); // Кеш для предотвращения дублирования
-const ERROR_CACHE_TTL = 60000; // 1 минута
+const ERROR_CACHE_TTL = 10000; // 10 секунд (для тестирования, в продакшене можно увеличить)
 
 async function logErrorToServer(error, type = 'error') {
     try {
