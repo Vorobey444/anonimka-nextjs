@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { sql } from '@vercel/postgres';
 
 export async function POST(request: NextRequest) {
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
 // GET endpoint для получения информации о чате
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const chatId = searchParams.get('chat_id');
     const tgId = searchParams.get('tg_id');
 

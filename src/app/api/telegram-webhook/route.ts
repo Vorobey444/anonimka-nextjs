@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Optional: simple shared-secret check to avoid random posts
-    const url = new URL(request.url);
+    const url = request.nextUrl;
     const secretParam = url.searchParams.get('secret');
     if (webhookSecret && secretParam !== webhookSecret) {
       return NextResponse.json({ error: { message: 'Forbidden' } }, { status: 403 });

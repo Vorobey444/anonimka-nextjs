@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // Принудительная динамическая генерация
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +11,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const adId = searchParams.get('ad_id');
     const senderTgId = searchParams.get('sender_tg_id');
     const receiverTgId = searchParams.get('receiver_tg_id');

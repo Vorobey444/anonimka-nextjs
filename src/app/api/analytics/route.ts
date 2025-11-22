@@ -1,5 +1,7 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { generateUserToken } from '@/lib/userToken';
 
 // Проверка и создание таблиц если их нет
@@ -112,7 +114,7 @@ export async function GET(request: NextRequest) {
   try {
     await ensureTablesExist();
     
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const metric = searchParams.get('metric');
 
     if (metric === 'all') {

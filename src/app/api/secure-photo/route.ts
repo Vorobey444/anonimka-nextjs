@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { ENV } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +12,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const fileId = searchParams.get('fileId');
     
     if (!fileId) {

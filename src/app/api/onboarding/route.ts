@@ -1,5 +1,7 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import crypto from 'crypto';
 
 // POST: Сохранить согласие пользователя с условиями
@@ -85,7 +87,7 @@ export async function POST(request: NextRequest) {
 // GET: Проверить статус согласия
 export async function GET(request: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url);
+        const { searchParams } = request.nextUrl;
         const userToken = searchParams.get('userToken');
         const tgId = searchParams.get('tgId');
 

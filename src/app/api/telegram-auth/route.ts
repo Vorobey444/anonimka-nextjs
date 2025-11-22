@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // Временное хранилище для auth_token (в продакшене использовать Redis или БД)
 const authSessions = new Map<string, any>();
 
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
 // GET: Проверить статус авторизации по токену
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const auth_token = searchParams.get('auth_token');
 
     if (!auth_token) {

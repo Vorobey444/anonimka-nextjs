@@ -1,5 +1,7 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { ServerErrorLogger } from '@/lib/serverErrorLogger';
 
 const ADMIN_TG_ID = 884253640;
@@ -209,7 +211,7 @@ export async function POST(request: NextRequest) {
 // GET - Получить жалобы (только для админа)
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const userId = searchParams.get('userId');
     const status = searchParams.get('status') || 'pending';
 

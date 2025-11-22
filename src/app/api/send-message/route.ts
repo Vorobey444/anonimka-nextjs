@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { sql } from '@vercel/postgres';
 
 export async function POST(request: NextRequest) {
@@ -125,9 +127,9 @@ export async function POST(request: NextRequest) {
 }
 
 // GET endpoint для получения сообщений пользователя через Neon/Postgres
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const userToken = searchParams.get('user_token');
 
     if (!userToken) {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // Хранилище токенов авторизации (в продакшене использовать Redis)
 // token -> { user_data, timestamp }
 const authTokens = new Map<string, { user: any; timestamp: number }>();
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url);
+        const { searchParams } = request.nextUrl;
         const token = searchParams.get('token');
 
         if (!token) {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // Supabase клиент на сервере
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vcxknlntcvcdowdohblr.supabase.co';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjeGtubG50Y3ZjZG93ZG9oYmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA1NDk3NjMsImV4cCI6MjA0NjEyNTc2M30.TcBhgBh9DQ5PzbcSl2eWxHxJBwBVnlv_JmR9Bfin-P8';
@@ -59,7 +61,7 @@ async function supabaseRequest(url: string, options: RequestInit = {}) {
 export async function GET(request: NextRequest) {
   try {
     console.log('=== /api/chats GET request ===');
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const userId = searchParams.get('userId');
     const action = searchParams.get('action');
     
