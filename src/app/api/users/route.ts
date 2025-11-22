@@ -157,6 +157,19 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Получить всех пользователей (только для проверки заблокированных)
+    if (action === 'get-all') {
+      const result = await sql`
+        SELECT id FROM users WHERE id IS NOT NULL ORDER BY id
+      `;
+
+      return NextResponse.json({
+        success: true,
+        users: result.rows,
+        count: result.rows.length
+      });
+    }
+
     let displayNickname: string | null = null;
 
     if (tgIdParam) {
