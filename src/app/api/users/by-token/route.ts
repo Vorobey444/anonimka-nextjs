@@ -1,10 +1,13 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Указываем, что это динамический роут
+export const dynamic = 'force-dynamic';
+
 // GET - Получить user_id по user_token
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const token = searchParams.get('token');
 
     if (!token) {
