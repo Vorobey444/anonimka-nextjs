@@ -100,15 +100,19 @@ export async function POST(request: NextRequest) {
     });
 
     // Отправляем в Telegram и ждем результата для диагностики
+    let telegramError = null;
     try {
       await sendTelegramAlert(errorLog);
       console.log('Telegram alert sent successfully');
     } catch (err) {
       console.error('Failed to send Telegram alert:', err);
+      telegramError = err instanceof Error ? err.message : String(err);
     }
 
     return NextResponse.json({ 
       success: true,
+      telegramSent: !telegramError,
+      telegramError: telegramError,
       debug: {
         botTokenSet: !!TELEGRAM_BOT_TOKEN,
         chatId: ADMIN_TELEGRAM_ID

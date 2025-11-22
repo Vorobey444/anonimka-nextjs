@@ -105,6 +105,11 @@ async function logErrorToServer(error, type = 'error') {
         .then(data => {
             if (ENABLE_ERROR_DEBUG) {
                 console.log('[ERROR LOG] Результат:', data);
+                if (data.telegramSent === false && data.telegramError) {
+                    console.error('[ERROR LOG] ❌ Ошибка отправки в Telegram:', data.telegramError);
+                } else if (data.telegramSent === true) {
+                    console.log('[ERROR LOG] ✅ Уведомление отправлено в Telegram');
+                }
             }
         })
         .catch(err => console.error('[ERROR LOG] Не удалось отправить лог:', err));
