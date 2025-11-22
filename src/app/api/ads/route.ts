@@ -15,8 +15,8 @@ export async function GET(req: NextRequest) {
         AND pinned_until IS NOT NULL 
         AND pinned_until < NOW()
     `;
-    if (unpinResult.count && unpinResult.count > 0) {
-      console.log(`[ADS API] 📌 Автоматически откреплено ${unpinResult.count} истекших анкет`);
+    if (unpinResult.rowCount && unpinResult.rowCount > 0) {
+      console.log(`[ADS API] 📌 Автоматически откреплено ${unpinResult.rowCount} истекших анкет`);
     }
     
     const { searchParams } = new URL(req.url);
