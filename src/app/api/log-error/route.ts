@@ -36,30 +36,43 @@ ${error.stack ? `📋 <b>Stack:</b>\n<code>${error.stack.slice(0, 800)}</code>` 
   `.trim();
 
   try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: ADMIN_TELEGRAM_ID,
-          text: errorText,
-          parse_mode: 'HTML',
-        }),
-      }
-    );
+    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    console.log('Sending to Telegram, chat_id:', ADMIN_TELEGRAM_ID);
+    
+    const response = await fetch(telegramUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: ADMIN_TELEGRAM_ID,
+        text: errorText,
+        parse_mode: 'HTML',
+      }),
+    });
+
+    const responseText = await response.text();
+    console.log('Telegram API response status:', response.status);
+    console.log('Telegram API response:', responseText);
 
     if (!response.ok) {
-      console.error('Failed to send Telegram alert:', await response.text());
+      console.error('Failed to send Telegram alert. Status:', response.status);
+      console.error('Response:', responseText);
+      throw new Error(`Telegram API error: ${responseText}`);
     }
   } catch (err) {
     console.error('Error sending Telegram alert:', err);
+    throw err;
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const errorLog: ErrorLog = await request.json();
+
+    // Логируем конфигурацию для диагностики
+    console.log('=== Error Logging Debug ===');
+    console.log('TELEGRAM_BOT_TOKEN:', TELEGRAM_BOT_TOKEN ? 'SET' : 'NOT SET');
+    console.log('ADMIN_TELEGRAM_ID:', ADMIN_TELEGRAM_ID);
+    console.log('Error message:', errorLog.message);
 
     // Фильтруем спам и неважные ошибки
     const ignorePatterns = [
@@ -74,6 +87,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (shouldIgnore) {
+      console.log('Error ignored by filter');
       return NextResponse.json({ success: true, ignored: true });
     }
 
@@ -85,12 +99,21 @@ export async function POST(request: NextRequest) {
       timestamp: errorLog.timestamp,
     });
 
-    // Отправляем в Telegram (асинхронно, не блокируем ответ)
-    sendTelegramAlert(errorLog).catch(err =>
-      console.error('Failed to send alert:', err)
-    );
+    // Отправляем в Telegram и ждем результата для диагностики
+    try {
+      await sendTelegramAlert(errorLog);
+      console.log('Telegram alert sent successfully');
+    } catch (err) {
+      console.error('Failed to send Telegram alert:', err);
+    }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      debug: {
+        botTokenSet: !!TELEGRAM_BOT_TOKEN,
+        chatId: ADMIN_TELEGRAM_ID
+      }
+    });
   } catch (error) {
     console.error('Error processing error log:', error);
     return NextResponse.json(
