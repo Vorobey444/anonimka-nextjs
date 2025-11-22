@@ -3827,10 +3827,10 @@ async function pinMyAd(adId, shouldPin) {
     }
 }
 
-// Автоопределение локации - перенаправляем на красивую анимацию
+// Автоопределение локации - вызываем async версию
 function autoDetectLocation() {
-    console.log('autoDetectLocation вызвана - переходим к красивой анимации');
-    showAutoLocationDetection();
+    console.log('autoDetectLocation вызвана - запускаем автоопределение');
+    autoDetectLocationAsync();
 }
 
 // Сброс формы
@@ -4250,8 +4250,8 @@ async function detectLocationByIP() {
     }
 }
 
-// Автоматическое определение локации в фоне (без UI)
-async function autoDetectLocation() {
+// Автоматическое определение локации (async версия)
+async function autoDetectLocationAsync() {
     try {
         console.log('🌍 Автоопределение локации...');
         
@@ -4305,18 +4305,26 @@ async function autoDetectLocation() {
             }
         }
         
-        // Сохраняем локацию если удалось определить
+        // Показываем экран подтверждения если удалось определить
         if (locationData && locationData.country_code) {
             const detectedLocation = processIPLocation(locationData);
             if (detectedLocation) {
-                await displayUserLocation(detectedLocation.country, detectedLocation.region, detectedLocation.city);
-                console.log('✅ Локация автоматически сохранена:', detectedLocation);
+                // Устанавливаем выбранную локацию
+                setupSelectedCountry = detectedLocation.country;
+                setupSelectedRegion = detectedLocation.region;
+                setupSelectedCity = detectedLocation.city;
+                
+                // Показываем экран подтверждения
+                showSetupSelectedLocation();
+                console.log('✅ Локация определена, показан экран подтверждения:', detectedLocation);
             }
         } else {
             console.log('⚠️ Не удалось автоматически определить локацию');
+            tg.showAlert('Не удалось определить ваше местоположение. Пожалуйста, выберите локацию вручную.');
         }
     } catch (error) {
         console.error('❌ Ошибка автоопределения локации:', error);
+        tg.showAlert('Ошибка при определении местоположения. Пожалуйста, выберите локацию вручную.');
     }
 }
 
@@ -5137,11 +5145,10 @@ function showManualLocationSetup() {
     showScreen('locationSetup');
     resetSetupLocation();
     
-    // Показываем кнопку "Назад" если локация уже была установлена
+    // Показываем кнопку "Назад" всегда (пользователь может вернуться к главному меню)
     const locationBackBtn = document.getElementById('locationBackBtn');
     if (locationBackBtn) {
-        const hasLocation = localStorage.getItem('userLocation') || (supportsCloudStorage() && currentUserLocation);
-        locationBackBtn.style.display = hasLocation ? 'block' : 'none';
+        locationBackBtn.style.display = 'block';
     }
 }
 
