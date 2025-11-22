@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Периодическая очистка истёкших PRO (раз в 10 запросов)
+    // Периодическая очистка истёкших PRO и закреплений (раз в 10 запросов)
     if (Math.random() < 0.1) {
       try {
         await sql`
@@ -33,8 +33,13 @@ export default async function handler(req, res) {
           SET is_premium = false
           WHERE is_premium = true AND premium_until IS NOT NULL AND premium_until < NOW()
         `;
+        await sql`
+          UPDATE ads 
+          SET is_pinned = false 
+          WHERE is_pinned = true AND pinned_until IS NOT NULL AND pinned_until < NOW()
+        `;
       } catch (e) {
-        console.error('Premium cleanup error:', e);
+        console.error('Cleanup error:', e);
       }
     }
 

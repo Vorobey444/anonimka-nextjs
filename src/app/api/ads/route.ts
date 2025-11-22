@@ -7,17 +7,27 @@ export const dynamic = 'force-dynamic';
 // GET - получение объявлений
 export async function GET(req: NextRequest) {
   try {
+    // Автоматически открепляем истекшие анкеты
+    const unpinResult = await sql`
+      UPDATE ads 
+      SET is_pinned = false 
+      WHERE is_pinned = true 
+        AND pinned_until IS NOT NULL 
+        AND pinned_until < NOW()
+    `;
+    if (unpinResult.count && unpinResult.count > 0) {
+      console.log(`[ADS API] 📌 Автоматически откреплено ${unpinResult.count} истекших анкет`);
+    }
+    
     const { searchParams } = new URL(req.url);
     const city = searchParams.get('city');
     const country = searchParams.get('country');
     const id = searchParams.get('id');
-
+    
     console.log("[ADS API] Получение объявлений:", { city, country, id });
 
     // Формируем SQL запрос с фильтрами
-    let result;
-    
-    if (id) {
+    let result;    if (id) {
       // Получение конкретной анкеты по ID
       result = await sql`
         SELECT id, gender, target, goal, age_from, age_to, my_age, 

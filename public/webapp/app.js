@@ -8729,6 +8729,8 @@ function getTimeUntilMidnight() {
 function startMidnightLimitCheck() {
     console.log('⏰ Запущена проверка обновления лимитов в полночь (Алматы UTC+5)');
     
+    let lastNotificationDate = null; // Флаг для предотвращения дублирования уведомлений
+    
     // Проверяем каждую минуту, не наступила ли полночь Алматы
     setInterval(() => {
         const now = new Date();
@@ -8738,9 +8740,20 @@ function startMidnightLimitCheck() {
         // Конвертируем в Алматы время (UTC+5)
         const almatyHours = (utcHours + 5) % 24;
         
+        // Получаем текущую дату по Алматы для проверки
+        const almatyDate = new Date(now.getTime() + (5 * 60 * 60 * 1000));
+        const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+        
         // Если сейчас 00:00 или 00:01 по Алматы - обновляем лимиты
         if (almatyHours === 0 && utcMinutes <= 1) {
+            // Проверяем, не показывали ли мы уже уведомление сегодня
+            if (lastNotificationDate === currentAlmatyDate) {
+                console.log('⏭️ Уведомление уже показано сегодня, пропускаем...');
+                return;
+            }
+            
             console.log('🌙 Полночь в Алматы! Обновляем лимиты...');
+            lastNotificationDate = currentAlmatyDate; // Отмечаем что показали уведомление
             
             // Проверяем лимиты с сервера
             if (typeof loadPremiumStatus === 'function') {
@@ -8759,6 +8772,8 @@ function startMidnightLimitCheck() {
                         const randomMidnight = midnightMessages[Math.floor(Math.random() * midnightMessages.length)];
                         tg.showAlert(randomMidnight);
                     }
+                }).catch(err => {
+                    console.error('❌ Ошибка обновления лимитов после полуночи:', err);
                 });
             }
         }
