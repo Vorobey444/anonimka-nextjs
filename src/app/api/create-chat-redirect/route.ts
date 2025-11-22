@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// Принудительная динамическая генерация
-export const dynamic = 'force-dynamic';
-
 /**
  * Промежуточный endpoint для создания чата из Telegram URL button
  * Перенаправляет в WebApp после создания чата

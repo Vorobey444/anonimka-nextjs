@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET endpoint для получения сообщений пользователя через Neon/Postgres
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
     const userToken = searchParams.get('user_token');

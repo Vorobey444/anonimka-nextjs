@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-export const dynamic = 'force-dynamic';
 import { ENV } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
