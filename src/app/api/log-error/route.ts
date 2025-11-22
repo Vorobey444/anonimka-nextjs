@@ -13,11 +13,26 @@ interface ErrorLog {
   componentStack?: string;
 }
 
+// Экранирование HTML символов для Telegram
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 async function sendTelegramAlert(error: ErrorLog) {
   if (!TELEGRAM_BOT_TOKEN) {
     console.error('TELEGRAM_BOT_TOKEN not configured');
     return;
   }
+
+  // Экранируем HTML в тексте ошибки и stack trace
+  const safeMessage = escapeHtml(error.message.slice(0, 500));
+  const safeStack = error.stack ? escapeHtml(error.stack.slice(0, 800)) : '';
+  const safeUserAgent = escapeHtml(error.userAgent.slice(0, 200));
 
   const errorText = `
 🔴 <b>Ошибка на сайте!</b>
@@ -27,12 +42,12 @@ async function sendTelegramAlert(error: ErrorLog) {
 👤 <b>User ID:</b> ${error.userId || 'Неизвестен'}
 
 ❌ <b>Ошибка:</b>
-<code>${error.message.slice(0, 500)}</code>
+<code>${safeMessage}</code>
 
 🌐 <b>Browser:</b>
-<code>${error.userAgent.slice(0, 200)}</code>
+<code>${safeUserAgent}</code>
 
-${error.stack ? `📋 <b>Stack:</b>\n<code>${error.stack.slice(0, 800)}</code>` : ''}
+${safeStack ? `📋 <b>Stack:</b>\n<code>${safeStack}</code>` : ''}
   `.trim();
 
   try {
