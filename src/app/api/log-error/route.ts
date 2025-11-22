@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const ADMIN_TELEGRAM_ID = '884253640';
+const ADMIN_TELEGRAM_ID = process.env.ADMIN_CHAT_ID || '884253640'; // Ваш Telegram ID
 
 interface ErrorLog {
   message: string;

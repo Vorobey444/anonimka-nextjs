@@ -29,6 +29,69 @@ let deferredPWAPrompt = null;
 let isAdminUser = false;
 let adminCheckCompleted = false;
 
+// ============= СИСТЕМА ЛОГИРОВАНИЯ ОШИБОК =============
+// Отправка ошибки на сервер
+const errorLogCache = new Set(); // Кеш для предотвращения дублирования
+const ERROR_CACHE_TTL = 60000; // 1 минута
+
+async function logErrorToServer(error, type = 'error') {
+    try {
+        const errorKey = `${type}:${error.message}:${error.stack?.substring(0, 100)}`;
+        
+        // Проверяем кеш чтобы не отправлять одинаковые ошибки слишком часто
+        if (errorLogCache.has(errorKey)) {
+            return;
+        }
+        
+        errorLogCache.add(errorKey);
+        setTimeout(() => errorLogCache.delete(errorKey), ERROR_CACHE_TTL);
+        
+        const errorData = {
+            message: error.message || String(error),
+            stack: error.stack || '',
+            url: window.location.href,
+            userAgent: navigator.userAgent,
+            userId: tg.initDataUnsafe?.user?.id,
+            username: tg.initDataUnsafe?.user?.username,
+            timestamp: new Date().toISOString(),
+            type: type
+        };
+        
+        // Отправляем асинхронно, не блокируем UI
+        fetch('/api/log-error', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(errorData)
+        }).catch(err => console.error('[ERROR LOG] Не удалось отправить лог:', err));
+        
+    } catch (logError) {
+        console.error('[ERROR LOG] Ошибка при логировании:', logError);
+    }
+}
+
+// Глобальный обработчик ошибок JavaScript
+window.addEventListener('error', (event) => {
+    console.error('❌ Перехвачена ошибка:', event.error);
+    logErrorToServer(event.error || { message: event.message, stack: '' }, 'error');
+});
+
+// Обработчик необработанных Promise rejection
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('❌ Необработанное отклонение Promise:', event.reason);
+    const error = event.reason instanceof Error 
+        ? event.reason 
+        : { message: String(event.reason), stack: '' };
+    logErrorToServer(error, 'unhandledRejection');
+});
+
+// Функция для ручного логирования ошибок
+window.logError = function(message, error) {
+    console.error(message, error);
+    logErrorToServer(error || { message, stack: '' }, 'manual');
+};
+
+console.log('✅ Система логирования ошибок инициализирована');
+
 // Слушаем событие установки PWA (для браузерной версии)
 window.addEventListener('beforeinstallprompt', (e) => {
     console.log('📥 PWA готово к установке');
