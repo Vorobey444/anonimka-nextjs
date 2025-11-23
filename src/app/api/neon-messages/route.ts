@@ -241,27 +241,14 @@ export async function POST(request: NextRequest) {
         if (!skipNotification && receiverId) {
           const botToken = process.env.TELEGRAM_BOT_TOKEN;
           
-          // Проверяем активность получателя
-          let receiverIsActive = false;
-          try {
-            const activityCheck = await fetch(`${request.nextUrl.origin}/api/user-activity`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'is-active',
-                params: { userId: receiverId, chatId }
-              })
-            });
-            const activityResult = await activityCheck.json();
-            receiverIsActive = activityResult.data?.active || false;
-            console.log('[MESSAGES] Активность получателя:', { chatId, active: receiverIsActive });
-          } catch (error) {
-            console.error('[MESSAGES] Ошибка проверки активности:', error);
-            // Если ошибка - отправляем уведомление на всякий случай
-          }
+          // ВРЕМЕННО ОТКЛЮЧЕНА проверка активности - отправляем уведомления всегда
+          // TODO: Вернуть проверку активности когда будет работать /api/user-activity
+          const receiverIsActive = false; // Всегда считаем неактивным
           
-          // Отправляем уведомление только если получатель НЕ активен в этом чате
-          if (!receiverIsActive) {
+          console.log('[MESSAGES] Проверка активности ОТКЛЮЧЕНА - отправляем уведомление');
+          
+          // Отправляем уведомление
+          if (true) { // Всегда отправляем
             console.log('[MESSAGES] Попытка отправить уведомление:', {
               hasToken: !!botToken,
               skipNotification,
