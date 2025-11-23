@@ -1339,14 +1339,47 @@ function initializeNickname() {
 }
 
 // Показать обязательное модальное окно выбора никнейма
-function showRequiredNicknameModal() {
+async function showRequiredNicknameModal() {
     const modal = document.getElementById('requiredNicknameModal');
     const input = document.getElementById('requiredNicknameInput');
     const errorDiv = document.getElementById('nicknameError');
+    const termsSection = document.getElementById('termsAgreementSection');
+    
+    // Проверяем, нужно ли показывать согласие с правилами
+    const userToken = localStorage.getItem('user_token');
+    const tgId = tg?.initDataUnsafe?.user?.id;
+    
+    let needsTermsAgreement = false;
+    
+    try {
+        // Проверяем через API, согласился ли пользователь с правилами
+        const response = await fetch('/api/onboarding', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'check-agreed',
+                userToken: userToken,
+                tgId: tgId
+            })
+        });
+        
+        const result = await response.json();
+        needsTermsAgreement = !result.agreed; // Если ещё не согласился - показываем
+        
+        console.log('📋 Проверка согласия с правилами:', needsTermsAgreement ? 'Нужно показать' : 'Уже принято');
+    } catch (error) {
+        console.error('Ошибка проверки согласия:', error);
+        needsTermsAgreement = true; // На всякий случай показываем
+    }
     
     if (modal) {
         modal.style.display = 'flex';
         errorDiv.style.display = 'none';
+        
+        // Показываем/скрываем секцию с галочкой правил
+        if (termsSection) {
+            termsSection.style.display = needsTermsAgreement ? 'block' : 'none';
+        }
         
         // Фокус на input после анимации
         setTimeout(() => {
@@ -1366,6 +1399,8 @@ async function saveRequiredNickname() {
     const input = document.getElementById('requiredNicknameInput');
     const errorDiv = document.getElementById('nicknameError');
     const errorText = errorDiv.querySelector('p');
+    const termsSection = document.getElementById('termsAgreementSection');
+    const termsCheckbox = document.getElementById('termsCheckbox');
     
     let nickname = input.value.trim();
     
@@ -1379,6 +1414,15 @@ async function saveRequiredNickname() {
         errorDiv.style.display = 'block';
         errorText.textContent = '❌ Выберите уникальный никнейм (не "Аноним")';
         return;
+    }
+    
+    // Проверяем галочку правил, если секция видима
+    if (termsSection && termsSection.style.display !== 'none') {
+        if (!termsCheckbox.checked) {
+            errorDiv.style.display = 'block';
+            errorText.textContent = '❌ Необходимо принять правила использования';
+            return;
+        }
     }
     
     // Получаем tgId
@@ -1432,6 +1476,28 @@ async function saveRequiredNickname() {
         localStorage.setItem('user_nickname', nickname);
         localStorage.setItem('userNickname', nickname);
         console.log('✅ Никнейм успешно сохранён:', nickname);
+        
+        // Если нужно было принять правила - сохраняем согласие
+        const termsSection = document.getElementById('termsAgreementSection');
+        if (termsSection && termsSection.style.display !== 'none') {
+            try {
+                const userToken = localStorage.getItem('user_token');
+                await fetch('/api/onboarding', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'agree',
+                        userToken: userToken,
+                        tgId: tgId,
+                        agreed: true
+                    })
+                });
+                console.log('✅ Согласие с правилами сохранено');
+            } catch (termsError) {
+                console.error('⚠️ Ошибка при сохранении согласия:', termsError);
+                // Не критично, продолжаем
+            }
+        }
         
         // Закрываем модальное окно
         const modal = document.getElementById('requiredNicknameModal');
