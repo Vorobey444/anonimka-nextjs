@@ -232,7 +232,29 @@ export async function POST(request: NextRequest) {
         updated_at = NOW()
     `;
 
-    console.log('[NICKNAME API] Никнейм успешно установлен');
+    // Обновляем никнейм во всех объявлениях пользователя
+    await sql`
+      UPDATE ads 
+      SET nickname = ${nickname}, updated_at = NOW()
+      WHERE tg_id = ${userId}
+    `;
+
+    // Обновляем никнейм в user_blocks (если кто-то заблокировал этого пользователя)
+    // Получаем user_token из ads для обновления user_blocks
+    const userTokenResult = await sql`
+      SELECT user_token FROM ads WHERE tg_id = ${userId} LIMIT 1
+    `;
+    
+    if (userTokenResult.rows.length > 0) {
+      const userToken = userTokenResult.rows[0].user_token;
+      await sql`
+        UPDATE user_blocks
+        SET blocked_nickname = ${nickname}
+        WHERE blocked_token = ${userToken}
+      `;
+    }
+
+    console.log('[NICKNAME API] Никнейм успешно установлен и обновлён во всех связанных таблицах');
 
     return NextResponse.json({
       success: true,
