@@ -150,6 +150,12 @@ export async function POST(request: NextRequest) {
         `;
         const receiverId = receiverInfo.rows[0]?.tg_id || null;
         
+        console.log('[MESSAGES] Получатель сообщения:', {
+          receiverToken: receiverToken?.substring(0, 10) + '...',
+          receiverId,
+          hasReceiverTgId: !!receiverId
+        });
+        
         // Используем переданный nickname или дефолтный
         const nickname = senderNickname || 'Анонимный';
         
@@ -226,6 +232,12 @@ export async function POST(request: NextRequest) {
         `;
         
         // Отправляем уведомление в Telegram (если не skipNotification и есть tg_id)
+        console.log('[MESSAGES] Проверка условий уведомления:', {
+          skipNotification,
+          hasReceiverId: !!receiverId,
+          shouldSendNotification: !skipNotification && !!receiverId
+        });
+        
         if (!skipNotification && receiverId) {
           const botToken = process.env.TELEGRAM_BOT_TOKEN;
           
