@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
+import { ENV } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
@@ -239,7 +240,7 @@ export async function POST(request: NextRequest) {
         });
         
         if (!skipNotification && receiverId) {
-          const botToken = process.env.TELEGRAM_BOT_TOKEN;
+          const botToken = ENV.TELEGRAM_BOT_TOKEN;
           
           // ВРЕМЕННО ОТКЛЮЧЕНА проверка активности - отправляем уведомления всегда
           // TODO: Вернуть проверку активности когда будет работать /api/user-activity
