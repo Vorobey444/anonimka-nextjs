@@ -759,18 +759,17 @@ function initializeApp() {
                 })
                 .then(() => {
                     console.log('✅ finalizePendingReferral завершён');
+                    // После полной инициализации проверяем никнейм
+                    return initializeNickname();
+                })
+                .then(() => {
+                    console.log('✅ initializeNickname завершён');
                 })
                 .catch(e => {
                     console.error('❌ Ошибка цепочки инициализации:', e);
                 });
         } catch (e) {
             console.error('❌ Ошибка запуска инициализации:', e);
-        }
-        
-        try {
-            initializeNickname(); // Инициализация никнейма
-        } catch (e) {
-            console.error('❌ Ошибка initializeNickname:', e);
         }
         
         try {
