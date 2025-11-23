@@ -10486,9 +10486,11 @@ async function showBlockedUsers() {
         }
         
         const blockedUsers = result.data || [];
-        console.log('🚫 Заблокированные пользователи:', blockedUsers);
+        console.log('🚫 Заблокированные пользователей:', blockedUsers);
+        console.log('📏 Длина массива:', blockedUsers.length);
         
         if (blockedUsers.length === 0) {
+            console.log('✅ Показываю empty-state для пустого списка');
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="neon-icon">✅</div>
@@ -10496,6 +10498,7 @@ async function showBlockedUsers() {
                     <p>У вас нет заблокированных пользователей</p>
                 </div>
             `;
+            console.log('📄 HTML установлен:', container.innerHTML);
             return;
         }
         
