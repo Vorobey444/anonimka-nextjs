@@ -412,7 +412,7 @@ export async function POST(req: NextRequest) {
         ${parseOptionalInt(myAge)},
         ${bodyType || null}, ${orientation || null}, ${text}, ${finalNickname},
         ${country || 'Россия'}, ${region || ''}, ${city}, 
-        ${numericTgId}, ${finalUserToken}, NOW()
+        ${numericTgId}, ${finalUserToken}, NOW() AT TIME ZONE 'Asia/Almaty'
       )
       RETURNING id, nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text
     `;
