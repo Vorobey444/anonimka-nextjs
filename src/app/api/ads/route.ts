@@ -311,6 +311,26 @@ export async function POST(req: NextRequest) {
       console.log('[ADS API] ✅ Лимит в порядке, создаём анкету:', { adsToday, maxAds });
     }
 
+    // Если nickname не передан - берем из таблицы users
+    let finalNickname = nickname;
+    if (!finalNickname && numericTgId !== null) {
+      const userResult = await sql`
+        SELECT display_nickname FROM users WHERE id = ${numericTgId} LIMIT 1
+      `;
+      if (userResult.rows.length > 0 && userResult.rows[0].display_nickname) {
+        finalNickname = userResult.rows[0].display_nickname;
+        console.log('[ADS API] Nickname взят из users:', finalNickname);
+      } else {
+        // Если в users тоже нет - генерируем уникальный
+        finalNickname = `Аноним${numericTgId % 10000}`;
+        console.log('[ADS API] Сгенерирован уникальный nickname:', finalNickname);
+      }
+    } else if (!finalNickname) {
+      // Для web-пользователей без tgId
+      finalNickname = `Гость${Math.floor(Math.random() * 10000)}`;
+      console.log('[ADS API] Сгенерирован nickname для веб-пользователя:', finalNickname);
+    }
+
     // Ограничение на количество объявлений для веб-пользователей (без tgId) - АЛМАТЫ UTC+5
     if (numericTgId === null && finalUserToken) {
       // Проверяем Premium для Web-пользователя
@@ -390,7 +410,7 @@ export async function POST(req: NextRequest) {
         ${parseOptionalInt(ageFrom)}, 
         ${parseOptionalInt(ageTo)}, 
         ${parseOptionalInt(myAge)},
-        ${bodyType || null}, ${orientation || null}, ${text}, ${nickname || 'Аноним'},
+        ${bodyType || null}, ${orientation || null}, ${text}, ${finalNickname},
         ${country || 'Россия'}, ${region || ''}, ${city}, 
         ${numericTgId}, ${finalUserToken}, NOW()
       )
