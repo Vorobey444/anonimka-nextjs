@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 /**
  * API для отметки отправленных напоминаний
  * POST /api/users/mark-reminder
- * Body: { user_id: number, reminder_type: 'first' | 'second' }
+ * Body: { user_id: number, reminder_type: 'first' | 'second' | 'third' }
  */
 export async function POST(request: NextRequest) {
     try {
@@ -20,9 +20,9 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (reminder_type !== 'first' && reminder_type !== 'second') {
+        if (reminder_type !== 'first' && reminder_type !== 'second' && reminder_type !== 'third') {
             return NextResponse.json(
-                { success: false, error: 'Invalid reminder_type. Must be "first" or "second"' },
+                { success: false, error: 'Invalid reminder_type. Must be "first", "second" or "third"' },
                 { status: 400 }
             );
         }
@@ -38,10 +38,17 @@ export async function POST(request: NextRequest) {
                     reminder_message_variant = ${message_variant}
                 WHERE id = ${user_id}
             `;
-        } else {
+        } else if (reminder_type === 'second') {
             await sql`
                 UPDATE users
                 SET second_reminder_sent = NOW()
+                WHERE id = ${user_id}
+            `;
+        } else {
+            // third reminder
+            await sql`
+                UPDATE users
+                SET third_reminder_sent = NOW()
                 WHERE id = ${user_id}
             `;
         }

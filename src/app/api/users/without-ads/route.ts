@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
     try {
-        // Получаем пользователей без анкет, зарегистрированных менее 24 часов назад
+        // Получаем пользователей без анкет, зарегистрированных менее 7 дней назад
         const result = await sql`
             SELECT 
                 u.id, 
@@ -17,11 +17,12 @@ export async function GET(request: NextRequest) {
                 u.country,
                 u.first_reminder_sent,
                 u.second_reminder_sent,
+                u.third_reminder_sent,
                 u.reminder_message_variant
             FROM users u
             LEFT JOIN ads a ON u.id = a.tg_id
             WHERE a.id IS NULL
-              AND u.created_at > NOW() - INTERVAL '24 hours'
+              AND u.created_at > NOW() - INTERVAL '7 days'
               AND u.id IS NOT NULL
             ORDER BY u.created_at ASC
         `;
