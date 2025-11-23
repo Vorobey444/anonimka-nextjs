@@ -414,7 +414,7 @@ export async function POST(req: NextRequest) {
         ${country || 'Россия'}, ${region || ''}, ${city}, 
         ${numericTgId}, ${finalUserToken}, CURRENT_TIMESTAMP
       )
-      RETURNING id, nickname, user_token, created_at AT TIME ZONE 'Asia/Almaty' as created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text
+      RETURNING id, nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text
     `;
 
     const newAd = result.rows[0];
