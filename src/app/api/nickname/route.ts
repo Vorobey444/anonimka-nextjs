@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
     // Обновляем никнейм во всех объявлениях пользователя
     await sql`
       UPDATE ads 
-      SET nickname = ${nickname}, updated_at = NOW()
+      SET nickname = ${nickname}
       WHERE tg_id = ${userId}
     `;
 
