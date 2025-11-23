@@ -1081,7 +1081,7 @@ async function loadSiteStats() {
         const totalVisitsEl = document.getElementById('totalVisits');
         const onlineNowEl = document.getElementById('onlineNow');
         const totalAdsEl = document.getElementById('totalAds');
-        const blockedUsersEl = document.getElementById('blockedUsers');
+        const blockedUsersEl = document.getElementById('blockedUsersCount');
         
         // 👥 - Общее количество уникальных пользователей за все время
         if (totalVisitsEl && data.total_unique_users !== undefined) {
@@ -10435,11 +10435,8 @@ async function finalizePendingReferral() {
 
 async function showBlockedUsers() {
     closeHamburgerMenu();
-    console.log('🎬 showBlockedUsers вызвана');
     const container = document.getElementById('blockedUsersContainer');
-    console.log('📦 Контейнер найден:', container);
     showScreen('blockedUsers');
-    console.log('🖼️ Экран переключен на blockedUsers');
     
     container.innerHTML = `
         <div class="loading-spinner">
@@ -10447,7 +10444,6 @@ async function showBlockedUsers() {
             <p>Загрузка...</p>
         </div>
     `;
-    console.log('⏳ Показан спиннер загрузки');
     
     try {
         const userId = getCurrentUserId();
@@ -10464,7 +10460,6 @@ async function showBlockedUsers() {
         }
         
         const userToken = localStorage.getItem('user_token') || userId;
-        console.log('🔍 Запрос заблокированных для userToken:', userToken);
         
         const response = await fetch('/api/user-blocks', {
             method: 'POST',
@@ -10476,7 +10471,6 @@ async function showBlockedUsers() {
         });
         
         const result = await response.json();
-        console.log('📦 Полный ответ API:', result);
         
         if (result.error) {
             container.innerHTML = `
@@ -10490,11 +10484,8 @@ async function showBlockedUsers() {
         }
         
         const blockedUsers = result.data || [];
-        console.log('🚫 Заблокированные пользователей:', blockedUsers);
-        console.log('📏 Длина массива:', blockedUsers.length);
         
         if (blockedUsers.length === 0) {
-            console.log('✅ Показываю empty-state для пустого списка');
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="neon-icon">✅</div>
@@ -10502,10 +10493,6 @@ async function showBlockedUsers() {
                     <p>У вас нет заблокированных пользователей</p>
                 </div>
             `;
-            console.log('📄 HTML установлен:', container.innerHTML);
-            const blockedScreen = document.getElementById('blockedUsers');
-            console.log('🖼️ Экран blockedUsers имеет класс active?', blockedScreen.classList.contains('active'));
-            console.log('🎨 Все классы экрана:', blockedScreen.className);
             return;
         }
         
