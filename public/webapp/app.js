@@ -8655,9 +8655,14 @@ function formatMessageTime(dateString) {
 // Форматирование даты создания анкеты (день.месяц.год, часы:минуты)
 function formatCreatedAt(dateString) {
     if (!dateString) return '—';
-    const d = new Date(dateString);
+    
+    // Сервер возвращает timestamp уже в Asia/Almaty (без timezone info)
+    // Формат: "2025-11-23T20:15:30.123" (без Z)
+    // Парсим как локальное время
+    const d = new Date(dateString.replace('Z', '')); // убираем Z если есть
     if (isNaN(d.getTime())) return '—';
-    const datePart = d.toLocaleDateString('ru-RU'); // уже в формате DD.MM.YYYY
+    
+    const datePart = d.toLocaleDateString('ru-RU'); 
     const timePart = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     return `${datePart}, ${timePart}`;
 }
