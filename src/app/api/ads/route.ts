@@ -226,30 +226,27 @@ export async function POST(req: NextRequest) {
         `;
       }
       
-      let limitsResult = await sql`
-        SELECT ads_created_today, ads_last_reset FROM user_limits WHERE user_id = ${userId}
+      // Получаем лимиты и автоматически сбрасываем если новый день (используем PostgreSQL timezone)
+      const limitsResult = await sql`
+        WITH current_almaty_date AS (
+          SELECT (NOW() AT TIME ZONE 'Asia/Almaty')::date as today
+        )
+        UPDATE user_limits
+        SET 
+          ads_created_today = CASE 
+            WHEN ads_last_reset < (SELECT today FROM current_almaty_date) THEN 0 
+            ELSE ads_created_today 
+          END,
+          ads_last_reset = CASE 
+            WHEN ads_last_reset < (SELECT today FROM current_almaty_date) THEN (SELECT today FROM current_almaty_date)
+            ELSE ads_last_reset 
+          END,
+          updated_at = NOW()
+        WHERE user_id = ${userId}
+        RETURNING ads_created_today, ads_last_reset
       `;
       
-      // Проверяем и сбрасываем счетчик если новый день (АЛМАТЫ UTC+5)
-      const nowUTC = new Date();
-      const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
-      const currentDate = almatyDate.toISOString().split('T')[0];
-      const lastResetDate = limitsResult.rows[0]?.ads_last_reset ? new Date(limitsResult.rows[0].ads_last_reset).toISOString().split('T')[0] : null;
-      
-      if (lastResetDate !== currentDate) {
-        console.log('[ADS API] Сброс счетчика объявлений (новый день):', { userId, lastResetDate, currentDate });
-        await sql`
-          UPDATE user_limits
-          SET ads_created_today = 0,
-              ads_last_reset = ${currentDate}::date,
-              updated_at = NOW()
-          WHERE user_id = ${userId}
-        `;
-        // Перезагружаем актуальные данные после сброса
-        limitsResult = await sql`
-          SELECT ads_created_today, ads_last_reset FROM user_limits WHERE user_id = ${userId}
-        `;
-      }
+      console.log('[ADS API] Лимиты после проверки даты:', limitsResult.rows[0]);
       
       let isPremium = false;
       
@@ -290,11 +287,14 @@ export async function POST(req: NextRequest) {
       }
       
       const adsToday = limitsResult.rows[0]?.ads_created_today || 0;
+      const lastReset = limitsResult.rows[0]?.ads_last_reset;
       const maxAds = isPremium ? 3 : 1;
+      
+      console.log('[ADS API] Проверка лимита:', { userId, adsToday, maxAds, isPremium, lastReset });
       
       // Проверяем лимит
       if (adsToday >= maxAds) {
-        console.log("[ADS API] Лимит превышен: ads_today=" + adsToday + ", max=" + maxAds);
+        console.log("[ADS API] ❌ Лимит превышен: ads_today=" + adsToday + ", max=" + maxAds);
         return NextResponse.json(
           { 
             success: false, 
@@ -307,6 +307,8 @@ export async function POST(req: NextRequest) {
           { status: 429 }
         );
       }
+      
+      console.log('[ADS API] ✅ Лимит в порядке, создаём анкету:', { adsToday, maxAds });
     }
 
     // Ограничение на количество объявлений для веб-пользователей (без tgId) - АЛМАТЫ UTC+5
@@ -397,38 +399,28 @@ export async function POST(req: NextRequest) {
 
     const newAd = result.rows[0];
     
-    // Увеличиваем счётчик объявлений - АЛМАТЫ UTC+5
-    const nowUTC = new Date();
-    const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
-    const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
-    
+    // Увеличиваем счётчик объявлений (используем PostgreSQL timezone Asia/Almaty)
     if (numericTgId !== null) {
       // Telegram пользователь → user_limits
       const userId = numericTgId;
       await sql`
         INSERT INTO user_limits (user_id, ads_created_today, ads_last_reset)
-        VALUES (${userId}, 1, ${currentAlmatyDate}::date)
+        VALUES (${userId}, 1, (NOW() AT TIME ZONE 'Asia/Almaty')::date)
         ON CONFLICT (user_id) DO UPDATE
-        SET ads_created_today = CASE
-            WHEN user_limits.ads_last_reset::text < ${currentAlmatyDate} THEN 1
-            ELSE user_limits.ads_created_today + 1
-          END,
-          ads_last_reset = ${currentAlmatyDate}::date,
-          updated_at = NOW()
+        SET ads_created_today = user_limits.ads_created_today + 1,
+            updated_at = NOW()
       `;
+      console.log('[ADS API] Счётчик увеличен для user_id:', userId);
     } else if (finalUserToken) {
       // Web пользователь → web_user_limits
       await sql`
         INSERT INTO web_user_limits (user_token, ads_created_today, ads_last_reset)
-        VALUES (${finalUserToken}, 1, ${currentAlmatyDate}::date)
+        VALUES (${finalUserToken}, 1, (NOW() AT TIME ZONE 'Asia/Almaty')::date)
         ON CONFLICT (user_token) DO UPDATE
-        SET ads_created_today = CASE
-            WHEN web_user_limits.ads_last_reset::text < ${currentAlmatyDate} THEN 1
-            ELSE web_user_limits.ads_created_today + 1
-          END,
-          ads_last_reset = ${currentAlmatyDate}::date,
-          updated_at = NOW()
+        SET ads_created_today = web_user_limits.ads_created_today + 1,
+            updated_at = NOW()
       `;
+      console.log('[ADS API] Счётчик увеличен для user_token');
     }
     
     console.log("[ADS API] Объявление создано, ID:", newAd.id);
