@@ -1331,11 +1331,20 @@ async function initializeNickname() {
     
     // Проверяем реальный никнейм в БД через API
     const tgId = tg?.initDataUnsafe?.user?.id;
+    const userToken = localStorage.getItem('user_token');
     let realNickname = null;
     
-    if (tgId) {
+    // Если есть tgId или userToken - проверяем никнейм в БД
+    if (tgId || userToken) {
         try {
-            const response = await fetch(`/api/users?tgId=${tgId}`);
+            let url = '/api/users?';
+            if (tgId) {
+                url += `tgId=${tgId}`;
+            } else if (userToken) {
+                url += `userToken=${userToken}`;
+            }
+            
+            const response = await fetch(url);
             const result = await response.json();
             
             if (result.success && result.displayNickname) {
