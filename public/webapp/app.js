@@ -10435,8 +10435,11 @@ async function finalizePendingReferral() {
 
 async function showBlockedUsers() {
     closeHamburgerMenu();
+    console.log('🎬 showBlockedUsers вызвана');
     const container = document.getElementById('blockedUsersContainer');
+    console.log('📦 Контейнер найден:', container);
     showScreen('blockedUsers');
+    console.log('🖼️ Экран переключен на blockedUsers');
     
     container.innerHTML = `
         <div class="loading-spinner">
@@ -10444,6 +10447,7 @@ async function showBlockedUsers() {
             <p>Загрузка...</p>
         </div>
     `;
+    console.log('⏳ Показан спиннер загрузки');
     
     try {
         const userId = getCurrentUserId();
@@ -10499,6 +10503,9 @@ async function showBlockedUsers() {
                 </div>
             `;
             console.log('📄 HTML установлен:', container.innerHTML);
+            const blockedScreen = document.getElementById('blockedUsers');
+            console.log('🖼️ Экран blockedUsers имеет класс active?', blockedScreen.classList.contains('active'));
+            console.log('🎨 Все классы экрана:', blockedScreen.className);
             return;
         }
         
