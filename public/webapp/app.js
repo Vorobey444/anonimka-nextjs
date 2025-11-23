@@ -7671,6 +7671,12 @@ async function loadChatMessages(chatId, silent = false) {
             (scrollContainer.scrollHeight - scrollContainer.scrollTop <= scrollContainer.clientHeight + 50) : 
             true; // При первой загрузке всегда скроллим вниз
         
+        // Сохраняем никнейм оппонента из первого его сообщения
+        const firstOpponentMessage = messages.find(msg => msg.sender_token != myUserId);
+        if (firstOpponentMessage && firstOpponentMessage.sender_nickname) {
+            window.currentOpponentNickname = firstOpponentMessage.sender_nickname;
+        }
+        
         messagesContainer.innerHTML = messages.map(msg => {
             // Сравниваем sender_token с моим токеном/ID
             const isMine = msg.sender_token == myUserId;
@@ -9807,6 +9813,8 @@ async function checkBlockStatus(chatId) {
         // Если токен отсутствует, но есть числовой ID — формируем surrogate
         window.currentOpponentToken = `tg_${currentOpponentId}`;
     }
+    // Сохраняем никнейм собеседника для блокировки
+    window.currentOpponentNickname = chat.sender_nickname || null;
         
         console.log('👤 [checkBlockStatus] Определен собеседник:', {
             isUser1,
@@ -10033,6 +10041,7 @@ async function toggleBlockUser() {
                     params: { 
                         blocker_token: blockerToken, 
                         blocked_token: targetToken,
+                        blocked_nickname: window.currentOpponentNickname || null,
                         chat_id: currentChatId || null
                     }
                 })

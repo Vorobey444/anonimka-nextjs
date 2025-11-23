@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'block-user': {
-        const { blocker_token, blocked_token } = params || {};
+        const { blocker_token, blocked_token, blocked_nickname } = params || {};
         if (!blocker_token || !blocked_token) {
           return NextResponse.json({ error: { message: 'user_token не указан' } }, { status: 400 });
         }
@@ -45,18 +45,32 @@ export async function POST(request: NextRequest) {
         const blockerId = await resolveTgId(blocker_token);
         const blockedId = await resolveTgId(blocked_token);
 
+        // Получаем никнейм если не передан
+        let nickname = blocked_nickname;
+        if (!nickname) {
+          const nicknameResult = await sql`
+            SELECT nickname FROM ads 
+            WHERE user_token = ${blocked_token} 
+            ORDER BY created_at DESC 
+            LIMIT 1
+          `;
+          if (nicknameResult.rows.length > 0) {
+            nickname = nicknameResult.rows[0].nickname;
+          }
+        }
+
         let result: any = { rows: [] };
         if (schema.hasToken && schema.hasIds && blockerId && blockedId) {
           result = await sql`
-            INSERT INTO user_blocks (blocker_id, blocked_id, blocker_token, blocked_token, created_at)
-            VALUES (${blockerId}, ${blockedId}, ${blocker_token}, ${blocked_token}, NOW())
+            INSERT INTO user_blocks (blocker_id, blocked_id, blocker_token, blocked_token, blocked_nickname, created_at)
+            VALUES (${blockerId}, ${blockedId}, ${blocker_token}, ${blocked_token}, ${nickname || 'Неизвестный'}, NOW())
             ON CONFLICT DO NOTHING
             RETURNING *
           `;
         } else if (schema.hasToken) {
           result = await sql`
-            INSERT INTO user_blocks (blocker_token, blocked_token, created_at)
-            VALUES (${blocker_token}, ${blocked_token}, NOW())
+            INSERT INTO user_blocks (blocker_token, blocked_token, blocked_nickname, created_at)
+            VALUES (${blocker_token}, ${blocked_token}, ${nickname || 'Неизвестный'}, NOW())
             ON CONFLICT DO NOTHING
             RETURNING *
           `;
@@ -249,17 +263,22 @@ export async function POST(request: NextRequest) {
 
         if (schema.hasToken) {
           const list = await sql`
-            SELECT blocked_token, created_at AS blocked_at
+            SELECT blocked_token, blocked_nickname, created_at AS blocked_at
             FROM user_blocks
             WHERE blocker_token = ${user_token}
             ORDER BY created_at DESC
           `;
           const enriched = await Promise.all(list.rows.map(async (row: any) => {
-            const nickRes = await sql`SELECT nickname FROM ads WHERE user_token = ${row.blocked_token} ORDER BY created_at DESC LIMIT 1`;
+            // Используем сохраненный blocked_nickname, если он пустой - ищем в ads
+            let nickname = row.blocked_nickname;
+            if (!nickname) {
+              const nickRes = await sql`SELECT nickname FROM ads WHERE user_token = ${row.blocked_token} ORDER BY created_at DESC LIMIT 1`;
+              nickname = nickRes.rows[0]?.nickname || 'Собеседник';
+            }
             return {
               blocked_token: row.blocked_token,
               blocked_at: row.blocked_at,
-              nickname: nickRes.rows[0]?.nickname || 'Собеседник'
+              nickname: nickname
             };
           }));
           return NextResponse.json({ data: enriched, error: null });
