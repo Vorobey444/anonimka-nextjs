@@ -523,24 +523,22 @@ async function initializeUserInDatabase() {
                 localStorage.setItem('user_token', result.userToken);
                 console.log('✅ Пользователь инициализирован, токен получен');
                 
-                // Всегда подтягиваем никнейм из БД и, если он отличается, синхронизируем локально (сервер — источник истины)
+                // Всегда подтягиваем никнейм из БД и синхронизируем локально (сервер — источник истины)
                 try {
                     const resp2 = await fetch(`/api/users?tgId=${userId}`);
                     const data2 = await resp2.json();
                     if (data2?.success && data2.displayNickname) {
-                        const local1 = localStorage.getItem('userNickname');
-                        const local2 = localStorage.getItem('user_nickname');
-                        const localNick = local1 || local2;
-                        if (localNick !== data2.displayNickname) {
-                            localStorage.setItem('userNickname', data2.displayNickname);
-                            localStorage.setItem('user_nickname', data2.displayNickname);
-                            console.log('🔄 Никнейм синхронизирован из БД:', data2.displayNickname);
-                            // Обновим UI, если открыта страница редактирования
-                            const currentNicknameDisplay = document.getElementById('currentNicknameDisplay');
-                            if (currentNicknameDisplay) currentNicknameDisplay.textContent = data2.displayNickname;
-                            const nicknameInputPage = document.getElementById('nicknameInputPage');
-                            if (nicknameInputPage) nicknameInputPage.value = data2.displayNickname;
-                        }
+                        // ВСЕГДА синхронизируем никнейм из БД
+                        localStorage.setItem('userNickname', data2.displayNickname);
+                        localStorage.setItem('user_nickname', data2.displayNickname);
+                        console.log('🔄 Никнейм синхронизирован из БД:', data2.displayNickname);
+                        // Обновим UI, если открыта страница редактирования
+                        const currentNicknameDisplay = document.getElementById('currentNicknameDisplay');
+                        if (currentNicknameDisplay) currentNicknameDisplay.textContent = data2.displayNickname;
+                        const nicknameInputPage = document.getElementById('nicknameInputPage');
+                        if (nicknameInputPage) nicknameInputPage.value = data2.displayNickname;
+                    } else {
+                        console.log('ℹ️ Никнейм не найден в БД');
                     }
                 } catch (e) {
                     console.warn('Не удалось подтянуть никнейм из БД:', e);
@@ -1327,10 +1325,12 @@ async function initializeNickname() {
     
     // Проверяем сохранённый никнейм в localStorage
     const savedNickname = localStorage.getItem('user_nickname') || localStorage.getItem('userNickname');
+    console.log('🔍 [DEBUG] savedNickname:', savedNickname);
     
     // Проверяем реальный никнейм в БД через API
     const tgId = tg?.initDataUnsafe?.user?.id;
     const userToken = localStorage.getItem('user_token');
+    console.log('🔍 [DEBUG] tgId:', tgId, 'userToken:', userToken ? 'есть' : 'нет');
     let realNickname = null;
     
     // Если есть tgId или userToken - проверяем никнейм в БД
@@ -1343,8 +1343,10 @@ async function initializeNickname() {
                 url += `userToken=${userToken}`;
             }
             
+            console.log('🔍 [DEBUG] Запрос к API:', url);
             const response = await fetch(url);
             const result = await response.json();
+            console.log('🔍 [DEBUG] Ответ API:', result);
             
             if (result.success && result.displayNickname) {
                 realNickname = result.displayNickname;
@@ -1358,6 +1360,7 @@ async function initializeNickname() {
     }
     
     // Если никнейма нет ни в БД, ни в localStorage - показываем модальное окно
+    console.log('🔍 [DEBUG] Проверка условия: realNickname=', realNickname, 'savedNickname=', savedNickname);
     if (!realNickname && (!savedNickname || savedNickname === 'Аноним')) {
         console.log('⚠️ Никнейм не установлен - показываем обязательное модальное окно');
         showRequiredNicknameModal();
