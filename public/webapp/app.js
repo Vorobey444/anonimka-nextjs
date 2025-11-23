@@ -8656,10 +8656,9 @@ function formatMessageTime(dateString) {
 function formatCreatedAt(dateString) {
     if (!dateString) return '—';
     
-    // Сервер возвращает timestamp уже в Asia/Almaty (без timezone info)
-    // Формат: "2025-11-23T20:15:30.123" (без Z)
-    // Парсим как локальное время
-    const d = new Date(dateString.replace('Z', '')); // убираем Z если есть
+    // БД хранит timestamp в UTC (с timezone info)
+    // JavaScript автоматически конвертирует в часовой пояс пользователя
+    const d = new Date(dateString);
     if (isNaN(d.getTime())) return '—';
     
     const datePart = d.toLocaleDateString('ru-RU'); 
