@@ -145,11 +145,25 @@ export async function POST(request: NextRequest) {
         // Определяем получателя (токен)
         const receiverToken = chat.user_token_1 == senderId ? chat.user_token_2 : chat.user_token_1;
         
-        // Получаем tg_id получателя для уведомлений (из таблицы ads по токену)
-        const receiverInfo = await sql`
-          SELECT tg_id FROM ads WHERE user_token = ${receiverToken} ORDER BY created_at DESC LIMIT 1
+        // Получаем tg_id получателя для уведомлений
+        // Сначала пробуем из таблицы users (приоритет)
+        let receiverId = null;
+        const userInfo = await sql`
+          SELECT id as tg_id FROM users WHERE user_token = ${receiverToken} LIMIT 1
         `;
-        const receiverId = receiverInfo.rows[0]?.tg_id || null;
+        if (userInfo.rows.length > 0 && userInfo.rows[0].tg_id) {
+          receiverId = userInfo.rows[0].tg_id;
+          console.log('[MESSAGES] tg_id получателя найден в users:', receiverId);
+        } else {
+          // Если нет в users, пробуем из ads (fallback)
+          const adsInfo = await sql`
+            SELECT tg_id FROM ads WHERE user_token = ${receiverToken} ORDER BY created_at DESC LIMIT 1
+          `;
+          if (adsInfo.rows.length > 0 && adsInfo.rows[0].tg_id) {
+            receiverId = adsInfo.rows[0].tg_id;
+            console.log('[MESSAGES] tg_id получателя найден в ads:', receiverId);
+          }
+        }
         
         console.log('[MESSAGES] Получатель сообщения:', {
           receiverToken: receiverToken?.substring(0, 10) + '...',
