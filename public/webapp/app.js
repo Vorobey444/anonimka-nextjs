@@ -1326,14 +1326,130 @@ function checkTelegramAuth() {
 function initializeNickname() {
     console.log('🎭 Инициализация никнейма...');
     
-    // Проверяем сохранённый никнейм, если нет - устанавливаем "Аноним"
-    const savedNickname = localStorage.getItem('user_nickname');
+    // Проверяем сохранённый никнейм
+    const savedNickname = localStorage.getItem('user_nickname') || localStorage.getItem('userNickname');
     
-    if (!savedNickname) {
-        localStorage.setItem('user_nickname', 'Аноним');
-        console.log('✅ Установлен никнейм по умолчанию: Аноним');
+    // Если никнейма нет или он "Аноним" - показываем ОБЯЗАТЕЛЬНОЕ модальное окно
+    if (!savedNickname || savedNickname === 'Аноним') {
+        console.log('⚠️ Никнейм не установлен или стоит "Аноним" - показываем обязательное модальное окно');
+        showRequiredNicknameModal();
     } else {
         console.log('✅ Загружен сохранённый никнейм:', savedNickname);
+    }
+}
+
+// Показать обязательное модальное окно выбора никнейма
+function showRequiredNicknameModal() {
+    const modal = document.getElementById('requiredNicknameModal');
+    const input = document.getElementById('requiredNicknameInput');
+    const errorDiv = document.getElementById('nicknameError');
+    
+    if (modal) {
+        modal.style.display = 'flex';
+        errorDiv.style.display = 'none';
+        
+        // Фокус на input после анимации
+        setTimeout(() => {
+            if (input) input.focus();
+        }, 300);
+        
+        // Блокируем закрытие модалки (нельзя закрыть пока не выберет никнейм)
+        modal.onclick = (e) => {
+            // Не даём закрыть по клику на overlay
+            e.stopPropagation();
+        };
+    }
+}
+
+// Сохранить никнейм из обязательного модального окна
+async function saveRequiredNickname() {
+    const input = document.getElementById('requiredNicknameInput');
+    const errorDiv = document.getElementById('nicknameError');
+    const errorText = errorDiv.querySelector('p');
+    
+    let nickname = input.value.trim();
+    
+    if (!nickname) {
+        errorDiv.style.display = 'block';
+        errorText.textContent = '❌ Никнейм не может быть пустым';
+        return;
+    }
+    
+    if (nickname === 'Аноним') {
+        errorDiv.style.display = 'block';
+        errorText.textContent = '❌ Выберите уникальный никнейм (не "Аноним")';
+        return;
+    }
+    
+    // Получаем tgId
+    let tgId = null;
+    if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+        tgId = Number(window.Telegram.WebApp.initDataUnsafe.user.id);
+    } else {
+        const savedUserJson = localStorage.getItem('telegram_user');
+        if (savedUserJson) {
+            try {
+                const u = JSON.parse(savedUserJson);
+                if (u?.id) tgId = Number(u.id);
+            } catch (e) {}
+        }
+    }
+    
+    if (!tgId) {
+        errorDiv.style.display = 'block';
+        errorText.textContent = '❌ Не удалось получить ваш Telegram ID';
+        return;
+    }
+    
+    try {
+        // Вызываем API для сохранения никнейма
+        const response = await fetch('/api/nickname', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                tgId: tgId, 
+                nickname: nickname 
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+            let errorMessage = result.error || 'Неизвестная ошибка';
+            
+            if (result.code === 'NICKNAME_TAKEN') {
+                errorMessage = '❌ Этот никнейм уже занят. Выберите другой.';
+            } else if (result.code === 'INVALID_NICKNAME') {
+                errorMessage = '❌ Никнейм может содержать только буквы (рус/eng), цифры, _ и -';
+            }
+            
+            errorDiv.style.display = 'block';
+            errorText.textContent = errorMessage;
+            return;
+        }
+        
+        // Успешно сохранено
+        localStorage.setItem('user_nickname', nickname);
+        localStorage.setItem('userNickname', nickname);
+        console.log('✅ Никнейм успешно сохранён:', nickname);
+        
+        // Закрываем модальное окно
+        const modal = document.getElementById('requiredNicknameModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        
+        // Показываем уведомление
+        if (isTelegramWebApp) {
+            tg.showAlert('✅ Никнейм успешно установлен!');
+        } else {
+            alert('✅ Никнейм успешно установлен!');
+        }
+        
+    } catch (error) {
+        console.error('❌ Ошибка при сохранении никнейма:', error);
+        errorDiv.style.display = 'block';
+        errorText.textContent = '❌ Ошибка сервера. Попробуйте ещё раз.';
     }
 }
 
