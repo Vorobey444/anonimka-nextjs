@@ -1353,14 +1353,12 @@ async function showRequiredNicknameModal() {
     
     try {
         // Проверяем через API, согласился ли пользователь с правилами
-        const response = await fetch('/api/onboarding', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'check-agreed',
-                userToken: userToken,
-                tgId: tgId
-            })
+        const params = new URLSearchParams();
+        if (userToken) params.append('userToken', userToken);
+        if (tgId) params.append('tgId', tgId);
+        
+        const response = await fetch(`/api/onboarding?${params.toString()}`, {
+            method: 'GET'
         });
         
         const result = await response.json();
@@ -1482,17 +1480,17 @@ async function saveRequiredNickname() {
         if (termsSection && termsSection.style.display !== 'none') {
             try {
                 const userToken = localStorage.getItem('user_token');
-                await fetch('/api/onboarding', {
+                const response = await fetch('/api/onboarding', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        action: 'agree',
                         userToken: userToken,
                         tgId: tgId,
                         agreed: true
                     })
                 });
-                console.log('✅ Согласие с правилами сохранено');
+                const termsResult = await response.json();
+                console.log('✅ Согласие с правилами сохранено:', termsResult);
             } catch (termsError) {
                 console.error('⚠️ Ошибка при сохранении согласия:', termsError);
                 // Не критично, продолжаем
