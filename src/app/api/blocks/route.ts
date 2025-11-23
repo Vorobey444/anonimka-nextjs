@@ -60,12 +60,12 @@ export async function POST(request: NextRequest) {
           } else {
             // Если нет в ads, пробуем из users
             const userNickname = await sql`
-              SELECT nickname FROM users 
+              SELECT display_nickname FROM users 
               WHERE user_token = ${blocked_token} 
               LIMIT 1
             `;
-            if (userNickname.rows.length > 0 && userNickname.rows[0].nickname) {
-              nickname = userNickname.rows[0].nickname;
+            if (userNickname.rows.length > 0 && userNickname.rows[0].display_nickname) {
+              nickname = userNickname.rows[0].display_nickname;
             }
           }
         }
@@ -287,8 +287,8 @@ export async function POST(request: NextRequest) {
               if (adsNick.rows[0]?.nickname) {
                 nickname = adsNick.rows[0].nickname;
               } else {
-                const userNick = await sql`SELECT nickname FROM users WHERE user_token = ${row.blocked_token} LIMIT 1`;
-                nickname = userNick.rows[0]?.nickname || 'Собеседник';
+                const userNick = await sql`SELECT display_nickname FROM users WHERE user_token = ${row.blocked_token} LIMIT 1`;
+                nickname = userNick.rows[0]?.display_nickname || 'Собеседник';
               }
             }
             return {
