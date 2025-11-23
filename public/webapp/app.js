@@ -757,6 +757,7 @@ function initializeApp() {
                 })
                 .then(() => {
                     console.log('✅ finalizePendingReferral завершён');
+                    console.log('🔄 Начинаем вызов initializeNickname...');
                     // После полной инициализации проверяем никнейм
                     return initializeNickname();
                 })
@@ -765,6 +766,7 @@ function initializeApp() {
                 })
                 .catch(e => {
                     console.error('❌ Ошибка цепочки инициализации:', e);
+                    console.error('❌ Stack trace:', e.stack);
                 });
         } catch (e) {
             console.error('❌ Ошибка запуска инициализации:', e);
@@ -1040,7 +1042,19 @@ async function loadSiteStats() {
     try {
         // Проверяем is_admin только один раз при первой загрузке
         if (!adminCheckCompleted) {
-            const userId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
+            // Получаем userId так же как в initializeUserInDatabase
+            let userId = tg?.initDataUnsafe?.user?.id;
+            if (!userId) {
+                const savedUser = localStorage.getItem('telegram_user');
+                if (savedUser) {
+                    try {
+                        const userData = JSON.parse(savedUser);
+                        userId = userData?.id;
+                    } catch (e) {
+                        console.warn('[ADMIN STATS] Ошибка парсинга telegram_user:', e);
+                    }
+                }
+            }
             console.log('[ADMIN STATS] Проверка админа для user_id:', userId);
             
             if (userId) {
