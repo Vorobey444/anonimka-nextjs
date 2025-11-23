@@ -10472,6 +10472,7 @@ async function showBlockedUsers() {
         });
         
         const result = await response.json();
+        console.log('📦 Полный ответ API:', result);
         
         if (result.error) {
             container.innerHTML = `

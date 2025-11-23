@@ -120,6 +120,7 @@ async function getBlockedUsers(params: {
             data: result.rows 
         });
     } catch (error: any) {
+        console.error('❌ Ошибка при запросе user_blocks:', error.message);
         // Если поле blocked_nickname не существует, делаем запрос без него
         console.log('Fallback: blocked_nickname поле не найдено, используем базовый запрос');
         
