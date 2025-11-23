@@ -10460,6 +10460,7 @@ async function showBlockedUsers() {
         }
         
         const userToken = localStorage.getItem('user_token') || userId;
+        console.log('🔍 Запрос заблокированных для userToken:', userToken);
         
         const response = await fetch('/api/user-blocks', {
             method: 'POST',

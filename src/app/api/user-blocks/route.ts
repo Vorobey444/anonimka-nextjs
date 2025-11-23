@@ -102,6 +102,8 @@ async function getBlockedUsers(params: {
 }) {
     const { userToken } = params;
 
+    console.log('🔍 getBlockedUsers вызван для userToken:', userToken);
+
     try {
         // Пробуем с полем blocked_nickname
         const result = await sql`
@@ -110,6 +112,8 @@ async function getBlockedUsers(params: {
             WHERE blocker_token = ${userToken}
             ORDER BY created_at DESC
         `;
+
+        console.log('📊 Найдено заблокированных пользователей:', result.rows.length);
 
         return NextResponse.json({ 
             success: true, 
