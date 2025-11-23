@@ -68,13 +68,9 @@ export async function POST(request: NextRequest) {
     }
     
     if (!telegramUserId) {
-      console.log('⚠️ Uploading photo without sending to Telegram (no tg_id found)');
-      // Для web-only пользователей: просто сохраняем файл локально
-      // TODO: implement file storage (e.g., Vercel Blob, AWS S3)
-      return NextResponse.json(
-        { error: { message: 'Photo upload for web-only users not yet implemented' } },
-        { status: 501 }
-      );
+      console.log('⚠️ Web-only user detected, using token as identifier');
+      // Для web-only пользователей используем токен вместо tg_id
+      telegramUserId = userId.substring(0, 12); // Укороченный токен для подписи
     }
     
     // Конвертируем File в Buffer
