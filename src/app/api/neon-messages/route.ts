@@ -154,8 +154,13 @@ export async function POST(request: NextRequest) {
         console.log('[MESSAGES] Получатель сообщения:', {
           receiverToken: receiverToken?.substring(0, 10) + '...',
           receiverId,
-          hasReceiverTgId: !!receiverId
+          hasReceiverTgId: !!receiverId,
+          isWebUser: !receiverId
         });
+        
+        if (!receiverId) {
+          console.log('[MESSAGES] ⚠️ Получатель - веб-пользователь (нет tg_id), уведомление в Telegram невозможно');
+        }
         
         // Используем переданный nickname или дефолтный
         const nickname = senderNickname || 'Анонимный';
