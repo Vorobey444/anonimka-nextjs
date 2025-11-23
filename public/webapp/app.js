@@ -1396,23 +1396,29 @@ async function showRequiredNicknameModal() {
     
     let needsTermsAgreement = false;
     
-    try {
-        // Проверяем через API, согласился ли пользователь с правилами
-        const params = new URLSearchParams();
-        if (userToken) params.append('userToken', userToken);
-        if (tgId) params.append('tgId', tgId);
-        
-        const response = await fetch(`/api/onboarding?${params.toString()}`, {
-            method: 'GET'
-        });
-        
-        const result = await response.json();
-        needsTermsAgreement = !result.agreed; // Если ещё не согласился - показываем
-        
-        console.log('📋 Проверка согласия с правилами:', needsTermsAgreement ? 'Нужно показать' : 'Уже принято');
-    } catch (error) {
-        console.error('Ошибка проверки согласия:', error);
-        needsTermsAgreement = true; // На всякий случай показываем
+    // Если нет ни userToken, ни tgId - не делаем запрос (пользователь еще не инициализирован)
+    if (userToken || tgId) {
+        try {
+            // Проверяем через API, согласился ли пользователь с правилами
+            const params = new URLSearchParams();
+            if (userToken) params.append('userToken', userToken);
+            if (tgId) params.append('tgId', tgId);
+            
+            const response = await fetch(`/api/onboarding?${params.toString()}`, {
+                method: 'GET'
+            });
+            
+            const result = await response.json();
+            needsTermsAgreement = !result.agreed; // Если ещё не согласился - показываем
+            
+            console.log('📋 Проверка согласия с правилами:', needsTermsAgreement ? 'Нужно показать' : 'Уже принято');
+        } catch (error) {
+            console.error('Ошибка проверки согласия:', error);
+            needsTermsAgreement = true; // На всякий случай показываем
+        }
+    } else {
+        console.log('⚠️ userToken и tgId не найдены, пропускаем проверку согласия');
+        needsTermsAgreement = true; // Для новых пользователей показываем
     }
     
     if (modal) {
