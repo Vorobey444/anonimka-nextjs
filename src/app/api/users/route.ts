@@ -170,6 +170,21 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Получить только заблокированных пользователей
+    if (action === 'get-blocked') {
+      const result = await sql`
+        SELECT id, bot_blocked_at FROM users 
+        WHERE is_bot_blocked = true 
+        ORDER BY bot_blocked_at DESC
+      `;
+
+      return NextResponse.json({
+        success: true,
+        users: result.rows,
+        count: result.rows.length
+      });
+    }
+
     let displayNickname: string | null = null;
 
     if (tgIdParam) {
