@@ -29,6 +29,14 @@ function getUserFirstName(update: any): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  // ⚠️ WEBHOOK ОТКЛЮЧЕН - бот работает в POLLING режиме на VPS
+  // Этот endpoint больше не используется, чтобы избежать конфликта с polling
+  return NextResponse.json({ 
+    ok: false, 
+    error: 'Webhook disabled - bot runs in polling mode on VPS' 
+  }, { status: 410 }); // 410 Gone
+
+  /* СТАРЫЙ КОД ЗАКОММЕНТИРОВАН
   try {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET; // optional
@@ -120,4 +128,5 @@ export async function POST(request: NextRequest) {
     console.error('[TELEGRAM WEBHOOK ERROR]', error);
     return NextResponse.json({ error: { message: error.message } }, { status: 200 }); // Telegram expects 200
   }
+  */
 }
