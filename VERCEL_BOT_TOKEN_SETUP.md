@@ -16,7 +16,7 @@
 Нажмите кнопку **Add New** и введите:
 
 - **Name (Имя)**: `TELEGRAM_BOT_TOKEN`
-- **Value (Значение)**: `8105244538:AAFosyTcD8uPuwArnYgBO-IVeSThzuxbLhY`
+- **Value (Значение)**: `[YOUR_NEW_TOKEN]` (получите от @BotFather)
 - **Environment (Окружение)**: Выберите все:
   - ✅ Production
   - ✅ Preview  

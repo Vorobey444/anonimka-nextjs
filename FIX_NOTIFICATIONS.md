@@ -26,7 +26,7 @@
 3. Settings → Environment Variables
 4. Добавьте переменную:
    - **Name:** `TELEGRAM_BOT_TOKEN`
-   - **Value:** `8105244538:AAFosyTcD8uPuwArnYgBO-IVeSThzuxbLhY`
+   - **Value:** `[YOUR_TELEGRAM_BOT_TOKEN]`
    - **Environment:** Production, Preview, Development (выберите все)
 5. Save
 

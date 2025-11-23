@@ -13,7 +13,7 @@
 3. **Добавьте переменную:**
    - Click "Add New"
    - **Name:** `TELEGRAM_BOT_TOKEN`
-   - **Value:** `8105244538:AAFosyTcD8uPuwArnYgBO-IVeSThzuxbLhY`
+   - **Value:** `[YOUR_TELEGRAM_BOT_TOKEN]` (получите от @BotFather)
    - **Environments:** ✅ Production ✅ Preview ✅ Development
    - Click "Save"
 
