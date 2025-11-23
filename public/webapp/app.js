@@ -1323,18 +1323,38 @@ function checkTelegramAuth() {
 // ===== ФУНКЦИИ ДЛЯ РАБОТЫ С НИКНЕЙМОМ =====
 
 // Инициализация никнейма при загрузке приложения
-function initializeNickname() {
+async function initializeNickname() {
     console.log('🎭 Инициализация никнейма...');
     
-    // Проверяем сохранённый никнейм
+    // Проверяем сохранённый никнейм в localStorage
     const savedNickname = localStorage.getItem('user_nickname') || localStorage.getItem('userNickname');
     
-    // Если никнейма нет или он "Аноним" - показываем ОБЯЗАТЕЛЬНОЕ модальное окно
-    if (!savedNickname || savedNickname === 'Аноним') {
-        console.log('⚠️ Никнейм не установлен или стоит "Аноним" - показываем обязательное модальное окно');
+    // Проверяем реальный никнейм в БД через API
+    const tgId = tg?.initDataUnsafe?.user?.id;
+    let realNickname = null;
+    
+    if (tgId) {
+        try {
+            const response = await fetch(`/api/users?tgId=${tgId}`);
+            const result = await response.json();
+            
+            if (result.success && result.displayNickname) {
+                realNickname = result.displayNickname;
+                // Синхронизируем с localStorage
+                localStorage.setItem('user_nickname', realNickname);
+                console.log('✅ Загружен никнейм из БД:', realNickname);
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки никнейма из БД:', error);
+        }
+    }
+    
+    // Если никнейма нет ни в БД, ни в localStorage - показываем модальное окно
+    if (!realNickname && (!savedNickname || savedNickname === 'Аноним')) {
+        console.log('⚠️ Никнейм не установлен - показываем обязательное модальное окно');
         showRequiredNicknameModal();
     } else {
-        console.log('✅ Загружен сохранённый никнейм:', savedNickname);
+        console.log('✅ Никнейм уже установлен:', realNickname || savedNickname);
     }
 }
 
