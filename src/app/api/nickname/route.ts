@@ -173,14 +173,17 @@ export async function POST(request: NextRequest) {
     // FREE: 1 смена разрешена (подарок для исправления ошибки при регистрации)
     // PRO: неограниченные смены, но не чаще 1 раза в 24 часа
     
-    if (hasChangedBefore) {
+    // СПЕЦИАЛЬНОЕ ПРАВИЛО: Пользователям с никнеймом "Аноним*" даем 1 бесплатную смену
+    const isAnonymousNickname = existingUser?.display_nickname?.startsWith('Аноним');
+    
+    if (hasChangedBefore && !isAnonymousNickname) {
       if (!isPremium) {
         // FREE пользователи уже использовали свою 1 бесплатную смену
         console.log('[NICKNAME API] ❌ FREE пользователь уже использовал бесплатную смену');
         return NextResponse.json(
           { 
             success: false, 
-            error: 'FREE users can change nickname only ONCE. Upgrade to PRO to change nickname unlimited times (once per 24h).',
+            error: 'Вы уже использовали бесплатную смену никнейма. Оформите PRO для неограниченных смен (раз в 24 часа).',
             code: 'NICKNAME_LOCKED_FREE'
           },
           { status: 403 }

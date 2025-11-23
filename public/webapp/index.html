@@ -798,6 +798,18 @@
                     <div class="nickname-edit-form">
                         <h3>Новый никнейм</h3>
                         <p class="nickname-hint-page">Выберите, как вас будут видеть в анкетах</p>
+                        
+                        <!-- Подсказка для Анонимов -->
+                        <div id="anonymousUserHint" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 16px; margin-bottom: 16px; color: white;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                <span style="font-size: 1.8rem;">🎁</span>
+                                <strong style="font-size: 1.1rem;">Бесплатная смена никнейма!</strong>
+                            </div>
+                            <p style="margin: 0; opacity: 0.95; line-height: 1.5;">
+                                У вас автоматически сгенерированный никнейм. Вы можете <strong>бесплатно изменить</strong> его один раз на любой другой!
+                            </p>
+                        </div>
+                        
                         <div class="nickname-input-wrapper-page">
                             <input type="text" 
                                    id="nicknameInputPage" 

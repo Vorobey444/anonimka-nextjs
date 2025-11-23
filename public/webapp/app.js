@@ -1591,6 +1591,16 @@ function showNicknameEditorScreen() {
         setTimeout(() => nicknameInputPage.focus(), 300);
     }
     
+    // Показываем подсказку для пользователей с автоматическим никнеймом "Аноним*"
+    const anonymousUserHint = document.getElementById('anonymousUserHint');
+    if (anonymousUserHint) {
+        const isAnonymousNickname = savedNickname.startsWith('Аноним');
+        anonymousUserHint.style.display = isAnonymousNickname ? 'block' : 'none';
+        if (isAnonymousNickname) {
+            console.log('🎁 Показываем подсказку о бесплатной смене для "Аноним" пользователя');
+        }
+    }
+    
     // Обновляем текст кнопки использования имени из Telegram
     updateTelegramNameButton();
 }
