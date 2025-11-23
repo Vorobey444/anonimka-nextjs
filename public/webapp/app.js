@@ -8369,9 +8369,7 @@ async function sendMessage() {
                     senderId: userId,
                     messageText: messageText || '📸 Фото',
                     senderNickname,
-                    // Пропускаем уведомление в Telegram если есть фото
-                    // Фото доступны только в WebApp
-                    skipNotification: photoData ? true : false,
+                    skipNotification: false, // Всегда отправляем уведомления
                     photoUrl: photoData?.photo_url || null,
                     telegramFileId: photoData?.file_id || null,
                     replyToMessageId: replyToMessage ? replyToMessage.id : null
