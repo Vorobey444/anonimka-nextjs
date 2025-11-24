@@ -4242,28 +4242,32 @@ async function loadEmailService() {
 }
 
 // Обработка данных от бота
-tg.onEvent('web_app_data_received', function(data) {
-    try {
-        const response = JSON.parse(data);
-        
-        switch(response.action) {
-            case 'adsLoaded':
-                displayAds(response.ads);
-                break;
-            case 'cityAdsLoaded':
-                displayAds(response.ads, response.city);
-                break;
-            case 'adCreated':
-                tg.showAlert('Анкета создана!');
-                showMainMenu();
-                break;
-            default:
-                console.log('Unknown response:', response);
+if (tg && typeof tg.onEvent === 'function') {
+    tg.onEvent('web_app_data_received', function(data) {
+        try {
+            const response = JSON.parse(data);
+            
+            switch(response.action) {
+                case 'adsLoaded':
+                    displayAds(response.ads);
+                    break;
+                case 'cityAdsLoaded':
+                    displayAds(response.ads, response.city);
+                    break;
+                case 'adCreated':
+                    tg.showAlert('Анкета создана!');
+                    showMainMenu();
+                    break;
+                default:
+                    console.log('Unknown response:', response);
+            }
+        } catch (error) {
+            console.error('Error parsing bot data:', error);
         }
-    } catch (error) {
-        console.error('Error parsing bot data:', error);
-    }
-});
+    });
+} else {
+    console.log('Telegram WebApp API not available (crawler/bot detected)');
+}
 
 // Данные локаций
 const locationData = {
