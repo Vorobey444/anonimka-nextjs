@@ -7578,7 +7578,7 @@ async function openChat(chatId) {
         }
 
         // Обновляем заголовок
-        document.getElementById('chatTitle').innerHTML = 'Anonimka.KZ<br><span style="font-size: 0.8em;">Анонимные знакомства</span>';
+        document.getElementById('chatTitle').innerHTML = '<span style="line-height: 1.2;">Anonimka.KZ<br><span style="font-size: 0.8em;">Анонимные знакомства</span></span>';
         const chatAdIdElement = document.getElementById('chatAdId');
         chatAdIdElement.innerHTML = `Чат #${chat.ad_id || 'N/A'} - <span class="view-ad-link" onclick="showAdModal(${chat.ad_id})">Смотреть</span>`;
         
