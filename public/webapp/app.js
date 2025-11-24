@@ -8414,8 +8414,19 @@ async function sendMessage() {
             console.error('Ошибка отправки:', result.error);
             
             // Проверяем если чат не найден или не принят
+            if (result.error.message === 'Chat not accepted yet') {
+                tg.showAlert('⚠️ Собеседник ещё не принял запрос на чат. Дождитесь принятия.');
+                showScreen('chats');
+                return;
+            }
+            if (result.error.message === 'Chat is blocked') {
+                tg.showAlert('⚠️ Чат заблокирован. Отправка сообщений невозможна.');
+                showScreen('chats');
+                return;
+            }
             if (result.error.message === 'Chat not found or not accepted') {
-                tg.showAlert('⚠️ Чат не найден или ещё не принят собеседником. Попробуйте позже.');
+                tg.showAlert('⚠️ Чат не найден или недоступен. Попробуйте позже.');
+                console.log('Chat error details:', result.error.details);
                 showScreen('chats');
                 return;
             }
