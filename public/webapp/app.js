@@ -7586,6 +7586,13 @@ async function openChat(chatId) {
             showMyChats();
             return;
         }
+        
+        // Проверяем статус чата
+        if (chat.accepted === false) {
+            tg.showAlert('⚠️ Собеседник ещё не принял запрос на чат. Дождитесь принятия.');
+            showMyChats();
+            return;
+        }
 
         // Обновляем заголовок
         document.getElementById('chatTitle').innerHTML = '<span style="line-height: 1.2;">Anonimka.KZ<br><span style="font-size: 0.8em;">Анонимные знакомства</span></span>';
@@ -8405,6 +8412,13 @@ async function sendMessage() {
 
         if (result.error) {
             console.error('Ошибка отправки:', result.error);
+            
+            // Проверяем если чат не найден или не принят
+            if (result.error.message === 'Chat not found or not accepted') {
+                tg.showAlert('⚠️ Чат не найден или ещё не принят собеседником. Попробуйте позже.');
+                showScreen('chats');
+                return;
+            }
             
             // Проверяем ошибку лимита
             if (result.error.limit) {
