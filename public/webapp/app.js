@@ -4729,6 +4729,12 @@ function showPopularLocations() {
     const animationDiv = document.querySelector('.detection-animation');
     const resultDiv = document.querySelector('.detection-result');
     
+    // Проверяем существование элементов
+    if (!animationDiv || !resultDiv) {
+        console.error('Location elements not found');
+        return;
+    }
+    
     // Скрываем анимацию
     animationDiv.style.display = 'none';
     

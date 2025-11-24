@@ -247,6 +247,7 @@ export async function POST(request: NextRequest) {
           await sql`
             INSERT INTO users (id, user_token, is_premium)
             VALUES (${numericUserId}, ${token}, false)
+            ON CONFLICT (id) DO NOTHING
           `;
           user = await sql`SELECT * FROM users WHERE id = ${numericUserId}`;
         }
