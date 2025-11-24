@@ -48,25 +48,14 @@ export async function POST(request: NextRequest) {
         // Получаем никнейм если не передан
         let nickname = blocked_nickname;
         if (!nickname) {
-          // Сначала пробуем из ads
-          const adsNickname = await sql`
-            SELECT nickname FROM ads 
+          // Сначала пробуем из users
+          const userNickname = await sql`
+            SELECT display_nickname FROM users 
             WHERE user_token = ${blocked_token} 
-            ORDER BY created_at DESC 
             LIMIT 1
           `;
-          if (adsNickname.rows.length > 0 && adsNickname.rows[0].nickname) {
-            nickname = adsNickname.rows[0].nickname;
-          } else {
-            // Если нет в ads, пробуем из users
-            const userNickname = await sql`
-              SELECT display_nickname FROM users 
-              WHERE user_token = ${blocked_token} 
-              LIMIT 1
-            `;
-            if (userNickname.rows.length > 0 && userNickname.rows[0].display_nickname) {
-              nickname = userNickname.rows[0].display_nickname;
-            }
+          if (userNickname.rows.length > 0 && userNickname.rows[0].display_nickname) {
+            nickname = userNickname.rows[0].display_nickname;
           }
         }
 
@@ -280,16 +269,11 @@ export async function POST(request: NextRequest) {
             ORDER BY created_at DESC
           `;
           const enriched = await Promise.all(list.rows.map(async (row: any) => {
-            // Используем сохраненный blocked_nickname, если он пустой - ищем в ads и users
+            // Используем сохраненный blocked_nickname, если он пустой - ищем в users
             let nickname = row.blocked_nickname;
             if (!nickname) {
-              const adsNick = await sql`SELECT nickname FROM ads WHERE user_token = ${row.blocked_token} ORDER BY created_at DESC LIMIT 1`;
-              if (adsNick.rows[0]?.nickname) {
-                nickname = adsNick.rows[0].nickname;
-              } else {
-                const userNick = await sql`SELECT display_nickname FROM users WHERE user_token = ${row.blocked_token} LIMIT 1`;
-                nickname = userNick.rows[0]?.display_nickname || 'Собеседник';
-              }
+              const userNick = await sql`SELECT display_nickname FROM users WHERE user_token = ${row.blocked_token} LIMIT 1`;
+              nickname = userNick.rows[0]?.display_nickname || 'Собеседник';
             }
             return {
               blocked_token: row.blocked_token,
