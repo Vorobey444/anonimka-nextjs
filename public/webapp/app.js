@@ -2540,7 +2540,12 @@ function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
     });
-    document.getElementById(screenId).classList.add('active');
+    const targetScreen = document.getElementById(screenId);
+    if (!targetScreen) {
+        console.error('Screen not found:', screenId);
+        return;
+    }
+    targetScreen.classList.add('active');
     
     // Управление видимостью переключателя тарифов
     const premiumToggle = document.getElementById('premiumToggle');
@@ -8416,18 +8421,18 @@ async function sendMessage() {
             // Проверяем если чат не найден или не принят
             if (result.error.message === 'Chat not accepted yet') {
                 tg.showAlert('⚠️ Собеседник ещё не принял запрос на чат. Дождитесь принятия.');
-                showScreen('chats');
+                showMyChats();
                 return;
             }
             if (result.error.message === 'Chat is blocked') {
                 tg.showAlert('⚠️ Чат заблокирован. Отправка сообщений невозможна.');
-                showScreen('chats');
+                showMyChats();
                 return;
             }
             if (result.error.message === 'Chat not found or not accepted') {
                 tg.showAlert('⚠️ Чат не найден или недоступен. Попробуйте позже.');
                 console.log('Chat error details:', result.error.details);
-                showScreen('chats');
+                showMyChats();
                 return;
             }
             
