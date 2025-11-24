@@ -7304,7 +7304,7 @@ async function loadMyChats() {
                 return `
                     <div class="chat-card" onclick="openChat('${chat.id}')">
                         <div class="chat-card-header">
-                            <span class="chat-ad-id" onclick="event.stopPropagation(); showAdModal('${chat.ad_id}');">💬 Чат #${chat.ad_id || 'N/A'}</span>
+                            <span class="chat-ad-id" onclick="event.stopPropagation(); showAdModal('${chat.ad_id}');">💬 Чат #${chat.id || 'N/A'}</span>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 ${unreadBadge}
                                 <span class="chat-time">${lastMessageTime}</span>
@@ -7351,7 +7351,7 @@ async function loadMyChats() {
                 return `
                     <div class="chat-request-card">
                         <div class="request-header">
-                            <span class="request-ad-id">📨 Чат #${chat.ad_id || 'N/A'}</span>
+                            <span class="request-ad-id">📨 Чат #${chat.id || 'N/A'}</span>
                             <span class="request-time">${requestTime}</span>
                         </div>
                         <div class="request-message">
@@ -7602,7 +7602,7 @@ async function openChat(chatId) {
         // Обновляем заголовок
         document.getElementById('chatTitle').innerHTML = '<span style="line-height: 1.2;">Anonimka.KZ<br><span style="font-size: 0.8em;">Анонимные знакомства</span></span>';
         const chatAdIdElement = document.getElementById('chatAdId');
-        chatAdIdElement.innerHTML = `Чат #${chat.ad_id || 'N/A'} - <span class="view-ad-link" onclick="showAdModal(${chat.ad_id})">Смотреть</span>`;
+        chatAdIdElement.innerHTML = `Чат #${chat.id || 'N/A'} - <span class="view-ad-link" onclick="showAdModal(${chat.ad_id})">Смотреть анкету</span>`;
         
         // Сохраняем ad_id для использования в других функциях
         currentAdId = chat.ad_id;
