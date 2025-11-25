@@ -1291,24 +1291,25 @@ function checkTelegramAuth() {
     console.log('    - tg.initDataUnsafe?.user:', tg.initDataUnsafe?.user);
     console.log('    - tg.initDataUnsafe?.user?.id:', tg.initDataUnsafe?.user?.id);
     
-    // Проверяем если загружено в Android WebView - показываем модалку с кодом
+    // Проверяем если загружено в Android WebView - работаем в обычном режиме
     const isAndroidWebView = navigator.userAgent.includes('wv') || 
                             (navigator.userAgent.includes('Android') && window.AndroidInterface);
     
     if (isAndroidWebView) {
         console.log('📱 Обнаружен Android WebView');
         
-        // Проверяем есть ли уже авторизация
-        const hasTelegramId = localStorage.getItem('telegram_user');
-        if (hasTelegramId) {
-            console.log('✅ Android пользователь уже авторизован');
-            return true;
+        // Проверяем, показывали ли уже приветственный экран
+        const hasSeenWelcome = localStorage.getItem('android_welcome_shown');
+        
+        if (!hasSeenWelcome) {
+            // Показываем приветственный экран только один раз
+            showAndroidWelcomeScreen();
+            return false; // Блокируем доступ пока не нажмут кнопку
         }
         
-        // Показываем модалку с вводом кода для авторизации
-        console.log('📱 Показываем модалку авторизации через код');
-        showAndroidAuthModal();
-        return false; // Блокируем дальнейшую работу до авторизации
+        // После приветствия - работаем через Telegram WebApp
+        console.log('✅ Android WebView - работаем через Telegram WebApp');
+        return true;
     }
     
     // Если запущено через Telegram WebApp, авторизация автоматическая
@@ -12494,6 +12495,153 @@ function showTelegramLinkNotification() {
     // Показываем модальное окно с инструкцией
     console.log('📱 Показываем модальное окно авторизации для Android');
     showAndroidAuthModal();
+}
+
+// Функция показа приветственного экрана для Android приложения
+function showAndroidWelcomeScreen() {
+    // Создаем overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+        box-sizing: border-box;
+    `;
+
+    const content = document.createElement('div');
+    content.style.cssText = `
+        background: white;
+        border-radius: 24px;
+        padding: 40px 30px;
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        animation: slideUp 0.4s ease-out;
+    `;
+
+    content.innerHTML = `
+        <style>
+            @keyframes slideUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        </style>
+        
+        <div style="font-size: 64px; margin-bottom: 20px;">🎭</div>
+        
+        <h1 style="
+            color: #333;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            line-height: 1.3;
+        ">Добро пожаловать!</h1>
+        
+        <p style="
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 0 0 24px 0;
+        ">
+            Приложение <b style="color: #667eea;">Anonimka</b> работает через Telegram бот для безопасности и удобства
+        </p>
+        
+        <div style="
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: left;
+        ">
+            <p style="
+                color: #555;
+                font-size: 14px;
+                line-height: 1.5;
+                margin: 0;
+            ">
+                💡 <b>Почему так?</b><br>
+                • Авторизация через Telegram - безопасно<br>
+                • Уведомления приходят сразу в Telegram<br>
+                • Доступ с любого устройства<br>
+                • Никаких паролей и регистраций
+            </p>
+        </div>
+        
+        <button id="androidLaunchBtn" style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px 32px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';">
+            🚀 Открыть в Telegram
+        </button>
+        
+        <p style="
+            color: #999;
+            font-size: 12px;
+            margin: 16px 0 0 0;
+            line-height: 1.4;
+        ">
+            После нажатия откроется Telegram бот.<br>
+            Нажмите "Запустить" в боте для авторизации
+        </p>
+    `;
+
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+
+    // Обработчик кнопки
+    document.getElementById('androidLaunchBtn').addEventListener('click', () => {
+        // Сохраняем что показали приветствие
+        localStorage.setItem('android_welcome_shown', 'true');
+        
+        // Открываем Telegram бот
+        window.open('https://t.me/anonimka_kz_bot', '_blank');
+        
+        // Показываем инструкцию
+        content.innerHTML = `
+            <div style="font-size: 48px; margin-bottom: 20px;">✅</div>
+            <h2 style="color: #333; font-size: 24px; margin: 0 0 16px 0;">Отлично!</h2>
+            <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+                Telegram бот открыт в другой вкладке.<br>
+                Нажмите <b>"Запустить"</b> в боте, затем вернитесь сюда
+            </p>
+            <button onclick="window.location.reload()" style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 12px;
+                padding: 14px 28px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+            ">
+                🔄 Я авторизовался, продолжить
+            </button>
+        `;
+    });
 }
 
 function showAndroidAuthModal() {
