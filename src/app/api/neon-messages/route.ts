@@ -163,15 +163,17 @@ export async function POST(request: NextRequest) {
         // Определяем получателя (токен)
         const receiverToken = chat.user_token_1 == senderId ? chat.user_token_2 : chat.user_token_1;
         
-        // Получаем tg_id получателя для уведомлений
+        // Получаем tg_id получателя для уведомлений и проверяем блокировку бота
         // Сначала пробуем из таблицы users (приоритет)
         let receiverId = null;
+        let isBotBlocked = false;
         const userInfo = await sql`
-          SELECT id as tg_id FROM users WHERE user_token = ${receiverToken} LIMIT 1
+          SELECT id as tg_id, is_bot_blocked FROM users WHERE user_token = ${receiverToken} LIMIT 1
         `;
         if (userInfo.rows.length > 0 && userInfo.rows[0].tg_id) {
           receiverId = userInfo.rows[0].tg_id;
-          console.log('[MESSAGES] tg_id получателя найден в users:', receiverId);
+          isBotBlocked = userInfo.rows[0].is_bot_blocked || false;
+          console.log('[MESSAGES] tg_id получателя найден в users:', receiverId, ', bot_blocked:', isBotBlocked);
         } else {
           // Если нет в users, пробуем из ads (fallback)
           const adsInfo = await sql`
@@ -187,11 +189,16 @@ export async function POST(request: NextRequest) {
           receiverToken: receiverToken?.substring(0, 10) + '...',
           receiverId,
           hasReceiverTgId: !!receiverId,
-          isWebUser: !receiverId
+          isWebUser: !receiverId,
+          isBotBlocked
         });
         
         if (!receiverId) {
           console.log('[MESSAGES] ⚠️ Получатель - веб-пользователь (нет tg_id), уведомление в Telegram невозможно');
+        }
+        
+        if (isBotBlocked) {
+          console.log('[MESSAGES] ⚠️ Получатель заблокировал бота - уведомление не будет отправлено');
         }
         
         // Используем переданный nickname или дефолтный
@@ -269,14 +276,15 @@ export async function POST(request: NextRequest) {
           WHERE id = ${chatId}
         `;
         
-        // Отправляем уведомление в Telegram (если не skipNotification и есть tg_id)
+        // Отправляем уведомление в Telegram (если не skipNotification, есть tg_id и бот не заблокирован)
         console.log('[MESSAGES] Проверка условий уведомления:', {
           skipNotification,
           hasReceiverId: !!receiverId,
-          shouldSendNotification: !skipNotification && !!receiverId
+          isBotBlocked,
+          shouldSendNotification: !skipNotification && !!receiverId && !isBotBlocked
         });
         
-        if (!skipNotification && receiverId) {
+        if (!skipNotification && receiverId && !isBotBlocked) {
           const botToken = ENV.TELEGRAM_BOT_TOKEN;
           
           // ВРЕМЕННО ОТКЛЮЧЕНА проверка активности - отправляем уведомления всегда
@@ -326,6 +334,22 @@ export async function POST(request: NextRequest) {
                 
                 if (!telegramResult.ok) {
                   console.error('[MESSAGES] Telegram API ошибка:', telegramResult);
+                  
+                  // Если пользователь заблокировал бота - отмечаем в БД
+                  if (telegramResult.error_code === 403 && 
+                      telegramResult.description?.includes('bot was blocked by the user')) {
+                    console.log('[MESSAGES] Пользователь заблокировал бота, отмечаем в БД:', receiverId);
+                    try {
+                      await sql`
+                        UPDATE users 
+                        SET is_bot_blocked = true, updated_at = NOW()
+                        WHERE id = ${parseInt(receiverId)}
+                      `;
+                      console.log('[MESSAGES] ✅ Пользователь отмечен как заблокировавший бота');
+                    } catch (dbError) {
+                      console.error('[MESSAGES] Ошибка обновления is_bot_blocked:', dbError);
+                    }
+                  }
                 }
               } catch (error) {
                 console.error('[MESSAGES] Ошибка отправки уведомления:', error);
