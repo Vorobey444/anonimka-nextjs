@@ -708,6 +708,17 @@ function createDebugButton() {
     console.log('✅ Debug кнопка создана');
 }
 
+// Утилита для генерации числового ID из строки
+String.prototype.hashCode = function() {
+    let hash = 0;
+    for (let i = 0; i < this.length; i++) {
+        const char = this.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+};
+
 // Данные формы
 let formData = {};
 let currentStep = 1;
@@ -1559,9 +1570,25 @@ async function saveRequiredNickname() {
     }
     
     if (!tgId) {
-        errorDiv.style.display = 'block';
-        errorText.textContent = '❌ Не удалось получить ваш Telegram ID';
-        return;
+        // Для Android WebView генерируем временный ID
+        const isAndroidWebView = navigator.userAgent.includes('wv') || 
+                                (navigator.userAgent.includes('Android') && window.AndroidInterface);
+        
+        if (isAndroidWebView) {
+            const deviceId = localStorage.getItem('android_device_id');
+            if (!deviceId) {
+                const newId = 'android_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('android_device_id', newId);
+                tgId = newId.hashCode();
+            } else {
+                tgId = deviceId.hashCode();
+            }
+            console.log('📱 Сгенерирован временный ID для Android:', tgId);
+        } else {
+            errorDiv.style.display = 'block';
+            errorText.textContent = '❌ Не удалось получить ваш Telegram ID';
+            return;
+        }
     }
     
     try {
@@ -1727,12 +1754,29 @@ async function saveNicknamePage() {
         }
 
         if (!tgIdAuth) {
-            if (isTelegramWebApp) {
-                tg.showAlert('❌ Не удалось получить ваш Telegram ID');
+            // Для Android WebView генерируем временный ID
+            const isAndroidWebView = navigator.userAgent.includes('wv') || 
+                                    (navigator.userAgent.includes('Android') && window.AndroidInterface);
+            
+            if (isAndroidWebView) {
+                // Генерируем стабильный ID на основе device info
+                const deviceId = localStorage.getItem('android_device_id');
+                if (!deviceId) {
+                    const newId = 'android_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('android_device_id', newId);
+                    tgIdAuth = newId.hashCode(); // Преобразуем в число
+                } else {
+                    tgIdAuth = deviceId.hashCode();
+                }
+                console.log('📱 Сгенерирован временный ID для Android:', tgIdAuth);
             } else {
-                alert('❌ Не удалось получить ваш Telegram ID');
+                if (isTelegramWebApp) {
+                    tg.showAlert('❌ Не удалось получить ваш Telegram ID');
+                } else {
+                    alert('❌ Не удалось получить ваш Telegram ID');
+                }
+                return;
             }
-            return;
         }
 
         try {
