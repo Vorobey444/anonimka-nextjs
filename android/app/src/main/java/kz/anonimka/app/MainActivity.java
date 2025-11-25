@@ -1,5 +1,5 @@
-package kz.anonimka.app;
+// package kz.anonimka.app;
 
-import com.getcapacitor.BridgeActivity;
+// import com.getcapacitor.BridgeActivity;
 
-public class MainActivity extends BridgeActivity {}
+// public class MainActivity extends BridgeActivity {}

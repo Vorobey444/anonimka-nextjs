@@ -2156,7 +2156,13 @@ function showTelegramAuthModal() {
         
         // Устанавливаем Deep Link для открытия бота
         const botUsername = 'anonimka_kz_bot';
-        const telegramDeepLink = `https://t.me/${botUsername}?start=${authToken}`;
+        
+        // Определяем находимся ли мы в Android приложении
+        const isAndroidApp = navigator.userAgent.includes('wv') || window.location.protocol === 'file:';
+        
+        // Если в Android приложении - добавляем параметр для возврата
+        const startParam = isAndroidApp ? `${authToken}_app` : authToken;
+        const telegramDeepLink = `https://t.me/${botUsername}?start=${startParam}`;
         
         if (deepLinkButton) {
             deepLinkButton.href = telegramDeepLink;
