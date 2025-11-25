@@ -12572,13 +12572,26 @@ function showAndroidWelcomeScreen() {
             }
         </style>
         
-        <!-- Логотип Анонимки в неоновом стиле -->
+        <!-- Логотип Anonimka -->
         <div style="
-            font-size: 80px;
-            margin-bottom: 24px;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, #8a2be2 0%, #00bfff 100%);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 56px;
+            font-weight: 900;
+            color: white;
             animation: neonGlow 2s ease-in-out infinite;
-            filter: drop-shadow(0 0 20px rgba(138, 43, 226, 0.8));
-        ">🎭</div>
+            box-shadow: 
+                0 0 30px rgba(138, 43, 226, 0.6),
+                0 0 60px rgba(0, 191, 255, 0.4),
+                inset 0 0 20px rgba(255, 255, 255, 0.1);
+            letter-spacing: -2px;
+        ">A</div>
         
         <h1 style="
             background: linear-gradient(135deg, #8a2be2 0%, #00bfff 100%);
@@ -12587,19 +12600,19 @@ function showAndroidWelcomeScreen() {
             background-clip: text;
             font-size: 32px;
             font-weight: 800;
-            margin: 0 0 8px 0;
+            margin: 0 0 4px 0;
             line-height: 1.2;
             text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
-            letter-spacing: 1px;
-        ">Добро пожаловать!</h1>
+            letter-spacing: 0.5px;
+        ">Anonimka.KZ</h1>
         
         <p style="
             color: #a0a0ff;
-            font-size: 15px;
-            font-weight: 500;
+            font-size: 18px;
+            font-weight: 600;
             margin: 0 0 32px 0;
-            line-height: 1.4;
-        ">в Анонимные знакомства</p>
+            line-height: 1.3;
+        ">Анонимные знакомства</p>
         
         <p style="
             color: #c0c0d0;
@@ -12643,7 +12656,7 @@ function showAndroidWelcomeScreen() {
             this.style.transform='translateY(0) scale(1)'; 
             this.style.boxShadow='0 0 20px rgba(138, 43, 226, 0.5), 0 0 40px rgba(0, 191, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.3)';
         ">
-            🚀 Запустить приложение
+            💫 К новым знакомствам
         </button>
         
         <div style="
@@ -12672,8 +12685,8 @@ function showAndroidWelcomeScreen() {
 
     // Обработчик кнопки
     document.getElementById('androidLaunchBtn').addEventListener('click', () => {
-        // Открываем Telegram бот с обычным /start
-        window.location.href = 'https://t.me/anonimka_kz_bot';
+        // Открываем Telegram бот с автоматическим /start
+        window.location.href = 'https://t.me/anonimka_kz_bot?start=android';
     });
 }
 
