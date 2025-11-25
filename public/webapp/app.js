@@ -2198,14 +2198,26 @@ function showTelegramAuthModal() {
         const botUsername = 'anonimka_kz_bot';
         
         // Определяем находимся ли мы в Android приложении
-        const isAndroidApp = navigator.userAgent.includes('wv') || window.location.protocol === 'file:';
+        const isAndroidApp = navigator.userAgent.includes('wv') || 
+                           navigator.userAgent.includes('Android') ||
+                           window.location.protocol === 'file:';
+        
+        console.log('🔍 Debug auth:', {
+            userAgent: navigator.userAgent,
+            protocol: window.location.protocol,
+            isAndroidApp: isAndroidApp,
+            authToken: authToken
+        });
         
         // Если в Android приложении - добавляем параметр для возврата
         const startParam = isAndroidApp ? `${authToken}_app` : authToken;
         const telegramDeepLink = `https://t.me/${botUsername}?start=${startParam}`;
         
+        console.log('🔗 Deep link:', telegramDeepLink);
+        
         if (deepLinkButton) {
             deepLinkButton.href = telegramDeepLink;
+            console.log('✅ Deep link установлен на кнопку');
         }
         
         if (loginWidgetContainer) {
