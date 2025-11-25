@@ -4133,7 +4133,22 @@ async function sendContactMessage(ad, authorToken, currentUserToken, message) {
 
         if (createResult.error) {
             console.error('Error creating chat request:', createResult.error);
-            tg.showAlert('❌ Ошибка при создании запроса на чат: ' + createResult.error.message);
+            
+            // Специальная обработка для лимита запросов
+            if (createResult.error.message === 'LIMIT_REACHED') {
+                tg.showConfirm(
+                    '⚠️ Анкета перегружена запросами\n\n' +
+                    'Эта анкета уже получила максимум запросов, на которые автор еще не ответил.\n\n' +
+                    'Хотите получить PRO и написать автору в любом случае?',
+                    (confirmed) => {
+                        if (confirmed) {
+                            showPremiumModal();
+                        }
+                    }
+                );
+            } else {
+                tg.showAlert('❌ Ошибка при создании запроса на чат: ' + createResult.error.message);
+            }
             return;
         }
 

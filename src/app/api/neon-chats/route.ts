@@ -22,6 +22,41 @@ export async function POST(request: NextRequest) {
 
       case 'create': {
         const { user1_token, user2_token, adId, message } = params;
+        
+        // Проверяем статус premium отправителя
+        const userCheck = await sql`
+          SELECT u.is_premium, u.premium_until
+          FROM users u
+          WHERE u.user_token = ${user1_token}
+          LIMIT 1
+        `;
+        
+        const isPremium = userCheck.rows.length > 0 && 
+                         userCheck.rows[0].is_premium && 
+                         (!userCheck.rows[0].premium_until || new Date(userCheck.rows[0].premium_until) > new Date());
+        
+        // Если не PRO, проверяем лимит входящих запросов на эту конкретную анкету
+        if (!isPremium) {
+          const pendingCount = await sql`
+            SELECT COUNT(*) as count
+            FROM private_chats
+            WHERE ad_id = ${adId}
+              AND accepted = false
+          `;
+          
+          const currentPending = parseInt(pendingCount.rows[0].count);
+          
+          if (currentPending >= 5) {
+            return NextResponse.json({ 
+              data: null, 
+              error: { 
+                message: 'LIMIT_REACHED',
+                details: 'Эта анкета уже получила максимум запросов, на которые автор еще не ответил. Получите PRO, чтобы все равно написать автору.'
+              } 
+            }, { status: 403 });
+          }
+        }
+        
         const result = await sql`
           INSERT INTO private_chats (user_token_1, user_token_2, ad_id, message, accepted)
           VALUES (${user1_token}, ${user2_token}, ${adId}, ${message || ''}, false)
