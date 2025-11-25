@@ -117,6 +117,11 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 swipeRefreshLayout.isRefreshing = false
+                
+                // Если в URL есть параметр authorized - закрываем модалку
+                if (url?.contains("authorized=true") == true) {
+                    handleIntent(intent)
+                }
             }
 
             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
@@ -213,30 +218,49 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        intent?.data?.let { uri ->
-            // Если пришли из Telegram после авторизации
-            if (uri.scheme == "anonimka" || uri.scheme == "tg" || uri.host == "anonimka.kz") {
-                // Инжектим JavaScript для закрытия диалога авторизации
-                webView.postDelayed({
-                    webView.evaluateJavascript("""
-                        (function() {
-                            // Закрываем модальное окно авторизации
-                            var authModal = document.querySelector('.auth-modal');
-                            var closeBtn = document.querySelector('.auth-modal button[onclick*="close"]');
-                            var backdrop = document.querySelector('.modal-backdrop');
-                            
-                            if (closeBtn) closeBtn.click();
-                            if (authModal) authModal.style.display = 'none';
-                            if (backdrop) backdrop.style.display = 'none';
-                            
-                            // Перезагружаем страницу для применения авторизации
-                            setTimeout(function() {
-                                window.location.reload();
-                            }, 300);
-                        })();
-                    """.trimIndent(), null)
-                }, 500)
-            }
+        val data = intent?.data
+        val url = webView.url
+        
+        // Проверяем если пришли из Telegram после авторизации
+        val isFromTelegram = data?.let {
+            it.scheme == "anonimka" || it.scheme == "tg" || it.host == "anonimka.kz"
+        } ?: false
+        
+        // Или если в URL есть параметр authorized=true
+        val isAuthorized = url?.contains("authorized=true") == true
+        
+        if (isFromTelegram || isAuthorized) {
+            // Инжектим JavaScript для закрытия диалога авторизации
+            webView.postDelayed({
+                webView.evaluateJavascript("""
+                    (function() {
+                        console.log('🔄 Обработка возврата из Telegram');
+                        
+                        // Закрываем модальное окно авторизации
+                        var authModal = document.getElementById('telegramAuthModal');
+                        var closeBtn = document.querySelector('.modal-close');
+                        var backdrop = document.querySelector('.modal-overlay');
+                        
+                        if (authModal) {
+                            authModal.style.display = 'none';
+                            console.log('✅ Модальное окно закрыто');
+                        }
+                        if (closeBtn) closeBtn.click();
+                        if (backdrop) backdrop.style.display = 'none';
+                        
+                        // Если в URL есть параметр from_app, очищаем его
+                        if (window.location.href.includes('from_app=')) {
+                            var cleanUrl = window.location.href.split('?')[0];
+                            window.history.replaceState({}, document.title, cleanUrl);
+                        }
+                        
+                        // Перезагружаем страницу для применения авторизации
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 500);
+                    })();
+                """.trimIndent(), null)
+            }, 800)
         }
     }
 
