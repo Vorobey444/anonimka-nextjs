@@ -809,6 +809,13 @@ function initializeApp() {
             console.error('❌ Ошибка updateChatBadge:', e);
         }
         
+        // Показываем уведомление о привязке Telegram для Android пользователей
+        try {
+            showTelegramLinkNotification();
+        } catch (e) {
+            console.error('❌ Ошибка showTelegramLinkNotification:', e);
+        }
+        
         try {
             markMessagesAsDelivered(); // Помечаем сообщения как доставленные
         } catch (e) {
@@ -12466,6 +12473,321 @@ function promptInstallApp() {
                 '3. Подтвердите добавление на рабочий стол'
             );
         }
+    }
+}
+
+// ============= АВТОРИЗАЦИЯ ЧЕРЕЗ КОД ДЛЯ ANDROID =============
+function showTelegramLinkNotification() {
+    // Проверяем если это Android WebView
+    const isAndroidWebView = navigator.userAgent.includes('wv') || 
+                            (navigator.userAgent.includes('Android') && window.AndroidInterface);
+    
+    if (!isAndroidWebView) return;
+    
+    // Проверяем есть ли уже авторизация
+    const hasTelegramId = localStorage.getItem('telegram_user');
+    if (hasTelegramId) return;
+    
+    // Показываем модальное окно с инструкцией
+    console.log('📱 Показываем модальное окно авторизации для Android');
+    showAndroidAuthModal();
+}
+
+function showAndroidAuthModal() {
+    // Проверяем не показывали ли уже
+    if (document.getElementById('androidAuthModal')) return;
+    
+    const modal = document.createElement('div');
+    modal.id = 'androidAuthModal';
+    modal.innerHTML = `
+        <style>
+            #androidAuthModal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            .android-auth-content {
+                background: #1a1a2e;
+                border-radius: 24px;
+                padding: 32px 24px;
+                max-width: 400px;
+                width: 90%;
+                color: white;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                animation: slideUp 0.3s ease-out;
+            }
+            
+            @keyframes slideUp {
+                from { transform: translateY(50px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            
+            .android-auth-icon {
+                font-size: 64px;
+                text-align: center;
+                margin-bottom: 16px;
+            }
+            
+            .android-auth-title {
+                font-size: 24px;
+                font-weight: 700;
+                text-align: center;
+                margin-bottom: 12px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            
+            .android-auth-description {
+                text-align: center;
+                color: #a0aec0;
+                font-size: 15px;
+                line-height: 1.6;
+                margin-bottom: 24px;
+            }
+            
+            .android-auth-steps {
+                background: rgba(255,255,255,0.05);
+                border-radius: 16px;
+                padding: 20px;
+                margin-bottom: 24px;
+            }
+            
+            .android-auth-step {
+                display: flex;
+                align-items: start;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+            
+            .android-auth-step:last-child {
+                margin-bottom: 0;
+            }
+            
+            .android-auth-step-number {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+            
+            .android-auth-step-text {
+                flex: 1;
+                padding-top: 4px;
+                font-size: 14px;
+                line-height: 1.5;
+            }
+            
+            .android-auth-code-input {
+                width: 100%;
+                background: rgba(255,255,255,0.1);
+                border: 2px solid rgba(255,255,255,0.2);
+                border-radius: 12px;
+                padding: 16px;
+                color: white;
+                font-size: 24px;
+                text-align: center;
+                letter-spacing: 8px;
+                font-weight: 700;
+                margin-bottom: 16px;
+                transition: all 0.3s;
+            }
+            
+            .android-auth-code-input:focus {
+                outline: none;
+                border-color: #667eea;
+                background: rgba(102, 126, 234, 0.1);
+            }
+            
+            .android-auth-buttons {
+                display: flex;
+                gap: 12px;
+            }
+            
+            .android-auth-button {
+                flex: 1;
+                padding: 16px;
+                border-radius: 12px;
+                border: none;
+                font-weight: 600;
+                font-size: 15px;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            
+            .android-auth-button-primary {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+            
+            .android-auth-button-primary:active {
+                transform: scale(0.98);
+            }
+            
+            .android-auth-button-secondary {
+                background: rgba(255,255,255,0.1);
+                color: white;
+            }
+            
+            .android-auth-error {
+                background: rgba(255,59,48,0.2);
+                border: 1px solid rgba(255,59,48,0.4);
+                border-radius: 12px;
+                padding: 12px;
+                margin-bottom: 16px;
+                color: #ff3b30;
+                font-size: 14px;
+                text-align: center;
+                display: none;
+            }
+        </style>
+        
+        <div class="android-auth-content">
+            <div class="android-auth-icon">🔐</div>
+            <div class="android-auth-title">Авторизация через Telegram</div>
+            <div class="android-auth-description">
+                Anonimka работает на базе Telegram. Вы можете использовать приложение через бота или это приложение, 
+                но для авторизации нужен Telegram аккаунт.
+            </div>
+            
+            <div class="android-auth-steps">
+                <div class="android-auth-step">
+                    <div class="android-auth-step-number">1</div>
+                    <div class="android-auth-step-text">Нажмите кнопку "Открыть бота" ниже</div>
+                </div>
+                <div class="android-auth-step">
+                    <div class="android-auth-step-number">2</div>
+                    <div class="android-auth-step-text">В Telegram боте нажмите /start</div>
+                </div>
+                <div class="android-auth-step">
+                    <div class="android-auth-step-number">3</div>
+                    <div class="android-auth-step-text">Бот пришлет вам 4-значный код</div>
+                </div>
+                <div class="android-auth-step">
+                    <div class="android-auth-step-number">4</div>
+                    <div class="android-auth-step-text">Введите код в поле ниже</div>
+                </div>
+            </div>
+            
+            <div class="android-auth-error" id="androidAuthError"></div>
+            
+            <input 
+                type="text" 
+                class="android-auth-code-input" 
+                id="androidAuthCodeInput"
+                placeholder="0000"
+                maxlength="4"
+                inputmode="numeric"
+                pattern="[0-9]*"
+            />
+            
+            <div class="android-auth-buttons">
+                <button class="android-auth-button android-auth-button-secondary" onclick="closeAndroidAuthModal()">
+                    Позже
+                </button>
+                <button class="android-auth-button android-auth-button-primary" onclick="openTelegramBot()">
+                    Открыть бота
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Обработчик ввода кода
+    const input = document.getElementById('androidAuthCodeInput');
+    input.addEventListener('input', function(e) {
+        // Только цифры
+        this.value = this.value.replace(/[^0-9]/g, '');
+        
+        // Автоматическая проверка при вводе 4 цифр
+        if (this.value.length === 4) {
+            verifyAndroidAuthCode(this.value);
+        }
+    });
+}
+
+function closeAndroidAuthModal() {
+    const modal = document.getElementById('androidAuthModal');
+    if (modal) {
+        modal.style.animation = 'fadeOut 0.3s';
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+function openTelegramBot() {
+    window.open('https://t.me/anonimka_kz_bot', '_blank');
+}
+
+async function verifyAndroidAuthCode(code) {
+    console.log('🔐 Проверка кода авторизации:', code);
+    
+    const errorDiv = document.getElementById('androidAuthError');
+    const input = document.getElementById('androidAuthCodeInput');
+    
+    try {
+        const response = await fetch('/api/verify-auth-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Сохраняем данные пользователя
+            const userData = result.user;
+            localStorage.setItem('telegram_user', JSON.stringify(userData));
+            localStorage.setItem('telegram_auth_time', Date.now().toString());
+            localStorage.setItem('user_id', userData.id.toString());
+            
+            // Удаляем временный Android ID
+            localStorage.removeItem('android_device_id');
+            
+            // Показываем успех
+            errorDiv.style.display = 'block';
+            errorDiv.style.background = 'rgba(52, 199, 89, 0.2)';
+            errorDiv.style.borderColor = 'rgba(52, 199, 89, 0.4)';
+            errorDiv.style.color = '#34c759';
+            errorDiv.textContent = '✅ Успешно! Перезагружаем...';
+            
+            // Закрываем модалку и перезагружаем
+            setTimeout(() => {
+                closeAndroidAuthModal();
+                location.reload();
+            }, 1500);
+        } else {
+            // Показываем ошибку
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = result.error || '❌ Неверный код';
+            input.value = '';
+            input.focus();
+        }
+    } catch (error) {
+        console.error('Ошибка проверки кода:', error);
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = '❌ Ошибка сети. Попробуйте еще раз';
+        input.value = '';
+        input.focus();
     }
 }
 
