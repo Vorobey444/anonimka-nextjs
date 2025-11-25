@@ -3930,6 +3930,37 @@ h3 {
     box-shadow: var(--shadow-pink);
 }
 
+/* PRO запросы - подсветка золотом */
+.chat-request-card.pro-request {
+    border-color: rgba(255, 215, 0, 0.5);
+    background: linear-gradient(135deg, rgba(40, 35, 20, 0.9), rgba(30, 26, 16, 0.9));
+}
+
+.chat-request-card.pro-request::before {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 170, 0, 0.08));
+}
+
+/* PRO значок */
+.pro-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.85rem;
+    color: #FFD700;
+    font-weight: 700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    animation: proPulse 2s ease-in-out infinite;
+}
+
+@keyframes proPulse {
+    0%, 100% {
+        text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    }
+    50% {
+        text-shadow: 0 0 15px rgba(255, 215, 0, 0.9), 0 0 25px rgba(255, 215, 0, 0.6);
+    }
+}
+
 /* Экран чата */
 .chat-header {
     background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(16, 16, 32, 0.95));

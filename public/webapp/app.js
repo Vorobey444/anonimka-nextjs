@@ -7432,7 +7432,7 @@ async function loadMyChats() {
         let acceptedChats = acceptedResult.data || [];
         let pendingRequests = pendingResult.data || [];
 
-        // Сортировка: самые свежие сверху
+        // Сортировка активных чатов: самые свежие сверху
         const parseTs = (ts) => {
             if (!ts) return 0;
             try { return new Date(ts).getTime() || 0; } catch { return 0; }
@@ -7442,11 +7442,7 @@ async function loadMyChats() {
             const ta = parseTs(a.last_message_time || a.updated_at || a.created_at);
             return tb - ta;
         });
-        pendingRequests = pendingRequests.sort((a, b) => {
-            const tb = parseTs(b.created_at || b.last_message_time || b.updated_at);
-            const ta = parseTs(a.created_at || a.last_message_time || a.updated_at);
-            return tb - ta;
-        });
+        // Входящие запросы уже отсортированы на бэкенде (PRO сначала, потом по дате)
 
         console.log('📊 Принятые чаты:', acceptedChats.length);
         console.log('📊 Входящие запросы:', pendingRequests.length);
@@ -7530,17 +7526,19 @@ async function loadMyChats() {
                     messageText = messageText.substring(0, 77) + '...';
                 }
                 
-                // Pro значок (будет добавлено после получения статуса)
-                const proBadge = chat.sender_is_premium ? '<span class="pro-badge">⭐ PRO</span>' : '';
+                // Проверяем PRO статус отправителя
+                const isPremium = chat.sender_is_premium && 
+                                 (!chat.sender_premium_until || new Date(chat.sender_premium_until) > new Date());
+                const proBadge = isPremium ? '<span class="pro-badge">⭐</span>' : '';
                 
                 return `
-                    <div class="chat-request-card">
+                    <div class="chat-request-card ${isPremium ? 'pro-request' : ''}">
                         <div class="request-header">
-                            <span class="request-ad-id">📨 Чат #${chat.id || 'N/A'}</span>
+                            <span class="request-ad-id">📨 Чат #${chat.id || 'N/A'} ${proBadge}</span>
                             <span class="request-time">${requestTime}</span>
                         </div>
                         <div class="request-message">
-                            <strong>${escapeHtml(senderName)} ${proBadge}</strong><br>
+                            <strong>${escapeHtml(senderName)}</strong><br>
                             "${escapeHtml(messageText)}"
                         </div>
                         <div class="request-actions">

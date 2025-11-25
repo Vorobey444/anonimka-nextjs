@@ -80,11 +80,22 @@ export async function POST(request: NextRequest) {
             (SELECT sender_nickname FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as sender_nickname,
             (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_text,
             -- токен оппонента (создателя запроса) теперь уже в user_token_1
-            pc.user_token_1 as opponent_token
+            pc.user_token_1 as opponent_token,
+            -- Проверяем PRO статус отправителя (user_token_1)
+            u.is_premium as sender_is_premium,
+            u.premium_until as sender_premium_until
           FROM private_chats pc
+          LEFT JOIN users u ON u.user_token = pc.user_token_1
           WHERE user_token_2 = ${userIdentifier}
             AND accepted = false
-          ORDER BY pc.created_at DESC
+          ORDER BY 
+            -- Сначала PRO пользователи (is_premium = true И premium не истек)
+            CASE 
+              WHEN u.is_premium = true AND (u.premium_until IS NULL OR u.premium_until > NOW()) THEN 0
+              ELSE 1
+            END,
+            -- Затем по дате создания (новые сверху)
+            pc.created_at DESC
         `;
         return NextResponse.json({ data: result.rows, error: null });
       }
