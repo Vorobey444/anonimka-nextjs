@@ -1336,6 +1336,21 @@ function checkTelegramAuth() {
         localStorage.setItem('user_id', userData.id.toString());
         console.log('✅ Авторизован через Telegram WebApp, user_id:', userData.id);
         
+        // Если это была авторизация из Android приложения - возвращаем обратно
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tgWebAppStartParam') === 'android' || window.Telegram?.WebApp?.initDataUnsafe?.start_param === 'android') {
+            console.log('🔄 Авторизация из Android - возвращаем в приложение через 1 сек');
+            setTimeout(() => {
+                // Пытаемся открыть Android приложение через deep link
+                window.location.href = 'anonimka://authorized';
+                // Fallback - просто перезагружаем если deep link не сработал
+                setTimeout(() => {
+                    window.location.href = 'https://anonimka.kz/webapp';
+                }, 500);
+            }, 1000);
+            return true;
+        }
+        
         // Закрываем модальное окно если оно было открыто
         const modal = document.getElementById('telegramAuthModal');
         if (modal) {
