@@ -809,13 +809,6 @@ function initializeApp() {
             console.error('❌ Ошибка updateChatBadge:', e);
         }
         
-        // Показываем уведомление о привязке Telegram для Android пользователей
-        try {
-            showTelegramLinkNotification();
-        } catch (e) {
-            console.error('❌ Ошибка showTelegramLinkNotification:', e);
-        }
-        
         try {
             markMessagesAsDelivered(); // Помечаем сообщения как доставленные
         } catch (e) {
@@ -1298,14 +1291,24 @@ function checkTelegramAuth() {
     console.log('    - tg.initDataUnsafe?.user:', tg.initDataUnsafe?.user);
     console.log('    - tg.initDataUnsafe?.user?.id:', tg.initDataUnsafe?.user?.id);
     
-    // Проверяем если загружено в Android WebView - пропускаем авторизацию
+    // Проверяем если загружено в Android WebView - показываем модалку с кодом
     const isAndroidWebView = navigator.userAgent.includes('wv') || 
                             (navigator.userAgent.includes('Android') && window.AndroidInterface);
     
     if (isAndroidWebView) {
-        console.log('📱 Обнаружен Android WebView - пропускаем принудительную авторизацию');
-        // В Android приложении авторизация не обязательна - можем работать анонимно
-        return true;
+        console.log('📱 Обнаружен Android WebView');
+        
+        // Проверяем есть ли уже авторизация
+        const hasTelegramId = localStorage.getItem('telegram_user');
+        if (hasTelegramId) {
+            console.log('✅ Android пользователь уже авторизован');
+            return true;
+        }
+        
+        // Показываем модалку с вводом кода для авторизации
+        console.log('📱 Показываем модалку авторизации через код');
+        showAndroidAuthModal();
+        return false; // Блокируем дальнейшую работу до авторизации
     }
     
     // Если запущено через Telegram WebApp, авторизация автоматическая
