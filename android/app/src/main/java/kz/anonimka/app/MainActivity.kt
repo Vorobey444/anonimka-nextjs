@@ -25,6 +25,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    
+    // SharedPreferences для хранения данных авторизации
+    private val authPrefs by lazy {
+        getSharedPreferences("anonimka_auth", MODE_PRIVATE)
+    }
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -78,6 +83,24 @@ class MainActivity : AppCompatActivity() {
             windowInsets
         }
 
+        // Добавляем JavaScript Interface для связи с WebView
+        webView.addJavascriptInterface(object {
+            @android.webkit.JavascriptInterface
+            fun saveAuthData(userData: String) {
+                authPrefs.edit().apply {
+                    putString("telegram_user", userData)
+                    putLong("telegram_auth_time", System.currentTimeMillis())
+                    apply()
+                }
+                android.util.Log.d("Anonimka", "✅ Auth data saved to SharedPreferences")
+            }
+            
+            @android.webkit.JavascriptInterface
+            fun getAuthData(): String {
+                return authPrefs.getString("telegram_user", "") ?: ""
+            }
+        }, "AndroidAuth")
+        
         // Настройка WebView
         webView.settings.apply {
             javaScriptEnabled = true
@@ -117,6 +140,24 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 swipeRefreshLayout.isRefreshing = false
+                
+                // Инжектим сохранённые данные авторизации при загрузке страницы
+                val savedUser = authPrefs.getString("telegram_user", "")
+                if (!savedUser.isNullOrEmpty()) {
+                    webView.evaluateJavascript("""
+                        (function() {
+                            try {
+                                var userData = ${savedUser};
+                                localStorage.setItem('telegram_user', JSON.stringify(userData));
+                                localStorage.setItem('telegram_auth_time', '${authPrefs.getLong("telegram_auth_time", 0)}');
+                                localStorage.setItem('user_id', userData.id.toString());
+                                console.log('✅ Auth data injected from Android:', userData.id);
+                            } catch(e) {
+                                console.error('❌ Error injecting auth data:', e);
+                            }
+                        })();
+                    """.trimIndent(), null)
+                }
                 
                 // Если в URL есть параметр authorized - закрываем модалку
                 if (url?.contains("authorized=true") == true) {
@@ -227,7 +268,7 @@ class MainActivity : AppCompatActivity() {
         } ?: false
         
         // Или если в URL есть параметр authorized=true
-        val isAuthorized = url?.contains("authorized=true") == true
+        val isAuthorized = url?.contains("authorized=true") == true || data?.path == "/authorized"
         
         if (isFromTelegram || isAuthorized) {
             // Инжектим JavaScript для закрытия диалога авторизации

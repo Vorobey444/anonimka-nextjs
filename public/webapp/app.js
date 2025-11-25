@@ -1336,12 +1336,23 @@ function checkTelegramAuth() {
         localStorage.setItem('user_id', userData.id.toString());
         console.log('✅ Авторизован через Telegram WebApp, user_id:', userData.id);
         
-        // Если это была авторизация из Android приложения - возвращаем обратно
+        // Если это была авторизация из Android приложения - сохраняем в Android и возвращаем
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('tgWebAppStartParam') === 'android' || window.Telegram?.WebApp?.initDataUnsafe?.start_param === 'android') {
-            console.log('🔄 Авторизация из Android - возвращаем в приложение через 1 сек');
+            console.log('🔄 Авторизация из Android - сохраняем данные в приложение');
+            
+            // Сохраняем через Android JavaScriptInterface
+            if (window.AndroidAuth) {
+                try {
+                    window.AndroidAuth.saveAuthData(JSON.stringify(userData));
+                    console.log('✅ Данные сохранены в Android SharedPreferences');
+                } catch (e) {
+                    console.error('❌ Ошибка сохранения в Android:', e);
+                }
+            }
+            
             setTimeout(() => {
-                // Пытаемся открыть Android приложение через deep link
+                // Открываем Android приложение через deep link
                 window.location.href = 'anonimka://authorized';
                 // Fallback - просто перезагружаем если deep link не сработал
                 setTimeout(() => {
