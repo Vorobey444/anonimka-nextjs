@@ -12572,61 +12572,24 @@ function showAndroidWelcomeScreen() {
             }
         </style>
         
-        <!-- Логотип Anonimka - анонимный силуэт с ушками -->
+        <!-- Логотип Anonimka -->
         <div style="
-            width: 140px;
-            height: 140px;
+            width: 120px;
+            height: 120px;
             margin: 0 auto 28px;
             position: relative;
             animation: neonGlow 2s ease-in-out infinite;
         ">
-            <svg viewBox="0 0 200 200" style="width: 100%; height: 100%; filter: drop-shadow(0 0 20px rgba(138, 43, 226, 0.9)) drop-shadow(0 0 40px rgba(0, 191, 255, 0.7));">
-                <!-- Левое ушко -->
-                <path d="M 60 40 L 50 20 L 75 45 Z" fill="none" stroke="url(#neonGradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                <!-- Правое ушко -->
-                <path d="M 140 40 L 150 20 L 125 45 Z" fill="none" stroke="url(#neonGradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                
-                <!-- Капюшон -->
-                <path d="M 50 50 Q 45 35, 60 25 Q 100 10, 140 25 Q 155 35, 150 50 L 145 70 Q 140 50, 125 55 Q 110 60, 100 60 Q 90 60, 75 55 Q 60 50, 55 70 Z" 
-                    fill="rgba(10, 10, 30, 0.9)" 
-                    stroke="url(#neonGradient)" 
-                    stroke-width="3"/>
-                
-                <!-- Тень лица (чёрное пятно) -->
-                <ellipse cx="100" cy="85" rx="35" ry="45" fill="#000000"/>
-                
-                <!-- Плечи -->
-                <path d="M 55 70 Q 45 85, 40 110 L 45 130 Q 50 125, 65 120" 
-                    fill="none" 
-                    stroke="url(#neonGradient)" 
-                    stroke-width="3" 
-                    stroke-linecap="round"/>
-                <path d="M 145 70 Q 155 85, 160 110 L 155 130 Q 150 125, 135 120" 
-                    fill="none" 
-                    stroke="url(#neonGradient)" 
-                    stroke-width="3" 
-                    stroke-linecap="round"/>
-                
-                <!-- Пузырь сообщения -->
-                <rect x="155" y="75" width="35" height="25" rx="8" ry="8" 
-                    fill="none" 
-                    stroke="#00bfff" 
-                    stroke-width="2.5"
-                    style="filter: drop-shadow(0 0 10px rgba(0, 191, 255, 0.8));"/>
-                <path d="M 155 90 L 148 95 L 155 100" 
-                    fill="none" 
-                    stroke="#00bfff" 
-                    stroke-width="2.5"/>
-                
-                <!-- Градиент для неонового свечения -->
-                <defs>
-                    <linearGradient id="neonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#ff1493;stop-opacity:1" />
-                        <stop offset="50%" style="stop-color:#8a2be2;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#00bfff;stop-opacity:1" />
-                    </linearGradient>
-                </defs>
-            </svg>
+            <img src="/webapp/logo.png" style="
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                object-fit: cover;
+                box-shadow: 
+                    0 0 40px rgba(138, 43, 226, 0.8),
+                    0 0 80px rgba(0, 191, 255, 0.6),
+                    0 0 120px rgba(138, 43, 226, 0.4);
+            " />
         </div>
         
         <h1 style="
