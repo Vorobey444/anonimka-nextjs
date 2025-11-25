@@ -1298,17 +1298,19 @@ function checkTelegramAuth() {
     if (isAndroidWebView) {
         console.log('📱 Обнаружен Android WebView');
         
-        // Проверяем, показывали ли уже приветственный экран
-        const hasSeenWelcome = localStorage.getItem('android_welcome_shown');
+        // Проверяем авторизацию через Telegram
+        const savedUser = localStorage.getItem('telegram_user');
+        const authTime = localStorage.getItem('telegram_auth_time');
         
-        if (!hasSeenWelcome) {
-            // Показываем приветственный экран только один раз
+        // Если не авторизован - показываем приветственный экран
+        if (!savedUser || !authTime) {
+            console.log('⚠️ Пользователь не авторизован - показываем приветствие');
             showAndroidWelcomeScreen();
-            return false; // Блокируем доступ пока не нажмут кнопку
+            return false; // Блокируем доступ до авторизации
         }
         
-        // После приветствия - работаем через Telegram WebApp
-        console.log('✅ Android WebView - работаем через Telegram WebApp');
+        // Если авторизован - работаем через Telegram WebApp
+        console.log('✅ Android WebView - пользователь авторизован');
         return true;
     }
     
@@ -12670,9 +12672,6 @@ function showAndroidWelcomeScreen() {
 
     // Обработчик кнопки
     document.getElementById('androidLaunchBtn').addEventListener('click', () => {
-        // Сохраняем что показали приветствие
-        localStorage.setItem('android_welcome_shown', 'true');
-        
         // Открываем Telegram бот с обычным /start
         window.location.href = 'https://t.me/anonimka_kz_bot';
     });
