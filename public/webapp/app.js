@@ -1001,15 +1001,55 @@ function setupAutoHideScrollbars() {
     });
 }
 
+// Проверяем если пришли из Telegram после авторизации
+function checkAndHandleAuthReturn() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isAuthorized = urlParams.get('authorized') === 'true';
+    const isFromApp = urlParams.get('from_app') === 'true';
+    const userId = urlParams.get('user_id');
+    
+    if (isAuthorized && userId) {
+        console.log('✅ Возврат после авторизации, user_id:', userId);
+        
+        // Закрываем модальное окно авторизации
+        const authModal = document.getElementById('telegramAuthModal');
+        if (authModal) {
+            authModal.style.display = 'none';
+            console.log('✅ Модальное окно авторизации закрыто');
+        }
+        
+        // Если это из Android приложения
+        if (isFromApp && window.Telegram?.WebApp) {
+            console.log('📱 Закрываем Telegram WebApp для возврата в Android');
+            
+            // Показываем уведомление перед закрытием
+            setTimeout(() => {
+                window.Telegram.WebApp.close();
+            }, 500);
+        }
+        
+        // Очищаем URL от параметров авторизации
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        
+        // Перезагружаем данные пользователя
+        setTimeout(() => {
+            window.location.reload();
+        }, isFromApp ? 1000 : 500);
+    }
+}
+
 // Проверяем готовность DOM и запускаем инициализацию
 if (document.readyState === 'loading') {
     console.log('📄 DOM загружается, ждем DOMContentLoaded');
     document.addEventListener('DOMContentLoaded', () => {
+        checkAndHandleAuthReturn();
         initializeApp();
         setupAutoHideScrollbars();
     });
 } else {
     console.log('📄 DOM уже загружен, запускаем инициализацию немедленно');
+    checkAndHandleAuthReturn();
     initializeApp();
     setupAutoHideScrollbars();
 }
