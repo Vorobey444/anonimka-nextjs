@@ -1280,6 +1280,16 @@ function checkTelegramAuth() {
     console.log('    - tg.initDataUnsafe?.user:', tg.initDataUnsafe?.user);
     console.log('    - tg.initDataUnsafe?.user?.id:', tg.initDataUnsafe?.user?.id);
     
+    // Проверяем если загружено в Android WebView - пропускаем авторизацию
+    const isAndroidWebView = navigator.userAgent.includes('wv') || 
+                            (navigator.userAgent.includes('Android') && window.AndroidInterface);
+    
+    if (isAndroidWebView) {
+        console.log('📱 Обнаружен Android WebView - пропускаем принудительную авторизацию');
+        // В Android приложении авторизация не обязательна - можем работать анонимно
+        return true;
+    }
+    
     // Если запущено через Telegram WebApp, авторизация автоматическая
     if (isTelegramWebApp && tg.initDataUnsafe?.user?.id) {
         const userData = {
