@@ -12507,7 +12507,7 @@ function showAndroidWelcomeScreen() {
         left: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #0a0a0a;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -12518,14 +12518,16 @@ function showAndroidWelcomeScreen() {
 
     const content = document.createElement('div');
     content.style.cssText = `
-        background: white;
+        background: rgba(20, 20, 30, 0.95);
         border-radius: 24px;
-        padding: 40px 30px;
-        max-width: 400px;
+        padding: 50px 30px 40px;
+        max-width: 420px;
         width: 100%;
         text-align: center;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        animation: slideUp 0.4s ease-out;
+        box-shadow: 0 0 80px rgba(138, 43, 226, 0.4), 0 0 40px rgba(0, 191, 255, 0.3);
+        border: 2px solid rgba(138, 43, 226, 0.3);
+        animation: slideUp 0.5s ease-out, neonPulse 2s ease-in-out infinite;
+        position: relative;
     `;
 
     content.innerHTML = `
@@ -12540,73 +12542,127 @@ function showAndroidWelcomeScreen() {
                     transform: translateY(0);
                 }
             }
+            
+            @keyframes neonPulse {
+                0%, 100% {
+                    box-shadow: 0 0 80px rgba(138, 43, 226, 0.4), 0 0 40px rgba(0, 191, 255, 0.3);
+                }
+                50% {
+                    box-shadow: 0 0 100px rgba(138, 43, 226, 0.6), 0 0 60px rgba(0, 191, 255, 0.5);
+                }
+            }
+            
+            @keyframes neonGlow {
+                0%, 100% {
+                    text-shadow: 
+                        0 0 10px rgba(138, 43, 226, 0.8),
+                        0 0 20px rgba(138, 43, 226, 0.6),
+                        0 0 30px rgba(138, 43, 226, 0.4),
+                        0 0 40px rgba(0, 191, 255, 0.3);
+                }
+                50% {
+                    text-shadow: 
+                        0 0 15px rgba(138, 43, 226, 1),
+                        0 0 30px rgba(138, 43, 226, 0.8),
+                        0 0 45px rgba(138, 43, 226, 0.6),
+                        0 0 60px rgba(0, 191, 255, 0.5);
+                }
+            }
         </style>
         
-        <div style="font-size: 64px; margin-bottom: 20px;">🎭</div>
+        <!-- Логотип Анонимки в неоновом стиле -->
+        <div style="
+            font-size: 80px;
+            margin-bottom: 24px;
+            animation: neonGlow 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(138, 43, 226, 0.8));
+        ">🎭</div>
         
         <h1 style="
-            color: #333;
-            font-size: 28px;
-            font-weight: 700;
-            margin: 0 0 12px 0;
-            line-height: 1.3;
+            background: linear-gradient(135deg, #8a2be2 0%, #00bfff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 32px;
+            font-weight: 800;
+            margin: 0 0 8px 0;
+            line-height: 1.2;
+            text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+            letter-spacing: 1px;
         ">Добро пожаловать!</h1>
         
         <p style="
-            color: #666;
-            font-size: 16px;
-            line-height: 1.6;
-            margin: 0 0 24px 0;
-        ">
-            Приложение <b style="color: #667eea;">Anonimka</b> работает через Telegram бот для безопасности и удобства
-        </p>
-        
-        <div style="
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 24px;
-            text-align: left;
-        ">
-            <p style="
-                color: #555;
-                font-size: 14px;
-                line-height: 1.5;
-                margin: 0;
-            ">
-                💡 <b>Почему так?</b><br>
-                • Авторизация через Telegram - безопасно<br>
-                • Уведомления приходят сразу в Telegram<br>
-                • Доступ с любого устройства<br>
-                • Никаких паролей и регистраций
-            </p>
-        </div>
-        
-        <button id="androidLaunchBtn" style="
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 16px 32px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';">
-            🚀 Открыть в Telegram
-        </button>
+            color: #a0a0ff;
+            font-size: 15px;
+            font-weight: 500;
+            margin: 0 0 32px 0;
+            line-height: 1.4;
+        ">в Анонимные знакомства</p>
         
         <p style="
-            color: #999;
-            font-size: 12px;
-            margin: 16px 0 0 0;
-            line-height: 1.4;
+            color: #c0c0d0;
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 0 0 32px 0;
         ">
-            После нажатия откроется Telegram бот.<br>
-            Нажмите "Запустить" в боте для авторизации
+            Приложение работает через <b style="
+                background: linear-gradient(135deg, #8a2be2 0%, #00bfff 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            ">Telegram</b>
         </p>
+        
+        <button id="androidLaunchBtn" style="
+            background: linear-gradient(135deg, #8a2be2 0%, #00bfff 100%);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 18px 40px;
+            font-size: 19px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 0 20px rgba(138, 43, 226, 0.5),
+                0 0 40px rgba(0, 191, 255, 0.3),
+                0 4px 15px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        " 
+        onmouseover="
+            this.style.transform='translateY(-3px) scale(1.02)'; 
+            this.style.boxShadow='0 0 30px rgba(138, 43, 226, 0.7), 0 0 60px rgba(0, 191, 255, 0.5), 0 6px 20px rgba(0, 0, 0, 0.4)';
+        " 
+        onmouseout="
+            this.style.transform='translateY(0) scale(1)'; 
+            this.style.boxShadow='0 0 20px rgba(138, 43, 226, 0.5), 0 0 40px rgba(0, 191, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.3)';
+        ">
+            🚀 Запустить приложение
+        </button>
+        
+        <div style="
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(138, 43, 226, 0.2);
+        ">
+            <p style="
+                color: #808090;
+                font-size: 13px;
+                line-height: 1.6;
+                margin: 0;
+                text-align: left;
+            ">
+                <b style="color: #a0a0ff;">Почему через Telegram?</b><br><br>
+                ✓ Безопасная авторизация без паролей<br>
+                ✓ Мгновенные уведомления о сообщениях<br>
+                ✓ Работает на любом устройстве<br>
+                ✓ Никакой регистрации и лишних данных
+            </p>
+        </div>
     `;
 
     overlay.appendChild(content);
