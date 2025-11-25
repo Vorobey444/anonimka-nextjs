@@ -721,6 +721,26 @@ function initializeApp() {
     console.log('🚀 [INIT] URL params:', new URLSearchParams(window.location.search).toString());
     console.log('🚀 [INIT] isTelegramWebApp:', isTelegramWebApp);
     
+    // Проверяем если это возврат из бота в Android приложение
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromApp = urlParams.get('from_app') === 'true';
+    const authorized = urlParams.get('authorized') === 'true';
+    
+    if (fromApp && authorized) {
+        console.log('📱 Обнаружен возврат из бота в Android приложение');
+        console.log('🔄 Закрываем WebApp и возвращаемся в приложение...');
+        
+        // Закрываем WebApp - Android приложение перехватит это
+        if (window.Telegram?.WebApp?.close) {
+            window.Telegram.WebApp.close();
+        }
+        
+        // Также отправляем postMessage для старых версий
+        window.parent.postMessage({ type: 'auth_completed', authorized: true }, '*');
+        
+        return; // Останавливаем дальнейшую инициализацию
+    }
+    
     try {
         initializeTelegramWebApp();
         console.log('✅ Telegram WebApp инициализирован');
