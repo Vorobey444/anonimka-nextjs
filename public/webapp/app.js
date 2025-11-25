@@ -12617,30 +12617,8 @@ function showAndroidWelcomeScreen() {
         // Сохраняем что показали приветствие
         localStorage.setItem('android_welcome_shown', 'true');
         
-        // Открываем Telegram бот
-        window.open('https://t.me/anonimka_kz_bot', '_blank');
-        
-        // Показываем инструкцию
-        content.innerHTML = `
-            <div style="font-size: 48px; margin-bottom: 20px;">✅</div>
-            <h2 style="color: #333; font-size: 24px; margin: 0 0 16px 0;">Отлично!</h2>
-            <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
-                Telegram бот открыт в другой вкладке.<br>
-                Нажмите <b>"Запустить"</b> в боте, затем вернитесь сюда
-            </p>
-            <button onclick="window.location.reload()" style="
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border: none;
-                border-radius: 12px;
-                padding: 14px 28px;
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-            ">
-                🔄 Я авторизовался, продолжить
-            </button>
-        `;
+        // Открываем Telegram бот с обычным /start
+        window.location.href = 'https://t.me/anonimka_kz_bot';
     });
 }
 
