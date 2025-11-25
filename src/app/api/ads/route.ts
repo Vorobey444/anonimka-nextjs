@@ -647,20 +647,25 @@ export async function POST(req: NextRequest) {
         if (bonusCheck.rows.length > 0) {
           const bonusData = bonusCheck.rows[0];
           
-          // Показываем модалку если это первая анкета девушки
+          // Показываем модалку если это первая анкета девушки с бонусом
           if (bonusData.first_ad_gender === 'Девушка' && bonusData.auto_premium_source === 'female_bonus') {
-            // Проверяем, что эта анкета только что создана (первая)
+            // Проверяем, что это была первая анкета (count = 1 после создания)
             const adsCount = await sql`
-              SELECT COUNT(*) as count FROM ads WHERE tg_id = ${numericTgId}
+              SELECT COUNT(*)::int as count FROM ads WHERE tg_id = ${numericTgId}
             `;
-            if (adsCount.rows[0]?.count === 1) {
+            const totalAds = adsCount.rows[0]?.count || 0;
+            console.log('[ADS API] 🎀 Проверка модалки: count =', totalAds, ', bonus =', bonusData.auto_premium_source);
+            
+            if (totalAds === 1) {
               showFemaleBonusModal = true;
+              console.log('[ADS API] 🎀 Показываем модалку бонуса для девушки');
             }
           }
           
           // Уведомление об утрате бонуса (если был бонус, но сейчас нет)
           if (bonusData.first_ad_gender === 'Девушка' && !bonusData.auto_premium_source && gender === 'Мужчина') {
             femaleBonusLost = true;
+            console.log('[ADS API] 💔 Показываем уведомление об утрате бонуса');
           }
         }
       } catch (modalError) {
