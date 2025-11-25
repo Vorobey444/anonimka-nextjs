@@ -12735,7 +12735,8 @@ function closeAndroidAuthModal() {
 }
 
 function openTelegramBot() {
-    window.open('https://t.me/anonimka_kz_bot', '_blank');
+    // Открываем бота с параметром для генерации кода авторизации
+    window.open('https://t.me/anonimka_kz_bot?start=app_auth', '_blank');
 }
 
 async function verifyAndroidAuthCode(code) {
