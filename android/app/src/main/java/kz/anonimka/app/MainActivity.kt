@@ -260,15 +260,27 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleIntent(intent: Intent?) {
         val data = intent?.data
+        
+        // Проверяем если пришли из Telegram после авторизации через deep link
+        if (data?.scheme == "anonimka" && data.path == "/authorized") {
+            android.util.Log.d("Anonimka", "🔄 Возврат из Telegram - перезагружаем WebView")
+            
+            // Перезагружаем WebView чтобы инжектнуть сохранённые данные
+            webView.postDelayed({
+                webView.reload()
+            }, 300)
+            return
+        }
+        
         val url = webView.url
         
-        // Проверяем если пришли из Telegram после авторизации
+        // Проверяем если пришли из Telegram после авторизации (старый способ)
         val isFromTelegram = data?.let {
-            it.scheme == "anonimka" || it.scheme == "tg" || it.host == "anonimka.kz"
+            it.scheme == "tg" || it.host == "anonimka.kz"
         } ?: false
         
         // Или если в URL есть параметр authorized=true
-        val isAuthorized = url?.contains("authorized=true") == true || data?.path == "/authorized"
+        val isAuthorized = url?.contains("authorized=true") == true
         
         if (isFromTelegram || isAuthorized) {
             // Инжектим JavaScript для закрытия диалога авторизации

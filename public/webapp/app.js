@@ -1296,22 +1296,9 @@ function checkTelegramAuth() {
                             (navigator.userAgent.includes('Android') && window.AndroidInterface);
     
     if (isAndroidWebView) {
-        console.log('📱 Обнаружен Android WebView');
-        
-        // Проверяем авторизацию через Telegram
-        const savedUser = localStorage.getItem('telegram_user');
-        const authTime = localStorage.getItem('telegram_auth_time');
-        
-        // Если не авторизован - показываем приветственный экран
-        if (!savedUser || !authTime) {
-            console.log('⚠️ Пользователь не авторизован - показываем приветствие');
-            showAndroidWelcomeScreen();
-            return false; // Блокируем доступ до авторизации
-        }
-        
-        // Если авторизован - работаем через Telegram WebApp
-        console.log('✅ Android WebView - пользователь авторизован');
-        return true;
+        console.log('📱 Обнаружен Android WebView - показываем приветственный экран');
+        showAndroidWelcomeScreen();
+        return false; // Android приложение = только лончер
     }
     
     // Если запущено через Telegram WebApp, авторизация автоматическая
@@ -1336,31 +1323,7 @@ function checkTelegramAuth() {
         localStorage.setItem('user_id', userData.id.toString());
         console.log('✅ Авторизован через Telegram WebApp, user_id:', userData.id);
         
-        // Если это была авторизация из Android приложения - сохраняем в Android и возвращаем
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('tgWebAppStartParam') === 'android' || window.Telegram?.WebApp?.initDataUnsafe?.start_param === 'android') {
-            console.log('🔄 Авторизация из Android - сохраняем данные в приложение');
-            
-            // Сохраняем через Android JavaScriptInterface
-            if (window.AndroidAuth) {
-                try {
-                    window.AndroidAuth.saveAuthData(JSON.stringify(userData));
-                    console.log('✅ Данные сохранены в Android SharedPreferences');
-                } catch (e) {
-                    console.error('❌ Ошибка сохранения в Android:', e);
-                }
-            }
-            
-            setTimeout(() => {
-                // Открываем Android приложение через deep link
-                window.location.href = 'anonimka://authorized';
-                // Fallback - просто перезагружаем если deep link не сработал
-                setTimeout(() => {
-                    window.location.href = 'https://anonimka.kz/webapp';
-                }, 500);
-            }, 1000);
-            return true;
-        }
+
         
         // Закрываем модальное окно если оно было открыто
         const modal = document.getElementById('telegramAuthModal');
