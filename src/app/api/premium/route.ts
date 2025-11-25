@@ -631,6 +631,94 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Активация бонуса PRO для девушек
+      case 'activate-female-bonus': {
+        const { userId } = params;
+        
+        if (!userId || typeof userId !== 'number') {
+          return NextResponse.json(
+            { data: null, error: { message: 'Invalid userId' } },
+            { status: 400 }
+          );
+        }
+        
+        console.log('[PREMIUM API] 🎀 Активация бонуса для девушки, userId:', userId);
+        
+        try {
+          // Проверяем, что у пользователя first_ad_gender = "Девушка"
+          const userCheck = await sql`
+            SELECT first_ad_gender, auto_premium_source, is_premium
+            FROM users
+            WHERE id = ${userId}
+            LIMIT 1
+          `;
+          
+          if (userCheck.rows.length === 0) {
+            return NextResponse.json(
+              { data: null, error: { message: 'User not found' } },
+              { status: 404 }
+            );
+          }
+          
+          const user = userCheck.rows[0];
+          
+          // Можно активировать только если первая анкета — девушка
+          if (user.first_ad_gender !== 'Девушка') {
+            return NextResponse.json(
+              { 
+                data: null, 
+                error: { message: 'Bonus only available for female users' } 
+              },
+              { status: 403 }
+            );
+          }
+          
+          // Активируем бонус (бессрочный PRO)
+          await sql`
+            UPDATE users
+            SET is_premium = TRUE,
+                premium_until = NULL,
+                auto_premium_source = 'female_bonus',
+                updated_at = NOW()
+            WHERE id = ${userId}
+          `;
+          
+          // Синхронизируем с premium_tokens (получаем user_token)
+          const tokenResult = await sql`
+            SELECT user_token FROM users WHERE id = ${userId} LIMIT 1
+          `;
+          
+          if (tokenResult.rows.length > 0 && tokenResult.rows[0].user_token) {
+            const userToken = tokenResult.rows[0].user_token;
+            await sql`
+              INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
+              VALUES (${userToken}, TRUE, NULL, NOW())
+              ON CONFLICT (user_token) DO UPDATE
+              SET is_premium = TRUE, premium_until = NULL, updated_at = NOW()
+            `;
+          }
+          
+          console.log('[PREMIUM API] ✅ Бонус PRO для девушки активирован');
+          
+          return NextResponse.json({
+            data: {
+              success: true,
+              message: 'Female bonus activated successfully',
+              isPremium: true,
+              premiumUntil: null // Бессрочный
+            },
+            error: null
+          });
+          
+        } catch (bonusError: any) {
+          console.error('[PREMIUM API] Ошибка активации бонуса:', bonusError);
+          return NextResponse.json(
+            { data: null, error: { message: bonusError.message } },
+            { status: 500 }
+          );
+        }
+      }
+
       default:
         return NextResponse.json(
           { error: { message: 'Unknown action' } },

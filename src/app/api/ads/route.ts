@@ -445,6 +445,107 @@ export async function POST(req: NextRequest) {
     
     console.log("[ADS API] Объявление создано, ID:", newAd.id);
     
+    // 🎀 Проверяем бонус для девушек (только для Telegram пользователей)
+    if (numericTgId !== null) {
+      try {
+        // Проверяем, первая ли это анкета пользователя
+        const userCheck = await sql`
+          SELECT first_ad_gender, auto_premium_source, is_premium, premium_until
+          FROM users
+          WHERE id = ${numericTgId}
+          LIMIT 1
+        `;
+
+        if (userCheck.rows.length > 0) {
+          const user = userCheck.rows[0];
+          const currentGender = gender; // "Девушка", "Мужчина", "Пара"
+          
+          // Если first_ad_gender еще не установлен — это первая анкета
+          if (!user.first_ad_gender) {
+            console.log('[ADS API] 🎀 Первая анкета пользователя, пол:', currentGender);
+            
+            // Сохраняем пол первой анкеты (навсегда)
+            await sql`
+              UPDATE users
+              SET first_ad_gender = ${currentGender},
+                  updated_at = NOW()
+              WHERE id = ${numericTgId}
+            `;
+            
+            // Если первая анкета — "Девушка", выдаем бонус PRO навсегда
+            if (currentGender === 'Девушка') {
+              console.log('[ADS API] 🎀 Активируем бонус PRO для девушки (навсегда)');
+              
+              // Устанавливаем PRO навсегда (premium_until = NULL означает бессрочный)
+              await sql`
+                UPDATE users
+                SET is_premium = TRUE,
+                    premium_until = NULL,
+                    auto_premium_source = 'female_bonus',
+                    updated_at = NOW()
+                WHERE id = ${numericTgId}
+              `;
+              
+              // Синхронизируем с premium_tokens
+              await sql`
+                INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
+                VALUES (${finalUserToken}, TRUE, NULL, NOW())
+                ON CONFLICT (user_token) DO UPDATE
+                SET is_premium = TRUE, premium_until = NULL, updated_at = NOW()
+              `;
+              
+              console.log('[ADS API] ✅ Бонус PRO для девушки активирован');
+            }
+          } else {
+            // Не первая анкета — проверяем, нужно ли отменить бонус
+            console.log('[ADS API] Не первая анкета. first_ad_gender:', user.first_ad_gender, ', текущий:', currentGender);
+            
+            // Если у пользователя был female_bonus и он создает анкету "Мужчина"
+            if (user.auto_premium_source === 'female_bonus' && currentGender === 'Мужчина') {
+              console.log('[ADS API] 🚫 Девушка создала мужскую анкету — отменяем бонус PRO');
+              
+              // Проверяем, есть ли платная подписка (защита от потери)
+              const hasPaidSubscription = user.premium_until !== null;
+              
+              if (hasPaidSubscription) {
+                console.log('[ADS API] ⚠️ Обнаружена платная подписка — сохраняем PRO, но убираем источник бонуса');
+                // Убираем только источник бонуса, PRO остается (платная подписка)
+                await sql`
+                  UPDATE users
+                  SET auto_premium_source = NULL,
+                      updated_at = NOW()
+                  WHERE id = ${numericTgId}
+                `;
+              } else {
+                console.log('[ADS API] 💔 Платной подписки нет — полностью отменяем PRO');
+                // Отменяем PRO полностью
+                await sql`
+                  UPDATE users
+                  SET is_premium = FALSE,
+                      premium_until = NULL,
+                      auto_premium_source = NULL,
+                      updated_at = NOW()
+                  WHERE id = ${numericTgId}
+                `;
+                
+                // Синхронизируем с premium_tokens
+                await sql`
+                  UPDATE premium_tokens
+                  SET is_premium = FALSE, premium_until = NULL, updated_at = NOW()
+                  WHERE user_token = ${finalUserToken}
+                `;
+                
+                console.log('[ADS API] ❌ Бонус PRO отменен');
+              }
+            }
+          }
+        }
+      } catch (bonusError) {
+        console.error('[ADS API] Ошибка при проверке бонуса для девушек:', bonusError);
+        // Не прерываем создание анкеты если бонус не сработал
+      }
+    }
+    
     // Проверяем реферальную программу — выдаём награду если пользователь пришёл по реферальной ссылке
     if (finalUserToken) {
       try {
@@ -530,10 +631,49 @@ export async function POST(req: NextRequest) {
       }
     }
     
+    // Проверяем, нужно ли показать модальное окно о бонусе для девушек
+    let showFemaleBonusModal = false;
+    let femaleBonusLost = false;
+    
+    if (numericTgId !== null) {
+      try {
+        const bonusCheck = await sql`
+          SELECT first_ad_gender, auto_premium_source
+          FROM users
+          WHERE id = ${numericTgId}
+          LIMIT 1
+        `;
+        
+        if (bonusCheck.rows.length > 0) {
+          const bonusData = bonusCheck.rows[0];
+          
+          // Показываем модалку если это первая анкета девушки
+          if (bonusData.first_ad_gender === 'Девушка' && bonusData.auto_premium_source === 'female_bonus') {
+            // Проверяем, что эта анкета только что создана (первая)
+            const adsCount = await sql`
+              SELECT COUNT(*) as count FROM ads WHERE tg_id = ${numericTgId}
+            `;
+            if (adsCount.rows[0]?.count === 1) {
+              showFemaleBonusModal = true;
+            }
+          }
+          
+          // Уведомление об утрате бонуса (если был бонус, но сейчас нет)
+          if (bonusData.first_ad_gender === 'Девушка' && !bonusData.auto_premium_source && gender === 'Мужчина') {
+            femaleBonusLost = true;
+          }
+        }
+      } catch (modalError) {
+        console.error('[ADS API] Ошибка при проверке модального окна бонуса:', modalError);
+      }
+    }
+    
     return NextResponse.json({
       success: true,
       message: "Объявление успешно опубликовано!",
-      ad: newAd // user_token и nickname (для клиента, tg_id скрыт)
+      ad: newAd, // user_token и nickname (для клиента, tg_id скрыт)
+      showFemaleBonusModal,
+      femaleBonusLost
     });
 
   } catch (error: any) {
