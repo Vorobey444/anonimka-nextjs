@@ -12736,7 +12736,22 @@ function closeAndroidAuthModal() {
 
 function openTelegramBot() {
     // Открываем бота с параметром для генерации кода авторизации
-    window.open('https://t.me/anonimka_kz_bot?start=app_auth', '_blank');
+    const telegramWindow = window.open('https://t.me/anonimka_kz_bot?start=app_auth', '_blank');
+    
+    // Автоматически закрываем окно через 2 секунды (достаточно для открытия Telegram)
+    setTimeout(() => {
+        if (telegramWindow) {
+            telegramWindow.close();
+        }
+    }, 2000);
+    
+    // Фокусируем на поле ввода кода
+    setTimeout(() => {
+        const input = document.getElementById('androidAuthCodeInput');
+        if (input) {
+            input.focus();
+        }
+    }, 2500);
 }
 
 async function verifyAndroidAuthCode(code) {
