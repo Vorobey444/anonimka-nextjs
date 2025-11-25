@@ -2186,48 +2186,43 @@ function showTelegramAuthModal() {
     // Генерируем QR-код
     generateTelegramQR(authToken);
     
-    // Показываем кнопку Deep Link только если НЕ в Telegram WebApp
-    const isInTelegramWebApp = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
-    if (!isInTelegramWebApp) {
-        console.log('🌐 Пользователь в обычном браузере - показываем кнопку Deep Link');
-        const loginWidgetContainer = document.getElementById('loginWidgetContainer');
-        const loginWidgetDivider = document.getElementById('loginWidgetDivider');
-        const deepLinkButton = document.getElementById('telegramDeepLink');
-        
-        // Устанавливаем Deep Link для открытия бота
-        const botUsername = 'anonimka_kz_bot';
-        
-        // Определяем находимся ли мы в Android приложении
-        const isAndroidApp = navigator.userAgent.includes('wv') || 
-                           navigator.userAgent.includes('Android') ||
-                           window.location.protocol === 'file:';
-        
-        console.log('🔍 Debug auth:', {
-            userAgent: navigator.userAgent,
-            protocol: window.location.protocol,
-            isAndroidApp: isAndroidApp,
-            authToken: authToken
-        });
-        
-        // Если в Android приложении - добавляем параметр для возврата
-        const startParam = isAndroidApp ? `${authToken}_app` : authToken;
-        const telegramDeepLink = `https://t.me/${botUsername}?start=${startParam}`;
-        
-        console.log('🔗 Deep link:', telegramDeepLink);
-        
-        if (deepLinkButton) {
-            deepLinkButton.href = telegramDeepLink;
-            console.log('✅ Deep link установлен на кнопку');
-        }
-        
-        if (loginWidgetContainer) {
-            loginWidgetContainer.style.display = 'block';
-        }
-        if (loginWidgetDivider) {
-            loginWidgetDivider.style.display = 'flex';
-        }
-    } else {
-        console.log('📱 Пользователь в Telegram WebApp - скрываем кнопку Deep Link');
+    // ВСЕГДА показываем кнопку Deep Link (работает и в WebView и в браузере)
+    console.log('🌐 Настраиваем кнопку Deep Link для авторизации');
+    const loginWidgetContainer = document.getElementById('loginWidgetContainer');
+    const loginWidgetDivider = document.getElementById('loginWidgetDivider');
+    const deepLinkButton = document.getElementById('telegramDeepLink');
+    
+    // Устанавливаем Deep Link для открытия бота
+    const botUsername = 'anonimka_kz_bot';
+    
+    // Определяем находимся ли мы в Android приложении
+    const isAndroidApp = navigator.userAgent.includes('wv') || 
+                       navigator.userAgent.includes('Android') ||
+                       window.location.protocol === 'file:';
+    
+    console.log('🔍 Debug auth:', {
+        userAgent: navigator.userAgent,
+        protocol: window.location.protocol,
+        isAndroidApp: isAndroidApp,
+        authToken: authToken
+    });
+    
+    // Если в Android приложении - добавляем параметр для возврата
+    const startParam = isAndroidApp ? `${authToken}_app` : authToken;
+    const telegramDeepLink = `https://t.me/${botUsername}?start=${startParam}`;
+    
+    console.log('🔗 Deep link:', telegramDeepLink);
+    
+    if (deepLinkButton) {
+        deepLinkButton.href = telegramDeepLink;
+        console.log('✅ Deep link установлен на кнопку');
+    }
+    
+    if (loginWidgetContainer) {
+        loginWidgetContainer.style.display = 'block';
+    }
+    if (loginWidgetDivider) {
+        loginWidgetDivider.style.display = 'flex';
     }
     
     // Проверяем авторизацию каждые 2 секунды через API сервера
