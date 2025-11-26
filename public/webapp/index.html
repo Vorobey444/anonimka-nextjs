@@ -22,8 +22,11 @@
 <body>
     <!-- Переключатель Premium (показывается на всех страницах) -->
     <div class="premium-toggle" id="premiumToggle">
-    <button class="premium-btn active free" id="freeBtn" onclick="showPremiumModal()">FREE</button>
-    <button class="premium-btn" id="proBtn" onclick="showPremiumModal()" title="Доступно через приглашение друга">PRO</button>
+        <div>
+            <button class="premium-btn active free" id="freeBtn" onclick="showPremiumModal()">FREE</button>
+            <button class="premium-btn" id="proBtn" onclick="showPremiumModal()" title="Доступно через приглашение друга">PRO</button>
+        </div>
+        <div class="premium-info" id="premiumInfo" style="display: none;"></div>
     </div>
 
     <div class="app-container">

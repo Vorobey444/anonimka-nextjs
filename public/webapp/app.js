@@ -9414,6 +9414,7 @@ async function manualRefreshLimits() {
 function updatePremiumUI() {
     const freeBtn = document.getElementById('freeBtn');
     const proBtn = document.getElementById('proBtn');
+    const premiumInfo = document.getElementById('premiumInfo');
     const referralBtn = document.querySelector('.referral-button');
     
     if (!freeBtn || !proBtn) return;
@@ -9436,7 +9437,73 @@ function updatePremiumUI() {
         // PRO активен
         proBtn.classList.add('active', 'pro');
         
-        // Показываем дату окончания PRO
+        // Показываем информацию о подписке
+        if (premiumInfo) {
+            let infoText = '';
+            let infoClass = '';
+            
+            const premiumSource = userPremiumStatus.premiumSource || '';
+            
+            if (premiumSource === 'female_bonus') {
+                infoText = '💝 Бонус для девушек<br>Действует: Бессрочно';
+                infoClass = 'female-bonus';
+            } else if (premiumSource === 'referral') {
+                if (userPremiumStatus.premiumUntil) {
+                    const expiryDate = new Date(userPremiumStatus.premiumUntil);
+                    const formattedDate = expiryDate.toLocaleDateString('ru-RU', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric' 
+                    });
+                    infoText = `🎁 Реферальный бонус<br>До: ${formattedDate}`;
+                    infoClass = 'referral';
+                }
+            } else if (premiumSource === 'paid') {
+                if (userPremiumStatus.premiumUntil) {
+                    const expiryDate = new Date(userPremiumStatus.premiumUntil);
+                    const formattedDate = expiryDate.toLocaleDateString('ru-RU', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric' 
+                    });
+                    infoText = `⭐ Оплаченная подписка<br>До: ${formattedDate}`;
+                    infoClass = 'paid';
+                }
+            } else if (premiumSource === 'trial') {
+                if (userPremiumStatus.premiumUntil) {
+                    const expiryDate = new Date(userPremiumStatus.premiumUntil);
+                    const formattedDate = expiryDate.toLocaleDateString('ru-RU', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric' 
+                    });
+                    infoText = `🎉 Пробный период<br>До: ${formattedDate}`;
+                    infoClass = 'referral';
+                }
+            } else {
+                // Если источник неизвестен, показываем только дату
+                if (userPremiumStatus.premiumUntil) {
+                    const expiryDate = new Date(userPremiumStatus.premiumUntil);
+                    const formattedDate = expiryDate.toLocaleDateString('ru-RU', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric' 
+                    });
+                    infoText = `До: ${formattedDate}`;
+                    infoClass = 'paid';
+                }
+            }
+            
+            if (infoText) {
+                premiumInfo.innerHTML = infoText;
+                premiumInfo.className = 'premium-info ' + infoClass;
+                premiumInfo.style.display = 'block';
+            } else {
+                premiumInfo.style.display = 'none';
+            }
+        }
+        
+        // Показываем дату окончания PRO в title
         if (userPremiumStatus.premiumUntil) {
             const expiryDate = new Date(userPremiumStatus.premiumUntil);
             const formattedDate = expiryDate.toLocaleDateString('ru-RU', { 
@@ -9454,6 +9521,11 @@ function updatePremiumUI() {
     } else {
         // FREE активен
         freeBtn.classList.add('active', 'free');
+        
+        // Скрываем информацию о подписке
+        if (premiumInfo) {
+            premiumInfo.style.display = 'none';
+        }
         
         // Показываем реферальную кнопку для FREE пользователей
         if (referralBtn) {
