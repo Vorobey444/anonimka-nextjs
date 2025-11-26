@@ -9654,6 +9654,13 @@ function updateCurrentSubscriptionInfo() {
         const premiumSource = userPremiumStatus.premiumSource || userPremiumStatus.subscriptionSource || '';
         let subscriptionType = '⭐ PRO подписка';
         
+        console.log('🔍 updateCurrentSubscriptionInfo DEBUG:', {
+            premiumSource,
+            premiumUntil: userPremiumStatus.premiumUntil,
+            isPremium: userPremiumStatus.isPremium,
+            fullStatus: userPremiumStatus
+        });
+        
         if (premiumSource === 'female_bonus') {
             subscriptionType = '💝 Бонус для девушек';
         } else if (premiumSource === 'trial') {
