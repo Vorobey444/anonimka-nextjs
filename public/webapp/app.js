@@ -9648,46 +9648,66 @@ function updateCurrentSubscriptionInfo() {
     
     if (!infoBlock || !detailsDiv) return;
     
-    if (userPremiumStatus.isPremium && userPremiumStatus.premiumUntil) {
-        const until = new Date(userPremiumStatus.premiumUntil);
-        const formattedDate = until.toLocaleDateString('ru-RU', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        // Вычисляем оставшееся время
-        const diff = until.getTime() - Date.now();
-        let timeLeftText = '';
-        if (diff > 0) {
-            const days = Math.floor(diff / (1000*60*60*24));
-            const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
-            
-            if (days > 0) {
-                timeLeftText = `Осталось: ${days} дн. ${hours} ч.`;
-            } else {
-                const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
-                timeLeftText = `Осталось: ${hours} ч. ${mins} м.`;
-            }
-        }
-        
+    if (userPremiumStatus.isPremium) {
         // Определяем тип подписки
+        const premiumSource = userPremiumStatus.premiumSource || userPremiumStatus.subscriptionSource || '';
         let subscriptionType = '⭐ PRO подписка';
-        if (userPremiumStatus.subscriptionSource === 'trial') {
+        
+        if (premiumSource === 'female_bonus') {
+            subscriptionType = '💝 Бонус для девушек';
+        } else if (premiumSource === 'trial') {
             subscriptionType = '🎁 Пробный период';
-        } else if (userPremiumStatus.subscriptionSource === 'referral') {
+        } else if (premiumSource === 'referral') {
             subscriptionType = '🎉 Реферальная программа';
-        } else if (userPremiumStatus.subscriptionSource === 'stars') {
+        } else if (premiumSource === 'paid' || premiumSource === 'stars') {
             subscriptionType = '⭐ Оплачено через Stars';
         }
         
-        detailsDiv.innerHTML = `
-            <div style="margin-bottom: 3px;">${subscriptionType}</div>
-            <div style="margin-bottom: 3px;">📅 Активен до: ${formattedDate}</div>
-            <div style="color: var(--neon-pink);">${timeLeftText}</div>
-        `;
+        // Для бессрочного бонуса (female_bonus)
+        if (premiumSource === 'female_bonus') {
+            detailsDiv.innerHTML = `
+                <div style="margin-bottom: 3px;">${subscriptionType}</div>
+                <div style="margin-bottom: 3px;">✨ Действует: <span style="color: var(--neon-pink); font-weight: bold;">Бессрочно</span></div>
+                <div style="color: var(--text-gray); font-size: 0.85rem;">Все возможности PRO без ограничений</div>
+            `;
+        } else if (userPremiumStatus.premiumUntil) {
+            // Для временных подписок
+            const until = new Date(userPremiumStatus.premiumUntil);
+            const formattedDate = until.toLocaleDateString('ru-RU', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Вычисляем оставшееся время
+            const diff = until.getTime() - Date.now();
+            let timeLeftText = '';
+            if (diff > 0) {
+                const days = Math.floor(diff / (1000*60*60*24));
+                const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+                
+                if (days > 0) {
+                    timeLeftText = `Осталось: ${days} дн. ${hours} ч.`;
+                } else {
+                    const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
+                    timeLeftText = `Осталось: ${hours} ч. ${mins} м.`;
+                }
+            }
+            
+            detailsDiv.innerHTML = `
+                <div style="margin-bottom: 3px;">${subscriptionType}</div>
+                <div style="margin-bottom: 3px;">📅 Активен до: ${formattedDate}</div>
+                <div style="color: var(--neon-pink);">${timeLeftText}</div>
+            `;
+        } else {
+            // Если нет даты - просто показываем тип
+            detailsDiv.innerHTML = `
+                <div style="margin-bottom: 3px;">${subscriptionType}</div>
+                <div style="color: var(--neon-pink);">Активна</div>
+            `;
+        }
         
         infoBlock.style.display = 'block';
         
