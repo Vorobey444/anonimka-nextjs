@@ -12974,23 +12974,82 @@ function closeAndroidAuthModal() {
 }
 
 function openTelegramBot() {
-    // Открываем бота с параметром для генерации кода авторизации
-    const telegramWindow = window.open('https://t.me/anonimka_kz_bot?start=app_auth', '_blank');
+    const button = document.querySelector('.android-auth-button-primary');
+    const originalText = button ? button.textContent : '';
     
-    // Автоматически закрываем окно через 2 секунды (достаточно для открытия Telegram)
-    setTimeout(() => {
-        if (telegramWindow) {
-            telegramWindow.close();
+    try {
+        // Блокируем кнопку и показываем состояние загрузки
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Открываем Telegram...';
+            button.style.opacity = '0.6';
         }
-    }, 2000);
-    
-    // Фокусируем на поле ввода кода
-    setTimeout(() => {
-        const input = document.getElementById('androidAuthCodeInput');
-        if (input) {
-            input.focus();
+        
+        // Проверяем подключение к интернету
+        if (!navigator.onLine) {
+            throw new Error('Нет подключения к интернету');
         }
-    }, 2500);
+        
+        // Открываем бота с параметром для генерации кода авторизации
+        const telegramWindow = window.open('https://t.me/anonimka_kz_bot?start=app_auth', '_blank');
+        
+        if (!telegramWindow || telegramWindow.closed || typeof telegramWindow.closed === 'undefined') {
+            throw new Error('Не удалось открыть Telegram. Проверьте, что у вас установлено приложение Telegram.');
+        }
+        
+        // Автоматически закрываем окно через 2 секунды (достаточно для открытия Telegram)
+        setTimeout(() => {
+            if (telegramWindow && !telegramWindow.closed) {
+                try {
+                    telegramWindow.close();
+                } catch (e) {
+                    // Игнорируем ошибки при закрытии
+                }
+            }
+        }, 2000);
+        
+        // Разблокируем кнопку через 3 секунды (после закрытия окна)
+        setTimeout(() => {
+            if (button) {
+                button.disabled = false;
+                button.textContent = originalText;
+                button.style.opacity = '1';
+            }
+        }, 3000);
+        
+        // Фокусируем на поле ввода кода
+        setTimeout(() => {
+            const input = document.getElementById('androidAuthCodeInput');
+            if (input) {
+                input.focus();
+            }
+        }, 2500);
+        
+    } catch (error) {
+        console.error('❌ Ошибка открытия Telegram:', error);
+        
+        // Показываем ошибку пользователю
+        const errorDiv = document.getElementById('androidAuthError');
+        if (errorDiv) {
+            errorDiv.style.display = 'block';
+            errorDiv.style.background = 'rgba(255, 59, 48, 0.2)';
+            errorDiv.style.borderColor = 'rgba(255, 59, 48, 0.4)';
+            errorDiv.style.color = '#ff3b30';
+            errorDiv.textContent = error.message;
+            
+            // Скрываем ошибку через 5 секунд
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Разблокируем кнопку немедленно при ошибке
+        if (button) {
+            button.disabled = false;
+            button.textContent = originalText;
+            button.style.opacity = '1';
+        }
+    }
 }
 
 async function verifyAndroidAuthCode(code) {
