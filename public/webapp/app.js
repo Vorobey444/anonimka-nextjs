@@ -9236,6 +9236,7 @@ async function loadPremiumStatus() {
         console.log('✅ Premium статус загружен с сервера:', {
             isPremium: userPremiumStatus.isPremium,
             premiumUntil: userPremiumStatus.premiumUntil,
+            premiumSource: userPremiumStatus.premiumSource,
             limits: userPremiumStatus.limits
         });
         

@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           
           // Сначала проверяем users (источник истины)
           const userResult = await sql`
-            SELECT id, is_premium, premium_until FROM users WHERE user_token = ${userId} LIMIT 1
+            SELECT id, is_premium, premium_until, auto_premium_source FROM users WHERE user_token = ${userId} LIMIT 1
           `;
 
           const tgId = userResult.rows.length > 0 ? userResult.rows[0].id : null;
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
             
             const userIsPremium = userResult.rows[0].is_premium || false;
             const userPremiumUntil = userResult.rows[0].premium_until;
+            const userPremiumSource = userResult.rows[0].auto_premium_source || null;
             const now = new Date();
             const premiumExpired = userPremiumUntil ? new Date(userPremiumUntil) <= now : false;
             
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
                 data: {
                   isPremium: true,
                   premiumUntil: userPremiumUntil,
+                  premiumSource: userPremiumSource,
                   country: 'KZ',
                   limits: {
                     photos: {
@@ -166,6 +168,7 @@ export async function POST(request: NextRequest) {
                 data: {
                   isPremium: true,
                   premiumUntil: premiumUntilToken,
+                  premiumSource: null,
                   country: 'KZ',
                   limits: {
                     photos: {
@@ -283,31 +286,36 @@ export async function POST(request: NextRequest) {
             isPremium = false;
           } else {
             // Определяем источник подписки только если она активна
-            // 1. Проверяем Stars платежи
-            const starsCheck = await sql`
-              SELECT id FROM premium_transactions 
-              WHERE telegram_id = ${numericUserId} 
-              ORDER BY created_at DESC 
-              LIMIT 1
-            `;
-            if (starsCheck.rows.length > 0) {
-              subscriptionSource = 'stars';
+            // ПРИОРИТЕТ 1: Проверяем auto_premium_source (источник истины для автоматических подписок)
+            if (userData.auto_premium_source) {
+              subscriptionSource = userData.auto_premium_source;
             } else {
-              // 2. Проверяем реферальную программу
-              const referralCheck = await sql`
-                SELECT id FROM referrals 
-                WHERE referrer_id = ${numericUserId} AND reward_given = true
+              // ПРИОРИТЕТ 2: Проверяем Stars платежи
+              const starsCheck = await sql`
+                SELECT id FROM premium_transactions 
+                WHERE telegram_id = ${numericUserId} 
+                ORDER BY created_at DESC 
                 LIMIT 1
               `;
-              if (referralCheck.rows.length > 0) {
-                subscriptionSource = 'referral';
+              if (starsCheck.rows.length > 0) {
+                subscriptionSource = 'stars';
               } else {
-                // 3. Проверяем триал (7 часов)
-                if (userData.trial7h_used) {
-                  const premiumDuration = until.getTime() - now.getTime();
-                  const hours = premiumDuration / (1000 * 60 * 60);
-                  if (hours <= 7) {
-                    subscriptionSource = 'trial';
+                // ПРИОРИТЕТ 3: Проверяем реферальную программу
+                const referralCheck = await sql`
+                  SELECT id FROM referrals 
+                  WHERE referrer_id = ${numericUserId} AND reward_given = true
+                  LIMIT 1
+                `;
+                if (referralCheck.rows.length > 0) {
+                  subscriptionSource = 'referral';
+                } else {
+                  // ПРИОРИТЕТ 4: Проверяем триал (7 часов)
+                  if (userData.trial7h_used) {
+                    const premiumDuration = until.getTime() - now.getTime();
+                    const hours = premiumDuration / (1000 * 60 * 60);
+                    if (hours <= 7) {
+                      subscriptionSource = 'trial';
+                    }
                   }
                 }
               }
@@ -357,7 +365,7 @@ export async function POST(request: NextRequest) {
           data: {
             isPremium,
             premiumUntil: userData.premium_until,
-            subscriptionSource,
+            premiumSource: subscriptionSource,
             trial7h_used: userData.trial7h_used || false,
             country: userData.country || 'KZ',
             limits: {
@@ -705,7 +713,8 @@ export async function POST(request: NextRequest) {
               success: true,
               message: 'Female bonus activated successfully',
               isPremium: true,
-              premiumUntil: null // Бессрочный
+              premiumUntil: null, // Бессрочный
+              premiumSource: 'female_bonus'
             },
             error: null
           });
