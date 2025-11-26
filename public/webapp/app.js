@@ -9664,14 +9664,8 @@ function updateCurrentSubscriptionInfo() {
             subscriptionType = '⭐ Оплачено через Stars';
         }
         
-        // Для бессрочного бонуса (female_bonus)
-        if (premiumSource === 'female_bonus') {
-            detailsDiv.innerHTML = `
-                <div style="margin-bottom: 3px;">${subscriptionType}</div>
-                <div style="margin-bottom: 3px;">✨ Действует: <span style="color: var(--neon-pink); font-weight: bold;">Бессрочно</span></div>
-                <div style="color: var(--text-gray); font-size: 0.85rem;">Все возможности PRO без ограничений</div>
-            `;
-        } else if (userPremiumStatus.premiumUntil) {
+        // Для всех подписок с датой
+        if (userPremiumStatus.premiumUntil) {
             // Для временных подписок
             const until = new Date(userPremiumStatus.premiumUntil);
             const formattedDate = until.toLocaleDateString('ru-RU', { 

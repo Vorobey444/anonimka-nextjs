@@ -199,6 +199,7 @@ export async function PUT(request: NextRequest) {
                 UPDATE users
                 SET is_premium = TRUE,
                     premium_until = ${baseExpiry.toISOString()},
+                    auto_premium_source = 'referral',
                     updated_at = NOW()
                 WHERE id = ${referral.referrer_id}
             `;
