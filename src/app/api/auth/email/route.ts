@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
-import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 
 // Генерация user_token для email пользователей
 function generateUserToken(email: string): string {
@@ -13,11 +13,55 @@ function generateUserToken(email: string): string {
     .digest('hex');
 }
 
+// Генерация 6-значного кода подтверждения
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Отправка email через nodemailer
+async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
+  try {
+    // Конфигурация из переменных окружения
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+
+    await transporter.sendMail({
+      from: `"Anonimka" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Код подтверждения - Anonimka',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #E91E63;">🔐 Код подтверждения</h2>
+          <p>Ваш код для входа в приложение Anonimka:</p>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; text-align: center; font-size: 32px; font-weight: bold; color: #E91E63; letter-spacing: 5px;">
+            ${code}
+          </div>
+          <p style="color: #666; margin-top: 20px;">Код действителен 10 минут.</p>
+          <p style="color: #999; font-size: 12px;">Если вы не запрашивали этот код, просто проигнорируйте это письмо.</p>
+        </div>
+      `
+    });
+
+    console.log('[EMAIL] ✅ Код отправлен на:', email);
+    return true;
+  } catch (error) {
+    console.error('[EMAIL] ❌ Ошибка отправки:', error);
+    return false;
+  }
+}
+
 // POST /api/auth/email
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, email, password, nickname } = body;
+    const { action, email, code } = body;
 
     // Валидация email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -28,172 +72,183 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Валидация пароля (минимум 6 символов)
-    if (!password || password.length < 6) {
-      return NextResponse.json(
-        { error: 'Пароль должен содержать минимум 6 символов' },
-        { status: 400 }
-      );
-    }
-
     switch (action) {
-      case 'register': {
-        console.log('[EMAIL AUTH] 📝 Регистрация нового пользователя:', email);
+      case 'send-code': {
+        console.log('[EMAIL AUTH] 📧 Отправка кода на:', email);
 
-        // Проверяем, существует ли уже пользователь с таким email
+        // Генерируем код
+        const verificationCode = generateVerificationCode();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 минут
+
+        // Проверяем, существует ли пользователь
         const existingUser = await sql`
           SELECT id FROM users WHERE email = ${email} LIMIT 1
         `;
 
-        if (existingUser.rows.length > 0) {
+        // Сохраняем код в таблицу verification_codes
+        await sql`
+          INSERT INTO verification_codes (email, code, expires_at, created_at)
+          VALUES (${email}, ${verificationCode}, ${expiresAt.toISOString()}, NOW())
+          ON CONFLICT (email) 
+          DO UPDATE SET 
+            code = ${verificationCode},
+            expires_at = ${expiresAt.toISOString()},
+            created_at = NOW()
+        `;
+
+        // Отправляем email
+        const emailSent = await sendVerificationEmail(email, verificationCode);
+
+        if (!emailSent) {
           return NextResponse.json(
-            { error: 'Пользователь с таким email уже существует' },
-            { status: 409 }
+            { error: 'Ошибка отправки email. Попробуйте позже.' },
+            { status: 500 }
           );
         }
 
-        // Валидация никнейма
-        if (!nickname || nickname.length < 2 || nickname.length > 20) {
+        console.log('[EMAIL AUTH] ✅ Код отправлен:', email);
+
+        return NextResponse.json({
+          success: true,
+          message: 'Код отправлен на ваш email',
+          isNewUser: existingUser.rows.length === 0
+        });
+      }
+
+      case 'verify-code': {
+        console.log('[EMAIL AUTH] 🔐 Проверка кода для:', email);
+
+        if (!code || code.length !== 6) {
           return NextResponse.json(
-            { error: 'Никнейм должен содержать от 2 до 20 символов' },
+            { error: 'Неверный формат кода' },
             { status: 400 }
           );
         }
 
-        // Хешируем пароль
-        const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(password, salt);
-
-        // Генерируем user_token
-        const userToken = generateUserToken(email);
-
-        // Создаём пользователя
-        const newUser = await sql`
-          INSERT INTO users (
-            user_token,
-            email,
-            email_verified,
-            password_hash,
-            auth_method,
-            is_premium,
-            created_from,
-            created_at,
-            last_login_at
-          )
-          VALUES (
-            ${userToken},
-            ${email},
-            false,
-            ${passwordHash},
-            'email',
-            false,
-            'android',
-            NOW(),
-            NOW()
-          )
-          RETURNING id, user_token, email, is_premium, created_at
+        // Проверяем код
+        const verificationResult = await sql`
+          SELECT code, expires_at 
+          FROM verification_codes 
+          WHERE email = ${email}
+          LIMIT 1
         `;
 
-        const userId = newUser.rows[0].id;
+        if (verificationResult.rows.length === 0) {
+          return NextResponse.json(
+            { error: 'Код не найден. Запросите новый код.' },
+            { status: 404 }
+          );
+        }
 
-        // Создаём запись в user_limits
-        await sql`
-          INSERT INTO user_limits (user_id)
-          VALUES (${userId})
-          ON CONFLICT (user_id) DO NOTHING
-        `;
+        const { code: savedCode, expires_at } = verificationResult.rows[0];
 
-        console.log('[EMAIL AUTH] ✅ Пользователь зарегистрирован:', userId);
+        // Проверяем срок действия
+        if (new Date() > new Date(expires_at)) {
+          return NextResponse.json(
+            { error: 'Код истек. Запросите новый код.' },
+            { status: 410 }
+          );
+        }
 
-        return NextResponse.json({
-          success: true,
-          user: {
-            id: userId,
-            email: email,
-            userToken: userToken,
-            nickname: nickname,
-            isPremium: false,
-            authMethod: 'email'
-          }
-        });
-      }
+        // Проверяем совпадение кода
+        if (code !== savedCode) {
+          return NextResponse.json(
+            { error: 'Неверный код' },
+            { status: 401 }
+          );
+        }
 
-      case 'login': {
-        console.log('[EMAIL AUTH] 🔐 Вход пользователя:', email);
-
-        // Ищем пользователя по email
-        const userResult = await sql`
-          SELECT 
-            id, 
-            user_token, 
-            email, 
-            password_hash, 
-            is_premium,
-            premium_until,
-            auto_premium_source,
-            auth_method
+        // Код верный - ищем или создаём пользователя
+        let user = await sql`
+          SELECT id, user_token, email, is_premium, premium_until, auto_premium_source
           FROM users 
           WHERE email = ${email}
           LIMIT 1
         `;
 
-        if (userResult.rows.length === 0) {
-          return NextResponse.json(
-            { error: 'Неверный email или пароль' },
-            { status: 401 }
-          );
+        let userId: number;
+        let userToken: string;
+        let isNewUser = false;
+
+        if (user.rows.length === 0) {
+          // Создаём нового пользователя
+          userToken = generateUserToken(email);
+          
+          const newUser = await sql`
+            INSERT INTO users (
+              user_token,
+              email,
+              email_verified,
+              auth_method,
+              is_premium,
+              created_from,
+              created_at,
+              last_login_at
+            )
+            VALUES (
+              ${userToken},
+              ${email},
+              true,
+              'email',
+              false,
+              'android',
+              NOW(),
+              NOW()
+            )
+            RETURNING id, user_token, email, is_premium
+          `;
+
+          userId = newUser.rows[0].id;
+          isNewUser = true;
+
+          // Создаём запись в user_limits
+          await sql`
+            INSERT INTO user_limits (user_id)
+            VALUES (${userId})
+            ON CONFLICT (user_id) DO NOTHING
+          `;
+
+          console.log('[EMAIL AUTH] ✅ Новый пользователь создан:', userId);
+        } else {
+          // Обновляем существующего пользователя
+          userId = user.rows[0].id;
+          userToken = user.rows[0].user_token;
+
+          await sql`
+            UPDATE users 
+            SET email_verified = true,
+                last_login_at = NOW()
+            WHERE id = ${userId}
+          `;
+
+          console.log('[EMAIL AUTH] ✅ Пользователь вошел:', userId);
         }
 
-        const user = userResult.rows[0];
-
-        // Проверяем метод авторизации
-        if (user.auth_method !== 'email') {
-          return NextResponse.json(
-            { error: 'Этот аккаунт использует другой метод входа' },
-            { status: 403 }
-          );
-        }
-
-        // Проверяем пароль
-        const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-        if (!isPasswordValid) {
-          return NextResponse.json(
-            { error: 'Неверный email или пароль' },
-            { status: 401 }
-          );
-        }
-
-        // Обновляем last_login_at
+        // Удаляем использованный код
         await sql`
-          UPDATE users 
-          SET last_login_at = NOW()
-          WHERE id = ${user.id}
+          DELETE FROM verification_codes WHERE email = ${email}
         `;
 
-        console.log('[EMAIL AUTH] ✅ Вход успешен:', user.id);
+        // Получаем полную информацию о пользователе
+        const userInfo = await sql`
+          SELECT id, email, user_token, is_premium, premium_until, auto_premium_source
+          FROM users 
+          WHERE id = ${userId}
+          LIMIT 1
+        `;
 
         return NextResponse.json({
           success: true,
+          isNewUser,
           user: {
-            id: user.id,
-            email: user.email,
-            userToken: user.user_token,
-            isPremium: user.is_premium || false,
-            premiumUntil: user.premium_until,
-            premiumSource: user.auto_premium_source,
+            id: userInfo.rows[0].id,
+            email: userInfo.rows[0].email,
+            userToken: userInfo.rows[0].user_token,
+            isPremium: userInfo.rows[0].is_premium || false,
+            premiumUntil: userInfo.rows[0].premium_until,
+            premiumSource: userInfo.rows[0].auto_premium_source,
             authMethod: 'email'
           }
-        });
-      }
-
-      case 'check-email': {
-        // Проверка существования email (для валидации на клиенте)
-        const existingUser = await sql`
-          SELECT id FROM users WHERE email = ${email} LIMIT 1
-        `;
-
-        return NextResponse.json({
-          exists: existingUser.rows.length > 0
         });
       }
 
