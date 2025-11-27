@@ -9540,6 +9540,20 @@ async function showPremiumModal() {
     const modal = document.getElementById('premiumModal');
     modal.style.display = 'flex';
     
+    // ПРИНУДИТЕЛЬНО обновляем статус премиум с сервера (очищаем кэш)
+    console.log('🔄 Принудительное обновление Premium статуса...');
+    const userId = localStorage.getItem('user_token') || localStorage.getItem('user_id');
+    if (userId) {
+        try {
+            localStorage.removeItem(`premium_status_${userId}`);
+            localStorage.removeItem(`premium_version_${userId}`);
+            await loadPremiumStatus();
+            console.log('✅ Premium статус обновлен');
+        } catch (err) {
+            console.error('❌ Ошибка обновления статуса:', err);
+        }
+    }
+    
     // Определяем валюту по локации пользователя
     const userLocation = getUserLocation();
     console.log('🌍 getUserLocation():', userLocation);
