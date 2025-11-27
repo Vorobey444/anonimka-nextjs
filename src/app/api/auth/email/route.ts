@@ -21,11 +21,13 @@ function generateVerificationCode(): string {
 // Отправка email через nodemailer
 async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
   try {
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+    
     // Конфигурация из переменных окружения
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
+      port: smtpPort,
+      secure: smtpPort === 465, // true для порта 465 (Яндекс), false для 587 (Gmail)
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
@@ -35,7 +37,7 @@ async function sendVerificationEmail(email: string, code: string): Promise<boole
     await transporter.sendMail({
       from: `"Anonimka" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Код подтверждения - Anonimka',
+      subject: 'Код подтверждения Anonimka',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #E91E63;">🔐 Код подтверждения</h2>
