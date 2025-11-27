@@ -1291,14 +1291,20 @@ function checkTelegramAuth() {
     console.log('    - tg.initDataUnsafe?.user:', tg.initDataUnsafe?.user);
     console.log('    - tg.initDataUnsafe?.user?.id:', tg.initDataUnsafe?.user?.id);
     
-    // Проверяем если загружено в Android WebView - работаем в обычном режиме
+    // Проверяем если загружено в Android WebView - работаем в обычном режиме с email авторизацией
     const isAndroidWebView = navigator.userAgent.includes('wv') || 
                             (navigator.userAgent.includes('Android') && window.AndroidInterface);
     
     if (isAndroidWebView) {
-        console.log('📱 Обнаружен Android WebView - показываем приветственный экран');
-        showAndroidWelcomeScreen();
-        return false; // Android приложение = только лончер
+        console.log('📱 Обнаружен Android WebView - используем email авторизацию');
+        // Проверяем сохранённый user_token для email авторизации
+        const userToken = localStorage.getItem('user_token');
+        if (userToken) {
+            console.log('✅ Найден user_token, пользователь авторизован через email');
+            return true; // Пользователь уже авторизован
+        }
+        console.log('⚠️ user_token не найден, требуется email авторизация');
+        return false; // Требуется авторизация
     }
     
     // Если запущено через Telegram WebApp, авторизация автоматическая
@@ -12589,195 +12595,7 @@ function showTelegramLinkNotification() {
     showAndroidAuthModal();
 }
 
-// Функция показа приветственного экрана для Android приложения
-function showAndroidWelcomeScreen() {
-    // Создаем overlay
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #0a0a0a;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-        padding: 20px;
-        box-sizing: border-box;
-    `;
-
-    const content = document.createElement('div');
-    content.style.cssText = `
-        background: rgba(20, 20, 30, 0.95);
-        border-radius: 24px;
-        padding: 50px 30px 40px;
-        max-width: 420px;
-        width: 100%;
-        text-align: center;
-        box-shadow: 0 0 80px rgba(138, 43, 226, 0.4), 0 0 40px rgba(0, 191, 255, 0.3);
-        border: 2px solid rgba(138, 43, 226, 0.3);
-        animation: slideUp 0.5s ease-out, neonPulse 2s ease-in-out infinite;
-        position: relative;
-    `;
-
-    content.innerHTML = `
-        <style>
-            @keyframes slideUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(30px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            
-            @keyframes neonPulse {
-                0%, 100% {
-                    box-shadow: 0 0 80px rgba(138, 43, 226, 0.4), 0 0 40px rgba(0, 191, 255, 0.3);
-                }
-                50% {
-                    box-shadow: 0 0 100px rgba(138, 43, 226, 0.6), 0 0 60px rgba(0, 191, 255, 0.5);
-                }
-            }
-            
-            @keyframes neonGlow {
-                0%, 100% {
-                    text-shadow: 
-                        0 0 10px rgba(138, 43, 226, 0.8),
-                        0 0 20px rgba(138, 43, 226, 0.6),
-                        0 0 30px rgba(138, 43, 226, 0.4),
-                        0 0 40px rgba(0, 191, 255, 0.3);
-                }
-                50% {
-                    text-shadow: 
-                        0 0 15px rgba(138, 43, 226, 1),
-                        0 0 30px rgba(138, 43, 226, 0.8),
-                        0 0 45px rgba(138, 43, 226, 0.6),
-                        0 0 60px rgba(0, 191, 255, 0.5);
-                }
-            }
-        </style>
-        
-        <!-- Логотип Anonimka -->
-        <div style="
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 28px;
-            position: relative;
-            animation: neonGlow 2s ease-in-out infinite;
-        ">
-            <img src="/webapp/logo.png" style="
-                width: 100%;
-                height: 100%;
-                border-radius: 50%;
-                object-fit: cover;
-                box-shadow: 
-                    0 0 40px rgba(138, 43, 226, 0.8),
-                    0 0 80px rgba(0, 191, 255, 0.6),
-                    0 0 120px rgba(138, 43, 226, 0.4);
-            " />
-        </div>
-        
-        <h1 style="
-            background: linear-gradient(135deg, #8a2be2 0%, #00bfff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-size: 32px;
-            font-weight: 800;
-            margin: 0 0 4px 0;
-            line-height: 1.2;
-            text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
-            letter-spacing: 0.5px;
-        ">Anonimka.KZ</h1>
-        
-        <p style="
-            color: #a0a0ff;
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0 0 32px 0;
-            line-height: 1.3;
-        ">Анонимные знакомства</p>
-        
-        <p style="
-            color: #c0c0d0;
-            font-size: 16px;
-            line-height: 1.6;
-            margin: 0 0 32px 0;
-        ">
-            Приложение работает через <b style="
-                background: linear-gradient(135deg, #8a2be2 0%, #00bfff 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-            ">Telegram</b>
-        </p>
-        
-        <button id="androidLaunchBtn" style="
-            background: linear-gradient(135deg, #8a2be2 0%, #00bfff 100%);
-            color: white;
-            border: none;
-            border-radius: 16px;
-            padding: 18px 40px;
-            font-size: 19px;
-            font-weight: 700;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.3s ease;
-            box-shadow: 
-                0 0 20px rgba(138, 43, 226, 0.5),
-                0 0 40px rgba(0, 191, 255, 0.3),
-                0 4px 15px rgba(0, 0, 0, 0.3);
-            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            letter-spacing: 0.5px;
-            position: relative;
-            overflow: hidden;
-        " 
-        onmouseover="
-            this.style.transform='translateY(-3px) scale(1.02)'; 
-            this.style.boxShadow='0 0 30px rgba(138, 43, 226, 0.7), 0 0 60px rgba(0, 191, 255, 0.5), 0 6px 20px rgba(0, 0, 0, 0.4)';
-        " 
-        onmouseout="
-            this.style.transform='translateY(0) scale(1)'; 
-            this.style.boxShadow='0 0 20px rgba(138, 43, 226, 0.5), 0 0 40px rgba(0, 191, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.3)';
-        ">
-            💫 К новым знакомствам
-        </button>
-        
-        <div style="
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(138, 43, 226, 0.2);
-        ">
-            <p style="
-                color: #808090;
-                font-size: 13px;
-                line-height: 1.6;
-                margin: 0;
-                text-align: left;
-            ">
-                <b style="color: #a0a0ff;">Почему через Telegram?</b><br><br>
-                ✓ Безопасная авторизация без паролей<br>
-                ✓ Мгновенные уведомления о сообщениях<br>
-                ✓ Работает на любом устройстве<br>
-                ✓ Никакой регистрации и лишних данных
-            </p>
-        </div>
-    `;
-
-    overlay.appendChild(content);
-    document.body.appendChild(overlay);
-
-    // Обработчик кнопки
-    document.getElementById('androidLaunchBtn').addEventListener('click', () => {
-        // Открываем Telegram бот с автоматическим /start
-        window.location.href = 'https://t.me/anonimka_kz_bot?start=android';
-    });
-}
+// Функция удалена - приветственный экран больше не используется
 
 function showAndroidAuthModal() {
     // Проверяем не показывали ли уже
