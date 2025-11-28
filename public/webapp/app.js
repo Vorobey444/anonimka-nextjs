@@ -295,6 +295,10 @@ function showCustomConfirm(message, callback) {
         messageEl.textContent = message;
         modal.style.display = 'flex';
         
+        // Сохраняем callback для использования при клике на overlay
+        modal.setAttribute('data-confirm-callback', 'pending');
+        modal._confirmCallback = callback;
+        
         // Удаляем предыдущие обработчики
         const newYesBtn = yesBtn.cloneNode(true);
         const newNoBtn = noBtn.cloneNode(true);
@@ -304,11 +308,13 @@ function showCustomConfirm(message, callback) {
         // Добавляем новые обработчики
         newYesBtn.onclick = function() {
             modal.style.display = 'none';
+            modal.removeAttribute('data-confirm-callback');
             if (callback) setTimeout(() => callback(true), 0);
         };
         
         newNoBtn.onclick = function() {
             modal.style.display = 'none';
+            modal.removeAttribute('data-confirm-callback');
             if (callback) setTimeout(() => callback(false), 0);
         };
     } else {
@@ -10938,8 +10944,12 @@ window.addEventListener('click', (event) => {
     }
     
     const customConfirmModal = document.getElementById('customConfirmModal');
-    if (event.target === customConfirmModal) {
+    if (event.target === customConfirmModal && customConfirmModal.hasAttribute('data-confirm-callback')) {
+        // Закрываем модалку и вызываем callback с false (отмена)
         customConfirmModal.style.display = 'none';
+        customConfirmModal.removeAttribute('data-confirm-callback');
+        const callback = customConfirmModal._confirmCallback;
+        if (callback) setTimeout(() => callback(false), 0);
     }
 });
 
