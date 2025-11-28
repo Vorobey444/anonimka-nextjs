@@ -10,7 +10,22 @@ interface ErrorLog {
   userAgent: string;
   timestamp: string;
   userId?: string;
+  username?: string;
   componentStack?: string;
+  type?: string;
+  critical?: boolean;
+  appState?: {
+    isAuthorized: boolean;
+    hasNickname: boolean;
+    currentPage: string;
+    screenSize: string;
+    online: boolean;
+  };
+  recentActions?: Array<{
+    action: string;
+    details: any;
+    timestamp: string;
+  }>;
 }
 
 // Экранирование HTML символов для Telegram
@@ -33,13 +48,37 @@ async function sendTelegramAlert(error: ErrorLog) {
   const safeMessage = escapeHtml(error.message.slice(0, 500));
   const safeStack = error.stack ? escapeHtml(error.stack.slice(0, 800)) : '';
   const safeUserAgent = escapeHtml(error.userAgent.slice(0, 200));
+  
+  // Иконка в зависимости от критичности
+  const icon = error.critical ? '🚨' : '🔴';
+  const priority = error.critical ? '<b>[КРИТИЧНО]</b> ' : '';
+
+  // Форматируем последние действия
+  let actionsText = '';
+  if (error.recentActions && error.recentActions.length > 0) {
+    actionsText = '\n\n👣 <b>Последние действия:</b>\n';
+    error.recentActions.forEach((action, i) => {
+      const time = new Date(action.timestamp).toLocaleTimeString('ru-RU');
+      actionsText += `${i + 1}. [${time}] ${escapeHtml(action.action)}\n`;
+    });
+  }
+
+  // Форматируем состояние приложения
+  let stateText = '';
+  if (error.appState) {
+    stateText = `\n\n📊 <b>Состояние:</b>
+🔐 Авторизован: ${error.appState.isAuthorized ? '✅' : '❌'}
+👤 Никнейм: ${error.appState.hasNickname ? '✅' : '❌'}
+📱 Экран: ${error.appState.screenSize}
+🌐 Онлайн: ${error.appState.online ? '✅' : '❌'}`;
+  }
 
   const errorText = `
-🔴 <b>Ошибка на сайте!</b>
+${icon} ${priority}<b>Ошибка на сайте!</b>
 
 📍 <b>URL:</b> ${error.url}
 ⏰ <b>Время:</b> ${error.timestamp}
-👤 <b>User ID:</b> ${error.userId || 'Неизвестен'}
+👤 <b>User ID:</b> ${error.userId || 'Неизвестен'}${error.username ? ` (@${error.username})` : ''}
 
 ❌ <b>Ошибка:</b>
 <code>${safeMessage}</code>
@@ -47,7 +86,7 @@ async function sendTelegramAlert(error: ErrorLog) {
 🌐 <b>Browser:</b>
 <code>${safeUserAgent}</code>
 
-${safeStack ? `📋 <b>Stack:</b>\n<code>${safeStack}</code>` : ''}
+${safeStack ? `📋 <b>Stack:</b>\n<code>${safeStack}</code>` : ''}${stateText}${actionsText}
   `.trim();
 
   try {

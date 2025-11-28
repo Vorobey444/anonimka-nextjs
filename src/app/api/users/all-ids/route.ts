@@ -25,14 +25,18 @@ export async function GET(request: NextRequest) {
     }
     
     // Получаем все уникальные telegram ID из таблицы users
+    // Исключаем пользователей, заблокировавших бота
     const result = await sql`
       SELECT DISTINCT id 
       FROM users 
-      WHERE id IS NOT NULL
+      WHERE id IS NOT NULL 
+        AND (is_bot_blocked IS NULL OR is_bot_blocked = false)
       ORDER BY id
     `;
     
     const user_ids = result.rows.map(row => row.id);
+    
+    console.log('[ALL-IDS] Найдено уникальных пользователей:', user_ids.length);
     
     return NextResponse.json({
       user_ids,

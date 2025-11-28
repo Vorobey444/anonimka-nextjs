@@ -33,7 +33,20 @@ let adminCheckCompleted = false;
 // Отправка ошибки на сервер
 const errorLogCache = new Map(); // Кеш с временными метками
 const ERROR_CACHE_TTL = 30000; // 30 секунд
-const ENABLE_ERROR_DEBUG = true; // Отладка системы логирования
+const ENABLE_ERROR_DEBUG = false; // Отладка системы логирования
+
+// История действий пользователя (последние 10 действий)
+const userActionHistory = [];
+const MAX_ACTION_HISTORY = 10;
+
+// Функция для логирования действий пользователя
+window.logUserAction = function(action, details = {}) {
+    const timestamp = new Date().toISOString();
+    userActionHistory.push({ action, details, timestamp });
+    if (userActionHistory.length > MAX_ACTION_HISTORY) {
+        userActionHistory.shift(); // Удаляем самое старое действие
+    }
+};
 
 async function logErrorToServer(error, type = 'error') {
     try {
@@ -75,15 +88,32 @@ async function logErrorToServer(error, type = 'error') {
             keysToDelete.forEach(key => errorLogCache.delete(key));
         }
         
+        // Определяем критичность ошибки
+        const isCritical = errorMessage.includes('not defined') || 
+                          errorMessage.includes('is not a function') ||
+                          errorMessage.includes('Cannot read') ||
+                          type === 'unhandledRejection';
+        
         const errorData = {
             message: errorMessage,
             stack: errorStack,
             url: window.location.href,
             userAgent: navigator.userAgent,
-            userId: tg.initDataUnsafe?.user?.id,
+            userId: tg.initDataUnsafe?.user?.id || localStorage.getItem('user_id'),
             username: tg.initDataUnsafe?.user?.username,
             timestamp: new Date().toISOString(),
-            type: type
+            type: type,
+            critical: isCritical,
+            // Состояние приложения
+            appState: {
+                isAuthorized: !!localStorage.getItem('user_token') || !!localStorage.getItem('telegram_user'),
+                hasNickname: !!localStorage.getItem('user_nickname'),
+                currentPage: window.location.pathname,
+                screenSize: `${window.innerWidth}x${window.innerHeight}`,
+                online: navigator.onLine
+            },
+            // Последние действия пользователя
+            recentActions: userActionHistory.slice(-5) // Последние 5 действий
         };
         
         if (ENABLE_ERROR_DEBUG) {
@@ -140,6 +170,21 @@ window.logError = function(message, error) {
     logErrorToServer(error || { message, stack: '' }, 'manual');
 };
 
+// Утилита: безопасное выполнение async функций с автологированием
+window.safeAsync = async function(actionName, asyncFn) {
+    window.logUserAction(actionName, { started: true });
+    try {
+        const result = await asyncFn();
+        window.logUserAction(actionName, { completed: true });
+        return result;
+    } catch (error) {
+        console.error(`❌ Ошибка в ${actionName}:`, error);
+        window.logUserAction(actionName, { error: error.message });
+        logErrorToServer(error, 'async_error');
+        throw error; // Пробрасываем дальше
+    }
+};
+
 // Утилиты для управления системой логирования
 window.clearErrorCache = function() {
     errorLogCache.clear();
@@ -156,8 +201,15 @@ window.getErrorCacheInfo = function() {
     }
 };
 
+window.getActionHistory = function() {
+    console.log('[ACTION LOG] История действий пользователя:');
+    userActionHistory.forEach((action, i) => {
+        console.log(`${i + 1}. [${action.timestamp}] ${action.action}`, action.details);
+    });
+};
+
 console.log('✅ Система логирования ошибок инициализирована');
-console.log('💡 Доступные команды: window.logError(), window.clearErrorCache(), window.getErrorCacheInfo()');
+console.log('💡 Доступные команды: window.logError(), window.logUserAction(), window.safeAsync(), window.clearErrorCache(), window.getErrorCacheInfo(), window.getActionHistory()');
 
 // Слушаем событие установки PWA (для браузерной версии)
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -1558,6 +1610,8 @@ async function showRequiredNicknameModal() {
 
 // Сохранить никнейм из обязательного модального окна
 async function saveRequiredNickname() {
+    window.logUserAction('saveNickname', { step: 'started' });
+    
     const input = document.getElementById('requiredNicknameInput');
     const errorDiv = document.getElementById('nicknameError');
     const errorText = errorDiv.querySelector('p');
