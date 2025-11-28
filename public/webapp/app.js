@@ -10939,7 +10939,7 @@ window.addEventListener('click', (event) => {
     
     const customConfirmModal = document.getElementById('customConfirmModal');
     if (event.target === customConfirmModal) {
-        customConfirmCancel();
+        customConfirmModal.style.display = 'none';
     }
 });
 
