@@ -34,41 +34,15 @@ export async function POST(request: NextRequest) {
         }
 
         // Сохраняем в таблицу users (единственное место хранения)
-        if (tgId) {
-            // Telegram пользователь - сохраняем по id
-            const userId = Number(tgId);
-            await sql`
-                INSERT INTO users (id, user_token, agreed_to_terms, updated_at)
-                VALUES (${userId}, ${userToken}, ${agreed}, NOW())
-                ON CONFLICT (id) DO UPDATE
-                SET user_token = ${userToken},
-                    agreed_to_terms = ${agreed},
-                    updated_at = NOW()
-            `;
-            console.log(`[ONBOARDING] Согласие сохранено для Telegram пользователя ${userId}`);
-        } else {
-            // Web пользователь - ищем по user_token или создаем с id=NULL
-            const existingUser = await sql`
-                SELECT id FROM users WHERE user_token = ${userToken} LIMIT 1
-            `;
-            
-            if (existingUser.rows.length > 0) {
-                // Обновляем существующего
-                await sql`
-                    UPDATE users
-                    SET agreed_to_terms = ${agreed},
-                        updated_at = NOW()
-                    WHERE user_token = ${userToken}
-                `;
-            } else {
-                // Создаем нового web-пользователя
-                await sql`
-                    INSERT INTO users (user_token, agreed_to_terms, created_at, updated_at)
-                    VALUES (${userToken}, ${agreed}, NOW(), NOW())
-                `;
-            }
-            console.log(`[ONBOARDING] Согласие сохранено для Web пользователя ${userToken.substring(0, 8)}...`);
-        }
+        // Всегда используем user_token для уникальности (работает для Telegram и Email пользователей)
+        await sql`
+            UPDATE users
+            SET agreed_to_terms = ${agreed},
+                updated_at = NOW()
+            WHERE user_token = ${userToken}
+        `;
+        
+        console.log(`[ONBOARDING] Согласие обновлено для пользователя ${userToken.substring(0, 16)}...`);
 
         return NextResponse.json({
             success: true,
