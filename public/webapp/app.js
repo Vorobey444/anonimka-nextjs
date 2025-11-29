@@ -1680,8 +1680,14 @@ async function saveRequiredNickname() {
     
     if (!tgId) {
         // Для Android WebView требуется авторизация
-        const isAndroidWebView = navigator.userAgent.includes('wv') || 
-                                (navigator.userAgent.includes('Android') && typeof AndroidAuth !== 'undefined');
+        // Проверяем более надёжно: Android в UserAgent или наличие специфичных признаков
+        const userAgent = navigator.userAgent;
+        const isAndroid = userAgent.includes('Android');
+        const isWebView = userAgent.includes('wv') || userAgent.includes('WebView');
+        const hasAndroidInterface = typeof AndroidAuth !== 'undefined';
+        const isAndroidWebView = isAndroid && (isWebView || hasAndroidInterface);
+        
+        console.log('[AUTH CHECK] isAndroid:', isAndroid, 'isWebView:', isWebView, 'hasAndroidInterface:', hasAndroidInterface);
         
         if (isAndroidWebView) {
             // Проверяем user_token (универсальный идентификатор)
@@ -1714,7 +1720,7 @@ async function saveRequiredNickname() {
                         console.log('✅ Auth data loaded after wait, reloading...');
                         window.location.reload();
                     }
-                }, 500);
+                }, 1000); // Увеличил до 1 секунды
                 return;
             }
             
@@ -1723,6 +1729,20 @@ async function saveRequiredNickname() {
             
             // Для совместимости устанавливаем временный tgId (API использует user_token)
             tgId = 99999999; // Фиктивный ID, API будет использовать user_token
+        } else if (isAndroid) {
+            // Это Android но не WebView (например Chrome) - ждём дольше на случай если это всё же наше приложение
+            console.log('⏳ Android detected but not WebView, waiting longer...');
+            setTimeout(() => {
+                const retryToken = localStorage.getItem('user_token');
+                if (retryToken) {
+                    console.log('✅ Auth data found, reloading...');
+                    window.location.reload();
+                } else {
+                    errorDiv.style.display = 'block';
+                    errorText.textContent = '❌ Не удалось получить ваш Telegram ID';
+                }
+            }, 1500);
+            return;
         } else {
             errorDiv.style.display = 'block';
             errorText.textContent = '❌ Не удалось получить ваш Telegram ID';
