@@ -201,15 +201,24 @@ export async function GET(req: NextRequest) {
       `;
       displayNickname = res.rows[0]?.display_nickname || null;
     } else if (userToken) {
-      // Ищем связанный tg_id через объявления
-      const res = await sql`
-        SELECT u.display_nickname
-        FROM users u
-        WHERE u.id IN (
-          SELECT tg_id FROM ads WHERE user_token = ${userToken} AND tg_id IS NOT NULL LIMIT 1
-        )
+      // Сначала ищем напрямую в users по user_token (для email пользователей)
+      const directRes = await sql`
+        SELECT display_nickname FROM users WHERE user_token = ${userToken} LIMIT 1
       `;
-      displayNickname = res.rows[0]?.display_nickname || null;
+      
+      if (directRes.rows.length > 0) {
+        displayNickname = directRes.rows[0]?.display_nickname || null;
+      } else {
+        // Fallback: ищем через объявления (для Telegram пользователей)
+        const adsRes = await sql`
+          SELECT u.display_nickname
+          FROM users u
+          WHERE u.id IN (
+            SELECT tg_id FROM ads WHERE user_token = ${userToken} AND tg_id IS NOT NULL LIMIT 1
+          )
+        `;
+        displayNickname = adsRes.rows[0]?.display_nickname || null;
+      }
     } else {
       return NextResponse.json(
         { success: false, error: 'Укажите tgId или userToken' },
