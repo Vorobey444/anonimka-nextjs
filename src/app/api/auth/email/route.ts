@@ -186,15 +186,8 @@ export async function POST(request: NextRequest) {
           // Создаём нового пользователя
           userToken = generateUserToken(email);
           
-          // Для email пользователей id может быть NULL (только для Telegram пользователей id = tg_id)
-          // Сначала проверяем/изменяем constraint
-          try {
-            await sql`ALTER TABLE users ALTER COLUMN id DROP NOT NULL`;
-            console.log('[EMAIL AUTH] ✅ Constraint на id удалён');
-          } catch (e) {
-            // Constraint уже удалён или не существует
-            console.log('[EMAIL AUTH] ℹ️ Constraint на id уже nullable:', e);
-          }
+          // Для email пользователей id = NULL (только для Telegram пользователей id = tg_id)
+          // Миграция должна быть выполнена: ALTER TABLE users ALTER COLUMN id DROP NOT NULL
           
           const newUser = await sql`
             INSERT INTO users (
