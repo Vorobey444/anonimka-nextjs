@@ -1974,9 +1974,17 @@ async function saveNicknamePage() {
             return;
         }
         
-        // Получаем tgId
+        // Получаем tgId или используем фиктивный для email пользователей
         let tgIdAuth = null;
-        if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+        const userToken = localStorage.getItem('user_token');
+        const authMethod = localStorage.getItem('auth_method');
+        const isAndroid = navigator.userAgent.includes('Android');
+        
+        // Проверяем email/Android авторизацию
+        if (authMethod === 'email' || (isAndroid && userToken)) {
+            tgIdAuth = 99999999; // Фиктивный ID для email пользователей
+            console.log('📱 Email/Android user, using fake tgId');
+        } else if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
             tgIdAuth = Number(window.Telegram.WebApp.initDataUnsafe.user.id);
         } else {
             const savedUserJson = localStorage.getItem('telegram_user');
@@ -1989,29 +1997,12 @@ async function saveNicknamePage() {
         }
 
         if (!tgIdAuth) {
-            // Для Android WebView генерируем временный ID
-            const isAndroidWebView = navigator.userAgent.includes('wv') || 
-                                    (navigator.userAgent.includes('Android') && window.AndroidInterface);
-            
-            if (isAndroidWebView) {
-                // Генерируем стабильный ID на основе device info
-                const deviceId = localStorage.getItem('android_device_id');
-                if (!deviceId) {
-                    const newId = 'android_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                    localStorage.setItem('android_device_id', newId);
-                    tgIdAuth = newId.hashCode(); // Преобразуем в число
-                } else {
-                    tgIdAuth = deviceId.hashCode();
-                }
-                console.log('📱 Сгенерирован временный ID для Android:', tgIdAuth);
+            if (isTelegramWebApp) {
+                tg.showAlert('❌ Не удалось получить данные авторизации');
             } else {
-                if (isTelegramWebApp) {
-                    tg.showAlert('❌ Не удалось получить ваш Telegram ID');
-                } else {
-                    alert('❌ Не удалось получить ваш Telegram ID');
-                }
-                return;
+                alert('❌ Не удалось получить данные авторизации');
             }
+            return;
         }
 
         try {
@@ -2310,9 +2301,19 @@ async function completeOnboarding() {
     continueBtn.textContent = '⏳ Сохраняем...';
     
     try {
-        // Получаем tgId
+        // Получаем tgId или используем фиктивный для email пользователей
         let tgId = null;
-        if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+        const userToken = localStorage.getItem('user_token');
+        const authMethod = localStorage.getItem('auth_method');
+        
+        // Проверяем Android/email авторизацию
+        const isAndroid = navigator.userAgent.includes('Android');
+        
+        if (authMethod === 'email' || (isAndroid && userToken)) {
+            // Для email пользователей используем фиктивный tgId
+            tgId = 99999999;
+            console.log('📱 Email/Android user, using fake tgId');
+        } else if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
             tgId = window.Telegram.WebApp.initDataUnsafe.user.id;
         } else {
             const savedUserJson = localStorage.getItem('telegram_user');
@@ -2327,7 +2328,7 @@ async function completeOnboarding() {
         }
 
         if (!tgId) {
-            throw new Error('Не удалось получить ваш Telegram ID');
+            throw new Error('Не удалось получить данные авторизации');
         }
 
         // 1. Сохраняем никнейм
@@ -2346,8 +2347,8 @@ async function completeOnboarding() {
         }
         
         // 2. Сохраняем согласие с условиями
-        const userToken = localStorage.getItem('user_token');
-        const tgIdForAgreement = tg?.initDataUnsafe?.user?.id || null;
+        // userToken уже получен выше
+        const tgIdForAgreement = tg?.initDataUnsafe?.user?.id || tgId;
         
         // Если есть userToken или tgId - сохраняем согласие
         if (userToken || tgIdForAgreement) {
