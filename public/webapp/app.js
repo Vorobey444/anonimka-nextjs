@@ -2015,7 +2015,7 @@ async function saveNicknamePage() {
 
         try {
             // Используем новый /api/nickname endpoint с проверкой ограничений
-            const userToken = localStorage.getItem('user_token');
+            // userToken уже получен выше
             const payload = { 
                 tgId: tgIdAuth, 
                 nickname: nickname 
