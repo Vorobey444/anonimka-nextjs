@@ -262,7 +262,10 @@ function safeLog(...args) {
 }
 
 // Безопасная обертка для showAlert с fallback на модальное окно
-// Сохраняем оригинальные методы
+// Сохраняем оригинальные методы ПЕРЕД использованием
+const originalAlert = window.alert;
+const originalConfirm = window.confirm;
+const originalPrompt = window.prompt;
 const originalShowAlert = tg.showAlert ? tg.showAlert.bind(tg) : null;
 const originalShowPopup = tg.showPopup ? tg.showPopup.bind(tg) : null;
 
@@ -286,7 +289,8 @@ function showCustomAlert(message, callback) {
             if (callback) setTimeout(callback, 0);
         };
     } else {
-        alert(message);
+        // Используем оригинальный alert вместо переопределённого
+        originalAlert.call(window, message);
         if (callback) setTimeout(callback, 0);
     }
 }
@@ -443,10 +447,6 @@ tg.showConfirm = function(message, callback) {
 
 // Переопределяем глобальные alert, confirm, prompt для браузера
 if (typeof window !== 'undefined') {
-    const originalAlert = window.alert;
-    const originalConfirm = window.confirm;
-    const originalPrompt = window.prompt;
-    
     window.alert = function(message) {
         const isRealTelegram = !!(
             window.Telegram?.WebApp?.platform && 

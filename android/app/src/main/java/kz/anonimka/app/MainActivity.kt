@@ -67,6 +67,21 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
+        // Проверяем авторизацию
+        val userToken = authPrefs.getString("user_token", null)
+        val authMethod = authPrefs.getString("auth_method", "telegram")
+        
+        if (userToken == null) {
+            // Нет авторизации - перенаправляем на EmailAuthActivity
+            android.util.Log.d("Anonimka", "⚠️ No auth token found, redirecting to EmailAuthActivity")
+            val intent = Intent(this, EmailAuthActivity::class.java)
+            startActivity(intent)
+            finish()
+            return
+        }
+        
+        android.util.Log.d("Anonimka", "✅ Auth token found: ${userToken.substring(0, 8)}..., method: $authMethod")
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.TRANSPARENT
@@ -98,6 +113,21 @@ class MainActivity : AppCompatActivity() {
             @android.webkit.JavascriptInterface
             fun getAuthData(): String {
                 return authPrefs.getString("telegram_user", "") ?: ""
+            }
+            
+            @android.webkit.JavascriptInterface
+            fun getUserToken(): String {
+                return authPrefs.getString("user_token", "") ?: ""
+            }
+            
+            @android.webkit.JavascriptInterface
+            fun getAuthMethod(): String {
+                return authPrefs.getString("auth_method", "telegram") ?: "telegram"
+            }
+            
+            @android.webkit.JavascriptInterface
+            fun getEmail(): String {
+                return authPrefs.getString("email", "") ?: ""
             }
         }, "AndroidAuth")
         
@@ -141,9 +171,30 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 swipeRefreshLayout.isRefreshing = false
                 
-                // Инжектим сохранённые данные авторизации при загрузке страницы
+                // Инжектим данные авторизации при загрузке страницы
+                val userToken = authPrefs.getString("user_token", "")
+                val authMethod = authPrefs.getString("auth_method", "telegram")
+                val email = authPrefs.getString("email", "")
+                
+                if (!userToken.isNullOrEmpty()) {
+                    webView.evaluateJavascript("""
+                        (function() {
+                            try {
+                                localStorage.setItem('user_token', '${userToken}');
+                                localStorage.setItem('auth_method', '${authMethod}');
+                                localStorage.setItem('email', '${email}');
+                                localStorage.setItem('auth_time', '${authPrefs.getLong("auth_time", 0)}');
+                                console.log('✅ Auth data injected from Android:', '${authMethod}');
+                            } catch(e) {
+                                console.error('❌ Error injecting auth data:', e);
+                            }
+                        })();
+                    """.trimIndent(), null)
+                }
+                
+                // Для обратной совместимости с Telegram auth
                 val savedUser = authPrefs.getString("telegram_user", "")
-                if (!savedUser.isNullOrEmpty()) {
+                if (!savedUser.isNullOrEmpty() && authMethod == "telegram") {
                     webView.evaluateJavascript("""
                         (function() {
                             try {
@@ -151,9 +202,9 @@ class MainActivity : AppCompatActivity() {
                                 localStorage.setItem('telegram_user', JSON.stringify(userData));
                                 localStorage.setItem('telegram_auth_time', '${authPrefs.getLong("telegram_auth_time", 0)}');
                                 localStorage.setItem('user_id', userData.id.toString());
-                                console.log('✅ Auth data injected from Android:', userData.id);
+                                console.log('✅ Telegram auth data injected from Android:', userData.id);
                             } catch(e) {
-                                console.error('❌ Error injecting auth data:', e);
+                                console.error('❌ Error injecting telegram auth data:', e);
                             }
                         })();
                     """.trimIndent(), null)

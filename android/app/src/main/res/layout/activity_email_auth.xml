@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#0a0a0f">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center">
+
+        <!-- Logo -->
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="40dp"
+            android:layout_marginBottom="24dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="Logo" />
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/titleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Вход в аккаунт"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#ffffff"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Subtitle -->
+        <TextView
+            android:id="@+id/subtitleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Введите email для получения кода"
+            android:textSize="14sp"
+            android:textColor="#b0b0b0"
+            android:gravity="center"
+            android:layout_marginBottom="32dp" />
+
+        <!-- Email Input Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:backgroundTint="#1a1a2e"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            xmlns:app="http://schemas.android.com/apk/res-auto">
+
+            <EditText
+                android:id="@+id/emailInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Email"
+                android:inputType="textEmailAddress"
+                android:textColor="#ffffff"
+                android:textColorHint="#808080"
+                android:padding="16dp"
+                android:background="@android:color/transparent"
+                android:textSize="16sp" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Send Code Button -->
+        <Button
+            android:id="@+id/sendCodeButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Отправить код"
+            android:textColor="#ffffff"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/button_primary"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Code Input Card (Hidden initially) -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:backgroundTint="#1a1a2e"
+            android:visibility="gone"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <EditText
+                android:id="@+id/codeInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Код из email (6 цифр)"
+                android:inputType="number"
+                android:maxLength="6"
+                android:textColor="#ffffff"
+                android:textColorHint="#808080"
+                android:padding="16dp"
+                android:background="@android:color/transparent"
+                android:textSize="16sp"
+                android:gravity="center"
+                android:letterSpacing="0.3" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Verify Button (Hidden initially) -->
+        <Button
+            android:id="@+id/verifyButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Войти"
+            android:textColor="#ffffff"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/button_primary"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Progress Bar -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminateTint="#00d9ff"
+            android:visibility="gone"
+            android:layout_marginTop="16dp" />
+
+        <!-- Info Text -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="На указанный email будет отправлен 6-значный код. Код действителен 10 минут."
+            android:textSize="12sp"
+            android:textColor="#808080"
+            android:gravity="center"
+            android:layout_marginTop="24dp"
+            android:paddingHorizontal="16dp" />
+
+    </LinearLayout>
+</ScrollView>
