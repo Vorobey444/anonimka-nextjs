@@ -5960,32 +5960,10 @@ function initLocationSelector() {
     }
     
     // Обработчики для полей настройки локации
-    const setupRegionInput = document.querySelector('.setup-region-input');
     const setupCityInput = document.querySelector('.setup-city-input');
     
     console.log('Настройка обработчиков для настройки локации');
-    console.log('setupRegionInput найден:', !!setupRegionInput);
     console.log('setupCityInput найден:', !!setupCityInput);
-    
-    if (setupRegionInput) {
-        setupRegionInput.addEventListener('input', function() {
-            console.log('input событие на регион в настройке:', this.value);
-            handleSetupRegionInput(this.value);
-        });
-        
-        setupRegionInput.addEventListener('keyup', function() {
-            handleSetupRegionInput(this.value);
-        });
-        
-        setupRegionInput.addEventListener('focus', function() {
-            // Всегда показываем все регионы при фокусе, независимо от содержимого
-            showAllSetupRegions();
-        });
-        
-        setupRegionInput.addEventListener('click', function() {
-            showAllSetupRegions();
-        });
-    }
     
     if (setupCityInput) {
         setupCityInput.addEventListener('input', function() {
@@ -6650,22 +6628,38 @@ function selectSetupCountry(countryCode) {
     });
     document.querySelector(`[data-country="${countryCode}"].setup-country`).classList.add('active');
     
-    // Показываем выбор региона с анимацией
-    const regionSection = document.querySelector('.setup-region-selection');
-    regionSection.style.display = 'block';
+    // Пропускаем выбор региона, сразу показываем города
+    // Собираем все города из всех регионов страны
+    const allCities = [];
+    const regions = locationData[countryCode].regions;
+    Object.keys(regions).forEach(regionName => {
+        allCities.push(...regions[regionName]);
+    });
+    
+    // Показываем выбор города с анимацией
+    const citySection = document.querySelector('.setup-city-selection');
+    citySection.style.display = 'block';
     setTimeout(() => {
-        regionSection.style.opacity = '1';
+        citySection.style.opacity = '1';
     }, 50);
     
     // Скрываем остальные секции
-    document.querySelector('.setup-city-selection').style.display = 'none';
+    document.querySelector('.setup-region-selection').style.display = 'none';
     document.querySelector('.setup-selected-location').style.display = 'none';
     
-    // Очищаем поля
-    document.querySelector('.setup-region-input').value = '';
+    // Очищаем поле города
     document.querySelector('.setup-city-input').value = '';
     
+    // Сохраняем список всех городов для фильтрации
+    window.setupAllCities = allCities;
+    
     console.log('Выбрана страна для настройки:', locationData[countryCode].name);
+    console.log('Доступно городов:', allCities.length);
+    
+    // Показываем все доступные города
+    setTimeout(() => {
+        showAllSetupCities();
+    }, 100);
 }
 
 // Обработка ввода региона в настройке
@@ -6745,10 +6739,9 @@ function selectSetupRegion(regionName) {
 function handleSetupCityInput(value) {
     console.log('handleSetupCityInput вызвана со значением:', value);
     console.log('setupSelectedCountry:', setupSelectedCountry);
-    console.log('setupSelectedRegion:', setupSelectedRegion);
     
-    if (!setupSelectedCountry || !setupSelectedRegion) {
-        console.log('Страна или регион не выбраны, выходим');
+    if (!setupSelectedCountry) {
+        console.log('Страна не выбрана, выходим');
         return;
     }
     
@@ -6758,13 +6751,13 @@ function handleSetupCityInput(value) {
         return;
     }
     
-    const cities = locationData[setupSelectedCountry].regions[setupSelectedRegion];
-    console.log('Доступные города:', cities);
+    const cities = window.setupAllCities || [];
+    console.log('Доступные города:', cities.length);
     
     const filtered = cities.filter(city => 
-        city.toLowerCase().startsWith(value.toLowerCase())
+        city.toLowerCase().includes(value.toLowerCase())
     );
-    console.log('Отфильтрованные города:', filtered);
+    console.log('Отфильтрованные города:', filtered.length);
     
     showSetupCitySuggestions(filtered);
 }
@@ -6773,15 +6766,14 @@ function handleSetupCityInput(value) {
 function showAllSetupCities() {
     console.log('showAllSetupCities вызвана');
     console.log('setupSelectedCountry:', setupSelectedCountry);
-    console.log('setupSelectedRegion:', setupSelectedRegion);
     
-    if (!setupSelectedCountry || !setupSelectedRegion) {
-        console.log('Страна или регион не выбраны, не показываем города');
+    if (!setupSelectedCountry) {
+        console.log('Страна не выбрана, не показываем города');
         return;
     }
     
-    const cities = locationData[setupSelectedCountry].regions[setupSelectedRegion];
-    console.log('Города для региона', setupSelectedRegion, ':', cities);
+    const cities = window.setupAllCities || [];
+    console.log('Всего городов:', cities.length);
     
     // Принудительно скрываем другие списки перед показом нового
     hideOtherSuggestions('setup-city-suggestions');
@@ -6830,13 +6822,22 @@ function showSetupCitySuggestions(cities) {
 function selectSetupCity(cityName) {
     setupSelectedCity = cityName;
     
+    // Находим в каком регионе этот город
+    const regions = locationData[setupSelectedCountry].regions;
+    for (const regionName in regions) {
+        if (regions[regionName].includes(cityName)) {
+            setupSelectedRegion = regionName;
+            break;
+        }
+    }
+    
     document.querySelector('.setup-city-input').value = cityName;
     hideAllSuggestions();
     
     // Показываем выбранную локацию
     showSetupSelectedLocation();
     
-    console.log('Выбран город в настройке:', cityName);
+    console.log('Выбран город в настройке:', cityName, 'Регион:', setupSelectedRegion);
 }
 
 // Показать выбранную локацию в настройке
@@ -6844,7 +6845,7 @@ function showSetupSelectedLocation() {
     const selectedLocationDiv = document.querySelector('.setup-selected-location');
     const locationText = document.querySelector('.setup-location-text');
     
-    const fullLocation = `${locationData[setupSelectedCountry].flag} ${setupSelectedRegion}, ${setupSelectedCity}`;
+    const fullLocation = `${locationData[setupSelectedCountry].flag} ${setupSelectedCity}`;
     locationText.textContent = fullLocation;
     
     // Скрываем секции выбора
@@ -6870,18 +6871,14 @@ function resetSetupLocation() {
     });
     
     // Очищаем поля ввода (с проверкой на существование)
-    const regionInput = document.querySelector('.setup-region-input');
     const cityInput = document.querySelector('.setup-city-input');
     
-    if (regionInput) regionInput.value = '';
     if (cityInput) cityInput.value = '';
     
     // Скрываем все секции кроме выбора страны (с проверкой на существование)
-    const regionSelection = document.querySelector('.setup-region-selection');
     const citySelection = document.querySelector('.setup-city-selection');
     const selectedLocation = document.querySelector('.setup-selected-location');
     
-    if (regionSelection) regionSelection.style.display = 'none';
     if (citySelection) citySelection.style.display = 'none';
     if (selectedLocation) selectedLocation.style.display = 'none';
     
