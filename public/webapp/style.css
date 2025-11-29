@@ -1319,17 +1319,20 @@ h3 {
         rgba(0, 217, 255, 0.2) 100%);
     border: 1.5px solid rgba(131, 56, 236, 0.5);
     color: #fff;
-    padding: 0.4rem 0.5rem;
+    padding: 0.35rem 0.4rem;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 500;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.3rem;
-    min-height: 38px;
+    gap: 0.25rem;
+    min-height: 36px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .country-btn:hover {
@@ -1351,7 +1354,8 @@ h3 {
 }
 
 .flag {
-    font-size: 1rem;
+    font-size: 0.95rem;
+    flex-shrink: 0;
 }
 
 .country-code {
