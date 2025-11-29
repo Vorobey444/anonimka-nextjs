@@ -341,14 +341,18 @@ export async function POST(request: NextRequest) {
                   // Если пользователь заблокировал бота - отмечаем в БД
                   if (telegramResult.error_code === 403 && 
                       telegramResult.description?.includes('bot was blocked by the user')) {
-                    console.log('[MESSAGES] Пользователь заблокировал бота, отмечаем в БД:', receiverId);
+                    console.log('[MESSAGES] Пользователь заблокировал бота, отмечаем в БД. receiverId:', receiverId, ', receiverToken:', receiverToken?.substring(0, 10) + '...');
                     try {
-                      await sql`
+                      // Обновляем по user_token, а не по id (id это Telegram ID, не автоинкрементный ID)
+                      const updateResult = await sql`
                         UPDATE users 
                         SET is_bot_blocked = true, updated_at = NOW()
-                        WHERE id = ${parseInt(receiverId)}
+                        WHERE user_token = ${receiverToken}
                       `;
-                      console.log('[MESSAGES] ✅ Пользователь отмечен как заблокировавший бота');
+                      console.log('[MESSAGES] ✅ Пользователь отмечен как заблокировавший бота. Обновлено строк:', updateResult.rowCount);
+                      
+                      // Обновляем локальную переменную чтобы не отправлять уведомление повторно
+                      isBotBlocked = true;
                     } catch (dbError) {
                       console.error('[MESSAGES] Ошибка обновления is_bot_blocked:', dbError);
                     }
