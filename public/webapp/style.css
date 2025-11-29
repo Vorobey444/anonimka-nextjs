@@ -1304,9 +1304,13 @@ h3 {
 
 /* Кнопки стран */
 .country-buttons {
-    display: flex;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.8rem;
     margin: 1rem 0;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
 }
 
 .country-btn {
@@ -1315,17 +1319,17 @@ h3 {
         rgba(0, 217, 255, 0.2) 100%);
     border: 2px solid rgba(131, 56, 236, 0.5);
     color: #fff;
-    padding: 1rem 1.5rem;
+    padding: 0.8rem 1rem;
     border-radius: 15px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 500;
-    font-size: 1.1rem;
-    flex: 1;
+    font-size: 0.95rem;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    min-height: 55px;
 }
 
 .country-btn:hover {
