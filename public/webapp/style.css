@@ -1360,12 +1360,13 @@ h3 {
 
 .country-code {
     background: rgba(131, 56, 236, 0.3);
-    padding: 0.15rem 0.4rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
+    padding: 0.15rem 0.35rem;
+    border-radius: 5px;
+    font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 0.5px;
     border: 1px solid rgba(131, 56, 236, 0.5);
+    flex-shrink: 0;
 }
 
 /* Контейнеры поиска */
