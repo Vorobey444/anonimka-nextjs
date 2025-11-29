@@ -5120,8 +5120,13 @@ async function checkOnboardingStatus() {
             return;
         }
         
-        // Получаем tgId пользователя
+        // Получаем tgId или userToken пользователя
         let tgId = null;
+        let userToken = localStorage.getItem('user_token');
+        const authMethod = localStorage.getItem('auth_method');
+        
+        console.log('checkOnboardingStatus - authMethod:', authMethod, 'userToken:', userToken ? 'есть' : 'нет');
+        
         if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
             tgId = window.Telegram.WebApp.initDataUnsafe.user.id;
         } else {
@@ -5138,23 +5143,35 @@ async function checkOnboardingStatus() {
         
         console.log('checkOnboardingStatus - tgId:', tgId);
         
-        if (!tgId) {
-            // Если нет tgId, проверяем есть ли никнейм локально
-            console.log('❌ Нет tgId, показываем онбординг');
+        if (!tgId && !userToken) {
+            // Если нет ни tgId, ни userToken
+            console.log('❌ Нет ни tgId ни userToken, показываем онбординг');
             showOnboardingScreen();
             return;
         }
         
         // Проверяем, есть ли у пользователя никнейм в БД
-        const response = await fetch(`/api/nickname?tgId=${tgId}`);
+        let url = '/api/users?';
+        if (tgId) {
+            url += `tgId=${tgId}`;
+        } else if (userToken) {
+            url += `userToken=${userToken}`;
+        }
+        
+        console.log('checkOnboardingStatus - запрос к:', url);
+        const response = await fetch(url);
         const data = await response.json();
         
         console.log('Статус никнейма из БД:', data);
         
-        if (data.nickname && data.nickname.trim() !== '') {
+        // Проверяем displayNickname (для /api/users) или nickname (для /api/nickname)
+        const nickname = data.displayNickname || data.nickname;
+        
+        if (nickname && nickname.trim() !== '') {
             // Сохраняем никнейм локально
-            localStorage.setItem('userNickname', data.nickname);
-            console.log('✅ Пользователь прошёл онбординг, никнейм:', data.nickname);
+            localStorage.setItem('userNickname', nickname);
+            localStorage.setItem('user_nickname', nickname);
+            console.log('✅ Пользователь прошёл онбординг, никнейм:', nickname);
             showMainMenu();
         } else {
             // Показываем экран онбординга (БЛОКИРУЕМ доступ)
