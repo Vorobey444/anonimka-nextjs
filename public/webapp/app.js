@@ -1613,24 +1613,31 @@ async function initializeNickname() {
             let url = '/api/users?';
             if (tgId) {
                 url += `tgId=${tgId}`;
+                console.log('🔍 [DEBUG] Ищем по tgId:', tgId);
             } else if (userToken) {
                 url += `userToken=${userToken}`;
+                console.log('🔍 [DEBUG] Ищем по userToken:', userToken.substring(0, 16) + '...');
             }
             
-            console.log('🔍 [DEBUG] Запрос к API:', url);
+            console.log('🔍 [DEBUG] Полный URL запроса:', url);
             const response = await fetch(url);
+            console.log('🔍 [DEBUG] Response status:', response.status);
             const result = await response.json();
-            console.log('🔍 [DEBUG] Ответ API:', result);
+            console.log('🔍 [DEBUG] Полный ответ API:', JSON.stringify(result));
             
             if (result.success && result.displayNickname) {
                 realNickname = result.displayNickname;
                 // Синхронизируем с localStorage
                 localStorage.setItem('user_nickname', realNickname);
                 console.log('✅ Загружен никнейм из БД:', realNickname);
+            } else {
+                console.warn('⚠️ [DEBUG] API не вернул никнейм. success:', result.success, 'displayNickname:', result.displayNickname);
             }
         } catch (error) {
-            console.error('Ошибка загрузки никнейма из БД:', error);
+            console.error('❌ Ошибка загрузки никнейма из БД:', error);
         }
+    } else {
+        console.warn('⚠️ [DEBUG] Нет ни tgId, ни userToken для проверки никнейма');
     }
     
     // Если никнейма нет ни в БД, ни в localStorage - показываем модальное окно
