@@ -43,6 +43,8 @@ html {
     overflow: hidden;
 }
 
+@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+
 body {
     background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -1356,6 +1358,7 @@ h3 {
 .flag {
     font-size: 0.95rem;
     flex-shrink: 0;
+    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Emoji', sans-serif;
 }
 
 .country-code {
