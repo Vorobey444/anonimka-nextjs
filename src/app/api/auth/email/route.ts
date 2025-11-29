@@ -186,6 +186,16 @@ export async function POST(request: NextRequest) {
           // Создаём нового пользователя
           userToken = generateUserToken(email);
           
+          // Для email пользователей id может быть NULL (только для Telegram пользователей id = tg_id)
+          // Сначала проверяем/изменяем constraint
+          try {
+            await sql`ALTER TABLE users ALTER COLUMN id DROP NOT NULL`;
+            console.log('[EMAIL AUTH] ✅ Constraint на id удалён');
+          } catch (e) {
+            // Constraint уже удалён или не существует
+            console.log('[EMAIL AUTH] ℹ️ Constraint на id уже nullable:', e);
+          }
+          
           const newUser = await sql`
             INSERT INTO users (
               user_token,
@@ -210,17 +220,19 @@ export async function POST(request: NextRequest) {
             RETURNING id, user_token, email, is_premium
           `;
 
-          userId = newUser.rows[0].id;
+          userId = newUser.rows[0].id || 0; // Для email пользователей может быть null
           isNewUser = true;
 
-          // Создаём запись в user_limits
-          await sql`
-            INSERT INTO user_limits (user_id)
-            VALUES (${userId})
-            ON CONFLICT (user_id) DO NOTHING
-          `;
+          // Создаём запись в user_limits только если есть userId
+          if (userId > 0) {
+            await sql`
+              INSERT INTO user_limits (user_id)
+              VALUES (${userId})
+              ON CONFLICT (user_id) DO NOTHING
+            `;
+          }
 
-          console.log('[EMAIL AUTH] ✅ Новый пользователь создан:', userId);
+          console.log('[EMAIL AUTH] ✅ Новый пользователь создан. userToken:', userToken.substring(0, 16) + '...');
         } else {
           // Обновляем существующего пользователя
           userId = user.rows[0].id;
