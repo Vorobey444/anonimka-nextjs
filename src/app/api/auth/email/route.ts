@@ -87,6 +87,16 @@ export async function POST(request: NextRequest) {
           SELECT id FROM users WHERE email = ${email} LIMIT 1
         `;
 
+        // Создаём таблицу если её нет (для совместимости)
+        await sql`
+          CREATE TABLE IF NOT EXISTS verification_codes (
+            email VARCHAR(255) PRIMARY KEY,
+            code VARCHAR(6) NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+          )
+        `;
+
         // Сохраняем код в таблицу verification_codes
         await sql`
           INSERT INTO verification_codes (email, code, expires_at, created_at)

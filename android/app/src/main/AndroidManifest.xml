@@ -58,7 +58,8 @@
 
         <activity
             android:name=".EmailAuthActivity"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
 
     </application>
 
