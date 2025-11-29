@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
 
         // Получаем полную информацию о пользователе
         const userInfo = await sql`
-          SELECT id, email, user_token, is_premium, premium_until, auto_premium_source
+          SELECT id, email, user_token, is_premium, premium_until, auto_premium_source, display_nickname
           FROM users 
           WHERE id = ${userId}
           LIMIT 1
@@ -264,6 +264,7 @@ export async function POST(request: NextRequest) {
             isPremium: userInfo.rows[0].is_premium || false,
             premiumUntil: userInfo.rows[0].premium_until,
             premiumSource: userInfo.rows[0].auto_premium_source,
+            displayNickname: userInfo.rows[0].display_nickname,
             authMethod: 'email'
           }
         });

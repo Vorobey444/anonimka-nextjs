@@ -90,6 +90,7 @@ class MainActivity : AppCompatActivity() {
 
         webView = findViewById(R.id.webView)
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
+        swipeRefreshLayout.isEnabled = false
 
         ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { view, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -175,6 +176,7 @@ class MainActivity : AppCompatActivity() {
                 val userToken = authPrefs.getString("user_token", "")
                 val authMethod = authPrefs.getString("auth_method", "telegram")
                 val email = authPrefs.getString("email", "")
+                val displayNickname = authPrefs.getString("display_nickname", "")
                 
                 if (!userToken.isNullOrEmpty()) {
                     webView.evaluateJavascript("""
@@ -184,6 +186,13 @@ class MainActivity : AppCompatActivity() {
                                 localStorage.setItem('auth_method', '${authMethod}');
                                 localStorage.setItem('email', '${email}');
                                 localStorage.setItem('auth_time', '${authPrefs.getLong("auth_time", 0)}');
+                                
+                                // Инжектим никнейм если он сохранён
+                                if ('${displayNickname}' !== '') {
+                                    localStorage.setItem('user_nickname', '${displayNickname}');
+                                    console.log('✅ Nickname injected from Android:', '${displayNickname}');
+                                }
+                                
                                 console.log('✅ Auth data injected from Android:', '${authMethod}');
                             } catch(e) {
                                 console.error('❌ Error injecting auth data:', e);

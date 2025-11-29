@@ -226,6 +226,8 @@ class EmailAuthActivity : AppCompatActivity() {
 
     private fun saveUserToken(userToken: String, userData: JSONObject) {
         val prefs = getSharedPreferences("anonimka_auth", MODE_PRIVATE)
+        val displayNickname = userData.optString("displayNickname", "")
+        
         prefs.edit().apply {
             putString("user_token", userToken)
             putString("email", userData.optString("email", ""))
@@ -233,6 +235,13 @@ class EmailAuthActivity : AppCompatActivity() {
             putLong("auth_time", System.currentTimeMillis())
             putInt("user_id", userData.optInt("id", 0))
             putBoolean("is_premium", userData.optBoolean("isPremium", false))
+            
+            // Сохраняем никнейм если он есть
+            if (displayNickname.isNotEmpty()) {
+                putString("display_nickname", displayNickname)
+                android.util.Log.d("EmailAuth", "✅ Saved nickname: $displayNickname")
+            }
+            
             apply()
         }
         
