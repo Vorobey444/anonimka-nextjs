@@ -536,6 +536,29 @@ if (isTelegramWebApp) {
     console.log('⚠️ НЕ запущено в Telegram WebApp');
 }
 
+// Проверка поддержки emoji флагов
+function checkEmojiFlagSupport() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 20;
+    canvas.height = 20;
+    ctx.fillText('🇷🇺', 0, 15);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    
+    // Проверяем, есть ли цветные пиксели (флаг отрисовался)
+    for (let i = 0; i < imageData.length; i += 4) {
+        if (imageData[i] !== 0 || imageData[i + 1] !== 0 || imageData[i + 2] !== 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Применяем класс если флаги поддерживаются
+if (checkEmojiFlagSupport()) {
+    document.body.classList.add('emoji-flags-supported');
+}
+
 // Инициализация пользователя в БД (вызывается после проверки авторизации)
 async function initializeUserInDatabase() {
     try {
