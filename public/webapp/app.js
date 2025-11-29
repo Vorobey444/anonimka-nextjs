@@ -559,6 +559,21 @@ if (checkEmojiFlagSupport()) {
     document.body.classList.add('emoji-flags-supported');
 }
 
+// Конвертируем эмодзи в изображения через Twemoji
+function convertEmojiToImages() {
+    if (typeof twemoji !== 'undefined') {
+        twemoji.parse(document.body, {
+            folder: 'svg',
+            ext: '.svg'
+        });
+    }
+}
+
+// Применяем Twemoji после загрузки DOM
+setTimeout(() => {
+    convertEmojiToImages();
+}, 100);
+
 // Инициализация пользователя в БД (вызывается после проверки авторизации)
 async function initializeUserInDatabase() {
     try {

@@ -1361,6 +1361,15 @@ h3 {
     font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Emoji', sans-serif;
 }
 
+/* Стили для Twemoji изображений */
+.flag img.emoji {
+    height: 0.95rem;
+    width: auto;
+    vertical-align: middle;
+    margin: 0;
+    padding: 0;
+}
+
 .country-code {
     background: rgba(131, 56, 236, 0.3);
     padding: 0.15rem 0.35rem;
