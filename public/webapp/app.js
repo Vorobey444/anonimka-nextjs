@@ -3985,7 +3985,7 @@ function displayAds(ads, city = null) {
         // Проверяем PRO статус
         const isPremium = ad.is_premium && (!ad.premium_until || new Date(ad.premium_until) > now);
         const premiumClass = isPremium ? 'premium-ad' : '';
-        const premiumBadge = isPremium ? ' <span class="pro-badge">⭐ PRO</span>' : '';
+        const premiumBadge = isPremium ? ' <span class="pro-badge">⭐</span>' : '';
         
         return `
         <div class="ad-card ${compact ? 'compact' : ''} ${premiumClass}" onclick="showAdDetails(${index})">
