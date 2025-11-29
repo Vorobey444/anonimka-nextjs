@@ -19,7 +19,9 @@ import java.net.URL
 
 class EmailAuthActivity : AppCompatActivity() {
     private lateinit var emailInput: EditText
+    private lateinit var emailInputCard: View
     private lateinit var codeInput: EditText
+    private lateinit var codeInputCard: View
     private lateinit var sendCodeButton: Button
     private lateinit var verifyButton: Button
     private lateinit var progressBar: ProgressBar
@@ -34,7 +36,9 @@ class EmailAuthActivity : AppCompatActivity() {
         setContentView(R.layout.activity_email_auth)
 
         emailInput = findViewById(R.id.emailInput)
+        emailInputCard = findViewById(R.id.emailInputCard)
         codeInput = findViewById(R.id.codeInput)
+        codeInputCard = findViewById(R.id.codeInputCard)
         sendCodeButton = findViewById(R.id.sendCodeButton)
         verifyButton = findViewById(R.id.verifyButton)
         progressBar = findViewById(R.id.progressBar)
@@ -199,16 +203,25 @@ class EmailAuthActivity : AppCompatActivity() {
     }
 
     private fun showCodeInput() {
-        emailInput.visibility = View.GONE
+        // Скрываем поля email
+        emailInputCard.visibility = View.GONE
         sendCodeButton.visibility = View.GONE
-        codeInput.visibility = View.VISIBLE
+        
+        // Показываем поля кода
+        codeInputCard.visibility = View.VISIBLE
         verifyButton.visibility = View.VISIBLE
         verifyButton.isEnabled = true
         
+        // Обновляем текст
         titleText.text = "Введите код"
         subtitleText.text = "Код отправлен на $currentEmail"
         
+        // Фокус на поле ввода кода
         codeInput.requestFocus()
+        
+        // Показываем клавиатуру
+        val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.showSoftInput(codeInput, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
     }
 
     private fun saveUserToken(userToken: String, userData: JSONObject) {
