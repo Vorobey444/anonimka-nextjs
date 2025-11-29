@@ -866,12 +866,21 @@ function initializeApp() {
         const authMethod = localStorage.getItem('auth_method');
         
         if (!userToken) {
-            console.log('⚠️ user_token not found - email auth required in native app');
-            // НЕ показываем Telegram модалку - авторизация происходит в EmailAuthActivity
-            return; // Останавливаем инициализацию, ждём авторизации в native app
+            console.log('⚠️ user_token not found - waiting for email auth in native app');
+            // Ждём инжекцию auth данных от MainActivity
+            // НЕ останавливаем инициализацию полностью - даём время на инжекцию
+            setTimeout(() => {
+                const retryToken = localStorage.getItem('user_token');
+                if (retryToken) {
+                    console.log('✅ Auth data appeared after wait, reloading...');
+                    window.location.reload();
+                } else {
+                    console.warn('⚠️ Still no auth data after 2s');
+                }
+            }, 2000);
+        } else {
+            console.log('✅ user_token found:', { authMethod });
         }
-        
-        console.log('✅ user_token found:', { authMethod });
     }
     
     // Проверяем если это возврат из бота в Android приложение
