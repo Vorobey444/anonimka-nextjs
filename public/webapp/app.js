@@ -1679,39 +1679,50 @@ async function saveRequiredNickname() {
     }
     
     if (!tgId) {
-        // Для Android WebView требуется email авторизация
+        // Для Android WebView требуется авторизация
         const isAndroidWebView = navigator.userAgent.includes('wv') || 
-                                (navigator.userAgent.includes('Android') && window.AndroidInterface);
+                                (navigator.userAgent.includes('Android') && typeof AndroidAuth !== 'undefined');
         
         if (isAndroidWebView) {
-            // Проверяем, есть ли user_token (email авторизация)
-            const userToken = localStorage.getItem('user_token');
-            if (!userToken) {
-                errorDiv.style.display = 'block';
-                errorText.textContent = '❌ Требуется авторизация через email';
-                console.log('⚠️ Android WebView: требуется email авторизация');
-                // Показываем модалку Telegram авторизации (временно, пока не добавлена email авторизация)
-                setTimeout(() => showTelegramAuthModal(), 500);
-                return;
-            }
-            // Получаем tgId из email пользователя
-            const emailUser = localStorage.getItem('email_user');
-            if (emailUser) {
+            // Проверяем user_token (универсальный идентификатор)
+            let userToken = localStorage.getItem('user_token');
+            
+            // Если нет в localStorage, пробуем получить из Android interface
+            if (!userToken && typeof AndroidAuth !== 'undefined' && AndroidAuth.getUserToken) {
                 try {
-                    const userData = JSON.parse(emailUser);
-                    tgId = userData.id;
-                    console.log('📱 Android WebView: используем ID из email авторизации:', tgId);
+                    userToken = AndroidAuth.getUserToken();
+                    if (userToken) {
+                        localStorage.setItem('user_token', userToken);
+                        localStorage.setItem('auth_method', 'email');
+                        console.log('✅ Got user_token from AndroidAuth interface');
+                    }
                 } catch (e) {
-                    console.error('❌ Ошибка парсинга email_user:', e);
-                    errorDiv.style.display = 'block';
-                    errorText.textContent = '❌ Ошибка авторизации';
-                    return;
+                    console.warn('⚠️ Cannot get user_token from AndroidAuth:', e);
                 }
-            } else {
-                errorDiv.style.display = 'block';
-                errorText.textContent = '❌ Требуется авторизация через email';
+            }
+            
+            if (!userToken) {
+                // Даём время на инжекцию из onPageFinished
+                console.log('⏳ Waiting for auth data injection...');
+                setTimeout(() => {
+                    const retryToken = localStorage.getItem('user_token');
+                    if (!retryToken) {
+                        errorDiv.style.display = 'block';
+                        errorText.textContent = '❌ Требуется авторизация';
+                        console.log('⚠️ Android WebView: user_token не найден после ожидания');
+                    } else {
+                        console.log('✅ Auth data loaded after wait, reloading...');
+                        window.location.reload();
+                    }
+                }, 500);
                 return;
             }
+            
+            // Используем user_token для работы приложения
+            console.log('📱 Android WebView авторизован. user_token:', userToken.substring(0, 16) + '...');
+            
+            // Для совместимости устанавливаем временный tgId (API использует user_token)
+            tgId = 99999999; // Фиктивный ID, API будет использовать user_token
         } else {
             errorDiv.style.display = 'block';
             errorText.textContent = '❌ Не удалось получить ваш Telegram ID';
