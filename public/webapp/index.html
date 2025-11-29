@@ -1920,34 +1920,51 @@
 
     <script src="/webapp/email-service.js?v=1.0"></script>
     <script>
-        // Service Worker для принудительного обновления
-        if ('serviceWorker' in navigator) {
+        // Service Worker для принудительного обновления (отключен из-за проблем с Vercel)
+        if ('serviceWorker' in navigator && false) {
             navigator.serviceWorker.register('/webapp/sw.js').then(reg => {
                 // Проверяем обновления каждые 30 секунд
                 setInterval(() => reg.update(), 30000);
                 
                 // Немедленная проверка при загрузке
                 reg.update();
+            }).catch(err => {
+                console.warn('[SW] Registration failed:', err);
             });
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '1.0.1'; // Инкрементируем при критических исправлениях
+        const bugFixVersion = '1.0.2'; // Инкрементируем при критических исправлениях
         const lastVersion = localStorage.getItem('app_version');
         
         if (lastVersion !== bugFixVersion) {
             console.log('[CACHE] Обнаружена новая версия, очищаем кеш...');
             localStorage.setItem('app_version', bugFixVersion);
             
-            // Очищаем все кеши
-            if ('caches' in window) {
-                caches.keys().then(names => {
-                    names.forEach(name => caches.delete(name));
+            // Удаляем все зарегистрированные Service Workers
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(reg => {
+                        console.log('[CACHE] Удаляем Service Worker:', reg.scope);
+                        reg.unregister();
+                    });
                 });
             }
             
-            // Перезагружаем страницу без кеша
-            window.location.reload(true);
+            // Очищаем все кеши
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        console.log('[CACHE] Удаляем кеш:', name);
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            // Перезагружаем страницу без кеша через 500мс
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 500);
         }
         
         const timestamp = Date.now();
