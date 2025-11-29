@@ -178,8 +178,10 @@ class MainActivity : AppCompatActivity() {
                 val email = authPrefs.getString("email", "")
                 val displayNickname = authPrefs.getString("display_nickname", "")
                 
+                android.util.Log.d("Anonimka", "📱 [INJECT] Preparing injection: token=${userToken?.take(16)}..., method=$authMethod")
+                
                 if (!userToken.isNullOrEmpty()) {
-                    webView.evaluateJavascript("""
+                    val script = """
                         (function() {
                             try {
                                 localStorage.setItem('user_token', '${userToken}');
@@ -190,15 +192,26 @@ class MainActivity : AppCompatActivity() {
                                 // Инжектим никнейм если он сохранён
                                 if ('${displayNickname}' !== '') {
                                     localStorage.setItem('user_nickname', '${displayNickname}');
-                                    console.log('✅ Nickname injected from Android:', '${displayNickname}');
                                 }
                                 
-                                console.log('✅ Auth data injected from Android:', '${authMethod}');
+                                console.log('✅ [INJECT] Auth data injected:', {
+                                    userToken: '${userToken.take(16)}...',
+                                    authMethod: '${authMethod}',
+                                    email: '${email}',
+                                    nickname: '${displayNickname}'
+                                });
+                                
+                                return 'SUCCESS';
                             } catch(e) {
-                                console.error('❌ Error injecting auth data:', e);
+                                console.error('❌ [INJECT] Error:', e);
+                                return 'ERROR: ' + e.message;
                             }
                         })();
-                    """.trimIndent(), null)
+                    """.trimIndent()
+                    
+                    webView.evaluateJavascript(script) { result ->
+                        android.util.Log.d("Anonimka", "📱 [INJECT] Result: $result")
+                    }
                 }
                 
                 // Для обратной совместимости с Telegram auth

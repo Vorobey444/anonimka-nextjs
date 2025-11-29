@@ -1,3 +1,36 @@
+// ============= ANDROID AUTH CHECKER =============
+// Для Android WebView: агрессивная проверка auth data
+(function() {
+    const isAndroid = navigator.userAgent.includes('Android');
+    if (!isAndroid) return;
+    
+    console.log('📱 [EARLY] Android detected, starting auth data monitor...');
+    
+    let checkCount = 0;
+    const maxChecks = 30; // 30 проверок * 100ms = 3 секунды
+    
+    const authMonitor = setInterval(() => {
+        checkCount++;
+        
+        const userToken = localStorage.getItem('user_token');
+        const hasAndroidInterface = typeof AndroidAuth !== 'undefined';
+        
+        if (userToken) {
+            console.log('✅ [EARLY] Auth data found in localStorage:', {
+                userToken: userToken.substring(0, 16) + '...',
+                authMethod: localStorage.getItem('auth_method'),
+                hasInterface: hasAndroidInterface
+            });
+            clearInterval(authMonitor);
+        } else if (checkCount >= maxChecks) {
+            console.warn('⚠️ [EARLY] No auth data after 3 seconds, stopping monitor');
+            console.warn('   hasAndroidInterface:', hasAndroidInterface);
+            console.warn('   localStorage keys:', Object.keys(localStorage));
+            clearInterval(authMonitor);
+        }
+    }, 100);
+})();
+
 // Инициализация Telegram Web App с безопасными fallback методами
 let tg = window.Telegram?.WebApp || {
     expand: () => {},
@@ -1760,20 +1793,33 @@ async function saveRequiredNickname() {
             // Для совместимости устанавливаем временный tgId (API использует user_token)
             tgId = 99999999; // Фиктивный ID, API будет использовать user_token
         } else if (isAndroid) {
-            // Это Android но не WebView (например Chrome) - ждём дольше на случай если это всё же наше приложение
-            console.log('⏳ Android detected but not WebView, waiting longer...');
-            setTimeout(() => {
-                const retryToken = localStorage.getItem('user_token');
-                if (retryToken) {
-                    console.log('✅ Auth data found, reloading...');
-                    window.location.reload();
-                } else {
-                    errorDiv.style.display = 'block';
-                    errorText.textContent = '❌ Не удалось получить ваш Telegram ID';
-                }
-            }, 1500);
-            return;
+            // Это Android - возможно наше приложение, но интерфейс еще не зарегистрирован
+            console.log('⏳ Android detected, checking for user_token...');
+            
+            // Сначала проверяем localStorage
+            const existingToken = localStorage.getItem('user_token');
+            if (existingToken) {
+                console.log('✅ Found existing user_token in localStorage');
+                tgId = 99999999; // Используем фиктивный ID
+            } else {
+                // Если нет токена - ждём дольше и проверяем снова
+                console.log('⏳ No token yet, waiting for MainActivity injection...');
+                setTimeout(() => {
+                    const retryToken = localStorage.getItem('user_token');
+                    if (retryToken) {
+                        console.log('✅ Auth data found after wait, reloading...');
+                        window.location.reload();
+                    } else {
+                        // Всё еще нет токена - показываем инструкцию для Android
+                        errorDiv.style.display = 'block';
+                        errorText.textContent = '❌ Пожалуйста, авторизуйтесь через email в приложении';
+                        console.error('❌ Android device but no user_token found');
+                    }
+                }, 2000); // Увеличено до 2 секунд
+                return;
+            }
         } else {
+            // Не Android и не Telegram - показываем стандартную ошибку
             errorDiv.style.display = 'block';
             errorText.textContent = '❌ Не удалось получить ваш Telegram ID';
             return;
