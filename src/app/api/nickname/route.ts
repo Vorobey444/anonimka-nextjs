@@ -244,6 +244,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Обновляем/создаем пользователя с никнеймом
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'User ID not found' },
+        { status: 404 }
+      );
+    }
+    
     const token = generateUserToken(userId);
     await sql`
       INSERT INTO users (id, user_token, display_nickname, nickname_changed_at, created_at, updated_at)
