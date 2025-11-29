@@ -6638,14 +6638,18 @@ function selectSetupCountry(countryCode) {
     
     // Показываем выбор города с анимацией
     const citySection = document.querySelector('.setup-city-selection');
-    citySection.style.display = 'block';
-    setTimeout(() => {
-        citySection.style.opacity = '1';
-    }, 50);
+    if (citySection) {
+        citySection.style.display = 'block';
+        setTimeout(() => {
+            citySection.style.opacity = '1';
+        }, 50);
+    }
     
     // Скрываем остальные секции
-    document.querySelector('.setup-region-selection').style.display = 'none';
-    document.querySelector('.setup-selected-location').style.display = 'none';
+    const selectedLocation = document.querySelector('.setup-selected-location');
+    if (selectedLocation) {
+        selectedLocation.style.display = 'none';
+    }
     
     // Очищаем поле города
     document.querySelector('.setup-city-input').value = '';
@@ -6849,8 +6853,10 @@ function showSetupSelectedLocation() {
     locationText.textContent = fullLocation;
     
     // Скрываем секции выбора
-    document.querySelector('.setup-region-selection').style.display = 'none';
-    document.querySelector('.setup-city-selection').style.display = 'none';
+    const citySelection = document.querySelector('.setup-city-selection');
+    if (citySelection) {
+        citySelection.style.display = 'none';
+    }
     
     // Показываем выбранную локацию с анимацией
     selectedLocationDiv.style.display = 'block';
