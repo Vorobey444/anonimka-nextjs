@@ -813,22 +813,32 @@ function initializeApp() {
     console.log('🚀 [INIT] URL params:', new URLSearchParams(window.location.search).toString());
     console.log('🚀 [INIT] isTelegramWebApp:', isTelegramWebApp);
     
-    // Проверяем если это Android WebView - требуем email авторизацию
-    const isAndroidWebView = navigator.userAgent.includes('wv') || 
-                            (navigator.userAgent.includes('Android') && window.AndroidInterface);
+    // Проверяем если это Android устройство
+    const isAndroid = navigator.userAgent.includes('Android');
+    const isWebView = navigator.userAgent.includes('wv') || navigator.userAgent.includes('WebView');
+    const hasAndroidInterface = typeof AndroidAuth !== 'undefined';
+    const isAndroidWebView = isAndroid && (isWebView || hasAndroidInterface);
     
-    if (isAndroidWebView) {
-        console.log('📱 Обнаружен Android WebView');
+    console.log('📱 [INIT] Android detection:', {
+        isAndroid,
+        isWebView,
+        hasAndroidInterface,
+        isAndroidWebView
+    });
+    
+    // Для Android приложения - авторизация только через email (не показываем Telegram модалку)
+    if (isAndroid) {
+        console.log('📱 Android device detected, checking email auth...');
         const userToken = localStorage.getItem('user_token');
+        const authMethod = localStorage.getItem('auth_method');
+        
         if (!userToken) {
-            console.log('⚠️ user_token не найден - требуется email авторизация');
-            // Показываем модалку авторизации (пока через Telegram, потом добавим email)
-            setTimeout(() => {
-                showTelegramAuthModal();
-            }, 500);
-            return; // Останавливаем инициализацию до авторизации
+            console.log('⚠️ user_token not found - email auth required in native app');
+            // НЕ показываем Telegram модалку - авторизация происходит в EmailAuthActivity
+            return; // Останавливаем инициализацию, ждём авторизации в native app
         }
-        console.log('✅ user_token найден, продолжаем инициализацию');
+        
+        console.log('✅ user_token found:', { authMethod });
     }
     
     // Проверяем если это возврат из бота в Android приложение
@@ -1390,20 +1400,33 @@ function checkTelegramAuth() {
     console.log('    - tg.initDataUnsafe?.user:', tg.initDataUnsafe?.user);
     console.log('    - tg.initDataUnsafe?.user?.id:', tg.initDataUnsafe?.user?.id);
     
-    // Проверяем если загружено в Android WebView - работаем в обычном режиме с email авторизацией
-    const isAndroidWebView = navigator.userAgent.includes('wv') || 
-                            (navigator.userAgent.includes('Android') && window.AndroidInterface);
+    // Проверяем если это Android устройство - используем email авторизацию
+    const isAndroid = navigator.userAgent.includes('Android');
+    const isWebView = navigator.userAgent.includes('wv') || navigator.userAgent.includes('WebView');
+    const hasAndroidInterface = typeof AndroidAuth !== 'undefined';
+    const isAndroidWebView = isAndroid && (isWebView || hasAndroidInterface);
     
-    if (isAndroidWebView) {
-        console.log('📱 Обнаружен Android WebView - используем email авторизацию');
+    console.log('📱 [AUTH CHECK] Android detection:', {
+        isAndroid,
+        isWebView,
+        hasAndroidInterface,
+        isAndroidWebView
+    });
+    
+    if (isAndroid) {
+        console.log('📱 Android device - email auth only (no Telegram modal)');
         // Проверяем сохранённый user_token для email авторизации
         const userToken = localStorage.getItem('user_token');
+        const authMethod = localStorage.getItem('auth_method');
+        
         if (userToken) {
-            console.log('✅ Найден user_token, пользователь авторизован через email');
+            console.log('✅ user_token found, user authenticated via email');
+            console.log('   Auth method:', authMethod);
             return true; // Пользователь уже авторизован
         }
-        console.log('⚠️ user_token не найден, требуется email авторизация');
-        return false; // Требуется авторизация
+        
+        console.log('⚠️ user_token not found - waiting for native app auth...');
+        return false; // Требуется авторизация в EmailAuthActivity
     }
     
     // Если запущено через Telegram WebApp, авторизация автоматическая
@@ -1487,7 +1510,14 @@ function checkTelegramAuth() {
         }
     }
     
-    // Если нет авторизации - показываем модальное окно
+    // Если нет авторизации
+    // Для Android НЕ показываем модальное окно (авторизация в native app)
+    if (isAndroid) {
+        console.log('📱 Android: waiting for email auth in native app, NOT showing Telegram modal');
+        return false;
+    }
+    
+    // Для браузера - показываем модальное окно Telegram
     console.log('❌ Пользователь не авторизован, показываем модальное окно');
     
     // Задержка для уверенности что DOM загружен
@@ -2732,7 +2762,17 @@ function getUserData(userId) {
 
 // Функция выхода из аккаунта
 function handleLogout() {
-    if (!confirm('Вы уверены, что хотите выйти из аккаунта?\n\nВам потребуется заново авторизоваться через Telegram.')) {
+    const isAndroid = navigator.userAgent.includes('Android');
+    const authMethod = localStorage.getItem('auth_method');
+    
+    let confirmText = 'Вы уверены, что хотите выйти из аккаунта?';
+    if (isAndroid || authMethod === 'email') {
+        confirmText += '\n\nВам потребуется заново авторизоваться через email.';
+    } else {
+        confirmText += '\n\nВам потребуется заново авторизоваться через Telegram.';
+    }
+    
+    if (!confirm(confirmText)) {
         return;
     }
     
@@ -2743,15 +2783,28 @@ function handleLogout() {
     localStorage.removeItem('telegram_auth_time');
     localStorage.removeItem('telegram_auth_token');
     localStorage.removeItem('user_nickname');
+    localStorage.removeItem('userNickname');
+    localStorage.removeItem('user_token');
+    localStorage.removeItem('auth_method');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('auth_time');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('is_premium');
     
     // Закрываем гамбургер меню
     closeHamburgerMenu();
     
-    // Показываем модальное окно авторизации
-    setTimeout(() => {
-        showTelegramAuthModal();
-        console.log('✅ Выход выполнен, показано модальное окно авторизации');
-    }, 300);
+    // Для Android - перезагружаем (MainActivity проверит отсутствие user_token)
+    if (isAndroid) {
+        console.log('📱 Android: reloading to trigger native email auth...');
+        window.location.reload();
+    } else {
+        // Для браузера - показываем модальное окно авторизации
+        setTimeout(() => {
+            showTelegramAuthModal();
+            console.log('✅ Выход выполнен, показано модальное окно авторизации');
+        }, 300);
+    }
 }
 
 // Обновить отображение кнопки выхода (показывать только для браузерной авторизации)
