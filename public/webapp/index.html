@@ -1920,17 +1920,46 @@
 
     <script src="/webapp/email-service.js?v=1.0"></script>
     <script>
-        // Принудительная очистка кеша
+        // Service Worker для принудительного обновления
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/webapp/sw.js').then(reg => {
+                // Проверяем обновления каждые 30 секунд
+                setInterval(() => reg.update(), 30000);
+                
+                // Немедленная проверка при загрузке
+                reg.update();
+            });
+        }
+        
+        // Принудительная очистка кеша с версией исправления
+        const bugFixVersion = '1.0.1'; // Инкрементируем при критических исправлениях
+        const lastVersion = localStorage.getItem('app_version');
+        
+        if (lastVersion !== bugFixVersion) {
+            console.log('[CACHE] Обнаружена новая версия, очищаем кеш...');
+            localStorage.setItem('app_version', bugFixVersion);
+            
+            // Очищаем все кеши
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            
+            // Перезагружаем страницу без кеша
+            window.location.reload(true);
+        }
+        
         const timestamp = Date.now();
         
-            // Подключаем скрипт сжатия изображений
-            const compressScript = document.createElement('script');
-            compressScript.src = `/webapp/compress-image.js?v=${timestamp}`;
-            document.body.appendChild(compressScript);
+        // Подключаем скрипт сжатия изображений
+        const compressScript = document.createElement('script');
+        compressScript.src = `/webapp/compress-image.js?v=${timestamp}`;
+        document.body.appendChild(compressScript);
         
-            // Затем основной скрипт
+        // Затем основной скрипт с версией
         const script = document.createElement('script');
-        script.src = `/webapp/app.js?v=${timestamp}`;
+        script.src = `/webapp/app.js?v=${bugFixVersion}.${timestamp}`;
         document.body.appendChild(script);
     </script>
 </body>

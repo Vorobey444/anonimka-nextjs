@@ -168,11 +168,14 @@ export async function POST(request: NextRequest) {
         let receiverId = null;
         let isBotBlocked = false;
         const userInfo = await sql`
-          SELECT id as tg_id, is_bot_blocked FROM users WHERE user_token = ${receiverToken} LIMIT 1
+          SELECT id as tg_id, COALESCE(is_bot_blocked, false) as is_bot_blocked 
+          FROM users 
+          WHERE user_token = ${receiverToken} 
+          LIMIT 1
         `;
         if (userInfo.rows.length > 0 && userInfo.rows[0].tg_id) {
           receiverId = userInfo.rows[0].tg_id;
-          isBotBlocked = userInfo.rows[0].is_bot_blocked || false;
+          isBotBlocked = userInfo.rows[0].is_bot_blocked === true; // Явная проверка на true
           console.log('[MESSAGES] tg_id получателя найден в users:', receiverId, ', bot_blocked:', isBotBlocked);
         } else {
           // Если нет в users, пробуем из ads (fallback)
