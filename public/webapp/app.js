@@ -3982,11 +3982,16 @@ function displayAds(ads, city = null) {
         const nickname = ad.nickname || 'Аноним';
         const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > now);
         
+        // Проверяем PRO статус
+        const isPremium = ad.is_premium && (!ad.premium_until || new Date(ad.premium_until) > now);
+        const premiumClass = isPremium ? 'premium-ad' : '';
+        const premiumBadge = isPremium ? ' <span class="pro-badge">⭐ PRO</span>' : '';
+        
         return `
-        <div class="ad-card ${compact ? 'compact' : ''}" onclick="showAdDetails(${index})">
+        <div class="ad-card ${compact ? 'compact' : ''} ${premiumClass}" onclick="showAdDetails(${index})">
             ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
             <div class="ad-header">
-                <h3>👤 ${nickname}</h3>
+                <h3>👤 ${nickname}${premiumBadge}</h3>
                 <div class="created-at"><span class="icon">⏰</span> <span class="label">Создано:</span> <span class="value">${formatCreatedAt(ad.created_at)}</span></div>
             </div>
             <div class="ad-info">

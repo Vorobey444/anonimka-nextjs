@@ -30,55 +30,75 @@ export async function GET(req: NextRequest) {
     let result;    if (id) {
       // Получение конкретной анкеты по ID
       result = await sql`
-        SELECT id, gender, target, goal, age_from, age_to, my_age, 
-               body_type, orientation, text, nickname, country, region, city, 
-               is_pinned, pinned_until, created_at, user_token, tg_id as user_id
+        SELECT 
+          ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
+          ads.body_type, ads.orientation, ads.text, ads.nickname, ads.country, ads.region, ads.city, 
+          ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
+          COALESCE(users.is_premium, FALSE) as is_premium,
+          users.premium_until
         FROM ads
-        WHERE id = ${parseInt(id)}
+        LEFT JOIN users ON ads.tg_id = users.id
+        WHERE ads.id = ${parseInt(id)}
         LIMIT 1
       `;
     } else if (city && country) {
       result = await sql`
-        SELECT id, gender, target, goal, age_from, age_to, my_age, 
-               body_type, orientation, text, nickname, country, region, city, 
-               is_pinned, pinned_until, created_at, user_token, tg_id as user_id
+        SELECT 
+          ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
+          ads.body_type, ads.orientation, ads.text, ads.nickname, ads.country, ads.region, ads.city, 
+          ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
+          COALESCE(users.is_premium, FALSE) as is_premium,
+          users.premium_until
         FROM ads
-        WHERE city = ${city} AND country = ${country}
+        LEFT JOIN users ON ads.tg_id = users.id
+        WHERE ads.city = ${city} AND ads.country = ${country}
         ORDER BY 
-          CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
-          created_at DESC
+          CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
+          ads.created_at DESC
       `;
     } else if (city) {
       result = await sql`
-        SELECT id, gender, target, goal, age_from, age_to, my_age, 
-               body_type, orientation, text, nickname, country, region, city, 
-               is_pinned, pinned_until, created_at, user_token, tg_id as user_id
+        SELECT 
+          ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
+          ads.body_type, ads.orientation, ads.text, ads.nickname, ads.country, ads.region, ads.city, 
+          ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
+          COALESCE(users.is_premium, FALSE) as is_premium,
+          users.premium_until
         FROM ads
-        WHERE city = ${city}
+        LEFT JOIN users ON ads.tg_id = users.id
+        WHERE ads.city = ${city}
         ORDER BY 
-          CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
-          created_at DESC
+          CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
+          ads.created_at DESC
       `;
     } else if (country) {
       result = await sql`
-        SELECT id, gender, target, goal, age_from, age_to, my_age, 
-               body_type, orientation, text, nickname, country, region, city, 
-               is_pinned, pinned_until, created_at, user_token, tg_id as user_id
+        SELECT 
+          ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
+          ads.body_type, ads.orientation, ads.text, ads.nickname, ads.country, ads.region, ads.city, 
+          ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
+          COALESCE(users.is_premium, FALSE) as is_premium,
+          users.premium_until
         FROM ads
-        WHERE country = ${country}
+        LEFT JOIN users ON ads.tg_id = users.id
+        WHERE ads.country = ${country}
         ORDER BY 
-          CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
-          created_at DESC
+          CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
+          ads.created_at DESC
       `;
     } else {
       result = await sql`
-        SELECT id, gender, target, goal, age_from, age_to, my_age, 
-               body_type, orientation, text, nickname, country, region, city, 
-               is_pinned, pinned_until, created_at, user_token, tg_id as user_id
+        SELECT 
+          ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
+          ads.body_type, ads.orientation, ads.text, ads.nickname, ads.country, ads.region, ads.city, 
+          ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
+          COALESCE(users.is_premium, FALSE) as is_premium,
+          users.premium_until
         FROM ads
+        LEFT JOIN users ON ads.tg_id = users.id
         ORDER BY 
-          CASE WHEN is_pinned = true AND (pinned_until IS NULL OR pinned_until > NOW()) THEN 0 ELSE 1 END,
-          created_at DESC
+          CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
+          ads.created_at DESC
       `;
     }
     
