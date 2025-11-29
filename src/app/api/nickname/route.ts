@@ -72,18 +72,39 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { tgId, nickname } = body;
+    const { tgId, nickname, userToken } = body;
 
-    console.log('[NICKNAME API] Установка никнейма:', { tgId, nickname });
+    console.log('[NICKNAME API] Установка никнейма:', { tgId, nickname, userToken: userToken?.substring(0, 16) + '...' });
 
-    if (!tgId || !nickname) {
+    if ((!tgId && !userToken) || !nickname) {
       return NextResponse.json(
-        { success: false, error: 'Missing tgId or nickname' },
+        { success: false, error: 'Missing (tgId or userToken) and nickname' },
         { status: 400 }
       );
     }
 
-    const userId = parseInt(tgId);
+    let userId: number | null = null;
+    let userTokenValue: string | null = userToken || null;
+    
+    // Если передан userToken - ищем пользователя по нему
+    if (userToken) {
+      console.log('[NICKNAME API] Поиск пользователя по userToken');
+      const result = await sql`
+        SELECT id, user_token FROM users WHERE user_token = ${userToken} LIMIT 1
+      `;
+      
+      if (result.rows.length > 0) {
+        userId = result.rows[0].id;
+        console.log('[NICKNAME API] Найден пользователь по userToken, id:', userId);
+      } else {
+        return NextResponse.json(
+          { success: false, error: 'User not found by userToken' },
+          { status: 404 }
+        );
+      }
+    } else {
+      userId = parseInt(tgId);
+    }
 
     // Валидация никнейма
     // 1. Проверка на пробелы

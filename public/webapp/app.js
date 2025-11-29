@@ -1828,13 +1828,21 @@ async function saveRequiredNickname() {
     
     try {
         // Вызываем API для сохранения никнейма
+        const userToken = localStorage.getItem('user_token');
+        const payload = { 
+            tgId: tgId, 
+            nickname: nickname 
+        };
+        
+        // Добавляем userToken если есть (для email пользователей)
+        if (userToken) {
+            payload.userToken = userToken;
+        }
+        
         const response = await fetch('/api/nickname', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                tgId: tgId, 
-                nickname: nickname 
-            })
+            body: JSON.stringify(payload)
         });
         
         const result = await response.json();
@@ -2007,13 +2015,21 @@ async function saveNicknamePage() {
 
         try {
             // Используем новый /api/nickname endpoint с проверкой ограничений
+            const userToken = localStorage.getItem('user_token');
+            const payload = { 
+                tgId: tgIdAuth, 
+                nickname: nickname 
+            };
+            
+            // Добавляем userToken если есть (для email пользователей)
+            if (userToken) {
+                payload.userToken = userToken;
+            }
+            
             const response = await fetch('/api/nickname', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    tgId: tgIdAuth, 
-                    nickname: nickname 
-                })
+                body: JSON.stringify(payload)
             });
 
             const result = await response.json();
@@ -2332,13 +2348,21 @@ async function completeOnboarding() {
         }
 
         // 1. Сохраняем никнейм
+        // userToken уже получен выше
+        const payload = {
+            tgId: tgId,
+            nickname: nickname
+        };
+        
+        // Добавляем userToken если есть (для email пользователей)
+        if (userToken) {
+            payload.userToken = userToken;
+        }
+        
         const nicknameResponse = await fetch('/api/nickname', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                tgId: tgId,
-                nickname: nickname
-            })
+            body: JSON.stringify(payload)
         });
         
         const nicknameData = await nicknameResponse.json();
