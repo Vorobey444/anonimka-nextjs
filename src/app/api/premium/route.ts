@@ -194,6 +194,12 @@ export async function POST(request: NextRequest) {
             
             console.log('[PREMIUM API] ℹ️ Web-пользователь без Premium');
             
+            // Проверяем trial7h_used для веб-пользователя
+            const webUserData = await sql`
+              SELECT trial7h_used FROM web_user_limits WHERE user_token = ${userId} LIMIT 1
+            `;
+            const trial7hUsed = webUserData.rows[0]?.trial7h_used || false;
+            
             // Возвращаем FREE статус (АЛМАТЫ UTC+5)
             const nowUTC = new Date();
             const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
@@ -212,6 +218,7 @@ export async function POST(request: NextRequest) {
                 isPremium: false,
                 premiumUntil: null,
                 country: 'KZ',
+                trial7h_used: trial7hUsed,
                 limits: {
                   photos: {
                     used: 0,
@@ -536,23 +543,81 @@ export async function POST(request: NextRequest) {
         // Определяем, это токен или числовой ID
         const isToken = userId && typeof userId === 'string' && userId.length > 20;
         let numericUserId: number | null = null;
+        let isWebUser = false;
         
         if (isToken) {
-          // Ищем через users.user_token
+          // Сначала проверяем users (Telegram пользователи)
           const userLookup = await sql`
             SELECT id FROM users WHERE user_token = ${userId} LIMIT 1
           `;
           if (userLookup.rows.length > 0) {
             numericUserId = Number(userLookup.rows[0].id);
-          }
-          
-          if (!numericUserId) {
-            return NextResponse.json({ data: { success: false }, error: { message: 'User not found' } }, { status: 404 });
+          } else {
+            // Проверяем web_user_limits (email пользователи)
+            const webUserCheck = await sql`
+              SELECT user_token FROM web_user_limits WHERE user_token = ${userId} LIMIT 1
+            `;
+            if (webUserCheck.rows.length > 0) {
+              isWebUser = true;
+            } else {
+              return NextResponse.json({ data: { success: false }, error: { message: 'User not found' } }, { status: 404 });
+            }
           }
         } else {
           numericUserId = Number(userId);
         }
         
+        // Для веб-пользователей работаем с premium_tokens
+        if (isWebUser) {
+          const trialFlag = params?.trial7h === true || params?.trial7h === 'true';
+          
+          // Проверяем, не использован ли уже триал в web_user_limits
+          const webUserData = await sql`
+            SELECT trial7h_used FROM web_user_limits WHERE user_token = ${userId} LIMIT 1
+          `;
+          
+          const trial7hUsed = webUserData.rows[0]?.trial7h_used || false;
+          
+          if (trialFlag && trial7hUsed) {
+            return NextResponse.json({
+              error: { message: 'Триал уже был использован' }
+            }, { status: 400 });
+          }
+          
+          const durationMs = trialFlag ? (7 * 60 * 60 * 1000) : (30 * 24 * 60 * 60 * 1000);
+          const premiumUntil = new Date(Date.now() + durationMs).toISOString();
+          
+          // Добавляем или обновляем premium_tokens
+          await sql`
+            INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
+            VALUES (${userId}, true, ${premiumUntil}, NOW())
+            ON CONFLICT (user_token) DO UPDATE
+            SET is_premium = true,
+                premium_until = ${premiumUntil},
+                updated_at = NOW()
+          `;
+          
+          // Отмечаем что триал использован в web_user_limits
+          if (trialFlag) {
+            await sql`
+              UPDATE web_user_limits
+              SET trial7h_used = true
+              WHERE user_token = ${userId}
+            `;
+          }
+          
+          return NextResponse.json({
+            data: {
+              isPremium: true,
+              premiumUntil,
+              trial: trialFlag,
+              trial7h_used: trialFlag ? true : trial7hUsed
+            },
+            error: null
+          });
+        }
+        
+        // Для Telegram пользователей - старая логика
         const user = await sql`SELECT is_premium, trial7h_used FROM users WHERE id = ${numericUserId}`;
         const currentStatus = user.rows[0]?.is_premium || false;
         const trial7hUsed = user.rows[0]?.trial7h_used || false;

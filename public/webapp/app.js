@@ -10384,8 +10384,8 @@ function showTrialOffer() {
 async function activatePremiumTrial7h() {
     try {
         const userId = getCurrentUserId();
-        if (!userId || userId.startsWith('web_')) {
-            tg.showAlert('Нужна авторизация через Telegram');
+        if (!userId) {
+            tg.showAlert('Требуется авторизация');
             return;
         }
         const btn = document.getElementById('activatePremiumBtn');
