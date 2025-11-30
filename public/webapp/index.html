@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Anonimka.KZ - Анонимные знакомства</title>
+    <title>Anonimka.KZ - Анонимное общение</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="/webapp/style.css?v=5.6">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -196,7 +196,7 @@
                     <div class="neon-icon">
                         <img src="/webapp/logo.png" alt="Anonimka Logo" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 20px rgba(236, 72, 153, 0.6);">
                     </div>
-                    <h1 style="line-height: 1.2;">Anonimka.KZ<br>Анонимные знакомства</h1>
+                    <h1 style="line-height: 1.2;">Anonimka.KZ<br>Анонимное общение</h1>
                     <div class="user-location" onclick="showScreen('locationSetup')">
                         <span class="location-info" id="userLocationDisplay"></span>
                     </div>
@@ -731,6 +731,11 @@
                         <li><strong>Удаление:</strong> удалить анкеты через приложение или весь аккаунт (написать @Vorobey_444)</li>
                         <li><strong>Отзыв согласия:</strong> прекратить использование приложения</li>
                     </ul>
+                    <p style="margin-top: 15px; padding: 10px; background: rgba(0, 255, 255, 0.1); border-radius: 8px;">
+                        <a href="/delete-account.html" target="_blank" style="color: #00ffff; text-decoration: underline;">
+                            📝 Инструкция по удалению аккаунта →
+                        </a>
+                    </p>
                 </div>
 
                 <div class="privacy-section">
@@ -1212,7 +1217,7 @@
             <div class="header chat-header">
                 <button class="back-btn" onclick="showMyChats()">← Назад</button>
                 <div class="chat-info">
-                    <h2 id="chatTitle" style="line-height: 1.2;">Anonimka.KZ<br><span style="font-size: 0.8em;">Анонимные знакомства</span></h2>
+                    <h2 id="chatTitle" style="line-height: 1.2;">Anonimka.KZ<br><span style="font-size: 0.8em;">Анонимное общение</span></h2>
                     <p id="chatAdId" class="chat-subtitle"></p>
                 </div>
                 <button class="chat-font-size-btn" onclick="toggleChatFontSize()" id="chatFontSizeBtn" title="Размер шрифта">A</button>
@@ -1859,6 +1864,9 @@
                 </div>
 
                 <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1); text-align: center;">
+                    <a href="/delete-account.html" target="_blank" style="display: inline-block; padding: 8px 16px; background: rgba(255, 68, 68, 0.2); color: #ff4444; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.85rem; border: 1px solid #ff4444; margin-right: 8px;">
+                        🗑️ Удалить аккаунт
+                    </a>
                     <a href="/PRIVACY_POLICY.md" target="_blank" style="display: inline-block; padding: 8px 16px; background: #00ffff; color: #000; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
                         🔒 Полная политика
                     </a>

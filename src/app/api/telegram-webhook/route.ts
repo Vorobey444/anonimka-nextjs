@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       const param = parts.length > 1 ? parts[1] : '';
 
       let welcome = `👋 Привет, ${firstName}!
-\n🎯 Anonimka.kz — анонимные знакомства.
+\n🎯 Anonimka.kz — анонимное общение.
 \nОткрывай мини‑приложение ниже:`;
 
       // If referral param exists, pass it to webapp
