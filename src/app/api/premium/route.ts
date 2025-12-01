@@ -618,13 +618,21 @@ export async function POST(request: NextRequest) {
         }
         
         // Для Telegram пользователей - старая логика
-        const user = await sql`SELECT is_premium, trial7h_used FROM users WHERE id = ${numericUserId}`;
+        const user = await sql`SELECT is_premium, trial7h_used, auto_premium_source FROM users WHERE id = ${numericUserId}`;
         const currentStatus = user.rows[0]?.is_premium || false;
         const trial7hUsed = user.rows[0]?.trial7h_used || false;
+        const autoPremiumSource = user.rows[0]?.auto_premium_source || null;
         
         // Добавляем поддержку короткого троллинг-триала (7 часов), если передан флаг trial7h
         const trialFlag = params?.trial7h === true || params?.trial7h === 'true';
         let premiumUntil: string | null = null;
+        
+        // ЗАЩИТА: Если у пользователя female_bonus, запрещаем trial (чтобы не перезаписать вечный Premium)
+        if (trialFlag && autoPremiumSource === 'female_bonus') {
+          return NextResponse.json({
+            error: { message: 'У вас уже есть постоянный бонус Premium ⭐' }
+          }, { status: 400 });
+        }
         
         // Если пользователь хочет активировать триал, проверяем, не использовал ли он его уже
         if (trialFlag && trial7hUsed) {
