@@ -1516,18 +1516,41 @@ function checkTelegramAuth() {
     console.log('⚠️ Telegram авторизация недоступна');
     console.log('  - Причина: isTelegramWebApp=' + isTelegramWebApp + ', user=' + (tg.initDataUnsafe?.user ? 'present' : 'null'));
     
-    // Проверяем сохранённые данные из предыдущей сессии
+    // Проверяем email авторизацию (приоритетнее)
+    const userToken = localStorage.getItem('user_token');
+    const authMethod = localStorage.getItem('auth_method');
+    
+    if (userToken && authMethod === 'email') {
+        console.log('✅ Найдена email авторизация, user_token:', userToken.substring(0, 16) + '...');
+        
+        // Закрываем модальное окно если оно было открыто
+        const telegramModal = document.getElementById('telegramAuthModal');
+        if (telegramModal) {
+            telegramModal.style.display = 'none';
+            console.log('✅ Модальное окно Telegram авторизации закрыто (есть email auth)');
+        }
+        
+        const emailModal = document.getElementById('emailAuthModal');
+        if (emailModal) {
+            emailModal.style.display = 'none';
+            console.log('✅ Модальное окно Email авторизации закрыто');
+        }
+        
+        return true;
+    }
+    
+    // Проверяем сохранённые данные Telegram из предыдущей сессии
     const savedUser = localStorage.getItem('telegram_user');
     if (savedUser) {
         try {
             const userData = JSON.parse(savedUser);
-            console.log('✅ Найдена сохранённая авторизация');
+            console.log('✅ Найдена сохранённая Telegram авторизация');
             // Проверяем, не истекла ли авторизация (опционально)
             const authTime = localStorage.getItem('telegram_auth_time');
             const now = Date.now();
             // Авторизация действительна 30 дней
             if (authTime && (now - parseInt(authTime)) < 30 * 24 * 60 * 60 * 1000) {
-                console.log('✅ Авторизация действительна');
+                console.log('✅ Telegram авторизация действительна');
                 
                 // Восстанавливаем user_id если его нет
                 if (!localStorage.getItem('user_id') && userData.id) {
@@ -1544,7 +1567,7 @@ function checkTelegramAuth() {
                 
                 return true;
             } else {
-                console.log('⚠️ Авторизация истекла');
+                console.log('⚠️ Telegram авторизация истекла');
             }
         } catch (e) {
             console.error('Ошибка парсинга данных пользователя:', e);
