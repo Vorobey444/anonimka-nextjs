@@ -1497,19 +1497,26 @@ function checkTelegramAuth() {
         
 
         
-        // Закрываем модальное окно если оно было открыто
+        // Закрываем все модальные окна авторизации
         const modal = document.getElementById('telegramAuthModal');
+        const emailModal = document.getElementById('emailAuthModal');
+        
         if (modal) {
             modal.style.display = 'none';
-            console.log('✅ Модальное окно авторизации закрыто');
-            
-            // Если это новая авторизация (вернулись из бота), показываем уведомление
-            if (isNewAuth) {
-                // Даем время модальному окну закрыться
-                setTimeout(() => {
-                    tg.showAlert(`✅ Добро пожаловать, ${userData.first_name}!\n\nТеперь вы можете пользоваться всеми функциями приложения.`);
-                }, 300);
-            }
+            console.log('✅ Модальное окно Telegram авторизации закрыто');
+        }
+        
+        if (emailModal) {
+            emailModal.style.display = 'none';
+            console.log('✅ Модальное окно Email авторизации закрыто');
+        }
+        
+        // Если это новая авторизация (вернулись из бота), показываем уведомление
+        if (isNewAuth) {
+            // Даем время модальному окну закрыться
+            setTimeout(() => {
+                tg.showAlert(`✅ Добро пожаловать, ${userData.first_name}!\n\nТеперь вы можете пользоваться всеми функциями приложения.`);
+            }, 300);
         }
         
         return true;
