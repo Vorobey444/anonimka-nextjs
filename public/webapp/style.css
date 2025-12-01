@@ -2072,7 +2072,9 @@ body.emoji-flags-supported .country-code {
 }
 
 .location-text {
-    text-shadow: 0 0 10px var(--neon-cyan);
+    text-shadow: none;
+    font-weight: 600;
+    color: var(--neon-cyan);
 }
 
 .detection-note {
