@@ -1,6 +1,7 @@
 package kz.anonimka.app
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -9,6 +10,9 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,14 +31,21 @@ class EmailAuthActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var titleText: TextView
     private lateinit var subtitleText: TextView
+    private lateinit var rootLayout: View
     
     private var currentEmail: String = ""
     private val API_BASE_URL = "https://anonimka.kz"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
+
         setContentView(R.layout.activity_email_auth)
 
+        rootLayout = findViewById(R.id.root_layout_email_auth)
         emailInput = findViewById(R.id.emailInput)
         emailInputCard = findViewById(R.id.emailInputCard)
         codeInput = findViewById(R.id.codeInput)
@@ -44,6 +55,12 @@ class EmailAuthActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         titleText = findViewById(R.id.titleText)
         subtitleText = findViewById(R.id.subtitleText)
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            windowInsets
+        }
 
         sendCodeButton.setOnClickListener {
             sendVerificationCode()

@@ -1600,28 +1600,28 @@ function checkTelegramAuth() {
             // По умолчанию - Telegram
             console.log('✈️ Показываем форму Telegram авторизации');
             showTelegramAuthModal();
-        }
-        
-        // Дополнительная проверка через 1 секунду
-        setTimeout(() => {
-            const modal = document.getElementById('telegramAuthModal');
-            if (modal) {
-                const computedStyle = window.getComputedStyle(modal);
-                console.log('🔍 Проверка видимости модального окна:');
-                console.log('  - display:', computedStyle.display);
-                console.log('  - visibility:', computedStyle.visibility);
-                console.log('  - opacity:', computedStyle.opacity);
-                console.log('  - zIndex:', computedStyle.zIndex);
-                
-                // Если модальное окно скрыто - принудительно показываем
-                if (computedStyle.display === 'none') {
-                    console.warn('⚠️ Модальное окно скрыто! Принудительно показываем...');
-                    modal.style.display = 'flex';
+            
+            // Дополнительная проверка через 1 секунду ТОЛЬКО для Telegram
+            setTimeout(() => {
+                const modal = document.getElementById('telegramAuthModal');
+                if (modal) {
+                    const computedStyle = window.getComputedStyle(modal);
+                    console.log('🔍 Проверка видимости модального окна:');
+                    console.log('  - display:', computedStyle.display);
+                    console.log('  - visibility:', computedStyle.visibility);
+                    console.log('  - opacity:', computedStyle.opacity);
+                    console.log('  - zIndex:', computedStyle.zIndex);
+                    
+                    // Если модальное окно скрыто - принудительно показываем
+                    if (computedStyle.display === 'none') {
+                        console.warn('⚠️ Модальное окно скрыто! Принудительно показываем...');
+                        modal.style.display = 'flex';
+                    }
+                } else {
+                    console.error('❌ Модальное окно не найдено в DOM!');
                 }
-            } else {
-                console.error('❌ Модальное окно не найдено в DOM!');
-            }
-        }, 1000);
+            }, 1000);
+        }
     }, 100);
     
     return false;
