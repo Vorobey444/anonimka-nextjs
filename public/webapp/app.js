@@ -4922,9 +4922,8 @@ async function performDeleteAd(adId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 id: adId,
-                tgId: (!userId || userId.startsWith('web_')) ? undefined : userId,
-                // Передаем user_token как дополнительную проверку владения (если есть)
-                user_token: userToken || undefined
+                tgId: (userId && !userId.startsWith('web_')) ? userId : undefined,
+                userToken: userToken || undefined
             })
         });
 

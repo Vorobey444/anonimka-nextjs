@@ -807,7 +807,7 @@ export async function DELETE(req: NextRequest) {
   try {
     // Читаем данные из тела запроса вместо URL параметров (для обхода AdBlock)
     const body = await req.json();
-    const { id, tgId } = body;
+    const { id, tgId, userToken } = body;
 
     console.log("[ADS API] Запрос на удаление объявления ID:", id);
 
@@ -818,16 +818,16 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    if (!tgId) {
+    if (!tgId && !userToken) {
       return NextResponse.json(
         { success: false, error: "Требуется авторизация" },
         { status: 401 }
       );
     }
 
-    // Проверяем, что объявление принадлежит пользователю и забираем дату создания для коррекции лимитов
+    // Проверяем, что объявление принадлежит пользователю
     const checkResult = await sql`
-      SELECT tg_id, created_at FROM ads WHERE id = ${id}
+      SELECT tg_id, user_token, created_at FROM ads WHERE id = ${id}
     `;
 
     if (checkResult.rows.length === 0) {
@@ -837,11 +837,17 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Сравниваем с приведением к числу
-    const adOwnerId = Number(checkResult.rows[0].tg_id);
-    const requesterId = Number(tgId);
+    const ad = checkResult.rows[0];
+    let isOwner = false;
+
+    // Проверяем владение: по tgId (Telegram) или по userToken (email)
+    if (tgId && ad.tg_id) {
+      isOwner = Number(ad.tg_id) === Number(tgId);
+    } else if (userToken && ad.user_token) {
+      isOwner = ad.user_token === userToken;
+    }
     
-    if (adOwnerId !== requesterId) {
+    if (!isOwner) {
       console.log("[ADS API] Отказано: пользователь не владелец объявления");
       return NextResponse.json(
         { success: false, error: "Вы можете удалять только свои объявления" },
@@ -854,7 +860,7 @@ export async function DELETE(req: NextRequest) {
 
     // Если объявление было создано сегодня (по времени Алматы UTC+5), уменьшаем счётчик объявлений за день
     try {
-      const createdAt: any = checkResult.rows[0]?.created_at;
+      const createdAt: any = ad.created_at;
       if (createdAt) {
         // Определяем текущую дату и дату создания в часовом поясе Алматы (UTC+5)
         const nowUTC = new Date();
@@ -866,13 +872,26 @@ export async function DELETE(req: NextRequest) {
         const createdAlmatyDate = createdAlmaty.toISOString().split('T')[0];
 
         if (createdAlmatyDate === currentAlmatyDate) {
-          await sql`
-            UPDATE user_limits
-            SET ads_created_today = GREATEST(0, COALESCE(ads_created_today, 0) - 1),
-                updated_at = NOW()
-            WHERE user_id = ${requesterId}
-          `;
-          console.log('[ADS API] Декремент счётчика объявлений за сегодня для пользователя', requesterId);
+          // Для Telegram пользователей - user_limits
+          if (tgId && ad.tg_id) {
+            await sql`
+              UPDATE user_limits
+              SET ads_created_today = GREATEST(0, COALESCE(ads_created_today, 0) - 1),
+                  updated_at = NOW()
+              WHERE user_id = ${Number(tgId)}
+            `;
+            console.log('[ADS API] Декремент счётчика для Telegram user:', tgId);
+          } 
+          // Для email пользователей - web_user_limits
+          else if (userToken && ad.user_token) {
+            await sql`
+              UPDATE web_user_limits
+              SET ads_created_today = GREATEST(0, COALESCE(ads_created_today, 0) - 1),
+                  updated_at = NOW()
+              WHERE user_token = ${userToken}
+            `;
+            console.log('[ADS API] Декремент счётчика для email user');
+          }
         }
       }
     } catch (decErr) {
