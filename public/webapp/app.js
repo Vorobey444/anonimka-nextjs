@@ -1869,24 +1869,36 @@ async function saveRequiredNickname() {
                 return;
             }
         } else {
-            // Не Android и не Telegram - показываем стандартную ошибку
-            errorDiv.style.display = 'block';
-            errorText.textContent = '❌ Не удалось получить ваш Telegram ID';
-            return;
+            // Проверяем email авторизацию
+            const userToken = localStorage.getItem('user_token');
+            if (userToken) {
+                console.log('✅ Email user detected, using userToken only');
+                tgId = null; // Для email пользователей tgId не нужен
+            } else {
+                // Нет ни Telegram, ни email авторизации
+                errorDiv.style.display = 'block';
+                errorText.textContent = '❌ Не удалось получить ваш Telegram ID';
+                return;
+            }
         }
     }
     
     try {
         // Вызываем API для сохранения никнейма
         const userToken = localStorage.getItem('user_token');
-        const payload = { 
-            tgId: tgId, 
-            nickname: nickname 
-        };
+        const payload = { nickname: nickname };
         
-        // Добавляем userToken если есть (для email пользователей)
-        if (userToken) {
+        // Для email пользователей отправляем только userToken
+        if (userToken && !tgId) {
             payload.userToken = userToken;
+            console.log('📧 Email user: sending userToken only');
+        } else if (tgId) {
+            // Для Telegram пользователей отправляем tgId
+            payload.tgId = tgId;
+            if (userToken) {
+                payload.userToken = userToken; // Android может иметь оба
+            }
+            console.log('✈️ Telegram user: sending tgId');
         }
         
         const response = await fetch('/api/nickname', {
