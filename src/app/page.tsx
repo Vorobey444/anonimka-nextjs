@@ -8,8 +8,20 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
-    // Проверяем, это мобильное устройство или WebView (только по user agent)
-    const checkMobile = () => {
+    // Небольшая задержка для загрузки Telegram WebApp SDK
+    const checkAuth = () => {
+      // Проверяем Telegram WebApp (приоритет)
+      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
+        const tg = (window as any).Telegram.WebApp
+        // Проверяем что это действительно Telegram (есть initData или user)
+        if (tg.initData || tg.initDataUnsafe?.user) {
+          console.log('🚀 Telegram WebApp detected, redirecting to /webapp/')
+          router.replace('/webapp/')
+          return
+        }
+      }
+      
+      // Проверяем, это мобильное устройство (только по user agent)
       const userAgent = navigator.userAgent.toLowerCase()
       // Проверяем только реальные мобильные устройства, а не просто узкий экран
       const isMobileDevice = /android|iphone|ipad|ipod|mobile/i.test(userAgent) && !/windows|mac|linux/i.test(userAgent)
@@ -21,7 +33,9 @@ export default function Home() {
       }
     }
     
-    checkMobile()
+    // Даем 100мс на загрузку SDK
+    const timer = setTimeout(checkAuth, 100)
+    return () => clearTimeout(timer)
   }, [router])
 
   const handleEmailAuth = () => {
