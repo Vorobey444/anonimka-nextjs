@@ -1031,7 +1031,9 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    if (!tgId) {
+    // Проверяем идентификацию: user_token (email) или tgId (Telegram)
+    const finalUserToken = body.user_token;
+    if (!tgId && !finalUserToken) {
       return NextResponse.json(
         { success: false, error: "Требуется авторизация" },
         { status: 401 }
@@ -1040,7 +1042,7 @@ export async function PATCH(req: NextRequest) {
 
     // Проверяем, что объявление принадлежит пользователю
     const checkResult = await sql`
-      SELECT tg_id FROM ads WHERE id = ${id}
+      SELECT tg_id, user_token FROM ads WHERE id = ${id}
     `;
 
     if (checkResult.rows.length === 0) {
@@ -1050,11 +1052,19 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // Сравниваем с приведением к числу
-    const adOwnerId = Number(checkResult.rows[0].tg_id);
-    const requesterId = Number(tgId);
+    const adData = checkResult.rows[0];
+    let isOwner = false;
+
+    // Проверка владения: по user_token (приоритет для email) или по tg_id
+    if (finalUserToken && adData.user_token === finalUserToken) {
+      isOwner = true;
+      console.log("[ADS API] Владение подтверждено по user_token (email)");
+    } else if (tgId && Number(adData.tg_id) === Number(tgId)) {
+      isOwner = true;
+      console.log("[ADS API] Владение подтверждено по tg_id (Telegram)");
+    }
     
-    if (adOwnerId !== requesterId) {
+    if (!isOwner) {
       console.log("[ADS API] Отказано: пользователь не владелец объявления");
       return NextResponse.json(
         { success: false, error: "Вы можете обновлять только свои объявления" },
@@ -1064,63 +1074,69 @@ export async function PATCH(req: NextRequest) {
 
     // Проверка лимита закрепления (если включаем закрепление)
     if (is_pinned) {
-      const userId = Number(tgId);
+      const userId = tgId ? Number(tgId) : null;
       
-      // Получаем статус Premium из обеих таблиц
-      const userResult = await sql`
-        SELECT is_premium FROM users WHERE id = ${userId}
-      `;
-      
-      // ПРИОРИТЕТ: проверяем premium_tokens по user_token
+      // Получаем user_token из ads для проверки Premium
       const adTokenResult = await sql`
         SELECT user_token FROM ads WHERE id = ${id} LIMIT 1
       `;
-      const userToken = adTokenResult.rows[0]?.user_token;
+      const userToken = adTokenResult.rows[0]?.user_token || finalUserToken;
+      
+      // Получаем статус Premium (только для Telegram пользователей)
+      let userResult = null;
+      if (userId) {
+        userResult = await sql`
+          SELECT is_premium FROM users WHERE id = ${userId}
+        `;
+      }
       
       let isPremium = false;
       
-      // Проверяем Premium: users (источник истины) → premium_tokens (синхронизация)
-      if (userToken && userId !== null) {
+      // Проверяем Premium: для email - из users по user_token, для Telegram - из users по id
+      if (userId !== null && userResult && userResult.rows.length > 0) {
         // Telegram пользователь
-        const userPremium = userResult.rows[0]?.is_premium || false;
-        const userPremiumUntil = userResult.rows[0]?.premium_until;
+        const userPremium = userResult.rows[0].is_premium || false;
+        const userPremiumUntil = userResult.rows[0].premium_until;
         const now = new Date();
         const premiumExpired = userPremiumUntil ? new Date(userPremiumUntil) <= now : false;
         
         isPremium = userPremium && !premiumExpired;
-        console.log('[ADS API PIN] PRO из users:', { isPremium, expired: premiumExpired });
-        
-        // Синхронизируем premium_tokens
-        if (isPremium) {
-          await sql`
-            INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
-            VALUES (${userToken}, true, ${userPremiumUntil}, NOW())
-            ON CONFLICT (user_token) DO UPDATE
-            SET is_premium = true, premium_until = ${userPremiumUntil}, updated_at = NOW()
-          `;
-        }
+        console.log('[ADS API PIN] PRO из users (Telegram):', { isPremium, expired: premiumExpired });
       } else if (userToken) {
-        // Web пользователь
-        const premiumTokenResult = await sql`
-          SELECT is_premium, premium_until FROM premium_tokens WHERE user_token = ${userToken} LIMIT 1
+        // Email пользователь - проверяем по user_token в таблице users
+        const emailUserResult = await sql`
+          SELECT is_premium, premium_until FROM users WHERE user_token = ${userToken} LIMIT 1
         `;
-        if (premiumTokenResult.rows.length > 0) {
-          const tokenPremium = premiumTokenResult.rows[0].is_premium || false;
-          const tokenPremiumUntil = premiumTokenResult.rows[0].premium_until;
+        if (emailUserResult.rows.length > 0) {
+          const userPremium = emailUserResult.rows[0].is_premium || false;
+          const userPremiumUntil = emailUserResult.rows[0].premium_until;
           const now = new Date();
-          const premiumExpired = tokenPremiumUntil ? new Date(tokenPremiumUntil) <= now : false;
+          const premiumExpired = userPremiumUntil ? new Date(userPremiumUntil) <= now : false;
           
-          isPremium = tokenPremium && !premiumExpired;
-          console.log('[ADS API PIN] PRO из premium_tokens (Web):', { isPremium, expired: premiumExpired });
+          isPremium = userPremium && !premiumExpired;
+          console.log('[ADS API PIN] PRO из users (Email):', { isPremium, expired: premiumExpired });
         }
       }
       
-      const limitsResult = await sql`
-        SELECT pin_uses_today, pin_last_reset, last_pin_time FROM user_limits WHERE user_id = ${userId}
-      `;
+      let pinUsesToday = 0;
+      let lastPinTime = null;
       
-      const pinUsesToday = limitsResult.rows[0]?.pin_uses_today || 0;
-      const lastPinTime = limitsResult.rows[0]?.last_pin_time;
+      // Получаем лимиты в зависимости от типа пользователя
+      if (userId !== null) {
+        // Telegram пользователь - используем user_limits
+        const limitsResult = await sql`
+          SELECT pin_uses_today, pin_last_reset, last_pin_time FROM user_limits WHERE user_id = ${userId}
+        `;
+        pinUsesToday = limitsResult.rows[0]?.pin_uses_today || 0;
+        lastPinTime = limitsResult.rows[0]?.last_pin_time;
+      } else if (userToken) {
+        // Email пользователь - используем web_user_limits
+        const webLimitsResult = await sql`
+          SELECT pin_uses_today, pin_last_reset, last_pin_time FROM web_user_limits WHERE user_token = ${userToken}
+        `;
+        pinUsesToday = webLimitsResult.rows[0]?.pin_uses_today || 0;
+        lastPinTime = webLimitsResult.rows[0]?.last_pin_time;
+      }
       
       // Проверяем лимит
       if (isPremium) {
@@ -1163,18 +1179,35 @@ export async function PATCH(req: NextRequest) {
       const almatyDate = new Date(nowUTC.getTime() + (5 * 60 * 60 * 1000));
       const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
       
-      await sql`
-        INSERT INTO user_limits (user_id, pin_uses_today, pin_last_reset, last_pin_time)
-        VALUES (${userId}, 1, ${currentAlmatyDate}::date, NOW())
-        ON CONFLICT (user_id) DO UPDATE
-        SET pin_uses_today = CASE
-            WHEN user_limits.pin_last_reset::text < ${currentAlmatyDate} THEN 1
-            ELSE user_limits.pin_uses_today + 1
-          END,
-          pin_last_reset = ${currentAlmatyDate}::date,
-          last_pin_time = NOW(),
-          updated_at = NOW()
-      `;
+      if (userId !== null) {
+        // Telegram пользователь - обновляем user_limits
+        await sql`
+          INSERT INTO user_limits (user_id, pin_uses_today, pin_last_reset, last_pin_time)
+          VALUES (${userId}, 1, ${currentAlmatyDate}::date, NOW())
+          ON CONFLICT (user_id) DO UPDATE
+          SET pin_uses_today = CASE
+              WHEN user_limits.pin_last_reset::text < ${currentAlmatyDate} THEN 1
+              ELSE user_limits.pin_uses_today + 1
+            END,
+            pin_last_reset = ${currentAlmatyDate}::date,
+            last_pin_time = NOW(),
+            updated_at = NOW()
+        `;
+      } else if (userToken) {
+        // Email пользователь - обновляем web_user_limits
+        await sql`
+          INSERT INTO web_user_limits (user_token, pin_uses_today, pin_last_reset, last_pin_time)
+          VALUES (${userToken}, 1, ${currentAlmatyDate}::date, NOW())
+          ON CONFLICT (user_token) DO UPDATE
+          SET pin_uses_today = CASE
+              WHEN web_user_limits.pin_last_reset::text < ${currentAlmatyDate} THEN 1
+              ELSE web_user_limits.pin_uses_today + 1
+            END,
+            pin_last_reset = ${currentAlmatyDate}::date,
+            last_pin_time = NOW(),
+            updated_at = NOW()
+        `;
+      }
     }
 
     // Обновляем в Neon PostgreSQL

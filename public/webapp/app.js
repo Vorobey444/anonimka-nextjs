@@ -4983,25 +4983,39 @@ async function pinMyAd(adId, shouldPin) {
         }
         
         // Отправляем запрос на сервер
-        const userId = getCurrentUserId();
+        let userToken = localStorage.getItem('user_token');
+        let userId = null;
         
-        if (!userId || userId.startsWith('web_')) {
-            tg.showAlert('❌ Требуется авторизация через Telegram');
-            return;
+        // Определяем тип пользователя
+        if (!userToken || userToken === 'null' || userToken === 'undefined') {
+            userId = getCurrentUserId();
+            if (!userId || userId.startsWith('web_')) {
+                tg.showAlert('❌ Требуется авторизация через Telegram');
+                return;
+            }
+            userToken = null; // Telegram пользователь
         }
         
         // Рассчитываем время закрепления (1 час)
         const pinnedUntil = shouldPin ? new Date(Date.now() + 60 * 60 * 1000).toISOString() : null;
         
+        const requestBody = {
+            id: adId,
+            is_pinned: shouldPin,
+            pinned_until: pinnedUntil
+        };
+        
+        // Добавляем идентификатор в зависимости от типа пользователя
+        if (userToken) {
+            requestBody.user_token = userToken;
+        } else {
+            requestBody.tgId = userId;
+        }
+        
         const response = await fetch('/api/ads', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: adId,
-                tgId: userId,
-                is_pinned: shouldPin,
-                pinned_until: pinnedUntil
-            })
+            body: JSON.stringify(requestBody)
         });
         
         const result = await response.json();
