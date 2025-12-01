@@ -87,23 +87,28 @@ export async function POST(request: NextRequest) {
           SELECT id FROM users WHERE email = ${email} LIMIT 1
         `;
 
+        // Генерируем userToken заранее
+        const userToken = generateUserToken(email);
+
         // Создаём таблицу если её нет (для совместимости)
         await sql`
           CREATE TABLE IF NOT EXISTS verification_codes (
             email VARCHAR(255) PRIMARY KEY,
             code VARCHAR(6) NOT NULL,
+            user_token VARCHAR(255),
             expires_at TIMESTAMP NOT NULL,
             created_at TIMESTAMP DEFAULT NOW()
           )
         `;
 
-        // Сохраняем код в таблицу verification_codes
+        // Сохраняем код и userToken в таблицу verification_codes
         await sql`
-          INSERT INTO verification_codes (email, code, expires_at, created_at)
-          VALUES (${email}, ${verificationCode}, ${expiresAt.toISOString()}, NOW())
+          INSERT INTO verification_codes (email, code, user_token, expires_at, created_at)
+          VALUES (${email}, ${verificationCode}, ${userToken}, ${expiresAt.toISOString()}, NOW())
           ON CONFLICT (email) 
           DO UPDATE SET 
             code = ${verificationCode},
+            user_token = ${userToken},
             expires_at = ${expiresAt.toISOString()},
             created_at = NOW()
         `;
@@ -137,9 +142,9 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Проверяем код
+        // Проверяем код и получаем сохраненный userToken
         const verificationResult = await sql`
-          SELECT code, expires_at 
+          SELECT code, user_token, expires_at 
           FROM verification_codes 
           WHERE email = ${email}
           LIMIT 1
@@ -152,7 +157,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { code: savedCode, expires_at } = verificationResult.rows[0];
+        const { code: savedCode, user_token: savedUserToken, expires_at } = verificationResult.rows[0];
 
         // Проверяем срок действия
         if (new Date() > new Date(expires_at)) {
@@ -183,8 +188,8 @@ export async function POST(request: NextRequest) {
         let isNewUser = false;
 
         if (user.rows.length === 0) {
-          // Создаём нового пользователя
-          userToken = generateUserToken(email);
+          // Создаём нового пользователя с сохраненным userToken
+          userToken = savedUserToken || generateUserToken(email); // Используем сохраненный или генерируем новый (fallback)
           
           // Генерируем уникальный ID для email пользователей (диапазон 10^13+)
           // Пробуем использовать функцию generate_email_user_id(), если нет - генерируем сами
