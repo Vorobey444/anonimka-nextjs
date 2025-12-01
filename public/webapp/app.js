@@ -1567,11 +1567,18 @@ function checkTelegramAuth() {
                     console.log('✅ Восстановлен user_id:', userData.id);
                 }
                 
-                // Закрываем модальное окно если оно было открыто
+                // Закрываем все модальные окна авторизации
                 const modal = document.getElementById('telegramAuthModal');
+                const emailModal = document.getElementById('emailAuthModal');
+                
                 if (modal) {
                     modal.style.display = 'none';
-                    console.log('✅ Модальное окно авторизации закрыто (сохранённая сессия)');
+                    console.log('✅ Модальное окно Telegram авторизации закрыто (сохранённая сессия)');
+                }
+                
+                if (emailModal) {
+                    emailModal.style.display = 'none';
+                    console.log('✅ Модальное окно Email авторизации закрыто (сохранённая сессия)');
                 }
                 
                 return true;
