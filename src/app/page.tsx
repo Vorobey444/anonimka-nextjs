@@ -168,8 +168,12 @@ export default function Home() {
           width: 100%;
           height: 100%;
           object-fit: contain;
+          border-radius: 50%;
           filter: drop-shadow(0 0 40px rgba(255, 0, 100, 0.8)) 
-                  drop-shadow(0 0 60px rgba(0, 100, 255, 0.6));
+                  drop-shadow(0 0 60px rgba(0, 100, 255, 0.6))
+                  drop-shadow(0 0 80px rgba(131, 56, 236, 0.4));
+          box-shadow: 0 0 100px 30px rgba(255, 0, 100, 0.3),
+                      0 0 150px 50px rgba(0, 100, 255, 0.2);
         }
 
         @keyframes neonPulse {
