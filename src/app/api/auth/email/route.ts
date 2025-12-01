@@ -78,7 +78,23 @@ export async function POST(request: NextRequest) {
       case 'send-code': {
         console.log('[EMAIL AUTH] 📧 Отправка кода на:', email);
 
-        // Генерируем код
+        // 🎯 ТЕСТОВЫЙ АККАУНТ ДЛЯ GOOGLE PLAY
+        const isGooglePlayTestAccount = email.toLowerCase() === 'test@anonimka.kz';
+        
+        if (isGooglePlayTestAccount) {
+          console.log('[EMAIL AUTH] 🧪 Google Play тестовый аккаунт - код не отправляется');
+          
+          // Для тестового аккаунта просто возвращаем успех
+          // Реальный код 123456 захардкожен и проверяется в verify-code
+          return NextResponse.json({
+            success: true,
+            message: 'Используйте код: 123456',
+            isNewUser: false,
+            testAccount: true
+          });
+        }
+
+        // Генерируем код для обычных пользователей
         const verificationCode = generateVerificationCode();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 минут
 
@@ -142,7 +158,84 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Проверяем код и получаем сохраненный userToken
+        // 🎯 ТЕСТОВЫЙ АККАУНТ ДЛЯ GOOGLE PLAY
+        // Специальный тестовый email для проверки приложения
+        const isGooglePlayTestAccount = email.toLowerCase() === 'test@anonimka.kz';
+        const isTestCodeValid = code === '123456';
+
+        if (isGooglePlayTestAccount && isTestCodeValid) {
+          console.log('[EMAIL AUTH] 🧪 Google Play тестовый аккаунт');
+          
+          // Проверяем существует ли тестовый пользователь
+          let testUser = await sql`
+            SELECT id, user_token, email, is_premium, premium_until, auto_premium_source
+            FROM users 
+            WHERE email = ${email}
+            LIMIT 1
+          `;
+
+          let userToken: string;
+          let userId: number;
+
+          if (testUser.rows.length === 0) {
+            // Создаём тестового пользователя
+            userToken = generateUserToken(email);
+            const testUserId = 10000000000001; // Фиксированный ID для тестового пользователя
+
+            const newTestUser = await sql`
+              INSERT INTO users (
+                id,
+                user_token,
+                email,
+                email_verified,
+                auth_method,
+                is_premium,
+                created_from,
+                created_at,
+                last_login_at
+              )
+              VALUES (
+                ${testUserId},
+                ${userToken},
+                ${email},
+                true,
+                'email',
+                false,
+                'web',
+                NOW(),
+                NOW()
+              )
+              ON CONFLICT (id) DO UPDATE SET
+                last_login_at = NOW()
+              RETURNING id, user_token
+            `;
+
+            userId = newTestUser.rows[0].id;
+            userToken = newTestUser.rows[0].user_token;
+            console.log('[EMAIL AUTH] ✅ Тестовый пользователь создан/обновлен');
+          } else {
+            userId = testUser.rows[0].id;
+            userToken = testUser.rows[0].user_token;
+            
+            // Обновляем last_login_at
+            await sql`
+              UPDATE users 
+              SET last_login_at = NOW()
+              WHERE id = ${userId}
+            `;
+            console.log('[EMAIL AUTH] ✅ Тестовый пользователь найден');
+          }
+
+          return NextResponse.json({
+            success: true,
+            userToken,
+            userId: userId.toString(),
+            isNewUser: testUser.rows.length === 0,
+            message: 'Google Play Test Account'
+          });
+        }
+
+        // Обычная проверка для реальных пользователей
         const verificationResult = await sql`
           SELECT code, user_token, expires_at 
           FROM verification_codes 
