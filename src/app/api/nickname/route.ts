@@ -101,14 +101,33 @@ export async function POST(request: NextRequest) {
       } else {
         console.error('[NICKNAME API] ❌ Пользователь не найден! userToken:', userToken.substring(0, 16) + '...');
         
-        // Проверяем, существует ли хоть какой-то пользователь с таким email
+        // Проверяем примеры пользователей в базе
         const emailCheck = await sql`
-          SELECT id, user_token, email FROM users WHERE email LIKE '%' LIMIT 5
+          SELECT id, user_token, email, auth_method FROM users 
+          WHERE auth_method = 'email' 
+          ORDER BY created_at DESC 
+          LIMIT 5
         `;
-        console.log('[NICKNAME API] Примеры пользователей в базе:', emailCheck.rows);
+        console.log('[NICKNAME API] Email пользователи в базе:', emailCheck.rows);
+        
+        // Проверяем verification_codes - возможно пользователь только что авторизовался
+        const verificationCheck = await sql`
+          SELECT email, code, expires_at 
+          FROM verification_codes 
+          ORDER BY created_at DESC 
+          LIMIT 3
+        `;
+        console.log('[NICKNAME API] Последние verification codes:', verificationCheck.rows);
         
         return NextResponse.json(
-          { success: false, error: 'User not found by userToken', debug: { userTokenPrefix: userToken.substring(0, 16) } },
+          { 
+            success: false, 
+            error: 'User not found by userToken. Please re-authenticate.', 
+            debug: { 
+              userTokenPrefix: userToken.substring(0, 16),
+              hint: 'User may not have been created during email auth. Try logging in again.'
+            } 
+          },
           { status: 404 }
         );
       }

@@ -2483,7 +2483,26 @@ async function completeOnboarding() {
         
     } catch (error) {
         console.error('Ошибка завершения onboarding:', error);
-        tg.showAlert('Ошибка: ' + error.message);
+        
+        // Если ошибка "User not found" - предлагаем переавторизоваться
+        if (error.message && error.message.includes('User not found')) {
+            if (confirm('❌ Ошибка: пользователь не найден в базе данных.\n\nВозможно, произошла ошибка при регистрации.\n\nНажмите ОК чтобы выйти и войти заново.')) {
+                // Очищаем данные авторизации
+                localStorage.removeItem('user_token');
+                localStorage.removeItem('auth_method');
+                localStorage.removeItem('user_email');
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('userNickname');
+                localStorage.removeItem('user_nickname');
+                localStorage.removeItem('onboardingCompleted');
+                
+                // Перезагружаем страницу для повторной авторизации
+                location.reload();
+            }
+        } else {
+            tg.showAlert('Ошибка: ' + error.message);
+        }
+        
         continueBtn.textContent = originalText;
         continueBtn.disabled = false;
     }
