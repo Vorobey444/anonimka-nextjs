@@ -27,14 +27,16 @@ export async function POST(request: NextRequest) {
       case 'mark-active': {
         const { userId, chatId } = params;
         
-        if (!userId || !chatId) {
+        if (userId === null || userId === undefined || userId === '' || 
+            chatId === null || chatId === undefined || chatId === '') {
+          console.log('[USER-ACTIVITY] Invalid params:', { userId, chatId, type: typeof userId });
           return NextResponse.json(
             { data: null, error: { message: 'Missing userId or chatId' } },
             { status: 400 }
           );
         }
         
-        activeUsers.set(userId.toString(), {
+        activeUsers.set(String(userId), {
           chatId: parseInt(chatId),
           lastSeen: Date.now()
         });
@@ -51,14 +53,16 @@ export async function POST(request: NextRequest) {
       case 'is-active': {
         const { userId, chatId } = params;
         
-        if (!userId || !chatId) {
+        if (userId === null || userId === undefined || userId === '' || 
+            chatId === null || chatId === undefined || chatId === '') {
+          console.log('[USER-ACTIVITY] Invalid params:', { userId, chatId, type: typeof userId });
           return NextResponse.json(
             { data: null, error: { message: 'Missing userId or chatId' } },
             { status: 400 }
           );
         }
         
-        const userActivity = activeUsers.get(userId.toString());
+        const userActivity = activeUsers.get(String(userId));
         
         if (!userActivity) {
           return NextResponse.json({ 
@@ -73,7 +77,7 @@ export async function POST(request: NextRequest) {
 
         // Очищаем неактивных пользователей
         if (!isRecent) {
-          activeUsers.delete(userId.toString());
+          activeUsers.delete(String(userId));
         }
 
         console.log('🔍 Проверка активности:', { 
@@ -100,14 +104,15 @@ export async function POST(request: NextRequest) {
       case 'mark-inactive': {
         const { userId } = params;
         
-        if (!userId) {
+        if (userId === null || userId === undefined || userId === '') {
+          console.log('[USER-ACTIVITY] Invalid userId:', { userId, type: typeof userId });
           return NextResponse.json(
             { data: null, error: { message: 'Missing userId' } },
             { status: 400 }
           );
         }
         
-        const removed = activeUsers.delete(userId.toString());
+        const removed = activeUsers.delete(String(userId));
         
         safeLog('👋 Пользователь неактивен', { userId, removed });
         
