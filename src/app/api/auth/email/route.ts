@@ -186,8 +186,19 @@ export async function POST(request: NextRequest) {
           // Создаём нового пользователя
           userToken = generateUserToken(email);
           
-          // Для email пользователей генерируем уникальный ID (диапазон 10^13+)
-          // Миграция должна быть выполнена: CREATE FUNCTION generate_email_user_id()
+          // Генерируем уникальный ID для email пользователей (диапазон 10^13+)
+          // Пробуем использовать функцию generate_email_user_id(), если нет - генерируем сами
+          let emailUserId: number;
+          
+          try {
+            const idResult = await sql`SELECT generate_email_user_id() as id`;
+            emailUserId = idResult.rows[0].id;
+            console.log('[EMAIL AUTH] Использована функция generate_email_user_id(), ID:', emailUserId);
+          } catch (error) {
+            // Функция не существует - генерируем ID вручную
+            emailUserId = 10000000000000 + Math.floor(Math.random() * 1000000000000);
+            console.log('[EMAIL AUTH] Функция generate_email_user_id() не найдена, сгенерирован ID:', emailUserId);
+          }
           
           const newUser = await sql`
             INSERT INTO users (
@@ -202,13 +213,13 @@ export async function POST(request: NextRequest) {
               last_login_at
             )
             VALUES (
-              generate_email_user_id(),
+              ${emailUserId},
               ${userToken},
               ${email},
               true,
               'email',
               false,
-              'android',
+              'web',
               NOW(),
               NOW()
             )
