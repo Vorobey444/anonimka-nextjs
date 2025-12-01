@@ -564,6 +564,82 @@ export async function POST(req: NextRequest) {
         console.error('[ADS API] Ошибка при проверке бонуса для девушек:', bonusError);
         // Не прерываем создание анкеты если бонус не сработал
       }
+    } else if (finalUserToken) {
+      // 🎀 Бонус для девушек для EMAIL пользователей
+      try {
+        console.log('[ADS API] 🎀 Проверяем female_bonus для email пользователя');
+        
+        const userCheck = await sql`
+          SELECT first_ad_gender, auto_premium_source, is_premium, premium_until
+          FROM users
+          WHERE user_token = ${finalUserToken}
+          LIMIT 1
+        `;
+
+        if (userCheck.rows.length > 0) {
+          const user = userCheck.rows[0];
+          const currentGender = gender;
+          
+          // Если first_ad_gender еще не установлен — это первая анкета
+          if (!user.first_ad_gender) {
+            console.log('[ADS API] 🎀 Первая анкета email пользователя, пол:', currentGender);
+            
+            await sql`
+              UPDATE users
+              SET first_ad_gender = ${currentGender},
+                  updated_at = NOW()
+              WHERE user_token = ${finalUserToken}
+            `;
+            
+            if (currentGender === 'Девушка') {
+              console.log('[ADS API] 🎀 Активируем бонус PRO для девушки (email, навсегда)');
+              
+              await sql`
+                UPDATE users
+                SET is_premium = TRUE,
+                    premium_until = NULL,
+                    auto_premium_source = 'female_bonus',
+                    updated_at = NOW()
+                WHERE user_token = ${finalUserToken}
+              `;
+              
+              await sql`
+                INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
+                VALUES (${finalUserToken}, TRUE, NULL, NOW())
+                ON CONFLICT (user_token) DO UPDATE
+                SET is_premium = TRUE, premium_until = NULL, updated_at = NOW()
+              `;
+              
+              console.log('[ADS API] ✅ Бонус PRO для девушки (email) активирован');
+            }
+          } else if (user.auto_premium_source === 'female_bonus' && currentGender === 'Мужчина') {
+            console.log('[ADS API] 🚫 Email девушка создала мужскую анкету — отменяем бонус PRO');
+            
+            const hasPaidSubscription = user.premium_until !== null;
+            
+            if (!hasPaidSubscription) {
+              await sql`
+                UPDATE users
+                SET is_premium = FALSE,
+                    premium_until = NULL,
+                    auto_premium_source = NULL,
+                    updated_at = NOW()
+                WHERE user_token = ${finalUserToken}
+              `;
+              
+              await sql`
+                UPDATE premium_tokens
+                SET is_premium = FALSE, premium_until = NULL, updated_at = NOW()
+                WHERE user_token = ${finalUserToken}
+              `;
+              
+              console.log('[ADS API] ❌ Бонус PRO отменен (email)');
+            }
+          }
+        }
+      } catch (bonusError) {
+        console.error('[ADS API] Ошибка при проверке бонуса для email девушек:', bonusError);
+      }
     }
     
     // Проверяем реферальную программу — выдаём награду если пользователь пришёл по реферальной ссылке
