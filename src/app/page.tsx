@@ -8,13 +8,13 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
-    // Проверяем, это мобильное устройство или WebView
+    // Проверяем, это мобильное устройство или WebView (только по user agent)
     const checkMobile = () => {
       const userAgent = navigator.userAgent.toLowerCase()
-      const isWebView = /android|iphone|ipad|ipod/i.test(userAgent)
-      const isNarrowScreen = window.innerWidth < 768
+      // Проверяем только реальные мобильные устройства, а не просто узкий экран
+      const isMobileDevice = /android|iphone|ipad|ipod|mobile/i.test(userAgent) && !/windows|mac|linux/i.test(userAgent)
       
-      if (isWebView || isNarrowScreen) {
+      if (isMobileDevice) {
         setIsMobile(true)
         // Для мобильных - сразу редирект на webapp
         router.replace('/webapp/')
@@ -22,8 +22,6 @@ export default function Home() {
     }
     
     checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
   }, [router])
 
   const handleEmailAuth = () => {
