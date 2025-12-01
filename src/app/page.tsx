@@ -88,21 +88,23 @@ export default function Home() {
         {/* Выбор авторизации */}
         <div className="auth-choice">
           <button 
-            className="auth-button red-pill"
+            className="auth-button email-button"
             onClick={handleEmailAuth}
           >
-            <div className="pill-icon">📧</div>
-            <span className="pill-text">Вход через почту</span>
-            <div className="pill-glow red-glow"></div>
+            <div className="button-content">
+              <div className="icon">📧</div>
+              <div className="text">Вход через почту</div>
+            </div>
           </button>
 
           <button 
-            className="auth-button blue-pill"
+            className="auth-button telegram-button"
             onClick={handleTelegramAuth}
           >
-            <div className="pill-icon">✈️</div>
-            <span className="pill-text">Вход через Telegram</span>
-            <div className="pill-glow blue-glow"></div>
+            <div className="button-content">
+              <div className="icon">✈️</div>
+              <div className="text">Вход через Telegram</div>
+            </div>
           </button>
         </div>
 
@@ -216,7 +218,7 @@ export default function Home() {
 
         .auth-choice {
           display: flex;
-          gap: 3rem;
+          gap: 2rem;
           justify-content: center;
           align-items: center;
           margin: 3rem 0;
@@ -225,84 +227,107 @@ export default function Home() {
 
         .auth-button {
           position: relative;
-          width: 280px;
-          height: 180px;
-          background: rgba(26, 26, 46, 0.8);
-          border: 3px solid;
-          border-radius: 30px;
+          width: 320px;
+          height: 80px;
+          background: linear-gradient(135deg, rgba(20, 20, 35, 0.9) 0%, rgba(30, 30, 45, 0.8) 100%);
+          border: 2px solid;
+          border-radius: 16px;
           cursor: pointer;
-          transition: all 0.3s ease;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 1rem;
-          font-size: 1.3rem;
-          font-weight: 600;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           overflow: hidden;
+          backdrop-filter: blur(10px);
         }
 
-        .red-pill {
+        .email-button {
           border-color: #ff006e;
+        }
+
+        .telegram-button {
+          border-color: #00d4ff;
+        }
+
+        .button-content {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+          padding: 0 2rem;
+          height: 100%;
+        }
+
+        .icon {
+          font-size: 2.5rem;
+          transition: transform 0.3s ease;
+        }
+
+        .text {
+          font-size: 1.1rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .email-button .text {
           color: #ff006e;
         }
 
-        .blue-pill {
-          border-color: #00d4ff;
+        .telegram-button .text {
           color: #00d4ff;
         }
 
-        .auth-button:hover {
-          transform: translateY(-10px) scale(1.05);
-        }
-
-        .red-pill:hover {
-          background: rgba(255, 0, 110, 0.1);
-          box-shadow: 0 10px 50px rgba(255, 0, 110, 0.5);
-        }
-
-        .blue-pill:hover {
-          background: rgba(0, 212, 255, 0.1);
-          box-shadow: 0 10px 50px rgba(0, 212, 255, 0.5);
-        }
-
-        .pill-icon {
-          font-size: 3.5rem;
-          animation: iconFloat 3s ease-in-out infinite;
-        }
-
-        @keyframes iconFloat {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-
-        .pill-text {
-          font-size: 1.3rem;
-          text-transform: uppercase;
-          letter-spacing: 2px;
-        }
-
-        .pill-glow {
+        .auth-button::before {
+          content: '';
           position: absolute;
-          bottom: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
+          inset: 0;
+          background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 100%);
           opacity: 0;
-          transition: opacity 0.5s ease;
-          pointer-events: none;
+          transition: opacity 0.4s ease;
         }
 
-        .red-glow {
-          background: radial-gradient(circle, rgba(255, 0, 110, 0.4) 0%, transparent 70%);
+        .auth-button::after {
+          content: '';
+          position: absolute;
+          inset: -2px;
+          border-radius: 16px;
+          padding: 2px;
+          background: linear-gradient(135deg, var(--glow-color-1), var(--glow-color-2));
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          opacity: 0;
+          transition: opacity 0.4s ease;
         }
 
-        .blue-glow {
-          background: radial-gradient(circle, rgba(0, 212, 255, 0.4) 0%, transparent 70%);
+        .email-button {
+          --glow-color-1: #ff006e;
+          --glow-color-2: #ff4d94;
         }
 
-        .auth-button:hover .pill-glow {
+        .telegram-button {
+          --glow-color-1: #00d4ff;
+          --glow-color-2: #4de2ff;
+        }
+
+        .auth-button:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 40px -10px var(--glow-color-1);
+        }
+
+        .auth-button:hover::before {
           opacity: 1;
+        }
+
+        .auth-button:hover::after {
+          opacity: 1;
+        }
+
+        .auth-button:hover .icon {
+          transform: scale(1.1) rotate(5deg);
+        }
+
+        .auth-button:active {
+          transform: translateY(-2px);
         }
 
         .disclaimer {
