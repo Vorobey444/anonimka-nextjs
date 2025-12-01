@@ -10481,6 +10481,7 @@ function hideEmailUserFeatures() {
 // Обновить кнопки в модальном окне
 function updatePremiumModalButtons() {
     const freeBtn = document.querySelector('.pricing-card:not(.featured) .pricing-btn');
+    const dollarBtn = document.getElementById('dollarPaymentBtn');
     const buyBtn = document.getElementById('buyPremiumBtn');
     const referralBtn = document.getElementById('referralBtn');
     const trialBtn = document.getElementById('trialBtn');
@@ -10501,6 +10502,7 @@ function updatePremiumModalButtons() {
         }
         
         // Скрываем все кнопки покупки/триала
+        if (dollarBtn) dollarBtn.style.display = 'none';
         if (buyBtn) buyBtn.style.display = 'none';
         if (referralBtn) referralBtn.style.display = 'none';
         if (trialBtn) trialBtn.style.display = 'none';
@@ -10512,6 +10514,9 @@ function updatePremiumModalButtons() {
             freeBtn.disabled = true;
             freeBtn.classList.add('active');
         }
+        
+        // Кнопка $1 показывается ВСЕМ пользователям (Email и Telegram)
+        if (dollarBtn) dollarBtn.style.display = 'block';
         
         // Для email пользователей скрываем Stars и Referral
         if (emailUser) {
@@ -10797,6 +10802,21 @@ async function activatePremium() {
 }
 
 // Показ предложения триала (отдельная кнопка)
+// Заглушка для оплаты долларом
+function showDollarPaymentComingSoon() {
+    const message = '💵 Оплата за 1$ скоро будет доступна!\n\n' +
+                   '🔜 Мы подключаем платежную систему\n' +
+                   '💳 Принимаем карты всех стран\n' +
+                   '🌍 Быстрая оплата без комиссий\n\n' +
+                   '⏰ Следите за обновлениями!';
+    
+    if (tg && tg.showAlert) {
+        tg.showAlert(message);
+    } else {
+        alert(message);
+    }
+}
+
 function showTrialOffer() {
     if (userPremiumStatus.isPremium) {
         if (tg && tg.showAlert) tg.showAlert('Уже активен PRO, триал недоступен.');
