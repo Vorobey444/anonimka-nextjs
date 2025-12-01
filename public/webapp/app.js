@@ -1656,6 +1656,16 @@ async function initializeNickname() {
             console.log('🔍 [DEBUG] Полный URL запроса:', url);
             const response = await fetch(url);
             console.log('🔍 [DEBUG] Response status:', response.status);
+            
+            // Если пользователь не найден в БД - очищаем localStorage и редирект
+            if (response.status === 404) {
+                console.error('❌ Пользователь не найден в БД, очищаем localStorage');
+                localStorage.clear();
+                alert('Ваша сессия устарела. Пожалуйста, авторизуйтесь заново.');
+                window.location.href = '/';
+                return;
+            }
+            
             const result = await response.json();
             console.log('🔍 [DEBUG] Полный ответ API:', JSON.stringify(result));
             
