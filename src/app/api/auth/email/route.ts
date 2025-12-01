@@ -208,6 +208,8 @@ export async function POST(request: NextRequest) {
                 email_verified,
                 auth_method,
                 is_premium,
+                premium_until,
+                auto_premium_source,
                 created_from,
                 created_at,
                 last_login_at
@@ -218,19 +220,24 @@ export async function POST(request: NextRequest) {
                 ${email},
                 true,
                 'email',
-                false,
+                true,
+                NOW() + INTERVAL '100 years',
+                'google_play_test',
                 'web',
                 NOW(),
                 NOW()
               )
               ON CONFLICT (id) DO UPDATE SET
-                last_login_at = NOW()
+                last_login_at = NOW(),
+                is_premium = true,
+                premium_until = NOW() + INTERVAL '100 years',
+                auto_premium_source = 'google_play_test'
               RETURNING id, user_token
             `;
 
             userId = newTestUser.rows[0].id;
             userToken = newTestUser.rows[0].user_token;
-            console.log('[EMAIL AUTH] ✅ Тестовый пользователь создан/обновлен');
+            console.log('[EMAIL AUTH] ✅ Тестовый пользователь создан/обновлен с PRO статусом');
           } else {
             userId = testUser.rows[0].id;
             userToken = testUser.rows[0].user_token;
@@ -249,10 +256,13 @@ export async function POST(request: NextRequest) {
             user: {
               userToken,
               userId: userId.toString(),
-              email: email
+              email: email,
+              isPremium: true,
+              premiumSource: 'google_play_test',
+              authMethod: 'email'
             },
             isNewUser: testUser.rows.length === 0,
-            message: 'Google Play Test Account'
+            message: 'Google Play Test Account with PRO'
           });
         }
 
