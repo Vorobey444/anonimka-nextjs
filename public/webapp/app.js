@@ -10491,6 +10491,9 @@ function updatePremiumModalButtons() {
     
     // Проверяем метод авторизации - email пользователи не видят Stars и Referral
     const emailUser = isEmailUser();
+    console.log('📧 isEmailUser():', emailUser);
+    console.log('🔑 user_token:', localStorage.getItem('user_token'));
+    console.log('🆔 user_id:', localStorage.getItem('user_id'));
     
     if (userPremiumStatus.isPremium) {
         // Пользователь PRO - показываем что он активен
@@ -10516,18 +10519,41 @@ function updatePremiumModalButtons() {
         }
         
         // Кнопка $1 показывается ВСЕМ пользователям (Email и Telegram)
-        if (dollarBtn) dollarBtn.style.display = 'block';
+        if (dollarBtn) {
+            dollarBtn.style.display = 'block';
+            console.log('💵 Показываем кнопку $1');
+        }
         
         // Для email пользователей скрываем Stars и Referral
         if (emailUser) {
-            if (buyBtn) buyBtn.style.display = 'none';
-            if (referralBtn) referralBtn.style.display = 'none';
-            if (referralInfo) referralInfo.style.display = 'none';
+            console.log('📧 Email пользователь - скрываем Stars и Referral');
+            if (buyBtn) {
+                buyBtn.style.display = 'none';
+                console.log('❌ Скрыли Stars');
+            }
+            if (referralBtn) {
+                referralBtn.style.display = 'none';
+                console.log('❌ Скрыли Referral');
+            }
+            if (referralInfo) {
+                referralInfo.style.display = 'none';
+                console.log('❌ Скрыли Referral Info');
+            }
         } else {
+            console.log('📱 Telegram пользователь - показываем все кнопки');
             // Telegram пользователи видят все кнопки
-            if (buyBtn) buyBtn.style.display = 'block';
-            if (referralBtn) referralBtn.style.display = 'block';
-            if (referralInfo) referralInfo.style.display = 'block';
+            if (buyBtn) {
+                buyBtn.style.display = 'block';
+                console.log('✅ Показали Stars');
+            }
+            if (referralBtn) {
+                referralBtn.style.display = 'block';
+                console.log('✅ Показали Referral');
+            }
+            if (referralInfo) {
+                referralInfo.style.display = 'block';
+                console.log('✅ Показали Referral Info');
+            }
         }
         
         // Trial показываем только если не использован
