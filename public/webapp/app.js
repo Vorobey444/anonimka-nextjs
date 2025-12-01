@@ -10461,8 +10461,21 @@ function closePremiumModal() {
 function isEmailUser() {
     const userToken = localStorage.getItem('user_token');
     const userId = localStorage.getItem('user_id');
-    // Email user: есть userToken (длинный) и нет user_id
-    return userToken && userToken.length > 20 && !userId;
+    const userEmail = localStorage.getItem('user_email');
+    
+    // Email user: есть email в localStorage ИЛИ (есть длинный userToken и нет числового user_id)
+    if (userEmail) {
+        console.log('📧 Email user detected by user_email:', userEmail);
+        return true;
+    }
+    
+    // Проверяем что userToken длинный (64 hex chars) и нет корректного Telegram ID
+    const isLongToken = userToken && userToken.length > 20;
+    const noTelegramId = !userId || userId.length > 15; // Telegram ID короткие (до 10-12 цифр)
+    
+    const result = isLongToken && noTelegramId;
+    console.log('📧 Email user check:', {userToken: userToken?.substring(0, 16), userId, isLongToken, noTelegramId, result});
+    return result;
 }
 
 // Скрыть функции недоступные для email пользователей
