@@ -1559,12 +1559,23 @@ function checkTelegramAuth() {
         return false;
     }
     
-    // Для браузера - показываем модальное окно Telegram
+    // Для браузера - показываем модальное окно авторизации
     console.log('❌ Пользователь не авторизован, показываем модальное окно');
+    
+    // Проверяем параметр auth в URL (из главной страницы)
+    const urlParams = new URLSearchParams(window.location.search);
+    const authType = urlParams.get('auth');
     
     // Задержка для уверенности что DOM загружен
     setTimeout(() => {
-        showTelegramAuthModal();
+        if (authType === 'email') {
+            console.log('📧 Показываем форму email авторизации');
+            showEmailAuthModal();
+        } else {
+            // По умолчанию - Telegram
+            console.log('✈️ Показываем форму Telegram авторизации');
+            showTelegramAuthModal();
+        }
         
         // Дополнительная проверка через 1 секунду
         setTimeout(() => {
@@ -2754,6 +2765,294 @@ window.onTelegramAuth = function(user) {
     // Перезагружаем страницу для применения авторизации
     location.reload();
 };
+
+// Показать модальное окно авторизации через Email
+function showEmailAuthModal() {
+    console.log('📧 Показываем модальное окно email авторизации');
+    
+    // Создаем модальное окно динамически
+    let modal = document.getElementById('emailAuthModal');
+    
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'emailAuthModal';
+        modal.className = 'modal-overlay';
+        modal.style.cssText = `
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        `;
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="
+                background: linear-gradient(135deg, #1a1a2e 0%, #2a2a3e 100%);
+                border-radius: 30px;
+                padding: 3rem;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 20px 60px rgba(255, 0, 110, 0.4);
+                border: 3px solid #ff006e;
+                position: relative;
+            ">
+                <h2 style="
+                    color: #ff006e;
+                    text-align: center;
+                    margin-bottom: 1.5rem;
+                    font-size: 2rem;
+                    text-shadow: 0 0 20px rgba(255, 0, 110, 0.6);
+                ">📧 Вход через Email</h2>
+                
+                <p style="
+                    color: rgba(255, 255, 255, 0.8);
+                    text-align: center;
+                    margin-bottom: 2rem;
+                    font-size: 1rem;
+                ">Введите вашу почту для авторизации</p>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <input 
+                        type="email" 
+                        id="emailAuthInput" 
+                        placeholder="your@email.com"
+                        style="
+                            width: 100%;
+                            padding: 1rem;
+                            border: 2px solid #ff006e;
+                            border-radius: 15px;
+                            background: rgba(26, 26, 46, 0.8);
+                            color: #fff;
+                            font-size: 1.1rem;
+                            text-align: center;
+                            outline: none;
+                            transition: all 0.3s ease;
+                        "
+                    />
+                </div>
+                
+                <div id="emailAuthCodeSection" style="display: none; margin-bottom: 1.5rem;">
+                    <p style="
+                        color: rgba(255, 255, 255, 0.8);
+                        text-align: center;
+                        margin-bottom: 1rem;
+                        font-size: 0.95rem;
+                    ">Введите код из письма:</p>
+                    <input 
+                        type="text" 
+                        id="emailAuthCode" 
+                        placeholder="••••••"
+                        maxlength="6"
+                        style="
+                            width: 100%;
+                            padding: 1rem;
+                            border: 2px solid #00ff88;
+                            border-radius: 15px;
+                            background: rgba(26, 26, 46, 0.8);
+                            color: #fff;
+                            font-size: 1.5rem;
+                            text-align: center;
+                            letter-spacing: 0.5rem;
+                            outline: none;
+                        "
+                    />
+                </div>
+                
+                <div id="emailAuthMessage" style="
+                    text-align: center;
+                    margin-bottom: 1.5rem;
+                    min-height: 1.5rem;
+                    color: #00ff88;
+                    font-size: 0.9rem;
+                "></div>
+                
+                <button 
+                    id="emailAuthButton" 
+                    class="neon-button primary"
+                    style="
+                        width: 100%;
+                        padding: 1rem;
+                        border: 2px solid #ff006e;
+                        border-radius: 15px;
+                        background: rgba(255, 0, 110, 0.2);
+                        color: #ff006e;
+                        font-size: 1.2rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        margin-bottom: 1rem;
+                    "
+                >
+                    Отправить код
+                </button>
+                
+                <div style="text-align: center;">
+                    <button 
+                        onclick="switchToTelegramAuth()"
+                        style="
+                            background: none;
+                            border: none;
+                            color: #00d4ff;
+                            text-decoration: underline;
+                            cursor: pointer;
+                            font-size: 1rem;
+                        "
+                    >
+                        ✈️ Войти через Telegram
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Обработчики событий
+        const emailInput = modal.querySelector('#emailAuthInput');
+        const codeInput = modal.querySelector('#emailAuthCode');
+        const button = modal.querySelector('#emailAuthButton');
+        const messageDiv = modal.querySelector('#emailAuthMessage');
+        const codeSection = modal.querySelector('#emailAuthCodeSection');
+        
+        let emailSent = false;
+        
+        button.onclick = async () => {
+            if (!emailSent) {
+                // Отправка кода
+                const email = emailInput.value.trim();
+                
+                if (!email || !email.includes('@')) {
+                    messageDiv.style.color = '#ff006e';
+                    messageDiv.textContent = '❌ Введите корректный email';
+                    return;
+                }
+                
+                button.disabled = true;
+                button.textContent = 'Отправка...';
+                messageDiv.textContent = '⏳ Отправляем код...';
+                
+                try {
+                    const response = await fetch('/api/auth/email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            action: 'send-code',
+                            email 
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        emailSent = true;
+                        messageDiv.style.color = '#00ff88';
+                        messageDiv.textContent = '✅ Код отправлен на ' + email;
+                        codeSection.style.display = 'block';
+                        button.textContent = 'Войти';
+                        emailInput.disabled = true;
+                        codeInput.focus();
+                    } else {
+                        throw new Error(data.error || 'Ошибка отправки кода');
+                    }
+                } catch (error) {
+                    messageDiv.style.color = '#ff006e';
+                    messageDiv.textContent = '❌ ' + error.message;
+                    button.textContent = 'Отправить код';
+                } finally {
+                    button.disabled = false;
+                }
+            } else {
+                // Проверка кода
+                const code = codeInput.value.trim();
+                
+                if (!code || code.length !== 6) {
+                    messageDiv.style.color = '#ff006e';
+                    messageDiv.textContent = '❌ Введите 6-значный код';
+                    return;
+                }
+                
+                button.disabled = true;
+                button.textContent = 'Проверка...';
+                messageDiv.textContent = '⏳ Проверяем код...';
+                
+                try {
+                    const response = await fetch('/api/auth/email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            action: 'verify-code',
+                            email: emailInput.value.trim(),
+                            code 
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.user?.userToken) {
+                        localStorage.setItem('user_token', data.user.userToken);
+                        localStorage.setItem('auth_method', 'email');
+                        localStorage.setItem('user_email', emailInput.value.trim());
+                        if (data.user.id) {
+                            localStorage.setItem('user_id', data.user.id.toString());
+                        }
+                        
+                        messageDiv.style.color = '#00ff88';
+                        messageDiv.textContent = '✅ Авторизация успешна!';
+                        
+                        setTimeout(() => {
+                            modal.style.display = 'none';
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        throw new Error(data.error || 'Неверный код');
+                    }
+                } catch (error) {
+                    messageDiv.style.color = '#ff006e';
+                    messageDiv.textContent = '❌ ' + error.message;
+                    button.textContent = 'Войти';
+                    button.disabled = false;
+                }
+            }
+        };
+        
+        // Enter для отправки
+        emailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') button.click();
+        });
+        
+        codeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') button.click();
+        });
+    }
+    
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        modal.querySelector('#emailAuthInput')?.focus();
+    }, 100);
+}
+
+// Переключиться на Telegram авторизацию
+function switchToTelegramAuth() {
+    const emailModal = document.getElementById('emailAuthModal');
+    if (emailModal) {
+        emailModal.style.display = 'none';
+    }
+    showTelegramAuthModal();
+}
+
+// Переключиться на Email авторизацию
+function switchToEmailAuth() {
+    const telegramModal = document.getElementById('telegramAuthModal');
+    if (telegramModal) {
+        telegramModal.style.display = 'none';
+    }
+    showEmailAuthModal();
+}
 
 // ...existing code...
 
