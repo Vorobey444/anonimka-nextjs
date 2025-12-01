@@ -732,6 +732,7 @@ export async function POST(req: NextRequest) {
     let femaleBonusLost = false;
     
     if (numericTgId !== null) {
+      // Telegram пользователи
       try {
         const bonusCheck = await sql`
           SELECT first_ad_gender, auto_premium_source
@@ -766,6 +767,40 @@ export async function POST(req: NextRequest) {
         }
       } catch (modalError) {
         console.error('[ADS API] Ошибка при проверке модального окна бонуса:', modalError);
+      }
+    } else if (finalUserToken) {
+      // Email пользователи
+      try {
+        const bonusCheck = await sql`
+          SELECT first_ad_gender, auto_premium_source
+          FROM users
+          WHERE user_token = ${finalUserToken}
+          LIMIT 1
+        `;
+        
+        if (bonusCheck.rows.length > 0) {
+          const bonusData = bonusCheck.rows[0];
+          
+          if (bonusData.first_ad_gender === 'Девушка' && bonusData.auto_premium_source === 'female_bonus') {
+            const adsCount = await sql`
+              SELECT COUNT(*)::int as count FROM ads WHERE user_token = ${finalUserToken}
+            `;
+            const totalAds = adsCount.rows[0]?.count || 0;
+            console.log('[ADS API] 🎀 Проверка модалки (email): count =', totalAds, ', bonus =', bonusData.auto_premium_source);
+            
+            if (totalAds === 1) {
+              showFemaleBonusModal = true;
+              console.log('[ADS API] 🎀 Показываем модалку бонуса для email девушки');
+            }
+          }
+          
+          if (bonusData.first_ad_gender === 'Девушка' && !bonusData.auto_premium_source && gender === 'Мужчина') {
+            femaleBonusLost = true;
+            console.log('[ADS API] 💔 Показываем уведомление об утрате бонуса (email)');
+          }
+        }
+      } catch (modalError) {
+        console.error('[ADS API] Ошибка при проверке модального окна бонуса (email):', modalError);
       }
     }
     
