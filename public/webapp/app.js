@@ -10381,9 +10381,10 @@ function updatePremiumUI() {
             premiumInfo.style.display = 'none';
         }
         
-        // Показываем реферальную кнопку для FREE пользователей
+        // Показываем реферальную кнопку только для Telegram пользователей
         if (referralBtn) {
-            referralBtn.style.display = 'block';
+            const emailUser = isEmailUser();
+            referralBtn.style.display = emailUser ? 'none' : 'block';
         }
     }
 }
@@ -10674,9 +10675,17 @@ function updateCurrentSubscriptionInfo() {
         infoBlock.style.display = 'none';
         
         // Показываем кнопки когда подписки нет
-        if (buyBtn) buyBtn.style.display = 'block';
-        if (referralBtn) referralBtn.style.display = 'block';
-        // Trial показываем только если не использован
+        const emailUser = isEmailUser();
+        if (!emailUser) {
+            // Для Telegram пользователей показываем Stars и Referral
+            if (buyBtn) buyBtn.style.display = 'block';
+            if (referralBtn) referralBtn.style.display = 'block';
+        } else {
+            // Для Email пользователей скрываем Stars и Referral
+            if (buyBtn) buyBtn.style.display = 'none';
+            if (referralBtn) referralBtn.style.display = 'none';
+        }
+        // Trial показываем всем, если не использован
         if (trialBtn) {
             trialBtn.style.display = (userPremiumStatus.trial7h_used ? 'none' : 'block');
         }
