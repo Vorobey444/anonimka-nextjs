@@ -75,27 +75,13 @@ export default function Home() {
         {/* Логотип неоновой кошечки */}
         <div className="logo-container">
           <div className="neon-cat">
-            <div className="cat-hood">
-              <div className="hood-left"></div>
-              <div className="hood-right"></div>
-            </div>
-            <div className="cat-face">
-              <div className="cat-ear cat-ear-left"></div>
-              <div className="cat-ear cat-ear-right"></div>
-              <div className="cat-eyes">
-                <div className="cat-eye cat-eye-left"></div>
-                <div className="cat-eye cat-eye-right"></div>
-              </div>
-              <div className="cat-nose"></div>
-              <div className="cat-whiskers">
-                <div className="whisker whisker-left-1"></div>
-                <div className="whisker whisker-left-2"></div>
-                <div className="whisker whisker-right-1"></div>
-                <div className="whisker whisker-right-2"></div>
-              </div>
-            </div>
+            <img 
+              src="/webapp/logo.png" 
+              alt="Anonimka Logo"
+              className="logo-image"
+            />
           </div>
-          <h1 className="logo-text">Anonimka</h1>
+          <h1 className="logo-text">ANONIMKA</h1>
           <p className="logo-subtitle">Анонимное общение без границ</p>
         </div>
 
@@ -172,126 +158,32 @@ export default function Home() {
           height: 200px;
           margin: 0 auto 2rem;
           position: relative;
-          filter: drop-shadow(0 0 30px rgba(0, 212, 255, 0.8));
-        }
-
-        .cat-hood {
-          position: absolute;
-          width: 180px;
-          height: 140px;
-          left: 10px;
-          top: 0;
-          background: linear-gradient(135deg, #8338ec 0%, #ff006e 100%);
-          border-radius: 90px 90px 20px 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           animation: neonPulse 2s ease-in-out infinite;
         }
 
-        .hood-left, .hood-right {
-          position: absolute;
-          width: 60px;
-          height: 80px;
-          background: linear-gradient(135deg, #8338ec 0%, #ff006e 100%);
-          bottom: -20px;
+        .logo-image {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          filter: drop-shadow(0 0 40px rgba(255, 0, 100, 0.8)) 
+                  drop-shadow(0 0 60px rgba(0, 100, 255, 0.6));
         }
-
-        .hood-left {
-          left: 0;
-          border-radius: 0 0 0 40px;
-          transform: skewX(-10deg);
-        }
-
-        .hood-right {
-          right: 0;
-          border-radius: 0 0 40px 0;
-          transform: skewX(10deg);
-        }
-
-        .cat-face {
-          position: absolute;
-          width: 120px;
-          height: 120px;
-          background: linear-gradient(135deg, #1a1a2e 0%, #2a2a3e 100%);
-          border-radius: 50%;
-          left: 40px;
-          top: 50px;
-          border: 3px solid #00d4ff;
-          box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
-        }
-
-        .cat-ear {
-          position: absolute;
-          width: 30px;
-          height: 35px;
-          background: linear-gradient(135deg, #1a1a2e 0%, #2a2a3e 100%);
-          border: 3px solid #00d4ff;
-          border-bottom: none;
-        }
-
-        .cat-ear-left {
-          top: -20px;
-          left: 10px;
-          border-radius: 20px 20px 0 0;
-          transform: rotate(-15deg);
-        }
-
-        .cat-ear-right {
-          top: -20px;
-          right: 10px;
-          border-radius: 20px 20px 0 0;
-          transform: rotate(15deg);
-        }
-
-        .cat-eyes {
-          display: flex;
-          justify-content: center;
-          gap: 25px;
-          margin-top: 35px;
-        }
-
-        .cat-eye {
-          width: 15px;
-          height: 15px;
-          background: #00ff88;
-          border-radius: 50%;
-          box-shadow: 0 0 15px #00ff88;
-          animation: eyeBlink 4s ease-in-out infinite;
-        }
-
-        @keyframes eyeBlink {
-          0%, 96%, 100% { transform: scaleY(1); }
-          98% { transform: scaleY(0.1); }
-        }
-
-        .cat-nose {
-          width: 10px;
-          height: 8px;
-          background: #ff006e;
-          border-radius: 50%;
-          margin: 8px auto;
-          box-shadow: 0 0 10px #ff006e;
-        }
-
-        .cat-whiskers {
-          position: relative;
-        }
-
-        .whisker {
-          position: absolute;
-          height: 2px;
-          width: 40px;
-          background: linear-gradient(90deg, #00d4ff 0%, transparent 100%);
-          top: -30px;
-        }
-
-        .whisker-left-1 { left: -35px; transform: rotate(-20deg); }
-        .whisker-left-2 { left: -35px; top: -22px; transform: rotate(-10deg); }
-        .whisker-right-1 { right: -35px; transform: rotate(20deg) scaleX(-1); }
-        .whisker-right-2 { right: -35px; top: -22px; transform: rotate(10deg) scaleX(-1); }
 
         @keyframes neonPulse {
-          0%, 100% { filter: drop-shadow(0 0 20px rgba(131, 56, 236, 0.6)); }
-          50% { filter: drop-shadow(0 0 40px rgba(255, 0, 110, 0.8)); }
+          0%, 100% {
+            filter: drop-shadow(0 0 40px rgba(255, 0, 100, 0.8)) 
+                    drop-shadow(0 0 60px rgba(0, 100, 255, 0.6));
+          }
+          50% {
+            filter: drop-shadow(0 0 50px rgba(255, 0, 100, 1)) 
+                    drop-shadow(0 0 70px rgba(0, 100, 255, 0.8));
+          }
         }
+
+
 
         .logo-text {
           font-size: 4rem;
