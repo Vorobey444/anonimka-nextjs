@@ -15,10 +15,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, params } = body;
 
+    if (!params) {
+      return NextResponse.json(
+        { data: null, error: { message: 'Missing params' } },
+        { status: 400 }
+      );
+    }
+
     switch (action) {
       // Пометить пользователя как активного в чате
       case 'mark-active': {
         const { userId, chatId } = params;
+        
+        if (!userId || !chatId) {
+          return NextResponse.json(
+            { data: null, error: { message: 'Missing userId or chatId' } },
+            { status: 400 }
+          );
+        }
+        
         activeUsers.set(userId.toString(), {
           chatId: parseInt(chatId),
           lastSeen: Date.now()
@@ -35,6 +50,14 @@ export async function POST(request: NextRequest) {
       // Проверить активен ли пользователь в чате
       case 'is-active': {
         const { userId, chatId } = params;
+        
+        if (!userId || !chatId) {
+          return NextResponse.json(
+            { data: null, error: { message: 'Missing userId or chatId' } },
+            { status: 400 }
+          );
+        }
+        
         const userActivity = activeUsers.get(userId.toString());
         
         if (!userActivity) {
@@ -76,6 +99,14 @@ export async function POST(request: NextRequest) {
       // Пометить пользователя как неактивного
       case 'mark-inactive': {
         const { userId } = params;
+        
+        if (!userId) {
+          return NextResponse.json(
+            { data: null, error: { message: 'Missing userId' } },
+            { status: 400 }
+          );
+        }
+        
         const removed = activeUsers.delete(userId.toString());
         
         safeLog('👋 Пользователь неактивен', { userId, removed });
@@ -111,7 +142,8 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('[USER-ACTIVITY] API Error:', error);
+    console.error('[USER-ACTIVITY] Stack:', error instanceof Error ? error.stack : 'No stack');
     return NextResponse.json(
       { data: null, error: { message: 'Server error', details: String(error) } },
       { status: 500 }
