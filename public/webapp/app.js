@@ -11874,20 +11874,24 @@ async function showBlockedUsers() {
     `;
     
     try {
-        const userId = getCurrentUserId();
+        // Получаем идентификатор пользователя (userToken для email, userId для Telegram)
+        let userToken = localStorage.getItem('user_token');
         
-        if (!userId || userId.startsWith('web_')) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="neon-icon">🔒</div>
-                    <h3>Требуется авторизация</h3>
-                    <p>Для просмотра заблокированных пользуйтесь Telegram</p>
-                </div>
-            `;
-            return;
+        // Fallback на Telegram ID если токена нет
+        if (!userToken || userToken === 'null' || userToken === 'undefined') {
+            const userId = getCurrentUserId();
+            if (!userId || userId.startsWith('web_')) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="neon-icon">🔒</div>
+                        <h3>Требуется авторизация</h3>
+                        <p>Для просмотра заблокированных пользуйтесь Telegram</p>
+                    </div>
+                `;
+                return;
+            }
+            userToken = userId;
         }
-        
-        const userToken = localStorage.getItem('user_token') || userId;
         
         const response = await fetch('/api/user-blocks', {
             method: 'POST',
