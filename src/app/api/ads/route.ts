@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until
         FROM ads
-        LEFT JOIN users ON ads.tg_id = users.id
+        LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.id = ${parseInt(id)}
         LIMIT 1
       `;
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until
         FROM ads
-        LEFT JOIN users ON ads.tg_id = users.id
+        LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.city = ${city} AND ads.country = ${country}
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until
         FROM ads
-        LEFT JOIN users ON ads.tg_id = users.id
+        LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.city = ${city}
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until
         FROM ads
-        LEFT JOIN users ON ads.tg_id = users.id
+        LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.country = ${country}
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until
         FROM ads
-        LEFT JOIN users ON ads.tg_id = users.id
+        LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
           ads.created_at DESC
