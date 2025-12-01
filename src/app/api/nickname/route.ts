@@ -88,17 +88,27 @@ export async function POST(request: NextRequest) {
     
     // Если передан userToken - ищем пользователя по нему
     if (userToken) {
-      console.log('[NICKNAME API] Поиск пользователя по userToken');
+      console.log('[NICKNAME API] Поиск пользователя по userToken:', userToken.substring(0, 16) + '...');
       const result = await sql`
-        SELECT id, user_token FROM users WHERE user_token = ${userToken} LIMIT 1
+        SELECT id, user_token, email, auth_method FROM users WHERE user_token = ${userToken} LIMIT 1
       `;
+      
+      console.log('[NICKNAME API] Результат поиска:', result.rows.length > 0 ? result.rows[0] : 'не найдено');
       
       if (result.rows.length > 0) {
         userId = result.rows[0].id;
-        console.log('[NICKNAME API] Найден пользователь по userToken, id:', userId);
+        console.log('[NICKNAME API] Найден пользователь по userToken, id:', userId, 'email:', result.rows[0].email);
       } else {
+        console.error('[NICKNAME API] ❌ Пользователь не найден! userToken:', userToken.substring(0, 16) + '...');
+        
+        // Проверяем, существует ли хоть какой-то пользователь с таким email
+        const emailCheck = await sql`
+          SELECT id, user_token, email FROM users WHERE email LIKE '%' LIMIT 5
+        `;
+        console.log('[NICKNAME API] Примеры пользователей в базе:', emailCheck.rows);
+        
         return NextResponse.json(
-          { success: false, error: 'User not found by userToken' },
+          { success: false, error: 'User not found by userToken', debug: { userTokenPrefix: userToken.substring(0, 16) } },
           { status: 404 }
         );
       }

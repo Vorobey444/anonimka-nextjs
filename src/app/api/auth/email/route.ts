@@ -236,11 +236,13 @@ export async function POST(request: NextRequest) {
             ON CONFLICT (user_id) DO NOTHING
           `;
 
-          console.log('[EMAIL AUTH] ✅ Новый email пользователь создан. ID:', userId, 'userToken:', userToken.substring(0, 16) + '...');
+          console.log('[EMAIL AUTH] ✅ Новый email пользователь создан. ID:', userId, 'userToken:', userToken.substring(0, 16) + '...', 'email:', email);
         } else {
           // Обновляем существующего пользователя
           userId = user.rows[0].id;
           userToken = user.rows[0].user_token;
+
+          console.log('[EMAIL AUTH] 📧 Существующий пользователь найден. ID:', userId, 'userToken:', userToken ? userToken.substring(0, 16) + '...' : 'NULL', 'email:', email);
 
           await sql`
             UPDATE users 
@@ -249,7 +251,7 @@ export async function POST(request: NextRequest) {
             WHERE id = ${userId}
           `;
 
-          console.log('[EMAIL AUTH] ✅ Пользователь вошел:', userId);
+          console.log('[EMAIL AUTH] ✅ Пользователь обновлен:', userId);
         }
 
         // Удаляем использованный код
