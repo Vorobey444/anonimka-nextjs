@@ -79,7 +79,14 @@ export async function POST(request: NextRequest) {
         console.log('[EMAIL AUTH] 📧 Отправка кода на:', email);
 
         // 🎯 ТЕСТОВЫЙ АККАУНТ ДЛЯ GOOGLE PLAY
-        const isGooglePlayTestAccount = email.toLowerCase() === 'test@anonimka.kz';
+        const emailLower = email.toLowerCase().trim();
+        const isGooglePlayTestAccount = emailLower === 'test@anonimka.kz';
+        
+        console.log('[EMAIL AUTH] 🧪 Проверка на тестовый email:', {
+          originalEmail: email,
+          normalizedEmail: emailLower,
+          isTestAccount: isGooglePlayTestAccount
+        });
         
         if (isGooglePlayTestAccount) {
           console.log('[EMAIL AUTH] 🧪 Google Play тестовый аккаунт - код не отправляется');
@@ -150,6 +157,7 @@ export async function POST(request: NextRequest) {
 
       case 'verify-code': {
         console.log('[EMAIL AUTH] 🔐 Проверка кода для:', email);
+        console.log('[EMAIL AUTH] 🔑 Полученный код:', code);
 
         if (!code || code.length !== 6) {
           return NextResponse.json(
@@ -160,11 +168,21 @@ export async function POST(request: NextRequest) {
 
         // 🎯 ТЕСТОВЫЙ АККАУНТ ДЛЯ GOOGLE PLAY
         // Специальный тестовый email для проверки приложения
-        const isGooglePlayTestAccount = email.toLowerCase() === 'test@anonimka.kz';
-        const isTestCodeValid = code === '123456';
+        const emailLower = email.toLowerCase().trim();
+        const codeClean = code.trim();
+        const isGooglePlayTestAccount = emailLower === 'test@anonimka.kz';
+        const isTestCodeValid = codeClean === '123456';
+
+        console.log('[EMAIL AUTH] 🧪 Проверка тестового аккаунта:', {
+          email: emailLower,
+          isTestAccount: isGooglePlayTestAccount,
+          code: codeClean,
+          isCodeValid: isTestCodeValid,
+          willAllow: isGooglePlayTestAccount && isTestCodeValid
+        });
 
         if (isGooglePlayTestAccount && isTestCodeValid) {
-          console.log('[EMAIL AUTH] 🧪 Google Play тестовый аккаунт');
+          console.log('[EMAIL AUTH] 🧪 ✅ Google Play тестовый аккаунт - вход разрешен');
           
           // Проверяем существует ли тестовый пользователь
           let testUser = await sql`
