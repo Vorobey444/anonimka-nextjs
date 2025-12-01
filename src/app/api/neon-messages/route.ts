@@ -386,6 +386,40 @@ export async function POST(request: NextRequest) {
           console.log('[MESSAGES] Уведомление пропущено (skipNotification=true или нет receiverId)');
         }
         
+        // Отправляем FCM push уведомление для email пользователей
+        if (!skipNotification && !receiverId) {
+          console.log('[MESSAGES] Email пользователь - проверяем FCM токен');
+          try {
+            const fcmResult = await sql`
+              SELECT fcm_token FROM users WHERE user_token = ${receiverToken} LIMIT 1
+            `;
+            
+            if (fcmResult.rows.length > 0 && fcmResult.rows[0].fcm_token) {
+              const fcmToken = fcmResult.rows[0].fcm_token;
+              console.log('[MESSAGES] FCM токен найден, отправляем push');
+              
+              const { sendNewMessagePush } = await import('@/utils/fcm');
+              const pushSent = await sendNewMessagePush(
+                fcmToken,
+                String(chatId),
+                senderNickname || 'Аноним',
+                messageText
+              );
+              
+              if (pushSent) {
+                console.log('[MESSAGES] ✅ FCM push отправлен');
+              } else {
+                console.log('[MESSAGES] ⚠️ FCM push не отправлен');
+              }
+            } else {
+              console.log('[MESSAGES] FCM токен не найден для email пользователя');
+            }
+          } catch (fcmError) {
+            console.error('[MESSAGES] Ошибка отправки FCM push:', fcmError);
+            // Не прерываем выполнение
+          }
+        }
+        
         return NextResponse.json({ data: result.rows[0], error: null });
       }
 
