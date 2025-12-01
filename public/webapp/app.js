@@ -10490,16 +10490,24 @@ function hideEmailUserFeatures() {
         
         // Скрываем кнопку реферала на главной странице
         const referralMainBtn = document.getElementById('referralMainButton');
+        console.log('🔍 referralMainButton element:', referralMainBtn);
         if (referralMainBtn) {
             referralMainBtn.style.display = 'none';
+            console.log('✅ Скрыли кнопку реферала на главной');
+        } else {
+            console.warn('⚠️ Элемент referralMainButton не найден!');
         }
     } else {
         console.log('📱 Telegram user detected - showing Referral button');
         
         // Показываем кнопку реферала для Telegram пользователей
         const referralMainBtn = document.getElementById('referralMainButton');
+        console.log('🔍 referralMainButton element:', referralMainBtn);
         if (referralMainBtn) {
             referralMainBtn.style.display = 'block';
+            console.log('✅ Показали кнопку реферала на главной');
+        } else {
+            console.warn('⚠️ Элемент referralMainButton не найден!');
         }
     }
 }
