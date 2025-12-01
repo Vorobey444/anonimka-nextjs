@@ -10383,7 +10383,14 @@ function showTrialOffer() {
 // Активировать 7-часовой TRIAL (клиент вызывает toggle-premium с флагом)
 async function activatePremiumTrial7h() {
     try {
-        const userId = getCurrentUserId();
+        // Для Telegram пользователей используем userId, для email - user_token
+        let userId = getCurrentUserId();
+        
+        // Если нет Telegram ID, используем user_token (email пользователи)
+        if (!userId) {
+            userId = localStorage.getItem('user_token');
+        }
+        
         if (!userId) {
             tg.showAlert('Требуется авторизация');
             return;

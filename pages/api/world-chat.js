@@ -295,6 +295,13 @@ async function getMessages(params, res) {
 async function sendMessage(params, res) {
   const { userToken, nickname, message, isPremium, city } = params;
 
+  if (!userToken) {
+    return res.status(401).json({
+      success: false,
+      error: 'Требуется авторизация'
+    });
+  }
+
   if (!message || message.length > 120) {
     return res.status(400).json({
       success: false,
