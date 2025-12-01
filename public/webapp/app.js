@@ -8688,7 +8688,7 @@ async function openChat(chatId) {
         await markMessagesAsRead(chatId);
         
         // Запускаем периодическое обновление сообщений
-        startChatPolling(chatId);
+        startChatPolling(chatId, userId);
         
     } catch (error) {
         console.error('Ошибка открытия чата:', error);
@@ -9712,23 +9712,33 @@ function applyChatFontSize() {
 }
 
 // Запустить автообновление чата
-function startChatPolling(chatId) {
+function startChatPolling(chatId, userId) {
     // Останавливаем предыдущий интервал
     if (chatPollingInterval) {
         clearInterval(chatPollingInterval);
     }
 
-    const userId = getCurrentUserId();
+    // Если userId не передан, пытаемся получить его
+    if (!userId) {
+        userId = localStorage.getItem('user_token');
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            userId = getCurrentUserId();
+        }
+    }
 
     // Обновляем каждые 3 секунды в silent режиме (без мигания)
     chatPollingInterval = setInterval(async () => {
         if (currentChatId === chatId) {
             await loadChatMessages(chatId, true); // true = silent режим
-            // Обновляем активность пользователя
-            await markUserActive(userId, chatId);
+            // Обновляем активность пользователя только если userId валиден
+            if (userId && chatId) {
+                await markUserActive(userId, chatId);
+            }
         } else {
             // Отмечаем как неактивного при выходе из чата
-            await markUserInactive(userId);
+            if (userId) {
+                await markUserInactive(userId);
+            }
             clearInterval(chatPollingInterval);
         }
     }, 3000);
