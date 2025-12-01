@@ -193,50 +193,59 @@ export async function POST(request: NextRequest) {
           try {
             const idResult = await sql`SELECT generate_email_user_id() as id`;
             emailUserId = idResult.rows[0].id;
-            console.log('[EMAIL AUTH] Использована функция generate_email_user_id(), ID:', emailUserId);
-          } catch (error) {
+            console.log('[EMAIL AUTH] ✅ Использована функция generate_email_user_id(), ID:', emailUserId);
+          } catch (error: any) {
             // Функция не существует - генерируем ID вручную
             emailUserId = 10000000000000 + Math.floor(Math.random() * 1000000000000);
-            console.log('[EMAIL AUTH] Функция generate_email_user_id() не найдена, сгенерирован ID:', emailUserId);
+            console.warn('[EMAIL AUTH] ⚠️ Функция generate_email_user_id() не найдена:', error.message);
+            console.log('[EMAIL AUTH] ✅ Сгенерирован ID вручную:', emailUserId);
           }
           
-          const newUser = await sql`
-            INSERT INTO users (
-              id,
-              user_token,
-              email,
-              email_verified,
-              auth_method,
-              is_premium,
-              created_from,
-              created_at,
-              last_login_at
-            )
-            VALUES (
-              ${emailUserId},
-              ${userToken},
-              ${email},
-              true,
-              'email',
-              false,
-              'web',
-              NOW(),
-              NOW()
-            )
-            RETURNING id, user_token, email, is_premium
-          `;
+          console.log('[EMAIL AUTH] 📝 Создаем пользователя:', { email, userToken: userToken.substring(0, 16) + '...', id: emailUserId });
+          
+          try {
+            const newUser = await sql`
+              INSERT INTO users (
+                id,
+                user_token,
+                email,
+                email_verified,
+                auth_method,
+                is_premium,
+                created_from,
+                created_at,
+                last_login_at
+              )
+              VALUES (
+                ${emailUserId},
+                ${userToken},
+                ${email},
+                true,
+                'email',
+                false,
+                'web',
+                NOW(),
+                NOW()
+              )
+              RETURNING id, user_token, email, is_premium
+            `;
 
-          userId = newUser.rows[0].id;
-          isNewUser = true;
+            userId = newUser.rows[0].id;
+            isNewUser = true;
 
-          // Создаём запись в user_limits
-          await sql`
-            INSERT INTO user_limits (user_id)
-            VALUES (${userId})
-            ON CONFLICT (user_id) DO NOTHING
-          `;
+            // Создаём запись в user_limits
+            await sql`
+              INSERT INTO user_limits (user_id)
+              VALUES (${userId})
+              ON CONFLICT (user_id) DO NOTHING
+            `;
 
-          console.log('[EMAIL AUTH] ✅ Новый email пользователь создан. ID:', userId, 'userToken:', userToken.substring(0, 16) + '...', 'email:', email);
+            console.log('[EMAIL AUTH] ✅ Новый email пользователь создан. ID:', userId, 'userToken:', userToken.substring(0, 16) + '...', 'email:', email);
+          } catch (insertError: any) {
+            console.error('[EMAIL AUTH] ❌ Ошибка создания пользователя:', insertError);
+            console.error('[EMAIL AUTH] ❌ Детали ошибки:', { code: insertError.code, message: insertError.message, detail: insertError.detail });
+            throw new Error(`Failed to create user: ${insertError.message}`);
+          }
         } else {
           // Обновляем существующего пользователя
           userId = user.rows[0].id;
