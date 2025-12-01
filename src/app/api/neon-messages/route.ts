@@ -168,23 +168,37 @@ export async function POST(request: NextRequest) {
         let receiverId = null;
         let isBotBlocked = false;
         const userInfo = await sql`
-          SELECT id as tg_id, COALESCE(is_bot_blocked, false) as is_bot_blocked 
+          SELECT id, auth_method, COALESCE(is_bot_blocked, false) as is_bot_blocked 
           FROM users 
           WHERE user_token = ${receiverToken} 
           LIMIT 1
         `;
-        if (userInfo.rows.length > 0 && userInfo.rows[0].tg_id) {
-          receiverId = userInfo.rows[0].tg_id;
-          isBotBlocked = userInfo.rows[0].is_bot_blocked === true; // Явная проверка на true
-          console.log('[MESSAGES] tg_id получателя найден в users:', receiverId, ', bot_blocked:', isBotBlocked);
-        } else {
-          // Если нет в users, пробуем из ads (fallback)
+        if (userInfo.rows.length > 0 && userInfo.rows[0].id) {
+          const authMethod = userInfo.rows[0].auth_method;
+          
+          // Telegram уведомления только для Telegram пользователей
+          if (authMethod === 'telegram') {
+            receiverId = userInfo.rows[0].id;
+            isBotBlocked = userInfo.rows[0].is_bot_blocked === true;
+            console.log('[MESSAGES] tg_id получателя найден (Telegram user):', receiverId, ', bot_blocked:', isBotBlocked);
+          } else {
+            console.log('[MESSAGES] ℹ️ Получатель - email пользователь, Telegram уведомления не отправляются');
+          }
+        }
+        
+        if (!receiverId) {
+          // Если нет в users, пробуем из ads (только для старых Telegram пользователей)
           const adsInfo = await sql`
-            SELECT tg_id FROM ads WHERE user_token = ${receiverToken} ORDER BY created_at DESC LIMIT 1
+            SELECT tg_id FROM ads 
+            WHERE user_token = ${receiverToken} 
+              AND tg_id IS NOT NULL 
+              AND tg_id < 10000000000
+            ORDER BY created_at DESC 
+            LIMIT 1
           `;
           if (adsInfo.rows.length > 0 && adsInfo.rows[0].tg_id) {
             receiverId = adsInfo.rows[0].tg_id;
-            console.log('[MESSAGES] tg_id получателя найден в ads:', receiverId);
+            console.log('[MESSAGES] tg_id получателя найден в ads (legacy):', receiverId);
           }
         }
         
