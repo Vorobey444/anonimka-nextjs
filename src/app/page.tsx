@@ -125,6 +125,19 @@ export default function Home() {
         <p className="disclaimer">
           Выберите способ входа для продолжения
         </p>
+
+        {/* Footer с важными ссылками */}
+        <div className="footer-links">
+          <a href="/child-safety" target="_blank" className="footer-link safety">
+            🛡️ Стандарты безопасности детей
+          </a>
+          <a href="/delete-account.html" target="_blank" className="footer-link">
+            Удалить аккаунт
+          </a>
+          <a href="/PRIVACY_POLICY.md" target="_blank" className="footer-link">
+            Политика конфиденциальности
+          </a>
+        </div>
       </div>
 
       <style jsx>{`
@@ -350,6 +363,44 @@ export default function Home() {
           margin-top: 2rem;
         }
 
+        .footer-links {
+          display: flex;
+          gap: 1rem;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 3rem;
+          padding-top: 2rem;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-link {
+          color: rgba(255, 255, 255, 0.6);
+          text-decoration: none;
+          font-size: 0.9rem;
+          padding: 8px 16px;
+          border-radius: 8px;
+          transition: all 0.3s ease;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-link:hover {
+          color: rgba(255, 255, 255, 0.9);
+          border-color: rgba(255, 255, 255, 0.3);
+          background: rgba(255, 255, 255, 0.05);
+        }
+
+        .footer-link.safety {
+          color: #667eea;
+          border-color: rgba(102, 126, 234, 0.3);
+          font-weight: 600;
+        }
+
+        .footer-link.safety:hover {
+          color: #8094ff;
+          border-color: rgba(102, 126, 234, 0.6);
+          background: rgba(102, 126, 234, 0.1);
+        }
+
         @media (max-width: 768px) {
           .auth-choice {
             flex-direction: column;
@@ -368,6 +419,16 @@ export default function Home() {
           .neon-cat {
             width: 150px;
             height: 150px;
+          }
+
+          .footer-links {
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 2rem;
+          }
+
+          .footer-link {
+            font-size: 0.85rem;
           }
         }
       `}</style>

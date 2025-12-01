@@ -94,8 +94,8 @@ class MainActivity : AppCompatActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { view, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            // Применяем отступ сверху, чтобы не налезать на статус-бар, и убираем нижний отступ
-            view.setPadding(insets.left, insets.top, insets.right, 0)
+            // Применяем отступы со всех сторон
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
             windowInsets
         }
 
