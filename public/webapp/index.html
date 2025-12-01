@@ -256,7 +256,7 @@
                     </div>
                 </button>
                 
-                <button id="referralMainButton" class="neon-button referral-button" onclick="showReferralModal()">
+                <button id="referralMainButton" class="neon-button referral-button" onclick="showReferralModal()" style="display: none;">
                     <span class="icon pulse-icon">🎁</span>
                     Пригласи друга - месяц PRO!
                 </button>
@@ -1464,7 +1464,7 @@
                             <h3>FREE</h3>
                             <div class="pricing-price">
                                 <span class="price-amount">0</span>
-                                <span class="price-currency">₸</span>
+                                <span class="price-currency">$</span>
                             </div>
                             <p class="price-period">бесплатно</p>
                         </div>
@@ -1497,8 +1497,8 @@
                         <div class="pricing-header">
                             <h3>PRO</h3>
                             <div class="pricing-price">
-                                <span class="price-amount">от 50</span>
-                                <span class="price-currency">⭐</span>
+                                <span class="price-amount">1</span>
+                                <span class="price-currency">$</span>
                             </div>
                             <p class="price-period">в месяц</p>
                         </div>
@@ -1540,10 +1540,10 @@
                         <button class="pricing-btn premium" id="dollarPaymentBtn" onclick="showDollarPaymentComingSoon()" style="background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); border: 2px solid #00ff88; font-weight: bold;">
                             💵 Купить PRO всего за 1$
                         </button>
-                        <button class="pricing-btn premium" onclick="showStarsPurchaseModal()" id="buyPremiumBtn" style="margin-top:8px;">
+                        <button class="pricing-btn premium" onclick="showStarsPurchaseModal()" id="buyPremiumBtn" style="margin-top:8px; display: none;">
                             💳 Купить за Stars
                         </button>
-                        <button class="pricing-btn secondary" onclick="showReferralModal()" id="referralBtn" style="margin-top:8px;">
+                        <button class="pricing-btn secondary" onclick="showReferralModal()" id="referralBtn" style="margin-top:8px; display: none;">
                             🎁 Получить бесплатно (пригласи друга)
                         </button>
                         <button class="pricing-btn secondary" onclick="showTrialOffer()" id="trialBtn" style="margin-top:8px; background: rgba(255,165,0,0.1); border-color: #ffa500;">

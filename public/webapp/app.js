@@ -10467,13 +10467,23 @@ function isEmailUser() {
 
 // Скрыть функции недоступные для email пользователей
 function hideEmailUserFeatures() {
-    if (isEmailUser()) {
+    const emailUser = isEmailUser();
+    
+    if (emailUser) {
         console.log('📧 Email user detected - hiding Stars/Referral features');
         
         // Скрываем кнопку реферала на главной странице
         const referralMainBtn = document.getElementById('referralMainButton');
         if (referralMainBtn) {
             referralMainBtn.style.display = 'none';
+        }
+    } else {
+        console.log('📱 Telegram user detected - showing Referral button');
+        
+        // Показываем кнопку реферала для Telegram пользователей
+        const referralMainBtn = document.getElementById('referralMainButton');
+        if (referralMainBtn) {
+            referralMainBtn.style.display = 'block';
         }
     }
 }
