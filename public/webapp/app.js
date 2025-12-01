@@ -3002,7 +3002,7 @@ function showEmailAuthModal() {
         button.onclick = async () => {
             if (!emailSent) {
                 // Отправка кода
-                const email = emailInput.value.trim();
+                const email = emailInput.value.trim().toLowerCase();
                 
                 if (!email || !email.includes('@')) {
                     messageDiv.style.color = '#ff006e';
@@ -3064,7 +3064,7 @@ function showEmailAuthModal() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
                             action: 'verify-code',
-                            email: emailInput.value.trim(),
+                            email: emailInput.value.trim().toLowerCase(),
                             code 
                         })
                     });
@@ -3074,7 +3074,7 @@ function showEmailAuthModal() {
                     if (data.success && data.user?.userToken) {
                         localStorage.setItem('user_token', data.user.userToken);
                         localStorage.setItem('auth_method', 'email');
-                        localStorage.setItem('user_email', emailInput.value.trim());
+                        localStorage.setItem('user_email', emailInput.value.trim().toLowerCase());
                         if (data.user.id) {
                             localStorage.setItem('user_id', data.user.id.toString());
                         }

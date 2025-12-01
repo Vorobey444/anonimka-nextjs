@@ -63,7 +63,10 @@ async function sendVerificationEmail(email: string, code: string): Promise<boole
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, email, code } = body;
+    let { action, email, code } = body;
+
+    // Нормализуем email к нижнему регистру
+    email = email?.toLowerCase().trim();
 
     // Валидация email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -79,12 +82,10 @@ export async function POST(request: NextRequest) {
         console.log('[EMAIL AUTH] 📧 Отправка кода на:', email);
 
         // 🎯 ТЕСТОВЫЙ АККАУНТ ДЛЯ GOOGLE PLAY
-        const emailLower = email.toLowerCase().trim();
-        const isGooglePlayTestAccount = emailLower === 'test@anonimka.kz';
+        const isGooglePlayTestAccount = email === 'test@anonimka.kz';
         
         console.log('[EMAIL AUTH] 🧪 Проверка на тестовый email:', {
-          originalEmail: email,
-          normalizedEmail: emailLower,
+          email: email,
           isTestAccount: isGooglePlayTestAccount
         });
         
@@ -168,13 +169,12 @@ export async function POST(request: NextRequest) {
 
         // 🎯 ТЕСТОВЫЙ АККАУНТ ДЛЯ GOOGLE PLAY
         // Специальный тестовый email для проверки приложения
-        const emailLower = email.toLowerCase().trim();
         const codeClean = code.trim();
-        const isGooglePlayTestAccount = emailLower === 'test@anonimka.kz';
+        const isGooglePlayTestAccount = email === 'test@anonimka.kz';
         const isTestCodeValid = codeClean === '123456';
 
         console.log('[EMAIL AUTH] 🧪 Проверка тестового аккаунта:', {
-          email: emailLower,
+          email: email,
           isTestAccount: isGooglePlayTestAccount,
           code: codeClean,
           isCodeValid: isTestCodeValid,
