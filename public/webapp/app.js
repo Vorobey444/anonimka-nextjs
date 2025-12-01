@@ -2376,9 +2376,9 @@ async function completeOnboarding() {
         const isAndroid = navigator.userAgent.includes('Android');
         
         if (authMethod === 'email' || (isAndroid && userToken)) {
-            // Для email пользователей используем фиктивный tgId
-            tgId = 99999999;
-            console.log('📱 Email/Android user, using fake tgId');
+            // Для email пользователей tgId не нужен, используем только userToken
+            tgId = null;
+            console.log('📱 Email/Android user, will use userToken only');
         } else if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
             tgId = window.Telegram.WebApp.initDataUnsafe.user.id;
         } else {
@@ -2393,21 +2393,31 @@ async function completeOnboarding() {
             }
         }
 
-        if (!tgId) {
+        if (!tgId && !userToken) {
             throw new Error('Не удалось получить данные авторизации');
         }
 
         // 1. Сохраняем никнейм
-        // userToken уже получен выше
         const payload = {
-            tgId: tgId,
             nickname: nickname
         };
         
-        // Добавляем userToken если есть (для email пользователей)
-        if (userToken) {
+        // Для email пользователей используем только userToken
+        if (authMethod === 'email' && userToken) {
             payload.userToken = userToken;
+            console.log('📧 Email user, sending userToken for nickname');
+        } else if (tgId && tgId !== 99999999) {
+            // Для Telegram пользователей используем tgId
+            payload.tgId = tgId;
+            if (userToken) {
+                payload.userToken = userToken;
+            }
+            console.log('✈️ Telegram user, sending tgId for nickname');
+        } else {
+            throw new Error('Не удалось определить метод авторизации');
         }
+        
+        console.log('💾 Отправка никнейма:', { ...payload, userToken: payload.userToken ? payload.userToken.substring(0, 16) + '...' : undefined });
         
         const nicknameResponse = await fetch('/api/nickname', {
             method: 'POST',
@@ -2419,6 +2429,8 @@ async function completeOnboarding() {
         if (!nicknameData.success) {
             throw new Error(nicknameData.error || 'Ошибка сохранения никнейма');
         }
+        
+        console.log('✅ Никнейм сохранен:', nicknameData);
         
         // 2. Сохраняем согласие с условиями
         // userToken уже получен выше
