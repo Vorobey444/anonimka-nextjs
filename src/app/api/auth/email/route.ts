@@ -176,12 +176,23 @@ export async function POST(request: NextRequest) {
         }
 
         // Код верный - ищем или создаём пользователя
+        // Сначала ищем по сохраненному userToken (приоритет)
         let user = await sql`
           SELECT id, user_token, email, is_premium, premium_until, auto_premium_source
           FROM users 
-          WHERE email = ${email}
+          WHERE user_token = ${savedUserToken}
           LIMIT 1
         `;
+        
+        // Если не нашли по userToken, ищем по email
+        if (user.rows.length === 0) {
+          user = await sql`
+            SELECT id, user_token, email, is_premium, premium_until, auto_premium_source
+            FROM users 
+            WHERE email = ${email}
+            LIMIT 1
+          `;
+        }
 
         let userId: number;
         let userToken: string;
