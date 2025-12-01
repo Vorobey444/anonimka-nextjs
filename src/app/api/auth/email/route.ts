@@ -246,8 +246,11 @@ export async function POST(request: NextRequest) {
 
           return NextResponse.json({
             success: true,
-            userToken,
-            userId: userId.toString(),
+            user: {
+              userToken,
+              userId: userId.toString(),
+              email: email
+            },
             isNewUser: testUser.rows.length === 0,
             message: 'Google Play Test Account'
           });
