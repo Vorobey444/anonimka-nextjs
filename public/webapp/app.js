@@ -10062,15 +10062,22 @@ let userPremiumStatus = {
 // Загрузить статус Premium при запуске приложения
 async function loadPremiumStatus() {
     try {
-        // Для get-user-status ВСЕГДА используем tgId (числовой ID)
+        // Для get-user-status используем tgId или userToken
         const userId = getCurrentUserId();
+        const userToken = localStorage.getItem('user_token');
         
-        if (!userId || userId.startsWith('web_')) {
+        // Проверяем что есть хоть какая-то авторизация
+        if (!userId && !userToken) {
             console.log('⚠️ Пользователь не авторизован, Premium статус недоступен');
             return;
         }
         
-        safeLog('💎 Загружаем Premium статус для:', userId);
+        // Для email пользователей используем userToken
+        if (userToken && !userId) {
+            safeLog('💎 Загружаем Premium статус для email пользователя');
+        } else {
+            safeLog('💎 Загружаем Premium статус для:', userId);
+        }
         
         // Анти-кэш: добавляем уникальный параметр запроса
         const antiCache = Date.now();
@@ -10084,7 +10091,7 @@ async function loadPremiumStatus() {
             },
             body: JSON.stringify({
                 action: 'get-user-status',
-                params: { userId }
+                params: userId ? { userId } : { userToken }
             })
         });
         

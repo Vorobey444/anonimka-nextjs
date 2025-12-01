@@ -35,13 +35,22 @@ export async function POST(request: NextRequest) {
     switch (action) {
       // Получить статус пользователя и лимиты
       case 'get-user-status': {
-        const { userId } = params;
+        let { userId, userToken } = params;
+        
+        // Унифицируем: используем userId как идентификатор (токен или ID)
+        if (!userId && userToken) {
+          userId = userToken;
+        }
+        
+        if (!userId) {
+          return NextResponse.json({ error: 'userId or userToken required' }, { status: 400 });
+        }
         
         // Определяем, это токен или числовой ID
         const isToken = userId && typeof userId === 'string' && userId.length > 20;
         let numericUserId: number | null = null;
         
-        // ПРИОРИТЕТ 1: Ищем пользователя в users по user_token (источник истины для Telegram пользователей)
+        // ПРИОРИТЕТ 1: Ищем пользователя в users по user_token (источник истины)
         if (isToken) {
           console.log('[PREMIUM API] Проверка для токена:', userId.substring(0, 16) + '...');
           
