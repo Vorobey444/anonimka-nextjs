@@ -2152,7 +2152,7 @@ async function saveNicknamePage() {
 
             // Обновляем nickname во всех анкетах пользователя
             const userId = getCurrentUserId();
-            const userToken = localStorage.getItem('user_token');
+            // userToken уже объявлен выше
 
             if (userId || userToken || tgIdAuth) {
                 try {
