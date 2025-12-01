@@ -3440,6 +3440,9 @@ function showMainMenu() {
     resetForm();
     updateChatBadge(); // Обновляем счетчик запросов
     loadPremiumStatus(); // Принудительно обновляем статус и лимиты с сервера
+    
+    // Скрываем/показываем функции в зависимости от типа пользователя
+    hideEmailUserFeatures();
 }
 
 function showCreateAd() {
