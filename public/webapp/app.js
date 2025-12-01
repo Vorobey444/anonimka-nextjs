@@ -945,6 +945,8 @@ function initializeApp() {
                 })
                 .then(() => {
                     console.log('✅ initializeNickname завершён');
+                    // Скрываем функции для email пользователей
+                    hideEmailUserFeatures();
                 })
                 .catch(e => {
                     console.error('❌ Ошибка цепочки инициализации:', e);
@@ -10455,6 +10457,27 @@ function closePremiumModal() {
     modal.style.display = 'none';
 }
 
+// Проверка типа пользователя (Email или Telegram)
+function isEmailUser() {
+    const userToken = localStorage.getItem('user_token');
+    const userId = localStorage.getItem('user_id');
+    // Email user: есть userToken (длинный) и нет user_id
+    return userToken && userToken.length > 20 && !userId;
+}
+
+// Скрыть функции недоступные для email пользователей
+function hideEmailUserFeatures() {
+    if (isEmailUser()) {
+        console.log('📧 Email user detected - hiding Stars/Referral features');
+        
+        // Скрываем кнопку реферала на главной странице
+        const referralMainBtn = document.getElementById('referralMainButton');
+        if (referralMainBtn) {
+            referralMainBtn.style.display = 'none';
+        }
+    }
+}
+
 // Обновить кнопки в модальном окне
 function updatePremiumModalButtons() {
     const freeBtn = document.querySelector('.pricing-card:not(.featured) .pricing-btn');
@@ -10464,6 +10487,9 @@ function updatePremiumModalButtons() {
     const referralInfo = document.getElementById('referralInfo');
     
     console.log('🔍 updatePremiumModalButtons:', userPremiumStatus);
+    
+    // Проверяем метод авторизации - email пользователи не видят Stars и Referral
+    const emailUser = isEmailUser();
     
     if (userPremiumStatus.isPremium) {
         // Пользователь PRO - показываем что он активен
@@ -10487,17 +10513,23 @@ function updatePremiumModalButtons() {
             freeBtn.classList.add('active');
         }
         
-        // Показываем кнопки
-        if (buyBtn) buyBtn.style.display = 'block';
-        if (referralBtn) referralBtn.style.display = 'block';
+        // Для email пользователей скрываем Stars и Referral
+        if (emailUser) {
+            if (buyBtn) buyBtn.style.display = 'none';
+            if (referralBtn) referralBtn.style.display = 'none';
+            if (referralInfo) referralInfo.style.display = 'none';
+        } else {
+            // Telegram пользователи видят все кнопки
+            if (buyBtn) buyBtn.style.display = 'block';
+            if (referralBtn) referralBtn.style.display = 'block';
+            if (referralInfo) referralInfo.style.display = 'block';
+        }
         
         // Trial показываем только если не использован
         const trial7hUsed = userPremiumStatus.trial7h_used || false;
         if (trialBtn) {
             trialBtn.style.display = trial7hUsed ? 'none' : 'block';
         }
-        
-        if (referralInfo) referralInfo.style.display = 'block';
     }
 }
 
