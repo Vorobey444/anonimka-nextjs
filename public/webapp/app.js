@@ -5615,6 +5615,73 @@ async function checkOnboardingStatus() {
     }
 }
 
+// Определение локации по GPS
+async function detectLocationByGPS() {
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+            console.log('❌ GPS недоступен в этом браузере');
+            resolve(null);
+            return;
+        }
+        
+        console.log('🛰️ Запрашиваем GPS координаты...');
+        
+        const timeoutId = setTimeout(() => {
+            console.log('⏱️ GPS таймаут (5 секунд)');
+            resolve(null);
+        }, 5000);
+        
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                clearTimeout(timeoutId);
+                const { latitude, longitude } = position.coords;
+                console.log(`📍 GPS координаты получены: ${latitude}, ${longitude}`);
+                
+                try {
+                    // Обратное геокодирование через Nominatim API
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ru`,
+                        {
+                            headers: {
+                                'User-Agent': 'Anonimka-App/1.0'
+                            }
+                        }
+                    );
+                    const data = await response.json();
+                    console.log('🗺️ Геокодирование ответ:', data);
+                    
+                    if (data && data.address) {
+                        const locationData = {
+                            country_code: data.address.country_code?.toUpperCase(),
+                            country_name: data.address.country,
+                            region: data.address.state || data.address.region,
+                            city: data.address.city || data.address.town || data.address.village,
+                            source: 'gps'
+                        };
+                        console.log('✅ GPS локация определена:', locationData);
+                        resolve(locationData);
+                    } else {
+                        resolve(null);
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка геокодирования GPS:', error);
+                    resolve(null);
+                }
+            },
+            (error) => {
+                clearTimeout(timeoutId);
+                console.log(`❌ GPS ошибка: ${error.message}`);
+                resolve(null);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            }
+        );
+    });
+}
+
 // Определение локации по IP
 async function detectLocationByIP() {
     const detectionText = document.querySelector('.detection-text');
@@ -5628,77 +5695,90 @@ async function detectLocationByIP() {
     }
     
     try {
-        console.log('Начинаем определение локации по IP...');
+        console.log('Начинаем определение локации...');
         
         // Обновляем текст анимации с красивыми фразами
         detectionText.textContent = 'Сканируем цифровой след';
         await new Promise(resolve => setTimeout(resolve, 1200));
         
-        detectionText.textContent = 'Анализируем сетевые маршруты';
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Сначала пробуем GPS (если доступен)
+        detectionText.textContent = 'Проверяем GPS';
+        let locationData = await detectLocationByGPS();
         
-        // Пробуем несколько вариантов API
-        detectionText.textContent = 'Определяем геолокацию';
-        let locationData = null;
-        
-        // Вариант 1: ipinfo.io (часто работает без CORS)
-        try {
-            console.log('🌐 Пробуем ipinfo.io...');
-            const response1 = await fetch('https://ipinfo.io/json');
-            const data1 = await response1.json();
-            console.log('📍 Ответ от ipinfo.io:', data1);
+        if (locationData) {
+            console.log('✅ Используем GPS локацию:', locationData);
+        } else {
+            // Если GPS не сработал, используем IP
+            console.log('⚠️ GPS недоступен, используем IP определение');
             
-            if (data1 && data1.country) {
-                locationData = {
-                    country_code: data1.country,
-                    country_name: data1.country,
-                    region: data1.region,
-                    city: data1.city,
-                    source: 'ipinfo.io'
-                };
-                console.log('✅ Данные получены от ipinfo.io:', locationData);
-            }
-        } catch (e) {
-            console.log('❌ ipinfo.io недоступен:', e);
+            detectionText.textContent = 'Анализируем сетевые маршруты';
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Пробуем несколько вариантов API
+            detectionText.textContent = 'Определяем геолокацию';
         }
         
-        // Вариант 2: ip-api.com (более точное определение города)
+        // Только если GPS не сработал - используем IP определение
         if (!locationData) {
+            // Вариант 1: ipinfo.io (часто работает без CORS)
             try {
-                console.log('🌐 Пробуем ip-api.com...');
-                const response2 = await fetch('http://ip-api.com/json/?fields=status,country,countryCode,region,regionName,city,timezone');
-                const data2 = await response2.json();
-                console.log('📍 Ответ от ip-api.com:', data2);
+                console.log('🌐 Пробуем ipinfo.io...');
+                const response1 = await fetch('https://ipinfo.io/json');
+                const data1 = await response1.json();
+                console.log('📍 Ответ от ipinfo.io:', data1);
                 
-                if (data2 && data2.status === 'success') {
+                if (data1 && data1.country) {
                     locationData = {
-                        country_code: data2.countryCode,
-                        country_name: data2.country,
-                        region: data2.regionName,
-                        city: data2.city,
-                        source: 'ip-api.com'
+                        country_code: data1.country,
+                        country_name: data1.country,
+                        region: data1.region,
+                        city: data1.city,
+                        source: 'ipinfo.io'
                     };
-                    console.log('✅ Данные получены от ip-api.com:', locationData);
+                    console.log('✅ Данные получены от ipinfo.io:', locationData);
                 }
             } catch (e) {
-                console.log('❌ ip-api.com недоступен:', e);
+                console.log('❌ ipinfo.io недоступен:', e);
             }
-        }
-        
-        // Вариант 3: Определение по часовому поясу (резервный вариант)
-        if (!locationData) {
-            try {
-                console.log('🌐 Используем часовой пояс как резервный вариант...');
-                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                console.log('⏰ Часовой пояс:', timezone);
-                
-                locationData = guessLocationByTimezone(timezone);
-                if (locationData) {
-                    locationData.source = 'timezone';
-                    console.log('✅ Данные получены по часовому поясу:', locationData);
+            
+            // Вариант 2: ip-api.com (более точное определение города)
+            if (!locationData) {
+                try {
+                    console.log('🌐 Пробуем ip-api.com...');
+                    const response2 = await fetch('http://ip-api.com/json/?fields=status,country,countryCode,region,regionName,city,timezone');
+                    const data2 = await response2.json();
+                    console.log('📍 Ответ от ip-api.com:', data2);
+                    
+                    if (data2 && data2.status === 'success') {
+                        locationData = {
+                            country_code: data2.countryCode,
+                            country_name: data2.country,
+                            region: data2.regionName,
+                            city: data2.city,
+                            source: 'ip-api.com'
+                        };
+                        console.log('✅ Данные получены от ip-api.com:', locationData);
+                    }
+                } catch (e) {
+                    console.log('❌ ip-api.com недоступен:', e);
                 }
-            } catch (e) {
-                console.log('❌ Определение по часовому поясу не сработало:', e);
+            }
+            
+            // Вариант 3: Определение по часовому поясу (резервный вариант)
+            if (!locationData) {
+                try {
+                    console.log('🌐 Используем часовой пояс как резервный вариант...');
+                    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    console.log('⏰ Часовой пояс:', timezone);
+                    
+                    locationData = guessLocationByTimezone(timezone);
+                    if (locationData) {
+                        locationData.source = 'timezone';
+                        console.log('✅ Данные получены по часовому поясу:', locationData);
+                    }
+                } catch (e) {
+                    console.log('❌ Определение по часовому поясу не сработало:', e);
+                }
             }
         }
         
