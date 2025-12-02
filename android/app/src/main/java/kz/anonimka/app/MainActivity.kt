@@ -26,10 +26,31 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    private var geolocationCallback: GeolocationPermissions.Callback? = null
+    private var geolocationOrigin: String? = null
     
     // SharedPreferences для хранения данных авторизации
     private val authPrefs by lazy {
         getSharedPreferences("anonimka_auth", MODE_PRIVATE)
+    }
+    
+    // Launcher для запроса разрешений GPS
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineLocation = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseLocation = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        
+        if (fineLocation || coarseLocation) {
+            // Разрешение получено
+            geolocationCallback?.invoke(geolocationOrigin, true, false)
+            android.util.Log.d("Anonimka", "✅ GPS permission granted")
+        } else {
+            geolocationCallback?.invoke(geolocationOrigin, false, false)
+            Toast.makeText(this, "Разрешение на местоположение отклонено", Toast.LENGTH_SHORT).show()
+        }
+        geolocationCallback = null
+        geolocationOrigin = null
     }
 
     private val fileChooserLauncher = registerForActivityResult(
@@ -67,6 +88,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        
+        android.util.Log.d("Anonimka", "onCreate called, savedInstanceState: ${savedInstanceState != null}")
 
         // Проверяем авторизацию
         val userToken = authPrefs.getString("user_token", null)
@@ -200,6 +223,10 @@ class MainActivity : AppCompatActivity() {
             minimumFontSize = 8
             minimumLogicalFontSize = 8
             defaultFontSize = 16
+            
+            // ВКЛЮЧАЕМ ГЕОЛОКАЦИЮ
+            setGeolocationEnabled(true)
+            setGeolocationDatabasePath(filesDir.path)
             
             // Поддержка масштабирования
             builtInZoomControls = false
@@ -358,6 +385,46 @@ class MainActivity : AppCompatActivity() {
 
         // WebChromeClient для загрузки файлов и геолокации
         webView.webChromeClient = object : WebChromeClient() {
+            
+            // Обработка запроса геолокации
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?
+            ) {
+                android.util.Log.d("Anonimka", "📍 GPS request from: $origin")
+                
+                // Проверяем разрешения
+                val hasFineLocation = ContextCompat.checkSelfPermission(
+                    this@MainActivity,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+                
+                val hasCoarseLocation = ContextCompat.checkSelfPermission(
+                    this@MainActivity,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+                
+                if (hasFineLocation || hasCoarseLocation) {
+                    // Разрешение уже есть
+                    callback?.invoke(origin, true, false)
+                    android.util.Log.d("Anonimka", "✅ GPS permission already granted")
+                } else {
+                    // Запрашиваем разрешение
+                    geolocationCallback = callback
+                    geolocationOrigin = origin
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                }
+            }
+            
+            override fun onGeolocationPermissionsHidePrompt() {
+                super.onGeolocationPermissionsHidePrompt()
+            }
+            
             override fun onShowFileChooser(
                 webView: WebView?,
                 filePathCallback: ValueCallback<Array<Uri>>?,
@@ -387,13 +454,6 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 return true
-            }
-
-            override fun onGeolocationPermissionsShowPrompt(
-                origin: String?,
-                callback: GeolocationPermissions.Callback?
-            ) {
-                callback?.invoke(origin, true, false)
             }
 
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
@@ -427,11 +487,21 @@ class MainActivity : AppCompatActivity() {
         // Загружаем webapp
         loadWebApp()
         
+        // Восстанавливаем состояние WebView если оно было сохранено
+        if (savedInstanceState != null) {
+            android.util.Log.d("Anonimka", "🔄 Восстанавливаем сохранённое состояние WebView")
+            webView.restoreState(savedInstanceState)
+        } else {
+            // Только если нет сохранённого состояния - загружаем URL
+            loadWebApp()
+        }
+        
         // Обрабатываем deep link если пришли из Telegram
         handleIntent(intent)
     }
 
     private fun loadWebApp() {
+        android.util.Log.d("Anonimka", "🌐 Loading webapp URL")
         webView.loadUrl("https://anonimka.kz/webapp")
     }
 
@@ -521,6 +591,32 @@ class MainActivity : AppCompatActivity() {
             arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
         permissionLauncher.launch(permissions)
+    }
+
+    // Сохранение состояния WebView при сворачивании приложения
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        android.util.Log.d("Anonimka", "💾 Saving WebView state")
+        webView.saveState(outState)
+    }
+    
+    // Восстановление состояния WebView при возврате
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        android.util.Log.d("Anonimka", "🔄 Restoring WebView state")
+        webView.restoreState(savedInstanceState)
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        android.util.Log.d("Anonimka", "⏸️ onPause - сохраняем состояние")
+        webView.onPause()
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        android.util.Log.d("Anonimka", "▶️ onResume - восстанавливаем состояние")
+        webView.onResume()
     }
 
     override fun onDestroy() {
