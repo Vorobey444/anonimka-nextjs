@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 class MainActivity : AppCompatActivity() {
@@ -104,19 +105,24 @@ class MainActivity : AppCompatActivity() {
 
         android.util.Log.d("Anonimka", "✅ Auth token found: ${userToken.take(8)}..., method: $authMethod")
 
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
-
+        // Edge-to-edge display для Android 15 (правильная реализация)
+        enableEdgeToEdge()
+        
         setContentView(R.layout.activity_main)
 
         webView = findViewById(R.id.webView)
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         swipeRefreshLayout.isEnabled = false
 
-        // Убираем padding чтобы WebView занял весь экран без белых полос
-        ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { _, windowInsets ->
-            // Не применяем padding - пусть WebView занимает весь экран
+        // Применяем padding для системных панелей (статус бар и навигация)
+        ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(
+                0, // left
+                insets.top, // top - отступ от статус бара
+                0, // right
+                insets.bottom // bottom - отступ от навигационных кнопок
+            )
             windowInsets
         }
 
@@ -587,5 +593,33 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         fileUploadCallback?.onReceiveValue(null)
         fileUploadCallback = null
+    }
+
+    /**
+     * Включает edge-to-edge display для Android 15+
+     * Правильная реализация согласно гайдлайнам Google
+     */
+    private fun enableEdgeToEdge() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            // Android 15+ (API 35+) - используем новый способ
+            window.decorView.setOnApplyWindowInsetsListener { view, insets ->
+                val systemBars = insets.getInsets(android.view.WindowInsets.Type.systemBars())
+                view.setPadding(0, 0, 0, 0)
+                insets
+            }
+        }
+        
+        // Универсальная настройка для всех версий
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        
+        // Прозрачные системные панели с темным фоном для контента
+        window.statusBarColor = Color.parseColor("#0a0a0f")
+        window.navigationBarColor = Color.parseColor("#0a0a0f")
+        
+        // Светлые иконки на темном фоне
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = 0 // Темные иконки (светлый фон = 0, темный = убираем флаги)
+        }
     }
 }

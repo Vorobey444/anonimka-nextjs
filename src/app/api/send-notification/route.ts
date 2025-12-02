@@ -31,27 +31,40 @@ export async function POST(request: NextRequest) {
       console.log('[SEND-NOTIFICATION] Получаем tg_id по токену:', receiverToken);
       
       try {
-        // Ищем ТОЛЬКО в таблице ads - уведомления только для тех, у кого есть анкеты
-        const adResult = await sql`
+        // Сначала проверяем таблицу users (для Email-авторизации)
+        const userResult = await sql`
           SELECT tg_id 
-          FROM ads 
-          WHERE user_token = ${receiverToken} 
+          FROM users 
+          WHERE user_token = ${receiverToken} AND tg_id IS NOT NULL
           LIMIT 1
         `;
 
-        if (adResult.rows.length > 0 && adResult.rows[0].tg_id) {
-          recipientTgId = adResult.rows[0].tg_id;
-          console.log('[SEND-NOTIFICATION] Найден tg_id в ads:', recipientTgId);
+        if (userResult.rows.length > 0 && userResult.rows[0].tg_id) {
+          recipientTgId = userResult.rows[0].tg_id;
+          console.log('[SEND-NOTIFICATION] Найден tg_id в users:', recipientTgId);
         } else {
-          console.warn('[SEND-NOTIFICATION] У пользователя нет анкет - уведомление не отправляется');
-          return NextResponse.json(
-            { 
-              success: false, 
-              error: 'Recipient has no ads',
-              details: 'Пользователь не имеет анкет. Уведомление не отправлено.'
-            },
-            { status: 200 } // 200 чтобы не блокировать создание чата
-          );
+          // Если в users не нашли, проверяем таблицу ads (для старых пользователей)
+          const adResult = await sql`
+            SELECT tg_id 
+            FROM ads 
+            WHERE user_token = ${receiverToken} AND tg_id IS NOT NULL
+            LIMIT 1
+          `;
+
+          if (adResult.rows.length > 0 && adResult.rows[0].tg_id) {
+            recipientTgId = adResult.rows[0].tg_id;
+            console.log('[SEND-NOTIFICATION] Найден tg_id в ads:', recipientTgId);
+          } else {
+            console.warn('[SEND-NOTIFICATION] tg_id не найден ни в users, ни в ads - уведомление не отправляется');
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: 'Recipient Telegram ID not found',
+                details: 'Пользователь не привязал Telegram. Уведомление не отправлено.'
+              },
+              { status: 200 } // 200 чтобы не блокировать создание чата
+            );
+          }
         }
       } catch (dbError) {
         console.error('[SEND-NOTIFICATION] Ошибка запроса к БД:', dbError);
