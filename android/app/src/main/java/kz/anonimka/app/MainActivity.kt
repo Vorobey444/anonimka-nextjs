@@ -4,8 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.webkit.*
@@ -14,10 +12,14 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
+import androidx.core.graphics.toColorInt
+import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
@@ -31,7 +33,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
-    private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    private var fileUploadCallback: ValueCallback<Array<android.net.Uri>>? = null
     private var geolocationCallback: GeolocationPermissions.Callback? = null
     private var geolocationOrigin: String? = null
 
@@ -115,25 +117,20 @@ class MainActivity : AppCompatActivity() {
         // Получаем FCM токен для Push-уведомлений
         getFCMToken()
 
-        // Edge-to-edge display для Android 15 (правильная реализация)
+        // Edge-to-edge display
         enableEdgeToEdge()
-        
+
         setContentView(R.layout.activity_main)
 
         webView = findViewById(R.id.webView)
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         swipeRefreshLayout.isEnabled = false
 
-        // Применяем padding только для верхней панели (статус бар)
-        // Bottom padding НЕ применяем для корректной работы adjustResize
-        ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(
-                0, // left
-                insets.top, // top - отступ от статус бара
-                0, // right
-                0 // bottom - НЕ применяем, чтобы adjustResize работал правильно
-            )
+        // Immersive Mode - не нужен padding, статус бара нет
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            // Применяем padding только для навигационных кнопок
+            view.setPadding(0, 0, 0, insets.bottom)
             windowInsets
         }
 
@@ -152,10 +149,9 @@ class MainActivity : AppCompatActivity() {
         webView.addJavascriptInterface(object {
             @JavascriptInterface
             fun saveAuthData(userData: String) {
-                authPrefs.edit().apply {
+                authPrefs.edit {
                     putString("telegram_user", userData)
                     putLong("telegram_auth_time", System.currentTimeMillis())
-                    apply()
                 }
                 android.util.Log.d("Anonimka", "✅ Auth data saved to SharedPreferences")
             }
@@ -181,72 +177,46 @@ class MainActivity : AppCompatActivity() {
             }
         }, "AndroidAuth")
 
-        // Настройка WebView как в Telegram
+        // Настройка WebView
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            databaseEnabled = true
             allowFileAccess = true
             allowContentAccess = true
             mediaPlaybackRequiresUserGesture = false
-
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-
-            // Оптимизации производительности
             cacheMode = WebSettings.LOAD_DEFAULT
-
-            // Предзагрузка
             loadsImagesAutomatically = true
             blockNetworkImage = false
-            
-            // Важно: отключаем встроенный зум как в Telegram WebView
             builtInZoomControls = false
             displayZoomControls = false
             setSupportZoom(false)
-            
-            // Правильный размер контента
             useWideViewPort = true
             loadWithOverviewMode = true
-
             layoutAlgorithm = WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
-
-            // Отключаем Safe Browsing на новых устройствах
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 safeBrowsingEnabled = false
             }
-
-            // Ускорение текста
             textZoom = 100
             minimumFontSize = 8
             minimumLogicalFontSize = 8
             defaultFontSize = 16
-
-            // ВКЛЮЧАЕМ ГЕОЛОКАЦИЮ
             setGeolocationEnabled(true)
-
-            // Поддержка масштабирования
-            builtInZoomControls = false
-            displayZoomControls = false
-            useWideViewPort = true
-            loadWithOverviewMode = true
-            setSupportZoom(false)
         }
 
-        // Чёрный фон WebView чтобы не было белых полос
-        webView.setBackgroundColor(Color.parseColor("#0a0a0f"))
+        // Фон WebView
+        webView.setBackgroundColor("#0a0a0f".toColorInt())
 
         WebView.setWebContentsDebuggingEnabled(false)
 
-        // Обработка низкой памяти для старых устройств
+        // Обработка низкой памяти
         val activityManager = getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
         val memoryInfo = android.app.ActivityManager.MemoryInfo()
         activityManager.getMemoryInfo(memoryInfo)
 
-        // Если мало памяти (< 512MB) - упрощенный режим
         if (memoryInfo.totalMem < 512 * 1024 * 1024) {
             android.util.Log.d("Anonimka", "⚠️ Low memory device detected: ${memoryInfo.totalMem / (1024 * 1024)}MB")
             webView.settings.apply {
-                // Отключаем автозагрузку картинок на слабых устройствах
                 loadsImagesAutomatically = false
                 blockNetworkImage = true
             }
@@ -256,20 +226,16 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val url = request?.url.toString()
-
-                // Открываем внешние ссылки в браузере
                 if (!url.contains("anonimka.kz") && !url.contains("t.me")) {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                     startActivity(intent)
                     return true
                 }
-
                 return false
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                // Показываем индикатор только для первой загрузки
                 if (!swipeRefreshLayout.isRefreshing) {
                     swipeRefreshLayout.isRefreshing = true
                 }
@@ -279,12 +245,7 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 swipeRefreshLayout.isRefreshing = false
 
-                // Скрываем splash screen если он еще виден
-                window.decorView.postDelayed({
-                    // Контент загружен, можно убрать черный экран
-                }, 100)
-
-                // Инжектим данные авторизации при загрузке страницы
+                // Инжектим данные авторизации
                 val userToken = authPrefs.getString("user_token", "")
                 val authMethod = authPrefs.getString("auth_method", "telegram")
                 val email = authPrefs.getString("email", "")
@@ -296,26 +257,20 @@ class MainActivity : AppCompatActivity() {
                     val script = """
                         (function() {
                             try {
-                                // Добавляем класс для Android WebView (для фиксированного header)
                                 document.body.classList.add('android-webview');
-                                
                                 localStorage.setItem('user_token', '$userToken');
                                 localStorage.setItem('auth_method', '$authMethod');
                                 localStorage.setItem('email', '$email');
                                 localStorage.setItem('auth_time', '${authPrefs.getLong("auth_time", 0)}');
-                                
-                                // Инжектим никнейм если он сохранён
                                 if ('$displayNickname' !== '') {
                                     localStorage.setItem('user_nickname', '$displayNickname');
                                 }
-                                
                                 console.log('✅ [INJECT] Auth data injected:', {
                                     userToken: '${userToken.take(16)}...',
                                     authMethod: '$authMethod',
                                     email: '$email',
                                     nickname: '$displayNickname'
                                 });
-                                
                                 return 'SUCCESS';
                             } catch(e) {
                                 console.error('❌ [INJECT] Error:', e);
@@ -323,7 +278,6 @@ class MainActivity : AppCompatActivity() {
                             }
                         })();
                     """.trimIndent()
-
                     webView.evaluateJavascript(script) { result ->
                         android.util.Log.d("Anonimka", "📱 [INJECT] Result: $result")
                     }
@@ -346,8 +300,6 @@ class MainActivity : AppCompatActivity() {
                         })();
                     """.trimIndent(), null)
                 }
-
-                // Если в URL есть параметр authorized - закрываем модалку
                 if (url?.contains("authorized=true") == true) {
                     handleIntent(intent)
                 }
@@ -356,20 +308,16 @@ class MainActivity : AppCompatActivity() {
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                 if (request.isForMainFrame) {
                     super.onReceivedError(view, request, error)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        val errorCode = error.errorCode
-                        if (errorCode != WebViewClient.ERROR_CONNECT && errorCode != WebViewClient.ERROR_HOST_LOOKUP) {
-                            Toast.makeText(this@MainActivity, "Ошибка загрузки: ${error.description}", Toast.LENGTH_LONG).show()
-                        }
+                    val errorCode = error.errorCode
+                    if (errorCode != ERROR_CONNECT && errorCode != ERROR_HOST_LOOKUP) {
+                        Toast.makeText(this@MainActivity, "Ошибка загрузки: ${error.description}", Toast.LENGTH_LONG).show()
                     }
                 }
             }
 
-            // Обработка краша WebView на старых устройствах
             override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     android.util.Log.e("Anonimka", "❌ WebView render process crashed")
-                    // Перезагружаем приложение
                     recreate()
                     return true
                 }
@@ -379,68 +327,43 @@ class MainActivity : AppCompatActivity() {
 
         // WebChromeClient для загрузки файлов и геолокации
         webView.webChromeClient = object : WebChromeClient() {
-
-            // Обработка запроса геолокации
-            override fun onGeolocationPermissionsShowPrompt(
-                origin: String?,
-                callback: GeolocationPermissions.Callback?
-            ) {
+            override fun onGeolocationPermissionsShowPrompt(origin: String?, callback: GeolocationPermissions.Callback?) {
                 android.util.Log.d("Anonimka", "📍 GPS request from: $origin")
-
-                // Проверяем разрешения
-                val hasFineLocation = ContextCompat.checkSelfPermission(
-                    this@MainActivity,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
-
-                val hasCoarseLocation = ContextCompat.checkSelfPermission(
-                    this@MainActivity,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
+                val hasFineLocation = ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                val hasCoarseLocation = ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
                 if (hasFineLocation || hasCoarseLocation) {
-                    // Разрешение уже есть
                     callback?.invoke(origin, true, false)
                     android.util.Log.d("Anonimka", "✅ GPS permission already granted")
                 } else {
-                    // Запрашиваем разрешение
                     geolocationCallback = callback
                     geolocationOrigin = origin
                     locationPermissionLauncher.launch(
-                        arrayOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                        )
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
                     )
                 }
             }
 
-            override fun onGeolocationPermissionsHidePrompt() {
-                super.onGeolocationPermissionsHidePrompt()
-            }
-
             override fun onShowFileChooser(
                 webView: WebView?,
-                filePathCallback: ValueCallback<Array<Uri>>?,
+                filePathCallback: ValueCallback<Array<android.net.Uri>>?,
                 fileChooserParams: FileChooserParams?
             ): Boolean {
                 fileUploadCallback?.onReceiveValue(null)
                 fileUploadCallback = filePathCallback
 
-                // Проверяем разрешения
                 if (!hasStoragePermissions()) {
                     requestStoragePermissions()
                     return false
                 }
 
-                // Открываем выбор файла
                 val intent = fileChooserParams?.createIntent()
                 intent?.type = "image/*"
                 intent?.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
 
                 try {
                     fileChooserLauncher.launch(intent)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     fileUploadCallback?.onReceiveValue(null)
                     fileUploadCallback = null
                     Toast.makeText(this@MainActivity, "Не удалось открыть выбор файла", Toast.LENGTH_SHORT).show()
@@ -472,25 +395,14 @@ class MainActivity : AppCompatActivity() {
         swipeRefreshLayout.setOnRefreshListener {
             webView.reload()
         }
-        swipeRefreshLayout.setColorSchemeResources(
-            R.color.purple_500,
-            R.color.purple_700,
-            R.color.teal_200
-        )
+        swipeRefreshLayout.setColorSchemeResources(R.color.purple_500, R.color.purple_700, R.color.teal_200)
 
         // Загружаем webapp
-        loadWebApp()
-
-        // Восстанавливаем состояние WebView если оно было сохранено
-        if (savedInstanceState != null) {
-            android.util.Log.d("Anonimka", "🔄 Восстанавливаем сохранённое состояние WebView")
-            webView.restoreState(savedInstanceState)
-        } else {
-            // Только если нет сохранённого состояния - загружаем URL
+        if (savedInstanceState == null) {
             loadWebApp()
         }
 
-        // Обрабатываем deep link если пришли из Telegram
+        // Обрабатываем deep link
         handleIntent(intent)
     }
 
@@ -508,56 +420,32 @@ class MainActivity : AppCompatActivity() {
     private fun handleIntent(intent: Intent?) {
         val data = intent?.data
 
-        // Проверяем если пришли из Telegram после авторизации через deep link
         if (data?.scheme == "anonimka" && data.path == "/authorized") {
             android.util.Log.d("Anonimka", "🔄 Возврат из Telegram - перезагружаем WebView")
-
-            // Перезагружаем WebView чтобы инжектнуть сохранённые данные
-            webView.postDelayed({
-                webView.reload()
-            }, 300)
+            webView.postDelayed({ webView.reload() }, 300)
             return
         }
 
         val url = webView.url
-
-        // Проверяем если пришли из Telegram после авторизации (старый способ)
-        val isFromTelegram = data?.let {
-            it.scheme == "tg" || it.host == "anonimka.kz"
-        } ?: false
-
-        // Или если в URL есть параметр authorized=true
+        val isFromTelegram = data?.let { it.scheme == "tg" || it.host == "anonimka.kz" } ?: false
         val isAuthorized = url?.contains("authorized=true") == true
 
         if (isFromTelegram || isAuthorized) {
-            // Инжектим JavaScript для закрытия диалога авторизации
             webView.postDelayed({
                 webView.evaluateJavascript("""
                     (function() {
                         console.log('🔄 Обработка возврата из Telegram');
-                        
-                        // Закрываем модальное окно авторизации
                         var authModal = document.getElementById('telegramAuthModal');
                         var closeBtn = document.querySelector('.modal-close');
                         var backdrop = document.querySelector('.modal-overlay');
-                        
-                        if (authModal) {
-                            authModal.style.display = 'none';
-                            console.log('✅ Модальное окно закрыто');
-                        }
+                        if (authModal) authModal.style.display = 'none';
                         if (closeBtn) closeBtn.click();
                         if (backdrop) backdrop.style.display = 'none';
-                        
-                        // Если в URL есть параметр from_app, очищаем его
                         if (window.location.href.includes('from_app=')) {
                             var cleanUrl = window.location.href.split('?')[0];
                             window.history.replaceState({}, document.title, cleanUrl);
                         }
-                        
-                        // Перезагружаем страницу для применения авторизации
-                        setTimeout(function() {
-                            window.location.reload();
-                        }, 500);
+                        setTimeout(function() { window.location.reload(); }, 500);
                     })();
                 """, null)
             }, 800)
@@ -566,15 +454,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun hasStoragePermissions(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_MEDIA_IMAGES
-            ) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
         } else {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
         }
     }
 
@@ -587,29 +469,25 @@ class MainActivity : AppCompatActivity() {
         permissionLauncher.launch(permissions)
     }
 
-    // Сохранение состояния WebView при сворачивании приложения
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         android.util.Log.d("Anonimka", "💾 Saving WebView state")
         webView.saveState(outState)
     }
-    
-    // Восстановление состояния WebView при возврате
+
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         android.util.Log.d("Anonimka", "🔄 Restoring WebView state")
         webView.restoreState(savedInstanceState)
     }
-    
+
     override fun onPause() {
         super.onPause()
-        android.util.Log.d("Anonimka", "⏸️ onPause - сохраняем состояние")
         webView.onPause()
     }
-    
+
     override fun onResume() {
         super.onResume()
-        android.util.Log.d("Anonimka", "▶️ onResume - восстанавливаем состояние")
         webView.onResume()
     }
 
@@ -619,37 +497,28 @@ class MainActivity : AppCompatActivity() {
         fileUploadCallback = null
     }
 
-    /**
-     * Включает edge-to-edge display для Android 15+
-     * Правильная реализация согласно гайдлайнам Google
-     */
     private fun enableEdgeToEdge() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            // Android 15+ (API 35+) - используем новый способ
-            window.decorView.setOnApplyWindowInsetsListener { view, insets ->
-                val systemBars = insets.getInsets(android.view.WindowInsets.Type.systemBars())
-                view.setPadding(0, 0, 0, 0)
-                insets
-            }
-        }
-        
-        // Универсальная настройка для всех версий
+        // Immersive Sticky Mode - полный экран без статус бара, но с навигацией
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
-        // Прозрачные системные панели с темным фоном для контента
-        window.statusBarColor = Color.parseColor("#0a0a0f")
-        window.navigationBarColor = Color.parseColor("#0a0a0f")
-        
-        // Светлые иконки на темном фоне
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = 0 // Темные иконки (светлый фон = 0, темный = убираем флаги)
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        windowInsetsController?.apply {
+            // Скрываем статус бар, оставляем навигацию
+            hide(WindowInsetsCompat.Type.statusBars())
+            
+            // Sticky - при swipe сверху показывается только временно
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            
+            // Темные иконки (белые на черном)
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
         }
+        
+        // Цвета панелей (темные)
+        window.navigationBarColor = "#0a0a0f".toColorInt()
+        window.statusBarColor = "#0a0a0f".toColorInt()
     }
 
-    /**
-     * Получает FCM токен и отправляет на сервер
-     */
     private fun getFCMToken() {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
@@ -662,54 +531,40 @@ class MainActivity : AppCompatActivity() {
                 android.util.Log.e("Anonimka", "❌ FCM токен пустой")
                 return@addOnCompleteListener
             }
-            
+
             android.util.Log.d("Anonimka", "🔑 FCM токен получен: ${fcmToken.take(20)}...")
-            
-            // Сохраняем локально
-            authPrefs.edit().putString("fcm_token", fcmToken).apply()
-            
-            // Отправляем на сервер
+            authPrefs.edit { putString("fcm_token", fcmToken) }
             sendFCMTokenToServer(fcmToken)
         }
     }
 
-    /**
-     * Отправляет FCM токен на сервер
-     */
     private fun sendFCMTokenToServer(fcmToken: String) {
         val userToken = authPrefs.getString("user_token", null)
-        
         if (userToken.isNullOrEmpty()) {
             android.util.Log.w("Anonimka", "⚠️ user_token не найден, FCM токен не отправлен")
             return
         }
-        
+
         android.util.Log.d("Anonimka", "📤 Отправка FCM токена на сервер...")
-        
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val url = URL("https://anonimka.kz/api/fcm-token")
                 val connection = url.openConnection() as HttpURLConnection
-                
                 connection.apply {
                     requestMethod = "POST"
                     setRequestProperty("Content-Type", "application/json")
                     doOutput = true
-                    
                     val params = JSONObject().apply {
                         put("userToken", userToken)
                         put("fcmToken", fcmToken)
                     }
-                    
                     val json = JSONObject().apply {
                         put("action", "register")
                         put("params", params)
                     }
-                    
                     outputStream.use { os ->
                         os.write(json.toString().toByteArray())
                     }
-                    
                     val responseCode = connection.responseCode
                     if (responseCode == 200) {
                         android.util.Log.d("Anonimka", "✅ FCM токен успешно зарегистрирован на сервере")
