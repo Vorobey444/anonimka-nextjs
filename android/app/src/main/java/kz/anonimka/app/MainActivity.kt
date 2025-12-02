@@ -124,14 +124,14 @@ class MainActivity : AppCompatActivity() {
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         swipeRefreshLayout.isEnabled = false
 
-        // Применяем padding только к WebView для корректной работы с клавиатурой
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, windowInsets ->
+        // Применяем padding для системных панелей с adjustPan режимом
+        ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { view, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(
                 0, // left
                 insets.top, // top - отступ от статус бара
                 0, // right
-                0 // bottom - НЕ применяем, чтобы клавиатура работала правильно
+                insets.bottom // bottom - отступ от навигационных кнопок
             )
             windowInsets
         }
@@ -301,6 +301,17 @@ class MainActivity : AppCompatActivity() {
                                     email: '$email',
                                     nickname: '$displayNickname'
                                 });
+                                
+                                // Автоматическая прокрутка к полю ввода при фокусе (для клавиатуры)
+                                setTimeout(() => {
+                                    document.addEventListener('focusin', function(e) {
+                                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                                            setTimeout(() => {
+                                                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            }, 300);
+                                        }
+                                    });
+                                }, 500);
                                 
                                 return 'SUCCESS';
                             } catch(e) {
