@@ -124,14 +124,14 @@ class MainActivity : AppCompatActivity() {
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         swipeRefreshLayout.isEnabled = false
 
-        // Применяем padding для системных панелей (статус бар и навигация)
-        ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { view, windowInsets ->
+        // Применяем padding только к WebView для корректной работы с клавиатурой
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(
                 0, // left
                 insets.top, // top - отступ от статус бара
                 0, // right
-                insets.bottom // bottom - отступ от навигационных кнопок
+                0 // bottom - НЕ применяем, чтобы клавиатура работала правильно
             )
             windowInsets
         }
