@@ -296,6 +296,9 @@ class MainActivity : AppCompatActivity() {
                     val script = """
                         (function() {
                             try {
+                                // Добавляем класс для Android WebView (для фиксированного header)
+                                document.body.classList.add('android-webview');
+                                
                                 localStorage.setItem('user_token', '$userToken');
                                 localStorage.setItem('auth_method', '$authMethod');
                                 localStorage.setItem('email', '$email');
