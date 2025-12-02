@@ -5646,10 +5646,11 @@ async function detectLocationByGPS() {
         
         console.log('🛰️ Запрашиваем GPS координаты...');
         
+        // Увеличиваем таймаут до 15 секунд для первого определения GPS
         const timeoutId = setTimeout(() => {
-            console.log('⏱️ GPS таймаут (5 секунд)');
+            console.log('⏱️ GPS таймаут (15 секунд)');
             resolve(null);
-        }, 5000);
+        }, 15000);
         
         navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -5695,8 +5696,8 @@ async function detectLocationByGPS() {
             },
             {
                 enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0
+                timeout: 15000, // Увеличиваем до 15 секунд
+                maximumAge: 300000 // Кешируем на 5 минут
             }
         );
     });
