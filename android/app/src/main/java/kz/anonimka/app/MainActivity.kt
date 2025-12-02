@@ -124,14 +124,15 @@ class MainActivity : AppCompatActivity() {
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         swipeRefreshLayout.isEnabled = false
 
-        // Применяем padding для системных панелей с adjustPan режимом
+        // Применяем padding только для верхней панели (статус бар)
+        // Bottom padding НЕ применяем для корректной работы adjustResize
         ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { view, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(
                 0, // left
                 insets.top, // top - отступ от статус бара
                 0, // right
-                insets.bottom // bottom - отступ от навигационных кнопок
+                0 // bottom - НЕ применяем, чтобы adjustResize работал правильно
             )
             windowInsets
         }
@@ -180,7 +181,7 @@ class MainActivity : AppCompatActivity() {
             }
         }, "AndroidAuth")
 
-        // Настройка WebView
+        // Настройка WebView как в Telegram
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -196,6 +197,15 @@ class MainActivity : AppCompatActivity() {
             // Предзагрузка
             loadsImagesAutomatically = true
             blockNetworkImage = false
+            
+            // Важно: отключаем встроенный зум как в Telegram WebView
+            builtInZoomControls = false
+            displayZoomControls = false
+            setSupportZoom(false)
+            
+            // Правильный размер контента
+            useWideViewPort = true
+            loadWithOverviewMode = true
 
             layoutAlgorithm = WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
 
