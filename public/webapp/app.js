@@ -5518,6 +5518,13 @@ async function checkUserLocation() {
 async function checkOnboardingStatus() {
     console.log('checkOnboardingStatus вызвана');
     try {
+        // Проверяем, не открыто ли уже модальное окно никнейма
+        const nicknameModal = document.getElementById('requiredNicknameModal');
+        if (nicknameModal && nicknameModal.style.display === 'flex') {
+            console.log('⚠️ Модальное окно никнейма уже открыто, пропускаем checkOnboardingStatus');
+            return;
+        }
+        
         // Сначала проверяем локальное хранилище
         const localNickname = localStorage.getItem('userNickname');
         if (localNickname && localNickname.trim() !== '') {
