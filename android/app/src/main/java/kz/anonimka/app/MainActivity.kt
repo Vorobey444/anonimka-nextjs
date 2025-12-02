@@ -151,28 +151,55 @@ class MainActivity : AppCompatActivity() {
             allowFileAccess = true
             allowContentAccess = true
             mediaPlaybackRequiresUserGesture = false
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            
+            // Для старых устройств (API 21-22)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            }
             
             // Оптимизации производительности
-            cacheMode = WebSettings.LOAD_DEFAULT // Используем кэш
+            cacheMode = WebSettings.LOAD_DEFAULT
             setRenderPriority(WebSettings.RenderPriority.HIGH)
             
-            // Аппаратное ускорение
-            setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+            // Аппаратное ускорение (для API 19+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+            } else {
+                // Для совсем старых устройств - software рендеринг
+                setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
+            }
             
-            // Агрессивное кэширование для быстрой загрузки
+            // Агрессивное кэширование
             setAppCacheEnabled(true)
             setAppCachePath(cacheDir.path)
-            setAppCacheMaxSize(50 * 1024 * 1024) // 50MB кэш
+            setAppCacheMaxSize(50 * 1024 * 1024) // 50MB
             
-            // Предзагрузка контента
+            // Предзагрузка
             loadsImagesAutomatically = true
             blockNetworkImage = false
             
-            // Оптимизация рендеринга
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                safeBrowsingEnabled = false // Отключаем для скорости
+            // Оптимизации для старых Android
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                // Для Android 5.x и ниже - упрощенный режим
+                layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN
+            } else {
+                layoutAlgorithm = WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
             }
+            
+            // Отключаем Safe Browsing на новых устройствах
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                safeBrowsingEnabled = false
+            }
+            
+            // Дополнительные оптимизации
+            saveFormData = false // Не сохраняем данные форм
+            savePassword = false
+            
+            // Ускорение текста
+            textZoom = 100
+            minimumFontSize = 8
+            minimumLogicalFontSize = 8
+            defaultFontSize = 16
             
             // Поддержка масштабирования
             builtInZoomControls = false
@@ -187,7 +214,24 @@ class MainActivity : AppCompatActivity() {
         
         // Аппаратное ускорение для WebView
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            WebView.setWebContentsDebuggingEnabled(false) // Отключаем отладку в продакшене
+            WebView.setWebContentsDebuggingEnabled(false)
+        }
+        
+        // Обработка низкой памяти для старых устройств
+        val activityManager = getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
+        val memoryInfo = android.app.ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memoryInfo)
+        
+        // Если мало памяти (< 512MB) - упрощенный режим
+        if (memoryInfo.totalMem < 512 * 1024 * 1024) {
+            android.util.Log.d("Anonimka", "⚠️ Low memory device detected: ${memoryInfo.totalMem / (1024*1024)}MB")
+            webView.settings.apply {
+                // Уменьшаем кэш
+                setAppCacheMaxSize(20 * 1024 * 1024) // 20MB вместо 50MB
+                // Отключаем автозагрузку картинок на слабых устройствах
+                loadsImagesAutomatically = false
+                blockNetworkImage = true
+            }
         }
 
         // WebViewClient для контроля навигации
@@ -289,17 +333,26 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-                // Показываем ошибку, только если она относится к основному документу
                 if (request.isForMainFrame) {
                     super.onReceivedError(view, request, error)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         val errorCode = error.errorCode
-                        // Игнорируем ошибки, связанные с отменой загрузки
                         if (errorCode != WebViewClient.ERROR_CONNECT && errorCode != WebViewClient.ERROR_HOST_LOOKUP) {
                             Toast.makeText(this@MainActivity, "Ошибка загрузки: ${error.description}", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
+            }
+            
+            // Обработка краша WebView на старых устройствах
+            override fun onRenderProcessGone(view: WebView?, detail: android.webkit.RenderProcessGoneDetail?): Boolean {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    android.util.Log.e("Anonimka", "❌ WebView render process crashed")
+                    // Перезагружаем приложение
+                    recreate()
+                    return true
+                }
+                return super.onRenderProcessGone(view, detail)
             }
         }
 
