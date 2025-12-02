@@ -93,10 +93,9 @@ class MainActivity : AppCompatActivity() {
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         swipeRefreshLayout.isEnabled = false
 
+        // Убираем padding чтобы WebView занял весь экран без белых полос
         ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            // Применяем отступы со всех сторон
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            // Не применяем padding - пусть WebView занимает весь экран
             windowInsets
         }
 
@@ -163,7 +162,13 @@ class MainActivity : AppCompatActivity() {
             displayZoomControls = false
             useWideViewPort = true
             loadWithOverviewMode = true
+            
+            // Устанавливаем viewport для правильного масштабирования на малых экранах
+            setSupportZoom(false)
         }
+        
+        // Чёрный фон WebView чтобы не было белых полос
+        webView.setBackgroundColor(Color.parseColor("#0a0a0f"))
 
         // WebViewClient для контроля навигации
         webView.webViewClient = object : WebViewClient() {
