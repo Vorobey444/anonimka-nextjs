@@ -643,7 +643,12 @@ class MainActivity : AppCompatActivity() {
                 return@addOnCompleteListener
             }
 
-            val fcmToken = task.result
+            val fcmToken = task.result ?: ""
+            if (fcmToken.isEmpty()) {
+                android.util.Log.e("Anonimka", "❌ FCM токен пустой")
+                return@addOnCompleteListener
+            }
+            
             android.util.Log.d("Anonimka", "🔑 FCM токен получен: ${fcmToken.take(20)}...")
             
             // Сохраняем локально
