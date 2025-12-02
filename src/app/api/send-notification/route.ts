@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
+import { sendPushNotification } from '@/utils/fcm';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,12 +56,48 @@ export async function POST(request: NextRequest) {
             recipientTgId = adResult.rows[0].tg_id;
             console.log('[SEND-NOTIFICATION] Найден tg_id в ads:', recipientTgId);
           } else {
-            console.warn('[SEND-NOTIFICATION] tg_id не найден ни в users, ни в ads - уведомление не отправляется');
+            // Нет tg_id - проверяем FCM токен для Push-уведомления (Email-пользователи)
+            console.log('[SEND-NOTIFICATION] tg_id не найден, проверяем FCM токен для Push');
+            
+            const fcmResult = await sql`
+              SELECT fcm_token FROM users WHERE user_token = ${receiverToken} LIMIT 1
+            `;
+            
+            if (fcmResult.rows.length > 0 && fcmResult.rows[0].fcm_token) {
+              const fcmToken = fcmResult.rows[0].fcm_token;
+              console.log('[SEND-NOTIFICATION] Найден FCM токен, отправляем Push');
+              
+              // Отправляем Push-уведомление
+              const pushTitle = '💬 Новый запрос на чат';
+              const pushBody = messageText.length > 100 
+                ? messageText.substring(0, 100) + '...' 
+                : messageText;
+              
+              const pushSent = await sendPushNotification(fcmToken, {
+                title: pushTitle,
+                body: pushBody,
+                chatId: adId || 'unknown',
+                senderNickname: 'Аноним'
+              });
+              
+              if (pushSent) {
+                console.log('[SEND-NOTIFICATION] ✅ Push-уведомление отправлено');
+                return NextResponse.json({
+                  success: true,
+                  message: 'Push notification sent successfully',
+                  notificationType: 'push'
+                });
+              } else {
+                console.warn('[SEND-NOTIFICATION] ⚠️ Не удалось отправить Push-уведомление');
+              }
+            }
+            
+            console.warn('[SEND-NOTIFICATION] Нет ни tg_id, ни fcm_token - уведомление не отправлено');
             return NextResponse.json(
               { 
                 success: false, 
-                error: 'Recipient Telegram ID not found',
-                details: 'Пользователь не привязал Telegram. Уведомление не отправлено.'
+                error: 'No notification method available',
+                details: 'Пользователь не привязал Telegram и не настроил Push-уведомления.'
               },
               { status: 200 } // 200 чтобы не блокировать создание чата
             );
@@ -224,11 +261,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[SEND-NOTIFICATION] Уведомление успешно отправлено:', telegramResult.result.message_id);
+    console.log('[SEND-NOTIFICATION] Telegram уведомление успешно отправлено:', telegramResult.result.message_id);
 
     return NextResponse.json({
       success: true,
-      message: 'Notification sent successfully',
+      message: 'Telegram notification sent successfully',
+      notificationType: 'telegram',
       telegramMessageId: telegramResult.result.message_id
     });
 

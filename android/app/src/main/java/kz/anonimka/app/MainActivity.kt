@@ -19,6 +19,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : AppCompatActivity() {
 
@@ -104,6 +111,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         android.util.Log.d("Anonimka", "✅ Auth token found: ${userToken.take(8)}..., method: $authMethod")
+
+        // Получаем FCM токен для Push-уведомлений
+        getFCMToken()
 
         // Edge-to-edge display для Android 15 (правильная реализация)
         enableEdgeToEdge()
@@ -620,6 +630,73 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             @Suppress("DEPRECATION")
             window.decorView.systemUiVisibility = 0 // Темные иконки (светлый фон = 0, темный = убираем флаги)
+        }
+    }
+
+    /**
+     * Получает FCM токен и отправляет на сервер
+     */
+    private fun getFCMToken() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                android.util.Log.e("Anonimka", "❌ Ошибка получения FCM токена", task.exception)
+                return@addOnCompleteListener
+            }
+
+            val fcmToken = task.result
+            android.util.Log.d("Anonimka", "🔑 FCM токен получен: ${fcmToken.take(20)}...")
+            
+            // Сохраняем локально
+            authPrefs.edit().putString("fcm_token", fcmToken).apply()
+            
+            // Отправляем на сервер
+            sendFCMTokenToServer(fcmToken)
+        }
+    }
+
+    /**
+     * Отправляет FCM токен на сервер
+     */
+    private fun sendFCMTokenToServer(fcmToken: String) {
+        val userToken = authPrefs.getString("user_token", null)
+        
+        if (userToken.isNullOrEmpty()) {
+            android.util.Log.w("Anonimka", "⚠️ user_token не найден, FCM токен не отправлен")
+            return
+        }
+        
+        android.util.Log.d("Anonimka", "📤 Отправка FCM токена на сервер...")
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val url = URL("https://anonimka.kz/api/fcm-token")
+                val connection = url.openConnection() as HttpURLConnection
+                
+                connection.apply {
+                    requestMethod = "POST"
+                    setRequestProperty("Content-Type", "application/json")
+                    doOutput = true
+                    
+                    val json = JSONObject().apply {
+                        put("action", "register")
+                        put("userToken", userToken)
+                        put("fcmToken", fcmToken)
+                    }
+                    
+                    outputStream.use { os ->
+                        os.write(json.toString().toByteArray())
+                    }
+                    
+                    val responseCode = connection.responseCode
+                    if (responseCode == 200) {
+                        android.util.Log.d("Anonimka", "✅ FCM токен успешно зарегистрирован на сервере")
+                    } else {
+                        android.util.Log.e("Anonimka", "❌ Ошибка регистрации FCM токена: $responseCode")
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("Anonimka", "❌ Ошибка при отправке FCM токена", e)
+            }
         }
     }
 }
