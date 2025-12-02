@@ -703,10 +703,14 @@ class MainActivity : AppCompatActivity() {
                     setRequestProperty("Content-Type", "application/json")
                     doOutput = true
                     
-                    val json = JSONObject().apply {
-                        put("action", "register")
+                    val params = JSONObject().apply {
                         put("userToken", userToken)
                         put("fcmToken", fcmToken)
+                    }
+                    
+                    val json = JSONObject().apply {
+                        put("action", "register")
+                        put("params", params)
                     }
                     
                     outputStream.use { os ->

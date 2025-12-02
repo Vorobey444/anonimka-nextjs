@@ -34,15 +34,15 @@ export async function POST(request: NextRequest) {
       try {
         // Сначала проверяем таблицу users (для Email-авторизации)
         const userResult = await sql`
-          SELECT tg_id 
+          SELECT id 
           FROM users 
-          WHERE user_token = ${receiverToken} AND tg_id IS NOT NULL
+          WHERE user_token = ${receiverToken} AND id IS NOT NULL
           LIMIT 1
         `;
 
-        if (userResult.rows.length > 0 && userResult.rows[0].tg_id) {
-          recipientTgId = userResult.rows[0].tg_id;
-          console.log('[SEND-NOTIFICATION] Найден tg_id в users:', recipientTgId);
+        if (userResult.rows.length > 0 && userResult.rows[0].id) {
+          recipientTgId = userResult.rows[0].id;
+          console.log('[SEND-NOTIFICATION] Найден Telegram ID в users:', recipientTgId);
         } else {
           // Если в users не нашли, проверяем таблицу ads (для старых пользователей)
           const adResult = await sql`
