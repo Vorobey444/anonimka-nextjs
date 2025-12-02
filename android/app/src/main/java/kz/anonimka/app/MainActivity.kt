@@ -9,7 +9,9 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.ViewGroup
 import android.webkit.*
+import android.widget.Button
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,19 +30,19 @@ class MainActivity : AppCompatActivity() {
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
     private var geolocationCallback: GeolocationPermissions.Callback? = null
     private var geolocationOrigin: String? = null
-    
+
     // SharedPreferences для хранения данных авторизации
     private val authPrefs by lazy {
         getSharedPreferences("anonimka_auth", MODE_PRIVATE)
     }
-    
+
     // Launcher для запроса разрешений GPS
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val fineLocation = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
         val coarseLocation = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-        
+
         if (fineLocation || coarseLocation) {
             // Разрешение получено
             geolocationCallback?.invoke(geolocationOrigin, true, false)
@@ -88,13 +90,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        
+
         android.util.Log.d("Anonimka", "onCreate called, savedInstanceState: ${savedInstanceState != null}")
 
         // Проверяем авторизацию
         val userToken = authPrefs.getString("user_token", null)
         val authMethod = authPrefs.getString("auth_method", "telegram")
-        
+
         if (userToken == null) {
             // Нет авторизации - перенаправляем на EmailAuthActivity
             android.util.Log.d("Anonimka", "⚠️ No auth token found, redirecting to EmailAuthActivity")
@@ -103,7 +105,7 @@ class MainActivity : AppCompatActivity() {
             finish()
             return
         }
-        
+
         android.util.Log.d("Anonimka", "✅ Auth token found: ${userToken.substring(0, 8)}..., method: $authMethod")
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -144,28 +146,28 @@ class MainActivity : AppCompatActivity() {
                 }
                 android.util.Log.d("Anonimka", "✅ Auth data saved to SharedPreferences")
             }
-            
+
             @android.webkit.JavascriptInterface
             fun getAuthData(): String {
                 return authPrefs.getString("telegram_user", "") ?: ""
             }
-            
+
             @android.webkit.JavascriptInterface
             fun getUserToken(): String {
                 return authPrefs.getString("user_token", "") ?: ""
             }
-            
+
             @android.webkit.JavascriptInterface
             fun getAuthMethod(): String {
                 return authPrefs.getString("auth_method", "telegram") ?: "telegram"
             }
-            
+
             @android.webkit.JavascriptInterface
             fun getEmail(): String {
                 return authPrefs.getString("email", "") ?: ""
             }
         }, "AndroidAuth")
-        
+
         // Настройка WebView
         webView.settings.apply {
             javaScriptEnabled = true
@@ -174,33 +176,19 @@ class MainActivity : AppCompatActivity() {
             allowFileAccess = true
             allowContentAccess = true
             mediaPlaybackRequiresUserGesture = false
-            
+
             // Для старых устройств (API 21-22)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             }
-            
+
             // Оптимизации производительности
             cacheMode = WebSettings.LOAD_DEFAULT
-            setRenderPriority(WebSettings.RenderPriority.HIGH)
-            
-            // Аппаратное ускорение (для API 19+)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
-            } else {
-                // Для совсем старых устройств - software рендеринг
-                setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
-            }
-            
-            // Агрессивное кэширование
-            setAppCacheEnabled(true)
-            setAppCachePath(cacheDir.path)
-            setAppCacheMaxSize(50 * 1024 * 1024) // 50MB
-            
+
             // Предзагрузка
             loadsImagesAutomatically = true
             blockNetworkImage = false
-            
+
             // Оптимизации для старых Android
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
                 // Для Android 5.x и ниже - упрощенный режим
@@ -208,26 +196,26 @@ class MainActivity : AppCompatActivity() {
             } else {
                 layoutAlgorithm = WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
             }
-            
+
             // Отключаем Safe Browsing на новых устройствах
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 safeBrowsingEnabled = false
             }
-            
+
             // Дополнительные оптимизации
             saveFormData = false // Не сохраняем данные форм
             savePassword = false
-            
+
             // Ускорение текста
             textZoom = 100
             minimumFontSize = 8
             minimumLogicalFontSize = 8
             defaultFontSize = 16
-            
+
             // ВКЛЮЧАЕМ ГЕОЛОКАЦИЮ
             setGeolocationEnabled(true)
             setGeolocationDatabasePath(filesDir.path)
-            
+
             // Поддержка масштабирования
             builtInZoomControls = false
             displayZoomControls = false
@@ -235,26 +223,24 @@ class MainActivity : AppCompatActivity() {
             loadWithOverviewMode = true
             setSupportZoom(false)
         }
-        
+
         // Чёрный фон WebView чтобы не было белых полос
         webView.setBackgroundColor(Color.parseColor("#0a0a0f"))
-        
+
         // Аппаратное ускорение для WebView
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             WebView.setWebContentsDebuggingEnabled(false)
         }
-        
+
         // Обработка низкой памяти для старых устройств
         val activityManager = getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
         val memoryInfo = android.app.ActivityManager.MemoryInfo()
         activityManager.getMemoryInfo(memoryInfo)
-        
+
         // Если мало памяти (< 512MB) - упрощенный режим
         if (memoryInfo.totalMem < 512 * 1024 * 1024) {
-            android.util.Log.d("Anonimka", "⚠️ Low memory device detected: ${memoryInfo.totalMem / (1024*1024)}MB")
+            android.util.Log.d("Anonimka", "⚠️ Low memory device detected: ${memoryInfo.totalMem / (1024 * 1024)}MB")
             webView.settings.apply {
-                // Уменьшаем кэш
-                setAppCacheMaxSize(20 * 1024 * 1024) // 20MB вместо 50MB
                 // Отключаем автозагрузку картинок на слабых устройствах
                 loadsImagesAutomatically = false
                 blockNetworkImage = true
@@ -265,14 +251,14 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val url = request?.url.toString()
-                
+
                 // Открываем внешние ссылки в браузере
                 if (!url.contains("anonimka.kz") && !url.contains("t.me")) {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                     startActivity(intent)
                     return true
                 }
-                
+
                 return false
             }
 
@@ -283,24 +269,24 @@ class MainActivity : AppCompatActivity() {
                     swipeRefreshLayout.isRefreshing = true
                 }
             }
-            
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 swipeRefreshLayout.isRefreshing = false
-                
+
                 // Скрываем splash screen если он еще виден
                 window.decorView.postDelayed({
                     // Контент загружен, можно убрать черный экран
                 }, 100)
-                
+
                 // Инжектим данные авторизации при загрузке страницы
                 val userToken = authPrefs.getString("user_token", "")
                 val authMethod = authPrefs.getString("auth_method", "telegram")
                 val email = authPrefs.getString("email", "")
                 val displayNickname = authPrefs.getString("display_nickname", "")
-                
+
                 android.util.Log.d("Anonimka", "📱 [INJECT] Preparing injection: token=${userToken?.take(16)}..., method=$authMethod")
-                
+
                 if (!userToken.isNullOrEmpty()) {
                     val script = """
                         (function() {
@@ -329,12 +315,12 @@ class MainActivity : AppCompatActivity() {
                             }
                         })();
                     """.trimIndent()
-                    
+
                     webView.evaluateJavascript(script) { result ->
                         android.util.Log.d("Anonimka", "📱 [INJECT] Result: $result")
                     }
                 }
-                
+
                 // Для обратной совместимости с Telegram auth
                 val savedUser = authPrefs.getString("telegram_user", "")
                 if (!savedUser.isNullOrEmpty() && authMethod == "telegram") {
@@ -352,7 +338,7 @@ class MainActivity : AppCompatActivity() {
                         })();
                     """.trimIndent(), null)
                 }
-                
+
                 // Если в URL есть параметр authorized - закрываем модалку
                 if (url?.contains("authorized=true") == true) {
                     handleIntent(intent)
@@ -370,7 +356,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-            
+
             // Обработка краша WebView на старых устройствах
             override fun onRenderProcessGone(view: WebView?, detail: android.webkit.RenderProcessGoneDetail?): Boolean {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -385,25 +371,25 @@ class MainActivity : AppCompatActivity() {
 
         // WebChromeClient для загрузки файлов и геолокации
         webView.webChromeClient = object : WebChromeClient() {
-            
+
             // Обработка запроса геолокации
             override fun onGeolocationPermissionsShowPrompt(
                 origin: String?,
                 callback: GeolocationPermissions.Callback?
             ) {
                 android.util.Log.d("Anonimka", "📍 GPS request from: $origin")
-                
+
                 // Проверяем разрешения
                 val hasFineLocation = ContextCompat.checkSelfPermission(
                     this@MainActivity,
                     Manifest.permission.ACCESS_FINE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED
-                
+
                 val hasCoarseLocation = ContextCompat.checkSelfPermission(
                     this@MainActivity,
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED
-                
+
                 if (hasFineLocation || hasCoarseLocation) {
                     // Разрешение уже есть
                     callback?.invoke(origin, true, false)
@@ -420,11 +406,11 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
             }
-            
+
             override fun onGeolocationPermissionsHidePrompt() {
                 super.onGeolocationPermissionsHidePrompt()
             }
-            
+
             override fun onShowFileChooser(
                 webView: WebView?,
                 filePathCallback: ValueCallback<Array<Uri>>?,
@@ -443,7 +429,7 @@ class MainActivity : AppCompatActivity() {
                 val intent = fileChooserParams?.createIntent()
                 intent?.type = "image/*"
                 intent?.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
-                
+
                 try {
                     fileChooserLauncher.launch(intent)
                 } catch (e: Exception) {
@@ -486,7 +472,7 @@ class MainActivity : AppCompatActivity() {
 
         // Загружаем webapp
         loadWebApp()
-        
+
         // Восстанавливаем состояние WebView если оно было сохранено
         if (savedInstanceState != null) {
             android.util.Log.d("Anonimka", "🔄 Восстанавливаем сохранённое состояние WebView")
@@ -495,7 +481,7 @@ class MainActivity : AppCompatActivity() {
             // Только если нет сохранённого состояния - загружаем URL
             loadWebApp()
         }
-        
+
         // Обрабатываем deep link если пришли из Telegram
         handleIntent(intent)
     }
@@ -513,28 +499,28 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleIntent(intent: Intent?) {
         val data = intent?.data
-        
+
         // Проверяем если пришли из Telegram после авторизации через deep link
         if (data?.scheme == "anonimka" && data.path == "/authorized") {
             android.util.Log.d("Anonimka", "🔄 Возврат из Telegram - перезагружаем WebView")
-            
+
             // Перезагружаем WebView чтобы инжектнуть сохранённые данные
             webView.postDelayed({
                 webView.reload()
             }, 300)
             return
         }
-        
+
         val url = webView.url
-        
+
         // Проверяем если пришли из Telegram после авторизации (старый способ)
         val isFromTelegram = data?.let {
             it.scheme == "tg" || it.host == "anonimka.kz"
         } ?: false
-        
+
         // Или если в URL есть параметр authorized=true
         val isAuthorized = url?.contains("authorized=true") == true
-        
+
         if (isFromTelegram || isAuthorized) {
             // Инжектим JavaScript для закрытия диалога авторизации
             webView.postDelayed({
