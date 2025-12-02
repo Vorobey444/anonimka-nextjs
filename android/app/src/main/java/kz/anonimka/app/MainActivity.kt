@@ -250,10 +250,17 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
-                super.onReceivedError(view, request, error)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    Toast.makeText(this@MainActivity, "Ошибка загрузки: ${error?.description}", Toast.LENGTH_SHORT).show()
+            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                // Показываем ошибку, только если она относится к основному документу
+                if (request.isForMainFrame) {
+                    super.onReceivedError(view, request, error)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        val errorCode = error.errorCode
+                        // Игнорируем ошибки, связанные с отменой загрузки
+                        if (errorCode != WebViewClient.ERROR_CONNECT && errorCode != WebViewClient.ERROR_HOST_LOOKUP) {
+                            Toast.makeText(this@MainActivity, "Ошибка загрузки: ${error.description}", Toast.LENGTH_LONG).show()
+                        }
+                    }
                 }
             }
         }

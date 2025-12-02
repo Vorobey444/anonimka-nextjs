@@ -6636,6 +6636,7 @@ body.emoji-flags-supported .country-code {
     }
 }
 
+/* Адаптивные стили для маленьких экранов */
 @media (max-width: 600px) {
     .sticky-note {
         width: 180px;
@@ -6652,5 +6653,90 @@ body.emoji-flags-supported .country-code {
     
     .sticky-note-link {
         font-size: 10px;
+    }
+}
+
+/* Оптимизация для очень маленьких экранов (до 380px) */
+@media (max-width: 380px) {
+    html {
+        font-size: 14px;
+    }
+    
+    body {
+        font-size: 14px;
+    }
+    
+    /* Уменьшаем заголовки */
+    h1 {
+        font-size: 1.8rem !important;
+    }
+    
+    h2 {
+        font-size: 1.5rem !important;
+    }
+    
+    h3 {
+        font-size: 1.3rem !important;
+    }
+    
+    /* Уменьшаем кнопки */
+    .neon-button {
+        padding: 10px 16px !important;
+        font-size: 14px !important;
+    }
+    
+    /* Уменьшаем модальные окна */
+    .modal-content {
+        padding: 20px !important;
+        max-width: 95% !important;
+    }
+    
+    /* Уменьшаем формы */
+    .form-step {
+        padding: 15px !important;
+    }
+    
+    .neon-input,
+    .neon-textarea {
+        font-size: 14px !important;
+        padding: 10px !important;
+    }
+    
+    /* Уменьшаем карточки анкет */
+    .ad-card {
+        padding: 12px !important;
+    }
+    
+    /* Уменьшаем иконки и флаги */
+    .location-flag {
+        font-size: 1.1rem !important;
+    }
+    
+    /* Компактные списки городов */
+    .city-list button {
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+    }
+}
+
+/* Оптимизация для экранов среднего размера (380-600px) */
+@media (min-width: 381px) and (max-width: 600px) {
+    html {
+        font-size: 15px;
+    }
+    
+    /* Уменьшаем заголовки */
+    h1 {
+        font-size: 2rem !important;
+    }
+    
+    h2 {
+        font-size: 1.6rem !important;
+    }
+    
+    /* Уменьшаем кнопки */
+    .neon-button {
+        padding: 12px 18px !important;
+        font-size: 15px !important;
     }
 }
