@@ -153,22 +153,42 @@ class MainActivity : AppCompatActivity() {
             mediaPlaybackRequiresUserGesture = false
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             
-            // Для лучшей производительности
-            cacheMode = WebSettings.LOAD_DEFAULT
+            // Оптимизации производительности
+            cacheMode = WebSettings.LOAD_DEFAULT // Используем кэш
             setRenderPriority(WebSettings.RenderPriority.HIGH)
+            
+            // Аппаратное ускорение
+            setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+            
+            // Агрессивное кэширование для быстрой загрузки
+            setAppCacheEnabled(true)
+            setAppCachePath(cacheDir.path)
+            setAppCacheMaxSize(50 * 1024 * 1024) // 50MB кэш
+            
+            // Предзагрузка контента
+            loadsImagesAutomatically = true
+            blockNetworkImage = false
+            
+            // Оптимизация рендеринга
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                safeBrowsingEnabled = false // Отключаем для скорости
+            }
             
             // Поддержка масштабирования
             builtInZoomControls = false
             displayZoomControls = false
             useWideViewPort = true
             loadWithOverviewMode = true
-            
-            // Устанавливаем viewport для правильного масштабирования на малых экранах
             setSupportZoom(false)
         }
         
         // Чёрный фон WebView чтобы не было белых полос
         webView.setBackgroundColor(Color.parseColor("#0a0a0f"))
+        
+        // Аппаратное ускорение для WebView
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            WebView.setWebContentsDebuggingEnabled(false) // Отключаем отладку в продакшене
+        }
 
         // WebViewClient для контроля навигации
         webView.webViewClient = object : WebViewClient() {
@@ -185,9 +205,22 @@ class MainActivity : AppCompatActivity() {
                 return false
             }
 
+            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                // Показываем индикатор только для первой загрузки
+                if (swipeRefreshLayout.isRefreshing == false) {
+                    swipeRefreshLayout.isRefreshing = true
+                }
+            }
+            
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 swipeRefreshLayout.isRefreshing = false
+                
+                // Скрываем splash screen если он еще виден
+                window.decorView.postDelayed({
+                    // Контент загружен, можно убрать черный экран
+                }, 100)
                 
                 // Инжектим данные авторизации при загрузке страницы
                 val userToken = authPrefs.getString("user_token", "")
