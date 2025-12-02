@@ -312,17 +312,6 @@ class MainActivity : AppCompatActivity() {
                                     nickname: '$displayNickname'
                                 });
                                 
-                                // Автоматическая прокрутка к полю ввода при фокусе (для клавиатуры)
-                                setTimeout(() => {
-                                    document.addEventListener('focusin', function(e) {
-                                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                                            setTimeout(() => {
-                                                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                            }, 300);
-                                        }
-                                    });
-                                }, 500);
-                                
                                 return 'SUCCESS';
                             } catch(e) {
                                 console.error('❌ [INJECT] Error:', e);
