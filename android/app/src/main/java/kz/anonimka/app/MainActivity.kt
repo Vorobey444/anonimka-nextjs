@@ -2,7 +2,6 @@ package kz.anonimka.app
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -18,7 +17,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 class MainActivity : AppCompatActivity() {
@@ -56,7 +54,7 @@ class MainActivity : AppCompatActivity() {
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
+        if (result.resultCode == RESULT_OK) {
             val data = result.data
             val uris = data?.let {
                 if (it.clipData != null) {
@@ -104,7 +102,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        android.util.Log.d("Anonimka", "✅ Auth token found: ${userToken.substring(0, 8)}..., method: $authMethod")
+        android.util.Log.d("Anonimka", "✅ Auth token found: ${userToken.take(8)}..., method: $authMethod")
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
@@ -117,7 +115,7 @@ class MainActivity : AppCompatActivity() {
         swipeRefreshLayout.isEnabled = false
 
         // Убираем padding чтобы WebView занял весь экран без белых полос
-        ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { view, windowInsets ->
+        ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { _, windowInsets ->
             // Не применяем padding - пусть WebView занимает весь экран
             windowInsets
         }
@@ -135,7 +133,7 @@ class MainActivity : AppCompatActivity() {
 
         // Добавляем JavaScript Interface для связи с WebView
         webView.addJavascriptInterface(object {
-            @android.webkit.JavascriptInterface
+            @JavascriptInterface
             fun saveAuthData(userData: String) {
                 authPrefs.edit().apply {
                     putString("telegram_user", userData)
@@ -145,22 +143,22 @@ class MainActivity : AppCompatActivity() {
                 android.util.Log.d("Anonimka", "✅ Auth data saved to SharedPreferences")
             }
 
-            @android.webkit.JavascriptInterface
+            @JavascriptInterface
             fun getAuthData(): String {
                 return authPrefs.getString("telegram_user", "") ?: ""
             }
 
-            @android.webkit.JavascriptInterface
+            @JavascriptInterface
             fun getUserToken(): String {
                 return authPrefs.getString("user_token", "") ?: ""
             }
 
-            @android.webkit.JavascriptInterface
+            @JavascriptInterface
             fun getAuthMethod(): String {
                 return authPrefs.getString("auth_method", "telegram") ?: "telegram"
             }
 
-            @android.webkit.JavascriptInterface
+            @JavascriptInterface
             fun getEmail(): String {
                 return authPrefs.getString("email", "") ?: ""
             }
@@ -170,15 +168,11 @@ class MainActivity : AppCompatActivity() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            databaseEnabled = true
             allowFileAccess = true
             allowContentAccess = true
             mediaPlaybackRequiresUserGesture = false
 
-            // Для старых устройств (API 21-22)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-            }
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
 
             // Оптимизации производительности
             cacheMode = WebSettings.LOAD_DEFAULT
@@ -187,22 +181,12 @@ class MainActivity : AppCompatActivity() {
             loadsImagesAutomatically = true
             blockNetworkImage = false
 
-            // Оптимизации для старых Android
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                // Для Android 5.x и ниже - упрощенный режим
-                layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN
-            } else {
-                layoutAlgorithm = WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
-            }
+            layoutAlgorithm = WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
 
             // Отключаем Safe Browsing на новых устройствах
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 safeBrowsingEnabled = false
             }
-
-            // Дополнительные оптимизации
-            saveFormData = false // Не сохраняем данные форм
-            savePassword = false
 
             // Ускорение текста
             textZoom = 100
@@ -212,7 +196,6 @@ class MainActivity : AppCompatActivity() {
 
             // ВКЛЮЧАЕМ ГЕОЛОКАЦИЮ
             setGeolocationEnabled(true)
-            setGeolocationDatabasePath(filesDir.path)
 
             // Поддержка масштабирования
             builtInZoomControls = false
@@ -225,10 +208,7 @@ class MainActivity : AppCompatActivity() {
         // Чёрный фон WebView чтобы не было белых полос
         webView.setBackgroundColor(Color.parseColor("#0a0a0f"))
 
-        // Аппаратное ускорение для WebView
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            WebView.setWebContentsDebuggingEnabled(false)
-        }
+        WebView.setWebContentsDebuggingEnabled(false)
 
         // Обработка низкой памяти для старых устройств
         val activityManager = getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
@@ -263,7 +243,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 // Показываем индикатор только для первой загрузки
-                if (swipeRefreshLayout.isRefreshing == false) {
+                if (!swipeRefreshLayout.isRefreshing) {
                     swipeRefreshLayout.isRefreshing = true
                 }
             }
@@ -289,21 +269,21 @@ class MainActivity : AppCompatActivity() {
                     val script = """
                         (function() {
                             try {
-                                localStorage.setItem('user_token', '${userToken}');
-                                localStorage.setItem('auth_method', '${authMethod}');
-                                localStorage.setItem('email', '${email}');
+                                localStorage.setItem('user_token', '$userToken');
+                                localStorage.setItem('auth_method', '$authMethod');
+                                localStorage.setItem('email', '$email');
                                 localStorage.setItem('auth_time', '${authPrefs.getLong("auth_time", 0)}');
                                 
                                 // Инжектим никнейм если он сохранён
-                                if ('${displayNickname}' !== '') {
-                                    localStorage.setItem('user_nickname', '${displayNickname}');
+                                if ('$displayNickname' !== '') {
+                                    localStorage.setItem('user_nickname', '$displayNickname');
                                 }
                                 
                                 console.log('✅ [INJECT] Auth data injected:', {
                                     userToken: '${userToken.take(16)}...',
-                                    authMethod: '${authMethod}',
-                                    email: '${email}',
-                                    nickname: '${displayNickname}'
+                                    authMethod: '$authMethod',
+                                    email: '$email',
+                                    nickname: '$displayNickname'
                                 });
                                 
                                 return 'SUCCESS';
@@ -325,7 +305,7 @@ class MainActivity : AppCompatActivity() {
                     webView.evaluateJavascript("""
                         (function() {
                             try {
-                                var userData = ${savedUser};
+                                var userData = $savedUser;
                                 localStorage.setItem('telegram_user', JSON.stringify(userData));
                                 localStorage.setItem('telegram_auth_time', '${authPrefs.getLong("telegram_auth_time", 0)}');
                                 localStorage.setItem('user_id', userData.id.toString());
@@ -356,7 +336,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Обработка краша WebView на старых устройствах
-            override fun onRenderProcessGone(view: WebView?, detail: android.webkit.RenderProcessGoneDetail?): Boolean {
+            override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     android.util.Log.e("Anonimka", "❌ WebView render process crashed")
                     // Перезагружаем приложение
@@ -549,7 +529,7 @@ class MainActivity : AppCompatActivity() {
                             window.location.reload();
                         }, 500);
                     })();
-                """.trimIndent(), null)
+                """, null)
             }, 800)
         }
     }
