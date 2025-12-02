@@ -197,27 +197,33 @@ export async function GET(req: NextRequest) {
       }
 
       const res = await sql`
-        SELECT display_nickname FROM users WHERE id = ${tgId}
+        SELECT display_nickname, location FROM users WHERE id = ${tgId}
       `;
       displayNickname = res.rows[0]?.display_nickname || null;
+      const location = res.rows[0]?.location || null;
+      return NextResponse.json({ success: true, displayNickname, location });
     } else if (userToken) {
       // Сначала ищем напрямую в users по user_token (для email пользователей)
       const directRes = await sql`
-        SELECT display_nickname FROM users WHERE user_token = ${userToken} LIMIT 1
+        SELECT display_nickname, location FROM users WHERE user_token = ${userToken} LIMIT 1
       `;
       
       if (directRes.rows.length > 0) {
         displayNickname = directRes.rows[0]?.display_nickname || null;
+        const location = directRes.rows[0]?.location || null;
+        return NextResponse.json({ success: true, displayNickname, location });
       } else {
         // Fallback: ищем через объявления (для Telegram пользователей)
         const adsRes = await sql`
-          SELECT u.display_nickname
+          SELECT u.display_nickname, u.location
           FROM users u
           WHERE u.id IN (
             SELECT tg_id FROM ads WHERE user_token = ${userToken} AND tg_id IS NOT NULL LIMIT 1
           )
         `;
         displayNickname = adsRes.rows[0]?.display_nickname || null;
+        const location = adsRes.rows[0]?.location || null;
+        return NextResponse.json({ success: true, displayNickname, location });
       }
     } else {
       return NextResponse.json(
@@ -426,6 +432,100 @@ export async function PATCH(req: NextRequest) {
     console.error('[USERS API] Ошибка при обновлении данных пользователя:', error);
     return NextResponse.json(
       { success: false, error: error?.message || 'Ошибка обновления данных пользователя' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT - сохранить локацию пользователя
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { tgId, userToken, location } = body || {};
+    
+    console.log('[USERS API] PUT location request', {
+      hasTgId: Boolean(tgId),
+      hasUserToken: Boolean(userToken),
+      location
+    });
+
+    if (!location || !location.country || !location.region || !location.city) {
+      return NextResponse.json(
+        { success: false, error: 'Локация должна содержать country, region и city' },
+        { status: 400 }
+      );
+    }
+
+    // Сохраняем локацию по tgId
+    if (tgId) {
+      const tgIdNum = Number(tgId);
+      if (!Number.isFinite(tgIdNum)) {
+        return NextResponse.json(
+          { success: false, error: 'tgId должен быть числом' },
+          { status: 400 }
+        );
+      }
+
+      await sql`
+        UPDATE users
+        SET location = ${JSON.stringify(location)}::jsonb,
+            updated_at = NOW()
+        WHERE id = ${tgIdNum}
+      `;
+
+      console.log('[USERS API] ✅ Локация сохранена для tgId:', tgIdNum);
+      return NextResponse.json({ success: true });
+    }
+
+    // Сохраняем локацию по userToken
+    if (userToken) {
+      // Сначала пробуем найти напрямую в users
+      const directRes = await sql`
+        UPDATE users
+        SET location = ${JSON.stringify(location)}::jsonb,
+            updated_at = NOW()
+        WHERE user_token = ${userToken}
+        RETURNING id
+      `;
+
+      if (directRes.rows.length > 0) {
+        console.log('[USERS API] ✅ Локация сохранена для userToken (direct)');
+        return NextResponse.json({ success: true });
+      }
+
+      // Fallback: ищем через ads
+      const adsRes = await sql`
+        SELECT tg_id FROM ads WHERE user_token = ${userToken} AND tg_id IS NOT NULL LIMIT 1
+      `;
+
+      if (adsRes.rows.length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'Пользователь не найден' },
+          { status: 404 }
+        );
+      }
+
+      const tgFromAds = adsRes.rows[0].tg_id;
+      await sql`
+        UPDATE users
+        SET location = ${JSON.stringify(location)}::jsonb,
+            updated_at = NOW()
+        WHERE id = ${tgFromAds}
+      `;
+
+      console.log('[USERS API] ✅ Локация сохранена для userToken (via ads)');
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json(
+      { success: false, error: 'Укажите tgId или userToken' },
+      { status: 400 }
+    );
+
+  } catch (error: any) {
+    console.error('[USERS API] Ошибка при сохранении локации:', error);
+    return NextResponse.json(
+      { success: false, error: error?.message || 'Ошибка сохранения локации' },
       { status: 500 }
     );
   }

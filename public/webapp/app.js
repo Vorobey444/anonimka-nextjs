@@ -5475,62 +5475,78 @@ async function checkUserLocation() {
     // Проверяем наличие никнейма - если есть, значит пользователь уже прошёл онбординг
     const hasNickname = localStorage.getItem('user_nickname') || localStorage.getItem('userNickname');
     
-    // Попробуем получить локацию из Telegram Web App Storage
     try {
+        // Приоритет 1: Загружаем локацию из БД
+        const tgId = tg?.initDataUnsafe?.user?.id;
+        const userToken = localStorage.getItem('user_token');
+        
+        if (tgId || userToken) {
+            console.log('📍 Загружаем локацию из БД...');
+            
+            let url = '/api/users?';
+            if (tgId) {
+                url += `tgId=${tgId}`;
+            } else if (userToken) {
+                url += `userToken=${userToken}`;
+            }
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.success && data.location) {
+                currentUserLocation = data.location;
+                // Синхронизируем с localStorage
+                localStorage.setItem('userLocation', JSON.stringify(currentUserLocation));
+                console.log('✅ Локация загружена из БД:', currentUserLocation);
+                displayUserLocation();
+                await checkOnboardingStatus();
+                return;
+            } else {
+                console.log('📍 Локация не найдена в БД');
+            }
+        }
+        
+        // Приоритет 2: Проверяем localStorage (если БД недоступна)
+        const savedLocation = localStorage.getItem('userLocation');
+        if (savedLocation) {
+            currentUserLocation = JSON.parse(savedLocation);
+            console.log('✅ Локация загружена из localStorage:', currentUserLocation);
+            displayUserLocation();
+            await checkOnboardingStatus();
+            return;
+        }
+        
+        // Приоритет 3: Telegram Cloud Storage (для старых пользователей)
         if (supportsCloudStorage()) {
-            console.log('Используем Telegram Cloud Storage');
             tg.CloudStorage.getItem('userLocation', async function(err, value) {
-                console.log('CloudStorage результат:', {err, value});
                 if (!err && value) {
                     currentUserLocation = JSON.parse(value);
-                    console.log('Найдена сохраненная локация:', currentUserLocation);
+                    console.log('✅ Локация загружена из Cloud Storage:', currentUserLocation);
                     displayUserLocation();
                     await checkOnboardingStatus();
                 } else {
-                    console.log('Сохраненной локации нет');
-                    // Не запускаем автоопределение здесь - оно запустится после выбора никнейма в completeOnboarding()
-                    if (hasNickname) {
-                        // Если никнейм есть но локация потерялась - запускаем автоопределение
-                        console.log('Никнейм есть, но локация потерялась - запускаем автоопределение');
-                        showAutoLocationDetection();
-                    } else {
-                        // Если никнейма нет - покажется окно никнейма, а потом автоопределение
-                        console.log('Ждём установки никнейма, автоопределение будет после');
-                        await checkOnboardingStatus();
-                    }
+                    handleNoLocation(hasNickname);
                 }
             });
         } else {
-            console.log('Используем localStorage');
-            // Fallback - используем localStorage
-            const savedLocation = localStorage.getItem('userLocation');
-            console.log('localStorage результат:', savedLocation);
-            if (savedLocation) {
-                currentUserLocation = JSON.parse(savedLocation);
-                console.log('Найдена сохраненная локация в localStorage:', currentUserLocation);
-                displayUserLocation();
-                await checkOnboardingStatus();
-            } else {
-                console.log('Сохраненной локации нет');
-                // Не запускаем автоопределение здесь - оно запустится после выбора никнейма в completeOnboarding()
-                if (hasNickname) {
-                    // Если никнейм есть но локация потерялась - запускаем автоопределение
-                    console.log('Никнейм есть, но локация потерялась - запускаем автоопределение');
-                    showAutoLocationDetection();
-                } else {
-                    // Если никнейма нет - покажется окно никнейма, а потом автоопределение
-                    console.log('Ждём установки никнейма, автоопределение будет после');
-                    await checkOnboardingStatus();
-                }
-            }
+            handleNoLocation(hasNickname);
         }
+        
     } catch (error) {
-        console.error('Ошибка при получении локации:', error);
-        if (hasNickname) {
-            showAutoLocationDetection();
-        } else {
-            await checkOnboardingStatus();
-        }
+        console.error('❌ Ошибка загрузки локации:', error);
+        handleNoLocation(hasNickname);
+    }
+}
+
+// Обработка отсутствия локации
+function handleNoLocation(hasNickname) {
+    console.log('📍 Сохраненной локации нет');
+    if (hasNickname) {
+        console.log('Никнейм есть, но локация потерялась - запускаем автоопределение');
+        showAutoLocationDetection();
+    } else {
+        console.log('Ждём установки никнейма, автоопределение будет после');
+        checkOnboardingStatus();
     }
 }
 
@@ -6669,42 +6685,57 @@ async function saveUserLocation(country, region, city) {
     localStorage.setItem('userCountry', country || '');
     localStorage.setItem('userRegion', region || '');
     localStorage.setItem('userCity', city || '');
+    localStorage.setItem('userLocation', JSON.stringify(currentUserLocation));
     
+    // Сохраняем локацию в БД (приоритет)
+    try {
+        const tgId = tg?.initDataUnsafe?.user?.id;
+        const userToken = localStorage.getItem('user_token');
+        
+        if (tgId || userToken) {
+            console.log('📍 Сохраняем локацию в БД:', { country, region, city });
+            
+            const payload = {
+                location: { country, region, city }
+            };
+            
+            if (tgId) {
+                payload.tgId = tgId;
+            }
+            if (userToken) {
+                payload.userToken = userToken;
+            }
+            
+            const response = await fetch('/api/users', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Локация сохранена в БД');
+            } else {
+                console.warn('⚠️ Ошибка сохранения локации в БД:', result.error);
+            }
+        }
+    } catch (error) {
+        console.error('❌ Ошибка сохранения локации в БД:', error);
+    }
+    
+    // Fallback: сохраняем в Cloud Storage для Telegram
     try {
         if (supportsCloudStorage()) {
             tg.CloudStorage.setItem('userLocation', JSON.stringify(currentUserLocation), function(err) {
                 if (!err) {
-                    console.log('Локация сохранена в Telegram Cloud Storage');
+                    console.log('📦 Локация дублирована в Telegram Cloud Storage');
                 } else {
                     console.error('Ошибка сохранения в Cloud Storage:', err);
-                    localStorage.setItem('userLocation', JSON.stringify(currentUserLocation));
                 }
             });
-        } else {
-            localStorage.setItem('userLocation', JSON.stringify(currentUserLocation));
-            console.log('Локация сохранена в localStorage');
         }
     } catch (error) {
-        console.error('Ошибка сохранения локации:', error);
-    }
-    
-    // Обновляем country в базе данных пользователя
-    try {
-        const userId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
-        if (userId && city) {
-            console.log('📍 Обновляем country в БД для города:', city);
-            await fetch('/api/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tgId: parseInt(userId),
-                    city: city
-                })
-            });
-            console.log('✅ Country обновлена в БД');
-        }
-    } catch (error) {
-        console.error('Ошибка обновления country:', error);
+        console.error('Ошибка сохранения в Cloud Storage:', error);
     }
 }
 
