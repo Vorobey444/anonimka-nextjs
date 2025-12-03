@@ -10,6 +10,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.util.Log
 import android.webkit.*
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
