@@ -7923,15 +7923,19 @@ function closeHamburgerMenu() {
     overlay.classList.remove('active');
 }
 
-// Закрытие меню при клике на overlay
+// Закрытие меню при клике вне меню
 document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('hamburgerMenuOverlay');
     const menu = overlay?.querySelector('.hamburger-menu');
+    const hamburgerBtn = document.querySelector('.hamburger-btn');
     
     if (overlay && menu) {
-        overlay.addEventListener('click', (e) => {
-            // Закрываем если клик НЕ внутри меню
-            if (!menu.contains(e.target)) {
+        // Слушаем клики по всему документу
+        document.addEventListener('click', (e) => {
+            // Если меню открыто и клик НЕ внутри меню и НЕ на кнопке открытия
+            if (overlay.classList.contains('active') && 
+                !menu.contains(e.target) && 
+                !hamburgerBtn?.contains(e.target)) {
                 closeHamburgerMenu();
             }
         });
@@ -14341,8 +14345,17 @@ function showBiometricSettings() {
             const message = 'Биометрия недоступна.\n\nХотите настроить отпечаток пальца или Face ID в настройках устройства?';
             
             showCustomConfirm(message, (confirmed) => {
-                if (confirmed && typeof AndroidAuth.openBiometricSettings === 'function') {
-                    AndroidAuth.openBiometricSettings();
+                if (confirmed) {
+                    try {
+                        if (typeof AndroidAuth.openBiometricSettings === 'function') {
+                            AndroidAuth.openBiometricSettings();
+                        } else {
+                            showCustomAlert('❌ Метод недоступен. Откройте настройки вручную.');
+                        }
+                    } catch (err) {
+                        console.error('Error opening biometric settings:', err);
+                        showCustomAlert('⚙️ Откройте Настройки → Безопасность → Биометрия');
+                    }
                 }
             });
             return;
@@ -14373,7 +14386,7 @@ function showBiometricSettings() {
         }
     } catch (e) {
         console.error('Error in biometric settings:', e);
-        showCustomAlert('❌ Ошибка настройки биометрии');
+        showCustomAlert('⚙️ Откройте Настройки → Безопасность → Биометрия вручную');
     }
 }
 

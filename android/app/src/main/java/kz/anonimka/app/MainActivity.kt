@@ -30,6 +30,10 @@ import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -198,6 +202,9 @@ class MainActivity : AppCompatActivity() {
 
         // Получаем FCM токен для Push-уведомлений
         getFCMToken()
+        
+        // Проверяем обновления приложения в Google Play
+        checkForAppUpdates()
 
         setContentView(R.layout.activity_main)
 
@@ -1081,6 +1088,72 @@ class MainActivity : AppCompatActivity() {
             //     .setPositiveButton("Выход") { _, _ -> finish() }
             //     .setCancelable(false)
             //     .show()
+        }
+    }
+    
+    /**
+     * Проверка обновлений приложения в Google Play
+     */
+    private fun checkForAppUpdates() {
+        val appUpdateManager = AppUpdateManagerFactory.create(this)
+        
+        val appUpdateInfoTask = appUpdateManager.appUpdateInfo
+        
+        appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                // Обновление доступно
+                val availableVersionCode = appUpdateInfo.availableVersionCode()
+                val currentVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    packageManager.getPackageInfo(packageName, 0).longVersionCode.toInt()
+                } else {
+                    @Suppress("DEPRECATION")
+                    packageManager.getPackageInfo(packageName, 0).versionCode
+                }
+                
+                logDebug("Anonimka", "📦 Update available: $currentVersionCode -> $availableVersionCode")
+                
+                // Показываем диалог с предложением обновиться
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("🔄 Доступно обновление")
+                    .setMessage("Новая версия приложения доступна в Google Play.\n\nХотите обновить сейчас?")
+                    .setPositiveButton("Обновить") { _, _ ->
+                        try {
+                            // Запускаем обновление
+                            appUpdateManager.startUpdateFlowForResult(
+                                appUpdateInfo,
+                                this,
+                                AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build(),
+                                1234 // requestCode для onActivityResult
+                            )
+                        } catch (e: Exception) {
+                            logError("Anonimka", "Failed to start update flow", e)
+                            Toast.makeText(this, "Не удалось открыть Google Play", Toast.LENGTH_SHORT).show()
+                            // Fallback: открываем Google Play страницу вручную
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    data = android.net.Uri.parse("market://details?id=$packageName")
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                startActivity(intent)
+                            } catch (ex: Exception) {
+                                // Если Google Play не установлен, открываем браузер
+                                val webIntent = Intent(Intent.ACTION_VIEW).apply {
+                                    data = android.net.Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                startActivity(webIntent)
+                            }
+                        }
+                    }
+                    .setNegativeButton("Позже") { dialog, _ -> dialog.dismiss() }
+                    .setCancelable(true)
+                    .show()
+            } else {
+                logDebug("Anonimka", "✅ App is up to date")
+            }
+        }.addOnFailureListener { e ->
+            // Не удалось проверить обновления (нет интернета, не установлен Google Play и т.д.)
+            logError("Anonimka", "Failed to check for updates", e)
         }
     }
 }

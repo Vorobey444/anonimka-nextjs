@@ -305,6 +305,14 @@ class EmailAuthActivity : AppCompatActivity() {
             return // Уже включена
         }
         
+        // Проверяем, не предлагали ли уже (чтобы не спамить)
+        if (authPrefs.getBoolean("biometric_offer_shown", false)) {
+            return // Уже предлагали
+        }
+        
+        // Помечаем что предложили
+        authPrefs.edit().putBoolean("biometric_offer_shown", true).apply()
+        
         // Предлагаем включить
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("🔐 Защитите свой аккаунт")
