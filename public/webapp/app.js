@@ -7926,12 +7926,16 @@ function closeHamburgerMenu() {
 // Закрытие меню при клике на overlay
 document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('hamburgerMenuOverlay');
+    const menu = overlay?.querySelector('.hamburger-menu');
     
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            closeHamburgerMenu();
-        }
-    });
+    if (overlay && menu) {
+        overlay.addEventListener('click', (e) => {
+            // Закрываем если клик НЕ внутри меню
+            if (!menu.contains(e.target)) {
+                closeHamburgerMenu();
+            }
+        });
+    }
 });
 
 // Функции навигации по меню
