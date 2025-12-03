@@ -4482,6 +4482,25 @@ async function getAllAds() {
     });
 }
 
+// Функция нормализации названий городов
+function normalizeCity(cityName) {
+    if (!cityName) return null;
+    const normalized = cityName.trim();
+    
+    // Маппинг старых и новых названий
+    const cityAliases = {
+        'Алма-Ата': 'Алматы',
+        'Алма-ата': 'Алматы',
+        'алма-ата': 'Алматы',
+        'Almaty': 'Алматы',
+        'Ленинград': 'Санкт-Петербург',
+        'Leningrad': 'Санкт-Петербург',
+        'Свердловск': 'Екатеринбург'
+    };
+    
+    return cityAliases[normalized] || normalized;
+}
+
 function displayAds(ads, city = null) {
     const adsList = document.getElementById('adsList');
     
@@ -4496,8 +4515,14 @@ function displayAds(ads, city = null) {
         return;
     }
 
+    // Нормализуем название города для фильтрации
+    const normalizedFilterCity = normalizeCity(city);
+    
     // Фильтруем по городу если задан
-    let filteredAds = city ? ads.filter(ad => ad.city === city) : ads;
+    let filteredAds = normalizedFilterCity ? ads.filter(ad => {
+        const normalizedAdCity = normalizeCity(ad.city);
+        return normalizedAdCity === normalizedFilterCity;
+    }) : ads;
     
     // Применяем фильтры
     filteredAds = filteredAds.filter(ad => {
