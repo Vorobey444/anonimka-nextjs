@@ -402,16 +402,34 @@ class MainActivity : AppCompatActivity() {
                     try {
                         val intent = Intent()
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            // Android 8.0+ - прямо в настройки уведомлений приложения
                             intent.action = android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS
                             intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
-                        } else {
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            // Android 5.0+ - в детали приложения
                             intent.action = android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
                             intent.data = android.net.Uri.parse("package:$packageName")
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        } else {
+                            // Android 4.x - общие настройки приложений
+                            intent.action = android.provider.Settings.ACTION_SETTINGS
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         }
                         startActivity(intent)
+                        Toast.makeText(this@MainActivity, "Откройте раздел 'Уведомления'", Toast.LENGTH_LONG).show()
                     } catch (e: Exception) {
                         Log.e("MainActivity", "Failed to open notification settings", e)
-                        Toast.makeText(this@MainActivity, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
+                        // Последний fallback - общие настройки
+                        try {
+                            val fallbackIntent = Intent(android.provider.Settings.ACTION_SETTINGS)
+                            fallbackIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            startActivity(fallbackIntent)
+                            Toast.makeText(this@MainActivity, "Откройте: Приложения → Anonimka → Уведомления", Toast.LENGTH_LONG).show()
+                        } catch (ex: Exception) {
+                            Log.e("MainActivity", "All settings intents failed", ex)
+                            Toast.makeText(this@MainActivity, "Не удалось открыть настройки. Откройте их вручную.", Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
             }
@@ -422,16 +440,30 @@ class MainActivity : AppCompatActivity() {
                 
                 runOnUiThread {
                     try {
-                        val intent = Intent(android.provider.Settings.ACTION_BIOMETRIC_ENROLL)
-                        startActivity(intent)
+                        // Пробуем открыть настройки биометрии (Android 10+)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            val intent = Intent(android.provider.Settings.ACTION_BIOMETRIC_ENROLL)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            startActivity(intent)
+                            Toast.makeText(this@MainActivity, "Настройте отпечаток пальца или Face ID", Toast.LENGTH_LONG).show()
+                        } else {
+                            // Для старых версий - в настройки безопасности
+                            val securityIntent = Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS)
+                            securityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            startActivity(securityIntent)
+                            Toast.makeText(this@MainActivity, "Откройте раздел 'Биометрия' или 'Отпечаток пальца'", Toast.LENGTH_LONG).show()
+                        }
                     } catch (e: Exception) {
-                        // Если не работает, пробуем старый способ
+                        Log.e("MainActivity", "Failed to open biometric settings", e)
+                        // Fallback - настройки безопасности
                         try {
                             val securityIntent = Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS)
+                            securityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             startActivity(securityIntent)
+                            Toast.makeText(this@MainActivity, "Откройте раздел с биометрией", Toast.LENGTH_LONG).show()
                         } catch (ex: Exception) {
-                            Log.e("MainActivity", "Failed to open biometric settings", ex)
-                            Toast.makeText(this@MainActivity, "Не удалось открыть настройки биометрии", Toast.LENGTH_SHORT).show()
+                            Log.e("MainActivity", "All biometric settings intents failed", ex)
+                            Toast.makeText(this@MainActivity, "Не удалось открыть настройки биометрии. Откройте их вручную.", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
