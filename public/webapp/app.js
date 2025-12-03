@@ -14372,11 +14372,23 @@ function showNotificationSettings() {
         const isEnabled = AndroidAuth.areNotificationsEnabled();
         
         if (isEnabled) {
-            const message = 'Push уведомления включены.\n\n' +
-                          'Для выключения перейдите в настройки Android:\n' +
-                          'Настройки → Приложения → Anonimka → Уведомления';
+            const message = 'Push уведомления включены.\n\nХотите изменить настройки уведомлений?';
             
-            showCustomAlert(message);
+            showCustomConfirm(message, (confirmed) => {
+                if (confirmed) {
+                    // Открываем системные настройки уведомлений
+                    if (typeof AndroidAuth.openNotificationSettings === 'function') {
+                        AndroidAuth.openNotificationSettings();
+                    } else {
+                        showCustomAlert('Перейдите в:\nНастройки → Приложения → Anonimka → Уведомления');
+                    }
+                    
+                    // Обновляем статус когда пользователь вернется
+                    setTimeout(() => {
+                        updateNotificationStatus();
+                    }, 2000);
+                }
+            });
         } else {
             const message = 'Включить Push уведомления?\n\nВы будете получать уведомления о новых сообщениях и активности.';
             

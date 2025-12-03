@@ -391,6 +391,28 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+            
+            @JavascriptInterface
+            fun openNotificationSettings() {
+                if (!isAllowedDomain()) return
+                
+                runOnUiThread {
+                    try {
+                        val intent = Intent()
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            intent.action = android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                            intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+                        } else {
+                            intent.action = android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                            intent.data = android.net.Uri.parse("package:$packageName")
+                        }
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Failed to open notification settings", e)
+                        Toast.makeText(this@MainActivity, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }, "AndroidAuth")
 
         // Настройка WebView
