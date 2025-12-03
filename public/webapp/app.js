@@ -14333,26 +14333,40 @@ function showBiometricSettings() {
         const isAvailable = AndroidAuth.isBiometricAvailable();
         
         if (!isAvailable) {
-            showCustomAlert('❌ Биометрия недоступна на этом устройстве');
+            // Предлагаем настроить биометрию
+            const message = 'Биометрия недоступна.\n\nХотите настроить отпечаток пальца или Face ID в настройках устройства?';
+            
+            showCustomConfirm(message, (confirmed) => {
+                if (confirmed && typeof AndroidAuth.openBiometricSettings === 'function') {
+                    AndroidAuth.openBiometricSettings();
+                }
+            });
             return;
         }
         
         const isEnabled = AndroidAuth.isBiometricEnabled();
         
-        const message = isEnabled 
-            ? 'Биометрическая аутентификация включена. Хотите выключить?'
-            : 'Включить вход по отпечатку пальца или Face ID?';
-        
-        showCustomConfirm(message, (confirmed) => {
-            if (confirmed) {
-                AndroidAuth.setBiometricEnabled(!isEnabled);
-                
-                // Обновляем статус через небольшую задержку
-                setTimeout(() => {
-                    updateBiometricStatus();
-                }, 300);
-            }
-        });
+        if (isEnabled) {
+            // Показываем статус и действия
+            const message = 'Биометрия включена ✅\n\nВы можете входить по отпечатку пальца или Face ID.\n\nХотите выключить?';
+            
+            showCustomConfirm(message, (confirmed) => {
+                if (confirmed) {
+                    AndroidAuth.setBiometricEnabled(false);
+                    // Статус обновится автоматически из MainActivity
+                }
+            });
+        } else {
+            // Предлагаем включить
+            const message = 'Включить вход по биометрии?\n\nВы сможете входить в приложение по отпечатку пальца или Face ID.';
+            
+            showCustomConfirm(message, (confirmed) => {
+                if (confirmed) {
+                    AndroidAuth.setBiometricEnabled(true);
+                    // Статус обновится автоматически из MainActivity
+                }
+            });
+        }
     } catch (e) {
         console.error('Error in biometric settings:', e);
         showCustomAlert('❌ Ошибка настройки биометрии');

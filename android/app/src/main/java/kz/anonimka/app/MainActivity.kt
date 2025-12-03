@@ -356,13 +356,14 @@ class MainActivity : AppCompatActivity() {
                     return
                 }
                 
-                authPrefs.edit {
-                    putBoolean("biometric_enabled", enabled)
-                }
+                authPrefs.edit().putBoolean("biometric_enabled", enabled).apply()
                 
                 runOnUiThread {
                     val message = if (enabled) "✅ Биометрия включена" else "❌ Биометрия отключена"
-                    Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
+                    
+                    // Обновляем статус в WebView
+                    webView.evaluateJavascript("if(typeof updateBiometricStatus === 'function') updateBiometricStatus();", null)
                 }
             }
             
@@ -410,6 +411,27 @@ class MainActivity : AppCompatActivity() {
                     } catch (e: Exception) {
                         Log.e("MainActivity", "Failed to open notification settings", e)
                         Toast.makeText(this@MainActivity, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            
+            @JavascriptInterface
+            fun openBiometricSettings() {
+                if (!isAllowedDomain()) return
+                
+                runOnUiThread {
+                    try {
+                        val intent = Intent(android.provider.Settings.ACTION_BIOMETRIC_ENROLL)
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        // Если не работает, пробуем старый способ
+                        try {
+                            val securityIntent = Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS)
+                            startActivity(securityIntent)
+                        } catch (ex: Exception) {
+                            Log.e("MainActivity", "Failed to open biometric settings", ex)
+                            Toast.makeText(this@MainActivity, "Не удалось открыть настройки биометрии", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
