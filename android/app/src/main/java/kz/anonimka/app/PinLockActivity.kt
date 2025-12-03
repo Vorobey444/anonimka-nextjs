@@ -53,7 +53,8 @@ class PinLockActivity : AppCompatActivity() {
         createPinUI()
         
         // Если биометрия доступна и включена - предлагаем
-        if (!isSetupMode && BiometricAuthHelper.isBiometricAvailable(this) && 
+        val biometricHelper = BiometricAuthHelper(this)
+        if (!isSetupMode && biometricHelper.isBiometricAvailable() && 
             authPrefs.getBoolean("biometric_enabled", false)) {
             biometricButton.visibility = View.VISIBLE
             offerBiometricAuth()
@@ -89,7 +90,7 @@ class PinLockActivity : AppCompatActivity() {
                 layoutParams = LinearLayout.LayoutParams(24, 24).apply {
                     setMargins(16, 0, 16, 0)
                 }
-                background = resources.getDrawable(android.R.drawable.ic_menu_circle_outline, theme)
+                setBackgroundResource(android.R.drawable.radiobutton_off_background)
                 alpha = 0.3f
             }
             pinDotsContainer.addView(dot)
@@ -258,7 +259,8 @@ class PinLockActivity : AppCompatActivity() {
     }
     
     private fun offerBiometricSetup() {
-        if (!BiometricAuthHelper.isBiometricAvailable(this)) {
+        val biometricHelper = BiometricAuthHelper(this)
+        if (!biometricHelper.isBiometricAvailable()) {
             // Биометрия недоступна - просто разблокируем
             unlockApp()
             return
@@ -285,12 +287,12 @@ class PinLockActivity : AppCompatActivity() {
     }
     
     private fun authenticateWithBiometric() {
-        BiometricAuthHelper.authenticate(
-            activity = this,
+        val biometricHelper = BiometricAuthHelper(this)
+        biometricHelper.authenticate(
             onSuccess = {
                 unlockApp()
             },
-            onError = { errorCode, errorMessage ->
+            onError = { errorCode: Int, errorMessage: CharSequence ->
                 Toast.makeText(this, "Ошибка биометрии: $errorMessage", Toast.LENGTH_SHORT).show()
             },
             onFailed = {

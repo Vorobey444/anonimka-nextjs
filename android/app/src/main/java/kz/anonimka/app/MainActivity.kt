@@ -891,15 +891,7 @@ class MainActivity : AppCompatActivity() {
         webView.restoreState(savedInstanceState)
     }
 
-    override fun onPause() {
-        super.onPause()
-        webView.onPause()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        webView.onResume()
-    }
+    // onPause/onResume перенесены ниже с логикой PIN
 
     override fun onDestroy() {
         super.onDestroy()
@@ -1146,6 +1138,7 @@ class MainActivity : AppCompatActivity() {
     
     override fun onResume() {
         super.onResume()
+        webView.onResume()
         // Проверяем PIN при возврате в приложение
         if (!checkPinLockRequired()) {
             return
@@ -1154,6 +1147,7 @@ class MainActivity : AppCompatActivity() {
     
     override fun onPause() {
         super.onPause()
+        webView.onPause()
         // Сбрасываем флаг разблокировки когда приложение сворачивается
         val hasPinCode = authPrefs.contains("pin_code")
         if (hasPinCode) {

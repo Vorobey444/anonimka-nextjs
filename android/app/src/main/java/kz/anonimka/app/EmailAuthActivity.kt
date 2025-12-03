@@ -314,7 +314,8 @@ class EmailAuthActivity : AppCompatActivity() {
         authPrefs.edit().putBoolean("pin_offer_shown", true).apply()
         
         // Предлагаем настроить PIN + биометрию
-        val biometricText = if (BiometricAuthHelper.isBiometricAvailable(this)) {
+        val biometricHelper = BiometricAuthHelper(this)
+        val biometricText = if (biometricHelper.isBiometricAvailable()) {
             "\n\nТакже вы сможете использовать отпечаток пальца или Face ID."
         } else {
             ""
