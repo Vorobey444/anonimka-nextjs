@@ -406,37 +406,52 @@ class MainActivity : AppCompatActivity() {
                 if (!isAllowedDomain()) return
                 
                 runOnUiThread {
+                    if (isFinishing || isDestroyed) {
+                        Log.e("MainActivity", "Cannot open settings: Activity is finishing/destroyed")
+                        return@runOnUiThread
+                    }
+                    
                     try {
                         val intent = Intent()
+                        
+                        // Для Android 8.0+ (включая Android 16)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            // Android 8.0+ - прямо в настройки уведомлений приложения
                             intent.action = android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS
                             intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            // Android 5.0+ - в детали приложения
-                            intent.action = android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                            intent.data = android.net.Uri.parse("package:$packageName")
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        } else {
-                            // Android 4.x - общие настройки приложений
-                            intent.action = android.provider.Settings.ACTION_SETTINGS
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            
+                            // Проверяем что Intent можно открыть
+                            if (intent.resolveActivity(packageManager) != null) {
+                                startActivity(intent)
+                                Toast.makeText(this@MainActivity, "Откройте раздел 'Уведомления'", Toast.LENGTH_LONG).show()
+                                return@runOnUiThread
+                            }
                         }
-                        startActivity(intent)
-                        Toast.makeText(this@MainActivity, "Откройте раздел 'Уведомления'", Toast.LENGTH_LONG).show()
+                        
+                        // Fallback 1: детали приложения (Android 5.0+)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            val detailsIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            detailsIntent.data = android.net.Uri.parse("package:$packageName")
+                            detailsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            detailsIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            
+                            if (detailsIntent.resolveActivity(packageManager) != null) {
+                                startActivity(detailsIntent)
+                                Toast.makeText(this@MainActivity, "Откройте раздел 'Уведомления'", Toast.LENGTH_LONG).show()
+                                return@runOnUiThread
+                            }
+                        }
+                        
+                        // Fallback 2: общие настройки
+                        val settingsIntent = Intent(android.provider.Settings.ACTION_SETTINGS)
+                        settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(settingsIntent)
+                        Toast.makeText(this@MainActivity, "Откройте: Приложения → Anonimka → Уведомления", Toast.LENGTH_LONG).show()
+                        
                     } catch (e: Exception) {
                         Log.e("MainActivity", "Failed to open notification settings", e)
-                        // Последний fallback - общие настройки
-                        try {
-                            val fallbackIntent = Intent(android.provider.Settings.ACTION_SETTINGS)
-                            fallbackIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            startActivity(fallbackIntent)
-                            Toast.makeText(this@MainActivity, "Откройте: Приложения → Anonimka → Уведомления", Toast.LENGTH_LONG).show()
-                        } catch (ex: Exception) {
-                            Log.e("MainActivity", "All settings intents failed", ex)
-                            Toast.makeText(this@MainActivity, "Не удалось открыть настройки. Откройте их вручную.", Toast.LENGTH_LONG).show()
-                        }
+                        Toast.makeText(this@MainActivity, "Не удалось открыть настройки. Откройте их вручную через Настройки → Приложения → Anonimka", Toast.LENGTH_LONG).show()
                     }
                 }
             }
