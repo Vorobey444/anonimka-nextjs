@@ -310,9 +310,7 @@ class EmailAuthActivity : AppCompatActivity() {
             .setTitle("🔐 Защитите свой аккаунт")
             .setMessage("Хотите включить вход по отпечатку пальца или Face ID для быстрого и безопасного входа?")
             .setPositiveButton("Включить") { _, _ ->
-                authPrefs.edit {
-                    putBoolean("biometric_enabled", true)
-                }
+                authPrefs.edit().putBoolean("biometric_enabled", true).apply()
                 Toast.makeText(this, "✅ Биометрия включена", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Позже") { dialog, _ ->

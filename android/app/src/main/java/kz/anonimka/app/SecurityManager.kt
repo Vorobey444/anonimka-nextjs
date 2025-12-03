@@ -63,10 +63,11 @@ object SecurityManager {
     
     /**
      * Проверка на наличие root-доступа
+     * @param context Context для проверки пакетов
      * @return true если устройство рутовано
      */
-    fun isDeviceRooted(): Boolean {
-        return checkRootFiles() || checkRootPackages() || checkSuCommand()
+    fun isDeviceRooted(context: Context): Boolean {
+        return checkRootFiles() || checkRootPackages(context) || checkSuCommand()
     }
     
     /**
@@ -85,10 +86,10 @@ object SecurityManager {
     /**
      * Проверка наличия root-приложений
      */
-    private fun checkRootPackages(): Boolean {
+    private fun checkRootPackages(context: Context): Boolean {
         return ROOT_PACKAGES.any { packageName ->
             try {
-                val pm = android.app.ActivityThread.currentApplication().packageManager
+                val pm = context.packageManager
                 pm.getPackageInfo(packageName, 0)
                 true
             } catch (e: Exception) {
@@ -189,11 +190,12 @@ object SecurityManager {
     
     /**
      * Комплексная проверка безопасности
+     * @param context Context для проверок
      * @return SecurityStatus с результатами всех проверок
      */
     fun performSecurityCheck(context: Context): SecurityStatus {
         return SecurityStatus(
-            isRooted = isDeviceRooted(),
+            isRooted = isDeviceRooted(context),
             isEmulator = isEmulator(),
             isIntegrityValid = verifyAppIntegrity(context),
             hasCertificatePinning = true

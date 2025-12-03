@@ -14325,7 +14325,7 @@ function updateNotificationStatus() {
  */
 function showBiometricSettings() {
     if (!isAndroidApp()) {
-        showNotification('❌ Доступно только в Android приложении');
+        showCustomAlert('❌ Доступно только в Android приложении');
         return;
     }
     
@@ -14333,7 +14333,7 @@ function showBiometricSettings() {
         const isAvailable = AndroidAuth.isBiometricAvailable();
         
         if (!isAvailable) {
-            showNotification('❌ Биометрия недоступна на этом устройстве', 'error');
+            showCustomAlert('❌ Биометрия недоступна на этом устройстве');
             return;
         }
         
@@ -14343,19 +14343,19 @@ function showBiometricSettings() {
             ? 'Биометрическая аутентификация включена. Хотите выключить?'
             : 'Включить вход по отпечатку пальца или Face ID?';
         
-        const buttonText = isEnabled ? 'Выключить' : 'Включить';
-        
-        if (confirm(message)) {
-            AndroidAuth.setBiometricEnabled(!isEnabled);
-            
-            // Обновляем статус через небольшую задержку
-            setTimeout(() => {
-                updateBiometricStatus();
-            }, 300);
-        }
+        showCustomConfirm(message, (confirmed) => {
+            if (confirmed) {
+                AndroidAuth.setBiometricEnabled(!isEnabled);
+                
+                // Обновляем статус через небольшую задержку
+                setTimeout(() => {
+                    updateBiometricStatus();
+                }, 300);
+            }
+        });
     } catch (e) {
         console.error('Error in biometric settings:', e);
-        showNotification('❌ Ошибка настройки биометрии', 'error');
+        showCustomAlert('❌ Ошибка настройки биометрии');
     }
 }
 
@@ -14364,7 +14364,7 @@ function showBiometricSettings() {
  */
 function showNotificationSettings() {
     if (!isAndroidApp()) {
-        showNotification('❌ Доступно только в Android приложении');
+        showCustomAlert('❌ Доступно только в Android приложении');
         return;
     }
     
@@ -14376,20 +14376,24 @@ function showNotificationSettings() {
                           'Для выключения перейдите в настройки Android:\n' +
                           'Настройки → Приложения → Anonimka → Уведомления';
             
-            alert(message);
+            showCustomAlert(message);
         } else {
-            if (confirm('Включить Push уведомления?\n\nВы будете получать уведомления о новых сообщениях и активности.')) {
-                AndroidAuth.requestNotificationPermission();
-                
-                // Обновляем статус через задержку (пользователь может подтвердить/отклонить)
-                setTimeout(() => {
-                    updateNotificationStatus();
-                }, 1000);
-            }
+            const message = 'Включить Push уведомления?\n\nВы будете получать уведомления о новых сообщениях и активности.';
+            
+            showCustomConfirm(message, (confirmed) => {
+                if (confirmed) {
+                    AndroidAuth.requestNotificationPermission();
+                    
+                    // Обновляем статус через задержку (пользователь может подтвердить/отклонить)
+                    setTimeout(() => {
+                        updateNotificationStatus();
+                    }, 1000);
+                }
+            });
         }
     } catch (e) {
         console.error('Error in notification settings:', e);
-        showNotification('❌ Ошибка настройки уведомлений', 'error');
+        showCustomAlert('❌ Ошибка настройки уведомлений');
     }
 }
 
