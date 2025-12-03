@@ -859,6 +859,12 @@ function initializeApp() {
         isAndroidWebView
     });
     
+    // Инициализируем Android-специфичное меню
+    if (hasAndroidInterface) {
+        console.log('🔐 Initializing Android menu...');
+        initializeAndroidMenu();
+    }
+    
     // Для Android приложения - авторизация только через email (не показываем Telegram модалку)
     if (isAndroid) {
         console.log('📱 Android device detected, checking email auth...');
@@ -14202,3 +14208,179 @@ function openAffiliateProgram() {
         window.open(botProfileUrl, '_blank');
     }
 }
+
+// ============================================
+// Android Specific Functions
+// ============================================
+
+/**
+ * Проверяет является ли это Android приложение
+ */
+function isAndroidApp() {
+    return typeof AndroidAuth !== 'undefined' && AndroidAuth.isAndroid && AndroidAuth.isAndroid();
+}
+
+/**
+ * Инициализирует Android-специфичные элементы меню
+ */
+function initializeAndroidMenu() {
+    if (!isAndroidApp()) {
+        console.log('Not Android app, hiding Android-specific menu items');
+        // Скрываем Android элементы и показываем обычные
+        document.querySelectorAll('.android-only').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.non-android-only').forEach(el => el.style.display = 'flex');
+        return;
+    }
+    
+    console.log('✅ Android app detected, showing Android menu items');
+    
+    // Показываем Android элементы и скрываем обычные
+    document.querySelectorAll('.android-only').forEach(el => el.style.display = 'flex');
+    document.querySelectorAll('.non-android-only').forEach(el => el.style.display = 'none');
+    
+    // Обновляем статусы
+    updateBiometricStatus();
+    updateNotificationStatus();
+}
+
+/**
+ * Обновляет статус биометрии в меню
+ */
+function updateBiometricStatus() {
+    if (!isAndroidApp()) return;
+    
+    const statusEl = document.getElementById('biometricStatus');
+    if (!statusEl) return;
+    
+    try {
+        const isAvailable = AndroidAuth.isBiometricAvailable();
+        const isEnabled = AndroidAuth.isBiometricEnabled();
+        
+        if (!isAvailable) {
+            statusEl.textContent = '❌ Недоступна';
+            statusEl.style.color = '#999';
+        } else if (isEnabled) {
+            statusEl.textContent = '✅ Включена';
+            statusEl.style.color = '#4CAF50';
+        } else {
+            statusEl.textContent = '❌ Выключена';
+            statusEl.style.color = '#999';
+        }
+    } catch (e) {
+        console.error('Error updating biometric status:', e);
+    }
+}
+
+/**
+ * Обновляет статус уведомлений в меню
+ */
+function updateNotificationStatus() {
+    if (!isAndroidApp()) return;
+    
+    const statusEl = document.getElementById('notificationStatus');
+    if (!statusEl) return;
+    
+    try {
+        const isEnabled = AndroidAuth.areNotificationsEnabled();
+        
+        if (isEnabled) {
+            statusEl.textContent = '✅ Включены';
+            statusEl.style.color = '#4CAF50';
+        } else {
+            statusEl.textContent = '❌ Выключены';
+            statusEl.style.color = '#999';
+        }
+    } catch (e) {
+        console.error('Error updating notification status:', e);
+    }
+}
+
+/**
+ * Показывает диалог настройки биометрии
+ */
+function showBiometricSettings() {
+    if (!isAndroidApp()) {
+        showNotification('❌ Доступно только в Android приложении');
+        return;
+    }
+    
+    try {
+        const isAvailable = AndroidAuth.isBiometricAvailable();
+        
+        if (!isAvailable) {
+            showNotification('❌ Биометрия недоступна на этом устройстве', 'error');
+            return;
+        }
+        
+        const isEnabled = AndroidAuth.isBiometricEnabled();
+        
+        const message = isEnabled 
+            ? 'Биометрическая аутентификация включена. Хотите выключить?'
+            : 'Включить вход по отпечатку пальца или Face ID?';
+        
+        const buttonText = isEnabled ? 'Выключить' : 'Включить';
+        
+        if (confirm(message)) {
+            AndroidAuth.setBiometricEnabled(!isEnabled);
+            
+            // Обновляем статус через небольшую задержку
+            setTimeout(() => {
+                updateBiometricStatus();
+            }, 300);
+        }
+    } catch (e) {
+        console.error('Error in biometric settings:', e);
+        showNotification('❌ Ошибка настройки биометрии', 'error');
+    }
+}
+
+/**
+ * Показывает диалог настройки уведомлений
+ */
+function showNotificationSettings() {
+    if (!isAndroidApp()) {
+        showNotification('❌ Доступно только в Android приложении');
+        return;
+    }
+    
+    try {
+        const isEnabled = AndroidAuth.areNotificationsEnabled();
+        
+        if (isEnabled) {
+            const message = 'Push уведомления включены.\n\n' +
+                          'Для выключения перейдите в настройки Android:\n' +
+                          'Настройки → Приложения → Anonimka → Уведомления';
+            
+            alert(message);
+        } else {
+            if (confirm('Включить Push уведомления?\n\nВы будете получать уведомления о новых сообщениях и активности.')) {
+                AndroidAuth.requestNotificationPermission();
+                
+                // Обновляем статус через задержку (пользователь может подтвердить/отклонить)
+                setTimeout(() => {
+                    updateNotificationStatus();
+                }, 1000);
+            }
+        }
+    } catch (e) {
+        console.error('Error in notification settings:', e);
+        showNotification('❌ Ошибка настройки уведомлений', 'error');
+    }
+}
+
+// Инициализируем Android меню при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    initializeAndroidMenu();
+});
+
+// Также инициализируем при открытии меню
+const originalShowMenu = window.showHamburgerMenu;
+window.showHamburgerMenu = function() {
+    if (originalShowMenu) {
+        originalShowMenu();
+    }
+    // Обновляем Android меню при каждом открытии
+    if (isAndroidApp()) {
+        initializeAndroidMenu();
+    }
+};

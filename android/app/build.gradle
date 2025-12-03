@@ -6,10 +6,38 @@ plugins {
 }
 
 // Загружаем данные из keystore.properties
-def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystorePropertiesFile = rootProject.file("app/keystore.properties")
 def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+// Автоинкремент версии из version.properties
+def versionPropsFile = rootProject.file('version.properties')
+def versionProps = new Properties()
+if (versionPropsFile.canRead()) {
+    versionProps.load(new FileInputStream(versionPropsFile))
+} else {
+    versionProps['VERSION_CODE'] = '7'
+    versionProps['VERSION_NAME'] = '1.0.6'
+}
+
+def code = (versionProps['VERSION_CODE'] ?: '7').toInteger()
+def name = versionProps['VERSION_NAME'] ?: '1.0.6'
+
+// Увеличиваем versionCode при каждой сборке
+if (gradle.startParameter.taskNames.any { it.contains('bundle') || it.contains('assemble') }) {
+    code++
+    versionProps['VERSION_CODE'] = code.toString()
+    // Увеличиваем patch версию (1.0.X)
+    def nameParts = name.split('\\.')
+    if (nameParts.length == 3) {
+        nameParts[2] = (nameParts[2].toInteger() + 1).toString()
+        name = nameParts.join('.')
+        versionProps['VERSION_NAME'] = name
+    }
+    versionProps.store(versionPropsFile.newWriter(), null)
+    println "📦 Auto-incremented version: $code ($name)"
 }
 
 android {
@@ -31,8 +59,8 @@ android {
         applicationId "kz.anonimka.app"
         minSdk 24
         targetSdk 36
-        versionCode 5
-        versionName "1.0.4"
+        versionCode code
+        versionName name
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -56,6 +84,7 @@ android {
 
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
     
     aaptOptions {
@@ -69,8 +98,14 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'androidx.webkit:webkit:1.9.0'
     implementation 'androidx.activity:activity-ktx:1.8.2'
     implementation 'androidx.core:core-splashscreen:1.2.0'
+    
+    // Security libraries
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'androidx.biometric:biometric:1.2.0-alpha05'
     
     // Firebase BOM для управления версиями
     implementation platform('com.google.firebase:firebase-bom:33.7.0')

@@ -1,6 +1,7 @@
 package kz.anonimka.app
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
@@ -13,6 +14,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -35,6 +38,26 @@ class EmailAuthActivity : AppCompatActivity() {
     
     private var currentEmail: String = ""
     private val API_BASE_URL = "https://anonimka.kz"
+    
+    // Используем тот же EncryptedSharedPreferences что и MainActivity
+    private val authPrefs: SharedPreferences by lazy {
+        try {
+            val masterKey = MasterKey.Builder(this)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            
+            EncryptedSharedPreferences.create(
+                this,
+                "anonimka_auth_secure",
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("EmailAuth", "Failed to create EncryptedSharedPreferences: ${e.message}")
+            getSharedPreferences("anonimka_auth", MODE_PRIVATE)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -242,10 +265,9 @@ class EmailAuthActivity : AppCompatActivity() {
     }
 
     private fun saveUserToken(userToken: String, userData: JSONObject) {
-        val prefs = getSharedPreferences("anonimka_auth", MODE_PRIVATE)
         val displayNickname = userData.optString("displayNickname", "")
         
-        prefs.edit().apply {
+        authPrefs.edit().apply {
             putString("user_token", userToken)
             putString("email", userData.optString("email", ""))
             putString("auth_method", "email")
@@ -256,12 +278,47 @@ class EmailAuthActivity : AppCompatActivity() {
             // Сохраняем никнейм если он есть
             if (displayNickname.isNotEmpty()) {
                 putString("display_nickname", displayNickname)
-                android.util.Log.d("EmailAuth", "✅ Saved nickname: $displayNickname")
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.d("EmailAuth", "✅ Saved nickname: $displayNickname")
+                }
             }
             
             apply()
         }
         
-        android.util.Log.d("EmailAuth", "✅ User token saved to SharedPreferences")
+        if (BuildConfig.DEBUG) {
+            android.util.Log.d("EmailAuth", "✅ User token saved to EncryptedSharedPreferences")
+        }
+        
+        // Предлагаем включить биометрию после первой авторизации
+        offerBiometricSetup()
+    }
+    
+    private fun offerBiometricSetup() {
+        // Проверяем доступность биометрии
+        if (!BiometricAuthHelper.isAvailable(this)) {
+            return // Биометрия недоступна
+        }
+        
+        // Проверяем, не включена ли уже
+        if (authPrefs.getBoolean("biometric_enabled", false)) {
+            return // Уже включена
+        }
+        
+        // Предлагаем включить
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("🔐 Защитите свой аккаунт")
+            .setMessage("Хотите включить вход по отпечатку пальца или Face ID для быстрого и безопасного входа?")
+            .setPositiveButton("Включить") { _, _ ->
+                authPrefs.edit {
+                    putBoolean("biometric_enabled", true)
+                }
+                Toast.makeText(this, "✅ Биометрия включена", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Позже") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(true)
+            .show()
     }
 }

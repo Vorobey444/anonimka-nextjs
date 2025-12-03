@@ -2557,6 +2557,31 @@ body.emoji-flags-supported .country-code {
     text-align: center;
 }
 
+/* Android-специфичные элементы меню */
+.android-only {
+    display: none;
+}
+
+.non-android-only {
+    display: flex;
+}
+
+.hamburger-item #biometricStatus,
+.hamburger-item #notificationStatus {
+    margin-left: auto;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.hamburger-item:hover #biometricStatus,
+.hamburger-item:hover #notificationStatus {
+    transform: scale(1.05);
+}
+
 /* Кнопка выхода */
 .logout-item {
     margin-top: auto;

@@ -54,7 +54,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         
-        Log.d(TAG, "📩 Получено уведомление от: ${message.from}")
+        Log.d(TAG, "📩 ========== FCM MESSAGE RECEIVED ==========")
+        Log.d(TAG, "📩 From: ${message.from}")
+        Log.d(TAG, "📩 Message ID: ${message.messageId}")
+        Log.d(TAG, "📩 Notification: ${message.notification}")
+        Log.d(TAG, "📩 Data: ${message.data}")
         
         // Получаем данные из уведомления
         val notification = message.notification
@@ -65,12 +69,20 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val chatId = data["chatId"]
         val senderNickname = data["senderNickname"] ?: "Аноним"
         
-        Log.d(TAG, "💬 Заголовок: $title")
-        Log.d(TAG, "📝 Текст: $body")
+        Log.d(TAG, "💬 Title: $title")
+        Log.d(TAG, "📝 Body: $body")
         Log.d(TAG, "🆔 Chat ID: $chatId")
+        Log.d(TAG, "👤 Sender: $senderNickname")
         
         // Показываем локальное уведомление
-        showNotification(title, body, chatId)
+        try {
+            showNotification(title, body, chatId)
+            Log.d(TAG, "✅ showNotification вызвана успешно")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Ошибка showNotification: ${e.message}", e)
+        }
+        
+        Log.d(TAG, "========== END FCM MESSAGE ==========")
     }
 
     /**
@@ -99,7 +111,21 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
      * Показывает локальное уведомление
      */
     private fun showNotification(title: String, body: String, chatId: String?) {
+        Log.d(TAG, "🔔 showNotification() started")
+        
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        Log.d(TAG, "🔔 NotificationManager получен")
+        
+        // Проверяем включены ли уведомления
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val notificationsEnabled = notificationManager.areNotificationsEnabled()
+            Log.d(TAG, "🔔 Уведомления включены: $notificationsEnabled")
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = notificationManager.getNotificationChannel(CHANNEL_ID)
+                Log.d(TAG, "🔔 Канал: ${channel?.name}, важность: ${channel?.importance}")
+            }
+        }
         
         // Intent для открытия чата при клике на уведомление
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -116,20 +142,23 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         
         // Создаем уведомление
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification) // Нужна иконка
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
+            .setVibrate(longArrayOf(0, 500, 250, 500))
             .build()
         
         // Генерируем уникальный ID для уведомления
         val notificationId = chatId?.hashCode() ?: System.currentTimeMillis().toInt()
         
+        Log.d(TAG, "🔔 Вызов notify() с ID: $notificationId")
         notificationManager.notify(notificationId, notification)
-        Log.d(TAG, "🔔 Уведомление показано: $notificationId")
+        Log.d(TAG, "🔔 ✅ Уведомление показано успешно!")
     }
 
     /**

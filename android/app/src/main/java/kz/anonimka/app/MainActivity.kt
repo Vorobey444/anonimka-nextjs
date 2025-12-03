@@ -6,6 +6,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.webkit.*
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -21,15 +25,42 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import okhttp3.CertificatePinner
+import okhttp3.OkHttpClient
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        private const val EMAIL_AUTH_REQUEST_CODE = 1001
+        
+        // Безопасное логирование только в DEBUG режиме
+        private fun logDebug(tag: String, message: String) {
+            if (BuildConfig.DEBUG) {
+                android.util.Log.d(tag, message)
+            }
+        }
+        
+        private fun logError(tag: String, message: String, error: Throwable? = null) {
+            if (BuildConfig.DEBUG) {
+                if (error != null) {
+                    android.util.Log.e(tag, message, error)
+                } else {
+                    android.util.Log.e(tag, message)
+                }
+            }
+        }
+    }
 
     private lateinit var webView: WebView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
@@ -37,9 +68,36 @@ class MainActivity : AppCompatActivity() {
     private var geolocationCallback: GeolocationPermissions.Callback? = null
     private var geolocationOrigin: String? = null
 
-    // SharedPreferences для хранения данных авторизации
+    // Авто-ретраи при сетевых ошибках WebView
+    private var webRetryCount: Int = 0
+    private var webMaxRetries: Int = 3
+    private val webBaseDelayMs: Long = 1000
+
+    // Разовая автоперезагрузка при смене сети
+    private var lastNetworkType: String? = null
+    private var networkReloadCooldownMs: Long = 60000 // 60 секунд
+    private var lastNetworkReloadTs: Long = 0
+    private var connectivityCallbackRegistered: Boolean = false
+
+    // EncryptedSharedPreferences для безопасного хранения токенов
     private val authPrefs by lazy {
-        getSharedPreferences("anonimka_auth", MODE_PRIVATE)
+        try {
+            val masterKey = MasterKey.Builder(this)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            
+            EncryptedSharedPreferences.create(
+                this,
+                "anonimka_auth_secure",
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (e: Exception) {
+            // Fallback to regular SharedPreferences if encryption fails
+            android.util.Log.e("Anonimka", "Failed to create EncryptedSharedPreferences: ${e.message}")
+            getSharedPreferences("anonimka_auth", MODE_PRIVATE)
+        }
     }
 
     // Launcher для запроса разрешений GPS
@@ -92,45 +150,124 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Launcher для запроса разрешения на уведомления (Android 13+)
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            android.util.Log.d("Anonimka", "✅ Notification permission granted")
+        } else {
+            android.util.Log.w("Anonimka", "⚠️ Notification permission denied")
+            Toast.makeText(this, "Разрешите уведомления для получения сообщений", Toast.LENGTH_LONG).show()
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        
+        // Проверка безопасности приложения
+        performSecurityChecks()
+        
+        // Запрос разрешения на уведомления для Android 13+
+        requestNotificationPermission()
 
         android.util.Log.d("Anonimka", "onCreate called, savedInstanceState: ${savedInstanceState != null}")
 
-        // Проверяем авторизацию
-        val userToken = authPrefs.getString("user_token", null)
+        // Проверяем наличие сохранённой авторизации (для логирования)
+        val savedToken = authPrefs.getString("user_token", null)
         val authMethod = authPrefs.getString("auth_method", "telegram")
 
-        if (userToken == null) {
-            // Нет авторизации - перенаправляем на EmailAuthActivity
-            android.util.Log.d("Anonimka", "⚠️ No auth token found, redirecting to EmailAuthActivity")
-            val intent = Intent(this, EmailAuthActivity::class.java)
-            startActivity(intent)
-            finish()
-            return
+        if (savedToken != null) {
+            android.util.Log.d("Anonimka", "✅ Auth token found: ${savedToken.take(8)}..., method: $authMethod")
+        } else {
+            android.util.Log.d("Anonimka", "ℹ️ No saved token, WebApp will handle auth")
         }
 
-        android.util.Log.d("Anonimka", "✅ Auth token found: ${userToken.take(8)}..., method: $authMethod")
+        // Настраиваем обычный режим - черный статус бар и навигация
+        window.statusBarColor = "#0a0a0f".toColorInt()
+        window.navigationBarColor = "#0a0a0f".toColorInt()
+        
+        // Светлые иконки на черном фоне
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
 
         // Получаем FCM токен для Push-уведомлений
         getFCMToken()
-
-        // Edge-to-edge display
-        enableEdgeToEdge()
 
         setContentView(R.layout.activity_main)
 
         webView = findViewById(R.id.webView)
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         swipeRefreshLayout.isEnabled = false
+        // Фон корневого контейнера чёрный, чтобы верхний padding не давал белую полосу
+        swipeRefreshLayout.setBackgroundColor("#0a0a0f".toColorInt())
 
-        // Immersive Mode - не нужен padding, статус бара нет
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            // Применяем padding только для навигационных кнопок
-            view.setPadding(0, 0, 0, insets.bottom)
+        // Тёмная тема в WebView (если движок поддерживает FORCE_DARK)
+        try {
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+                WebSettingsCompat.setForceDark(webView.settings, WebSettingsCompat.FORCE_DARK_ON)
+            }
+        } catch (_: Exception) {}
+
+        // Оптимизации для Xiaomi (Mi 17 Pro и похожих моделей)
+        try {
+            val isXiaomi = android.os.Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true)
+            if (isXiaomi) {
+                // Небольшие оптимизации рендеринга и прокрутки
+                webView.settings.setOffscreenPreRaster(true)
+                webView.isVerticalScrollBarEnabled = false
+                webView.isHorizontalScrollBarEnabled = false
+                webView.overScrollMode = android.view.View.OVER_SCROLL_NEVER
+
+                // Добавим признак устройства в User-Agent (для тонких серверных адаптаций при необходимости)
+                val ua = webView.settings.userAgentString
+                if (!ua.contains("XiaomiMi17Pro")) {
+                    webView.settings.userAgentString = ua + " XiaomiMi17Pro"
+                }
+            }
+        } catch (_: Exception) {}
+
+        // Обработка системных отступов на корневом контейнере (Samsung Fold корректнее отдаёт insets родителю)
+        ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout) { view, windowInsets ->
+            val statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars())
+            val navigationBars = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            val imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime())
+
+            // Huawei/EMUI: иногда ime.bottom == 0 даже при видимой клавиатуре.
+            val imeVisible = windowInsets.isVisible(WindowInsetsCompat.Type.ime())
+            val computedImeFallback = if (imeVisible && imeInsets.bottom == 0) {
+                // эвристика: разница между высотой корня и текущего view
+                val rootH = view.rootView.height
+                val vh = view.height
+                val diff = (rootH - vh).coerceAtLeast(0)
+                diff
+            } else 0
+
+            // Максимальный нижний отступ: навигация или клавиатура (учитываем fallback)
+            val bottomPadding = listOf(navigationBars.bottom, imeInsets.bottom, computedImeFallback).maxOrNull() ?: 0
+
+            // Верхний отступ: учитываем display cutout, если statusBars.top == 0
+            val topFromInsets = statusBars.top
+            val cutoutTop = WindowInsetsCompat.toWindowInsetsCompat(window.decorView.rootWindowInsets)
+                .displayCutout?.safeInsetTop ?: 0
+            val fallbackTopPx = (24 * resources.displayMetrics.density).toInt()
+            val topPadding = when {
+                topFromInsets > 0 -> topFromInsets
+                cutoutTop > 0 -> cutoutTop
+                else -> fallbackTopPx
+            }
+
+            view.setPadding(0, topPadding, 0, bottomPadding)
+
+            android.util.Log.d(
+                "Anonimka",
+                "📐 Insets -> top=${topPadding} (raw=${topFromInsets}, cutout=${cutoutTop}), bottom=${bottomPadding} (nav=${navigationBars.bottom}, ime=${imeInsets.bottom}, imeVisible=${imeVisible}, imeFallback=${computedImeFallback})"
+            )
+
             windowInsets
         }
 
@@ -145,35 +282,114 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        // Добавляем JavaScript Interface для связи с WebView
+        // Регистрируем callback на смену сети (разовая безопасная перезагрузка)
+        registerNetworkChangeCallback()
+
+        // Добавляем JavaScript Interface для связи с WebView (только для доверенных доменов)
         webView.addJavascriptInterface(object {
+            private fun isAllowedDomain(): Boolean {
+                val url = webView.url ?: return false
+                return url.startsWith("https://ru.anonimka.kz") || 
+                       url.startsWith("https://anonimka.kz")
+            }
+
             @JavascriptInterface
             fun saveAuthData(userData: String) {
+                if (!isAllowedDomain()) return
                 authPrefs.edit {
                     putString("telegram_user", userData)
                     putLong("telegram_auth_time", System.currentTimeMillis())
                 }
-                android.util.Log.d("Anonimka", "✅ Auth data saved to SharedPreferences")
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.d("Anonimka", "✅ Auth data saved")
+                }
             }
 
             @JavascriptInterface
             fun getAuthData(): String {
+                if (!isAllowedDomain()) return ""
                 return authPrefs.getString("telegram_user", "") ?: ""
             }
 
             @JavascriptInterface
             fun getUserToken(): String {
+                if (!isAllowedDomain()) return ""
                 return authPrefs.getString("user_token", "") ?: ""
             }
 
             @JavascriptInterface
             fun getAuthMethod(): String {
+                if (!isAllowedDomain()) return ""
                 return authPrefs.getString("auth_method", "telegram") ?: "telegram"
             }
 
             @JavascriptInterface
             fun getEmail(): String {
+                if (!isAllowedDomain()) return ""
                 return authPrefs.getString("email", "") ?: ""
+            }
+            
+            @JavascriptInterface
+            fun isAndroid(): Boolean {
+                return true
+            }
+            
+            @JavascriptInterface
+            fun isBiometricAvailable(): Boolean {
+                return BiometricAuthHelper.isAvailable(this@MainActivity)
+            }
+            
+            @JavascriptInterface
+            fun isBiometricEnabled(): Boolean {
+                if (!isAllowedDomain()) return false
+                return authPrefs.getBoolean("biometric_enabled", false)
+            }
+            
+            @JavascriptInterface
+            fun setBiometricEnabled(enabled: Boolean) {
+                if (!isAllowedDomain()) return
+                
+                if (enabled && !BiometricAuthHelper.isAvailable(this@MainActivity)) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Биометрия недоступна на этом устройстве", Toast.LENGTH_SHORT).show()
+                    }
+                    return
+                }
+                
+                authPrefs.edit {
+                    putBoolean("biometric_enabled", enabled)
+                }
+                
+                runOnUiThread {
+                    val message = if (enabled) "✅ Биометрия включена" else "❌ Биометрия отключена"
+                    Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                }
+            }
+            
+            @JavascriptInterface
+            fun areNotificationsEnabled(): Boolean {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    return ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                }
+                return true // На старых версиях разрешение не требуется
+            }
+            
+            @JavascriptInterface
+            fun requestNotificationPermission() {
+                if (!isAllowedDomain()) return
+                
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    runOnUiThread {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Уведомления уже включены", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }, "AndroidAuth")
 
@@ -181,10 +397,12 @@ class MainActivity : AppCompatActivity() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            allowFileAccess = true
+            allowFileAccess = false  // Безопасность: запрещаем file:// доступ
             allowContentAccess = true
+            allowFileAccessFromFileURLs = false  // Безопасность: запрещаем file:// → file://
+            allowUniversalAccessFromFileURLs = false  // Безопасность: запрещаем file:// → http://
             mediaPlaybackRequiresUserGesture = false
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE  // Разрешаем для совместимости
             cacheMode = WebSettings.LOAD_DEFAULT
             loadsImagesAutomatically = true
             blockNetworkImage = false
@@ -195,7 +413,7 @@ class MainActivity : AppCompatActivity() {
             loadWithOverviewMode = true
             layoutAlgorithm = WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                safeBrowsingEnabled = false
+                safeBrowsingEnabled = true  // Безопасность: Google Safe Browsing
             }
             textZoom = 100
             minimumFontSize = 8
@@ -222,11 +440,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // WebViewClient для контроля навигации
+        // WebViewClient для контроля навигации и сетевых ошибок
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val url = request?.url.toString()
-                if (!url.contains("anonimka.kz") && !url.contains("t.me")) {
+                if (!url.contains("anonimka.kz") && !url.contains("ru.anonimka.kz") && !url.contains("t.me")) {
                     val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                     startActivity(intent)
                     return true
@@ -244,6 +462,8 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 swipeRefreshLayout.isRefreshing = false
+                // Сброс счётчика ретраев после успешной загрузки
+                webRetryCount = 0
 
                 // Инжектим данные авторизации
                 val userToken = authPrefs.getString("user_token", "")
@@ -252,9 +472,9 @@ class MainActivity : AppCompatActivity() {
                 val displayNickname = authPrefs.getString("display_nickname", "")
 
                 android.util.Log.d("Anonimka", "📱 [INJECT] Preparing injection: token=${userToken?.take(16)}..., method=$authMethod")
-
                 if (!userToken.isNullOrEmpty()) {
-                    val script = """
+                    webView.evaluateJavascript(
+                        """
                         (function() {
                             try {
                                 localStorage.setItem('user_token', '$userToken');
@@ -276,16 +496,16 @@ class MainActivity : AppCompatActivity() {
                                 return 'ERROR: ' + e.message;
                             }
                         })();
-                    """.trimIndent()
-                    webView.evaluateJavascript(script) { result ->
-                        android.util.Log.d("Anonimka", "📱 [INJECT] Result: $result")
-                    }
+                        """,
+                        null
+                    )
                 }
 
                 // Для обратной совместимости с Telegram auth
                 val savedUser = authPrefs.getString("telegram_user", "")
                 if (!savedUser.isNullOrEmpty() && authMethod == "telegram") {
-                    webView.evaluateJavascript("""
+                    webView.evaluateJavascript(
+                        """
                         (function() {
                             try {
                                 var userData = $savedUser;
@@ -297,7 +517,9 @@ class MainActivity : AppCompatActivity() {
                                 console.error('❌ Error injecting telegram auth data:', e);
                             }
                         })();
-                    """.trimIndent(), null)
+                        """,
+                        null
+                    )
                 }
                 if (url?.contains("authorized=true") == true) {
                     handleIntent(intent)
@@ -396,9 +618,38 @@ class MainActivity : AppCompatActivity() {
         }
         swipeRefreshLayout.setColorSchemeResources(R.color.purple_500, R.color.purple_700, R.color.teal_200)
 
-        // Загружаем webapp
-        if (savedInstanceState == null) {
-            loadWebApp()
+        // Проверяем наличие токена авторизации
+        val userToken = authPrefs.getString("user_token", null)
+        if (userToken.isNullOrEmpty()) {
+            // Нет токена — показываем email авторизацию
+            val intent = Intent(this, EmailAuthActivity::class.java)
+            startActivityForResult(intent, EMAIL_AUTH_REQUEST_CODE)
+        } else {
+            // Токен есть — проверяем биометрию если включена
+            val biometricEnabled = authPrefs.getBoolean("biometric_enabled", false)
+            
+            if (biometricEnabled && BiometricAuthHelper.isAvailable(this)) {
+                // Биометрия включена - требуем аутентификацию
+                val biometricHelper = BiometricAuthHelper(this)
+                biometricHelper.authenticate(
+                    title = "Вход в Anonimka",
+                    subtitle = "Подтвердите вход с помощью биометрии",
+                    onSuccess = {
+                        if (savedInstanceState == null) {
+                            loadWebApp()
+                        }
+                    },
+                    onError = { _, message ->
+                        Toast.makeText(this, "Ошибка биометрии: $message", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                )
+            } else {
+                // Биометрия не включена или недоступна - загружаем напрямую
+                if (savedInstanceState == null) {
+                    loadWebApp()
+                }
+            }
         }
 
         // Обрабатываем deep link
@@ -407,7 +658,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadWebApp() {
         android.util.Log.d("Anonimka", "🌐 Loading webapp URL")
-        webView.loadUrl("https://anonimka.kz/webapp")
+        webView.loadUrl("https://ru.anonimka.kz/webapp")
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == EMAIL_AUTH_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                // Успешная авторизация - загружаем webapp
+                loadWebApp()
+            } else {
+                // Отмена авторизации - закрываем приложение
+                finish()
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -494,28 +758,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         fileUploadCallback?.onReceiveValue(null)
         fileUploadCallback = null
-    }
-
-    private fun enableEdgeToEdge() {
-        // Immersive Sticky Mode - полный экран без статус бара, но с навигацией
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        
-        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        windowInsetsController?.apply {
-            // Скрываем статус бар, оставляем навигацию
-            hide(WindowInsetsCompat.Type.statusBars())
-            
-            // Sticky - при swipe сверху показывается только временно
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            
-            // Темные иконки (белые на черном)
-            isAppearanceLightStatusBars = false
-            isAppearanceLightNavigationBars = false
-        }
-        
-        // Цвета панелей (темные)
-        window.navigationBarColor = "#0a0a0f".toColorInt()
-        window.statusBarColor = "#0a0a0f".toColorInt()
+        unregisterNetworkChangeCallback()
     }
 
     private fun getFCMToken() {
@@ -547,7 +790,7 @@ class MainActivity : AppCompatActivity() {
         android.util.Log.d("Anonimka", "📤 Отправка FCM токена на сервер...")
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val url = URL("https://anonimka.kz/api/fcm-token")
+                val url = URL("https://ru.anonimka.kz/api/fcm-token")
                 val connection = url.openConnection() as HttpURLConnection
                 connection.apply {
                     requestMethod = "POST"
@@ -564,7 +807,7 @@ class MainActivity : AppCompatActivity() {
                     outputStream.use { os ->
                         os.write(json.toString().toByteArray())
                     }
-                    val responseCode = connection.responseCode
+                    val responseCode = responseCode
                     if (responseCode == 200) {
                         android.util.Log.d("Anonimka", "✅ FCM токен успешно зарегистрирован на сервере")
                     } else {
@@ -574,6 +817,193 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 android.util.Log.e("Anonimka", "❌ Ошибка при отправке FCM токена", e)
             }
+        }
+    }
+
+    // Мягкий авто-ретрай загрузки основной страницы при сетевых сбоях
+    private fun maybeRetryWebLoad(reason: String) {
+        val isHttp2PingFail = reason.contains("ERR_HTTP2_PING_FAILED", ignoreCase = true)
+        val isNetworkIssue = isHttp2PingFail || reason.contains("timeout", true) || reason.contains("503", true)
+
+        if (!isNetworkIssue) {
+            android.util.Log.d("Anonimka", "ℹ️ Skip retry (reason=$reason)")
+            return
+        }
+
+        if (webRetryCount >= webMaxRetries) {
+            android.util.Log.e("Anonimka", "❌ Retry limit reached ($webRetryCount). Showing hint to user.")
+            Toast.makeText(this, "Проблема сети. Проверьте соединение и повторите.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val delay = webBaseDelayMs shl webRetryCount // 1s, 2s, 4s
+        webRetryCount += 1
+        android.util.Log.w("Anonimka", "⚠️ Network issue ($reason). Retry #$webRetryCount in ${delay}ms")
+        Toast.makeText(this, "Проблема сети, пробуем снова…", Toast.LENGTH_SHORT).show()
+
+        webView.postDelayed({
+            try {
+                if (webView.url.isNullOrEmpty()) {
+                    // Если URL ещё не загружен, пробуем открыть стартовый
+                    val startUrl = "https://ru.anonimka.kz/webapp"
+                    webView.loadUrl(startUrl)
+                } else {
+                    webView.reload()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("Anonimka", "❌ Retry failed: ${e.message}", e)
+            }
+        }, delay)
+    }
+
+    /**
+     * Запрос разрешения на уведомления для Android 13+
+     */
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    android.util.Log.d("Anonimka", "✅ Notification permission already granted")
+                }
+                shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
+                    android.util.Log.d("Anonimka", "⚠️ Показываем объяснение для разрешения уведомлений")
+                    Toast.makeText(
+                        this,
+                        "Разрешите уведомления для получения новых сообщений",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+                else -> {
+                    android.util.Log.d("Anonimka", "📱 Запрос разрешения на уведомления")
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        } else {
+            android.util.Log.d("Anonimka", "✅ Android < 13, разрешение на уведомления не требуется")
+        }
+    }
+
+    // Сетевой callback: безопасная одноразовая перезагрузка WebView при смене типа сети
+    private var connectivityCallback: ConnectivityManager.NetworkCallback? = null
+
+    private fun registerNetworkChangeCallback() {
+        if (connectivityCallbackRegistered) return
+        val cm = getSystemService(ConnectivityManager::class.java)
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                handleNetworkMaybeReload(cm)
+            }
+
+            override fun onLost(network: Network) {
+                // Ничего — ждём новое подключение
+            }
+        }
+
+        cm.registerNetworkCallback(request, callback)
+        connectivityCallbackRegistered = true
+        connectivityCallback = callback
+        android.util.Log.d("Anonimka", "📶 Network callback registered")
+    }
+
+    private fun unregisterNetworkChangeCallback() {
+        if (!connectivityCallbackRegistered) return
+        val cm = getSystemService(ConnectivityManager::class.java)
+        try {
+            connectivityCallback?.let { cm.unregisterNetworkCallback(it) }
+            android.util.Log.d("Anonimka", "📶 Network callback unregistered")
+        } catch (_: Exception) {}
+        connectivityCallbackRegistered = false
+        connectivityCallback = null
+    }
+
+    private fun handleNetworkMaybeReload(cm: ConnectivityManager) {
+        val active = cm.activeNetwork ?: return
+        val caps = cm.getNetworkCapabilities(active) ?: return
+        val type = when {
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+            else -> "other"
+        }
+
+        val now = System.currentTimeMillis()
+        val cooldownPassed = now - lastNetworkReloadTs > networkReloadCooldownMs
+        val typeChanged = lastNetworkType != null && lastNetworkType != type
+
+        android.util.Log.d("Anonimka", "📶 Network change: $lastNetworkType -> $type, cooldownPassed=$cooldownPassed")
+
+        if (typeChanged && cooldownPassed) {
+            // Для мобильной сети разрешим больше мягких ретраев
+            webMaxRetries = if (type == "cellular") 5 else 3
+            lastNetworkReloadTs = now
+            runOnUiThread {
+                if (isFinishing || isDestroyed) {
+                    android.util.Log.w("Anonimka", "⚠️ Skip reload: activity finishing/destroyed")
+                    return@runOnUiThread
+                }
+                val vw = try { webView } catch (_: Exception) { null }
+                if (vw == null) {
+                    android.util.Log.w("Anonimka", "⚠️ Skip reload: webView is null")
+                    return@runOnUiThread
+                }
+                try {
+                    Toast.makeText(this, "Сеть изменилась, обновляем страницу…", Toast.LENGTH_SHORT).show()
+                        if (vw.url.isNullOrEmpty()) {
+                        vw.loadUrl("https://ru.anonimka.kz/webapp")
+                    } else {
+                        vw.reload()
+                    }
+                    android.util.Log.d("Anonimka", "🔄 WebView reloaded on network change")
+                } catch (e: Exception) {
+                    android.util.Log.e("Anonimka", "❌ Reload on network change failed: ${e.message}", e)
+                }
+            }
+        }
+
+        lastNetworkType = type
+    }
+    
+    /**
+     * Проверка безопасности приложения
+     */
+    private fun performSecurityChecks() {
+        val securityStatus = SecurityManager.performSecurityCheck(this)
+        
+        if (BuildConfig.DEBUG) {
+            logDebug("Anonimka", "Security Check: rooted=${securityStatus.isRooted}, " +
+                    "emulator=${securityStatus.isEmulator}, " +
+                    "integrity=${securityStatus.isIntegrityValid}")
+        }
+        
+        // Показываем предупреждения пользователю
+        if (securityStatus.warnings.isNotEmpty()) {
+            val message = securityStatus.warnings.joinToString("\n")
+            
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("⚠️ Предупреждение безопасности")
+                .setMessage("$message\n\nПриложение может работать нестабильно или небезопасно.")
+                .setPositiveButton("Понятно") { dialog, _ -> dialog.dismiss() }
+                .setCancelable(true)
+                .show()
+        }
+        
+        // В production можно заблокировать запуск на rooted устройствах
+        if (!BuildConfig.DEBUG && securityStatus.isRooted) {
+            // Раскомментируйте для блокировки:
+            // androidx.appcompat.app.AlertDialog.Builder(this)
+            //     .setTitle("❌ Доступ запрещён")
+            //     .setMessage("Приложение не может работать на устройствах с root-доступом из соображений безопасности.")
+            //     .setPositiveButton("Выход") { _, _ -> finish() }
+            //     .setCancelable(false)
+            //     .show()
         }
     }
 }

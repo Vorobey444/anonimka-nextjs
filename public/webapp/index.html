@@ -361,11 +361,23 @@
                         <span class="hamburger-icon">ℹ️</span>
                         О приложении
                     </a>
-                    <a href="#" class="hamburger-item" id="installAppBtn" onclick="promptInstallApp(); return false;">
+                    <!-- Показывать только для Android -->
+                    <a href="#" class="hamburger-item android-only" id="biometricSettingsBtn" onclick="showBiometricSettings(); return false;" style="display: none;">
+                        <span class="hamburger-icon">🔐</span>
+                        Вход по биометрии
+                        <span id="biometricStatus" style="margin-left: auto; font-size: 0.9em;"></span>
+                    </a>
+                    <a href="#" class="hamburger-item android-only" id="notificationSettingsBtn" onclick="showNotificationSettings(); return false;" style="display: none;">
+                        <span class="hamburger-icon">🔔</span>
+                        Push уведомления
+                        <span id="notificationStatus" style="margin-left: auto; font-size: 0.9em;"></span>
+                    </a>
+                    <!-- Скрыть для Android -->
+                    <a href="#" class="hamburger-item non-android-only" id="installAppBtn" onclick="promptInstallApp(); return false;">
                         <span class="hamburger-icon">📲</span>
                         Установить на рабочий стол
                     </a>
-                    <a href="#" class="hamburger-item" onclick="showAffiliateInfo(); return false;">
+                    <a href="#" class="hamburger-item non-android-only" onclick="showAffiliateInfo(); return false;">
                         <span class="hamburger-icon">💰</span>
                         Хотите заработать?
                     </a>
