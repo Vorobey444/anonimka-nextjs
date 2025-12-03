@@ -70,6 +70,13 @@
             android:theme="@style/AppTheme.NoActionBar"
             android:windowSoftInputMode="adjustPan" />
 
+        <activity
+            android:name=".PinLockActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:taskAffinity="" />
+
         <!-- Firebase Cloud Messaging Service -->
         <service
             android:name=".MyFirebaseMessagingService"

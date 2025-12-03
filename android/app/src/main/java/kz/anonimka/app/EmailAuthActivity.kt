@@ -300,26 +300,33 @@ class EmailAuthActivity : AppCompatActivity() {
             return // Биометрия недоступна
         }
         
-        // Проверяем, не включена ли уже
-        if (authPrefs.getBoolean("biometric_enabled", false)) {
-            return // Уже включена
+        // Проверяем, не настроен ли уже PIN-код
+        if (authPrefs.contains("pin_code")) {
+            return // PIN уже настроен
         }
         
         // Проверяем, не предлагали ли уже (чтобы не спамить)
-        if (authPrefs.getBoolean("biometric_offer_shown", false)) {
+        if (authPrefs.getBoolean("pin_offer_shown", false)) {
             return // Уже предлагали
         }
         
         // Помечаем что предложили
-        authPrefs.edit().putBoolean("biometric_offer_shown", true).apply()
+        authPrefs.edit().putBoolean("pin_offer_shown", true).apply()
         
-        // Предлагаем включить
+        // Предлагаем настроить PIN + биометрию
+        val biometricText = if (BiometricAuthHelper.isBiometricAvailable(this)) {
+            "\n\nТакже вы сможете использовать отпечаток пальца или Face ID."
+        } else {
+            ""
+        }
+        
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("🔐 Защитите свой аккаунт")
-            .setMessage("Хотите включить вход по отпечатку пальца или Face ID для быстрого и безопасного входа?")
-            .setPositiveButton("Включить") { _, _ ->
-                authPrefs.edit().putBoolean("biometric_enabled", true).apply()
-                Toast.makeText(this, "✅ Биометрия включена", Toast.LENGTH_SHORT).show()
+            .setMessage("Установите PIN-код из 4 цифр для защиты входа в приложение.$biometricText")
+            .setPositiveButton("Настроить") { _, _ ->
+                // Открываем экран создания PIN
+                val intent = android.content.Intent(this, PinLockActivity::class.java)
+                startActivity(intent)
             }
             .setNegativeButton("Позже") { dialog, _ ->
                 dialog.dismiss()

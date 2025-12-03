@@ -172,6 +172,11 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         
+        // Проверка PIN-кода при запуске
+        if (!checkPinLockRequired()) {
+            return // PIN экран открыт, ждем разблокировки
+        }
+        
         // Проверка безопасности приложения
         performSecurityChecks()
         
@@ -488,6 +493,49 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this@MainActivity, "Не удалось открыть настройки биометрии. Откройте их вручную.", Toast.LENGTH_LONG).show()
                         }
                     }
+                }
+            }
+            
+            @JavascriptInterface
+            fun hasPinCode(): Boolean {
+                if (!isAllowedDomain()) return false
+                return authPrefs.contains("pin_code")
+            }
+            
+            @JavascriptInterface
+            fun setupPinCode() {
+                if (!isAllowedDomain()) return
+                
+                runOnUiThread {
+                    val intent = Intent(this@MainActivity, PinLockActivity::class.java)
+                    startActivity(intent)
+                }
+            }
+            
+            @JavascriptInterface
+            fun resetPinCode() {
+                if (!isAllowedDomain()) return
+                
+                runOnUiThread {
+                    androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                        .setTitle("⚠️ Подтверждение")
+                        .setMessage("Введите текущий PIN-код для удаления")
+                        .setPositiveButton("Продолжить") { _, _ ->
+                            // Удаляем PIN и биометрию
+                            authPrefs.edit()
+                                .remove("pin_code")
+                                .putBoolean("biometric_enabled", false)
+                                .putBoolean("app_unlocked", true)
+                                .apply()
+                            
+                            Toast.makeText(this@MainActivity, "✅ PIN-код удален", Toast.LENGTH_SHORT).show()
+                            
+                            // Обновляем статусы в WebView
+                            webView.evaluateJavascript("if(typeof updatePinStatus === 'function') updatePinStatus();", null)
+                            webView.evaluateJavascript("if(typeof updateBiometricStatus === 'function') updateBiometricStatus();", null)
+                        }
+                        .setNegativeButton("Отмена", null)
+                        .show()
                 }
             }
         }, "AndroidAuth")
@@ -1068,6 +1116,49 @@ class MainActivity : AppCompatActivity() {
         }
 
         lastNetworkType = type
+    }
+    
+    /**
+     * Проверка необходимости PIN-кода
+     * @return true если можно продолжить, false если нужно показать PIN
+     */
+    private fun checkPinLockRequired(): Boolean {
+        // Если нет сохраненного токена - не требуем PIN (пользователь еще не авторизован)
+        val hasToken = authPrefs.getString("user_token", null) != null
+        if (!hasToken) {
+            return true // Можно продолжить без PIN
+        }
+        
+        // Если есть PIN-код, проверяем разблокирован ли
+        val hasPinCode = authPrefs.contains("pin_code")
+        if (hasPinCode) {
+            val isUnlocked = authPrefs.getBoolean("app_unlocked", false)
+            if (!isUnlocked) {
+                // Показываем PIN экран
+                val intent = Intent(this, PinLockActivity::class.java)
+                startActivity(intent)
+                return false // Останавливаем загрузку MainActivity
+            }
+        }
+        
+        return true // Можно продолжить
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Проверяем PIN при возврате в приложение
+        if (!checkPinLockRequired()) {
+            return
+        }
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        // Сбрасываем флаг разблокировки когда приложение сворачивается
+        val hasPinCode = authPrefs.contains("pin_code")
+        if (hasPinCode) {
+            authPrefs.edit().putBoolean("app_unlocked", false).apply()
+        }
     }
     
     /**
