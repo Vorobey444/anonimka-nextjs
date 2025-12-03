@@ -1131,14 +1131,14 @@ class MainActivity : AppCompatActivity() {
                             // Fallback: открываем Google Play страницу вручную
                             try {
                                 val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    data = android.net.Uri.parse("market://details?id=$packageName")
+                                    data = android.net.Uri.parse("market://details?id=kz.anonimka.app")
                                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                                 }
                                 startActivity(intent)
                             } catch (ex: Exception) {
-                                // Если Google Play не установлен, открываем браузер
+                                // Если Google Play не установлен, открываем браузер с прямой ссылкой
                                 val webIntent = Intent(Intent.ACTION_VIEW).apply {
-                                    data = android.net.Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                                    data = android.net.Uri.parse("https://play.google.com/store/apps/details?id=kz.anonimka.app")
                                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                                 }
                                 startActivity(webIntent)
