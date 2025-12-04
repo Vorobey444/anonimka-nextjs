@@ -952,7 +952,7 @@ export async function PATCH(req: NextRequest) {
         const token = userToken || tgId; // tgId на самом деле содержит токен (исторически с фронта)
         updated = await sql`
           UPDATE ads
-          SET nickname = ${nickname}
+          SET display_nickname = ${nickname}
           WHERE user_token = ${token}
           RETURNING id
         `;
