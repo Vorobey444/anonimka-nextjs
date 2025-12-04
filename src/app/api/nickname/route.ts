@@ -233,9 +233,24 @@ export async function POST(request: NextRequest) {
     // Проверяем, была ли это РЕГИСТРАЦИОННАЯ установка (в день создания аккаунта)
     let isInitialRegistrationSetup = false;
     if (hasChangedBefore && existingUser?.created_at && existingUser?.nickname_changed_at) {
-      const createdDate = new Date(existingUser.created_at).toDateString();
-      const changedDate = new Date(existingUser.nickname_changed_at).toDateString();
-      isInitialRegistrationSetup = createdDate === changedDate;
+      try {
+        const createdDate = new Date(existingUser.created_at);
+        const changedDate = new Date(existingUser.nickname_changed_at);
+        
+        // Сравниваем только дату (год-месяц-день), игнорируя время
+        const createdDateOnly = createdDate.toISOString().split('T')[0];
+        const changedDateOnly = changedDate.toISOString().split('T')[0];
+        
+        isInitialRegistrationSetup = createdDateOnly === changedDateOnly;
+        console.log('[NICKNAME API] Проверка дат регистрации:', {
+          created: createdDateOnly,
+          changed: changedDateOnly,
+          isInitialRegistrationSetup
+        });
+      } catch (dateError) {
+        console.error('[NICKNAME API] Ошибка при сравнении дат:', dateError);
+        isInitialRegistrationSetup = false; // По умолчанию считаем это не регистрационной установкой
+      }
     }
     
     console.log('[NICKNAME API] Проверка:', {
@@ -335,28 +350,38 @@ export async function POST(request: NextRequest) {
     `;
 
     // Обновляем никнейм во всех объявлениях пользователя
-    await sql`
-      UPDATE ads 
-      SET nickname = ${nickname}
-      WHERE tg_id = ${userId}
-    `;
+    try {
+      await sql`
+        UPDATE ads 
+        SET nickname = ${nickname}
+        WHERE tg_id = ${userId}
+      `;
+      console.log('[NICKNAME API] Никнейм обновлён в таблице ads');
+    } catch (adsError) {
+      console.error('[NICKNAME API] ⚠️ Ошибка при обновлении ads:', adsError);
+    }
 
     // Обновляем никнейм в user_blocks (если кто-то заблокировал этого пользователя)
     // Получаем user_token из ads для обновления user_blocks
-    const userTokenResult = await sql`
-      SELECT user_token FROM ads WHERE tg_id = ${userId} LIMIT 1
-    `;
-    
-    if (userTokenResult.rows.length > 0) {
-      const userToken = userTokenResult.rows[0].user_token;
-      await sql`
-        UPDATE user_blocks
-        SET blocked_display_nickname = ${nickname}
-        WHERE blocked_token = ${userToken}
+    try {
+      const userTokenResult = await sql`
+        SELECT user_token FROM ads WHERE tg_id = ${userId} LIMIT 1
       `;
+      
+      if (userTokenResult.rows.length > 0) {
+        const userToken = userTokenResult.rows[0].user_token;
+        await sql`
+          UPDATE user_blocks
+          SET blocked_display_nickname = ${nickname}
+          WHERE blocked_token = ${userToken}
+        `;
+        console.log('[NICKNAME API] Никнейм обновлён в таблице user_blocks');
+      }
+    } catch (blockError) {
+      console.error('[NICKNAME API] ⚠️ Ошибка при обновлении user_blocks:', blockError);
     }
 
-    console.log('[NICKNAME API] Никнейм успешно установлен и обновлён во всех связанных таблицах');
+    console.log('[NICKNAME API] ✅ Никнейм успешно установлен');
 
     return NextResponse.json({
       success: true,
@@ -367,9 +392,21 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[NICKNAME API] Ошибка при установке никнейма:', error);
+    console.error('[NICKNAME API] ❌ Ошибка при установке никнейма:');
+    console.error('   Тип ошибки:', error?.constructor?.name);
+    console.error('   Сообщение:', error?.message);
+    console.error('   Стек:', error?.stack);
+    console.error('   Полная ошибка:', JSON.stringify(error, null, 2));
+    
     return NextResponse.json(
-      { success: false, error: error?.message || 'Internal server error' },
+      { 
+        success: false, 
+        error: error?.message || 'Internal server error',
+        debug: {
+          message: error?.message,
+          type: error?.constructor?.name
+        }
+      },
       { status: 500 }
     );
   }
