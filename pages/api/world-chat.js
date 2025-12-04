@@ -381,7 +381,7 @@ async function sendMessage(params, res) {
   // Вставляем сообщение
   const insertResult = await sql`
     INSERT INTO world_chat_messages 
-    (user_token, nickname, message, type, target_user_token, target_nickname, location_city, is_premium)
+    (user_token, display_nickname, message, type, target_user_token, target_display_nickname, location_city, is_premium)
     VALUES (${userToken}, ${nickname}, ${cleanMessage}, ${type}, ${targetUserToken}, ${targetNickname}, ${locationCity}, ${isPremium})
     RETURNING *
   `;
@@ -453,7 +453,7 @@ async function sendMessage(params, res) {
 // Получить последнее сообщение для превью
 async function getLastMessage(res) {
   const result = await sql`
-    SELECT nickname, message, created_at
+    SELECT display_nickname as nickname, message, created_at
     FROM world_chat_messages
     WHERE type = 'world'
     ORDER BY created_at DESC
