@@ -11,15 +11,28 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { 
+    let { 
       reporterId, 
       reportedUserId, 
       reportType, 
       reason, 
       description,
       relatedAdId,
-      relatedMessageId
+      relatedMessageId,
+      reporterToken,
+      reportedToken
     } = body;
+
+    // Если переданы токены вместо ID - находим ID по токенам
+    if (!reporterId && reporterToken) {
+      const reporterData = await sql`SELECT tg_id FROM ads WHERE user_token = ${reporterToken} ORDER BY created_at DESC LIMIT 1`;
+      reporterId = reporterData.rows[0]?.tg_id || null;
+    }
+    
+    if (!reportedUserId && reportedToken) {
+      const reportedData = await sql`SELECT tg_id FROM ads WHERE user_token = ${reportedToken} ORDER BY created_at DESC LIMIT 1`;
+      reportedUserId = reportedData.rows[0]?.tg_id || null;
+    }
 
     console.log('[REPORTS API] Получены данные:', {
       reporterId,
