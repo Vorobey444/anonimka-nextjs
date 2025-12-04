@@ -3676,7 +3676,7 @@ async function loadMyAds() {
             const ageFrom = ad.age_from || ad.ageFrom || '?';
             const ageTo = ad.age_to || ad.ageTo || '?';
             
-            const nickname = ad.nickname || 'Аноним';
+            const nickname = ad.display_nickname || 'Аноним';
             
             const authorGender = formatGender(ad.gender);
             // Проверяем и на русском, и на английском
@@ -4623,7 +4623,7 @@ function displayAds(ads, city = null) {
         const myAge = ad.my_age || ad.myAge || '?';
         const ageFrom = ad.age_from || ad.ageFrom || '?';
         const ageTo = ad.age_to || ad.ageTo || '?';
-        const nickname = ad.nickname || 'Аноним';
+        const nickname = ad.display_nickname || 'Аноним';
         const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > now);
         
         // Проверяем PRO статус
@@ -4730,7 +4730,7 @@ function showAdDetails(index) {
     const ageFrom = ad.age_from || ad.ageFrom || '?';
     const ageTo = ad.age_to || ad.ageTo || '?';
     const bodyType = ad.body_type || ad.body || '?';
-    const nickname = ad.nickname || 'Аноним';
+    const nickname = ad.display_nickname || 'Аноним';
     
     adContent.innerHTML = `
         <div class="ad-details-card">
@@ -13468,7 +13468,7 @@ function reportAd() {
     
     currentReportData = {
         reportedUserId: reportedUserId,
-        reportedNickname: ad.nickname || 'Аноним',
+        reportedNickname: ad.display_nickname || 'Аноним',
         reportType: 'ad',
         relatedAdId: ad.id,
         reason: null
