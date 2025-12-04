@@ -174,7 +174,8 @@ export async function POST(request: NextRequest) {
         display_nickname, 
         is_premium, 
         premium_until,
-        nickname_changed_at
+        nickname_changed_at,
+        created_at
       FROM users 
       WHERE id = ${userId} 
       LIMIT 1
@@ -222,12 +223,30 @@ export async function POST(request: NextRequest) {
     // nickname_changed_at !== NULL → уже была хотя бы 1 смена
     const hasChangedBefore = !!existingUser?.nickname_changed_at;
     
+    // ВАЖНО: Если nickname_changed_at совпадает с created_at (в пределах 1 секунды),
+    // это значит никнейм был установлен при создании профиля, а не после.
+    // Такие смены не считаются "реальными" и блокировка не должна применяться.
+    let isFirstRealChange = false;
+    if (existingUser?.nickname_changed_at && existingUser?.created_at) {
+      const changedTime = new Date(existingUser.nickname_changed_at).getTime();
+      const createdTime = new Date(existingUser.created_at).getTime();
+      const timeDiff = Math.abs(changedTime - createdTime);
+      // Если разница менее 5 секунд, считаем это первоначальной установкой
+      if (timeDiff < 5000) {
+        isFirstRealChange = true;
+      }
+    } else if (!hasChangedBefore) {
+      isFirstRealChange = true;
+    }
+    
     console.log('[NICKNAME API] Проверка:', {
       userId,
       existingNickname: existingUser?.display_nickname,
       hasChangedBefore,
+      isFirstRealChange,
       isPremium,
-      nickname_changed_at: existingUser?.nickname_changed_at
+      nickname_changed_at: existingUser?.nickname_changed_at,
+      created_at: existingUser?.created_at
     });
 
     // Логика ограничений:
@@ -237,8 +256,10 @@ export async function POST(request: NextRequest) {
     // СПЕЦИАЛЬНОЕ ПРАВИЛО: Пользователям с никнеймом "Аноним*" даем 1 бесплатную смену
     const isAnonymousNickname = existingUser?.display_nickname?.startsWith('Аноним');
     
-    // ВАЖНО: Проверяем ограничения ТОЛЬКО если есть nickname_changed_at (то есть уже была смена)
-    if (existingUser?.nickname_changed_at && !isAnonymousNickname) {
+    // ВАЖНО: Проверяем ограничения ТОЛЬКО если:
+    // 1. Уже была РЕАЛЬНАЯ смена (не первоначальная установка)
+    // 2. И это не смена с "Аноним"
+    if (!isFirstRealChange && !isAnonymousNickname) {
       if (!isPremium) {
         // FREE пользователи могут менять только 1 раз
         console.log('[NICKNAME API] ❌ FREE пользователь уже использовал бесплатную смену');
@@ -304,6 +325,7 @@ export async function POST(request: NextRequest) {
         display_nickname = ${nickname}, 
         nickname_changed_at = NOW(),
         updated_at = NOW()
+        /* created_at остается неизменным при UPDATE */
     `;
 
     // Обновляем никнейм во всех объявлениях пользователя
