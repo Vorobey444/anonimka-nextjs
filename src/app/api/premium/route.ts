@@ -763,14 +763,14 @@ export async function POST(request: NextRequest) {
             );
           }
           
-          // Активируем бонус (бессрочный PRO) - ставим дату +30 лет для корректного отображения
-          const premiumUntil30Years = new Date();
-          premiumUntil30Years.setFullYear(premiumUntil30Years.getFullYear() + 30);
+          // Активируем бонус PRO на 1 год
+          const premiumUntil = new Date();
+          premiumUntil.setFullYear(premiumUntil.getFullYear() + 1);
           
           await sql`
             UPDATE users
             SET is_premium = TRUE,
-                premium_until = ${premiumUntil30Years.toISOString()},
+                premium_until = ${premiumUntil.toISOString()},
                 auto_premium_source = 'female_bonus',
                 updated_at = NOW()
             WHERE id = ${userId}
@@ -785,20 +785,20 @@ export async function POST(request: NextRequest) {
             const userToken = tokenResult.rows[0].user_token;
             await sql`
               INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
-              VALUES (${userToken}, TRUE, ${premiumUntil30Years.toISOString()}, NOW())
+              VALUES (${userToken}, TRUE, ${premiumUntil.toISOString()}, NOW())
               ON CONFLICT (user_token) DO UPDATE
-              SET is_premium = TRUE, premium_until = ${premiumUntil30Years.toISOString()}, updated_at = NOW()
+              SET is_premium = TRUE, premium_until = ${premiumUntil.toISOString()}, updated_at = NOW()
             `;
           }
           
-          console.log('[PREMIUM API] ✅ Бонус PRO для девушки активирован до:', premiumUntil30Years.toISOString());
+          console.log('[PREMIUM API] ✅ Бонус PRO для девушки активирован до:', premiumUntil.toISOString());
           
           return NextResponse.json({
             data: {
               success: true,
               message: 'Female bonus activated successfully',
               isPremium: true,
-              premiumUntil: premiumUntil30Years.toISOString(), // +30 лет
+              premiumUntil: premiumUntil.toISOString(),
               premiumSource: 'female_bonus'
             },
             error: null

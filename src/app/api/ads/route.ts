@@ -492,15 +492,17 @@ export async function POST(req: NextRequest) {
               WHERE id = ${numericTgId}
             `;
             
-            // Если первая анкета — "Девушка", выдаем бонус PRO навсегда
+            // Если первая анкета — "Девушка", выдаем бонус PRO на 1 год
             if (currentGender === 'Девушка') {
-              console.log('[ADS API] 🎀 Активируем бонус PRO для девушки (навсегда)');
+              console.log('[ADS API] 🎀 Активируем бонус PRO для девушки на 1 год');
               
-              // Устанавливаем PRO навсегда (premium_until = NULL означает бессрочный)
+              const premiumUntil = new Date();
+              premiumUntil.setFullYear(premiumUntil.getFullYear() + 1);
+              
               await sql`
                 UPDATE users
                 SET is_premium = TRUE,
-                    premium_until = NULL,
+                    premium_until = ${premiumUntil.toISOString()},
                     auto_premium_source = 'female_bonus',
                     updated_at = NOW()
                 WHERE id = ${numericTgId}
@@ -509,12 +511,12 @@ export async function POST(req: NextRequest) {
               // Синхронизируем с premium_tokens
               await sql`
                 INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
-                VALUES (${finalUserToken}, TRUE, NULL, NOW())
+                VALUES (${finalUserToken}, TRUE, ${premiumUntil.toISOString()}, NOW())
                 ON CONFLICT (user_token) DO UPDATE
-                SET is_premium = TRUE, premium_until = NULL, updated_at = NOW()
+                SET is_premium = TRUE, premium_until = ${premiumUntil.toISOString()}, updated_at = NOW()
               `;
               
-              console.log('[ADS API] ✅ Бонус PRO для девушки активирован');
+              console.log('[ADS API] ✅ Бонус PRO для девушки активирован до', premiumUntil.toISOString());
             }
           } else {
             // Не первая анкета — проверяем, нужно ли отменить бонус
@@ -592,12 +594,15 @@ export async function POST(req: NextRequest) {
             `;
             
             if (currentGender === 'Девушка') {
-              console.log('[ADS API] 🎀 Активируем бонус PRO для девушки (email, навсегда)');
+              console.log('[ADS API] 🎀 Активируем бонус PRO для девушки (email) на 1 год');
+              
+              const premiumUntil = new Date();
+              premiumUntil.setFullYear(premiumUntil.getFullYear() + 1);
               
               await sql`
                 UPDATE users
                 SET is_premium = TRUE,
-                    premium_until = NULL,
+                    premium_until = ${premiumUntil.toISOString()},
                     auto_premium_source = 'female_bonus',
                     updated_at = NOW()
                 WHERE user_token = ${finalUserToken}
@@ -605,12 +610,12 @@ export async function POST(req: NextRequest) {
               
               await sql`
                 INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
-                VALUES (${finalUserToken}, TRUE, NULL, NOW())
+                VALUES (${finalUserToken}, TRUE, ${premiumUntil.toISOString()}, NOW())
                 ON CONFLICT (user_token) DO UPDATE
-                SET is_premium = TRUE, premium_until = NULL, updated_at = NOW()
+                SET is_premium = TRUE, premium_until = ${premiumUntil.toISOString()}, updated_at = NOW()
               `;
               
-              console.log('[ADS API] ✅ Бонус PRO для девушки (email) активирован');
+              console.log('[ADS API] ✅ Бонус PRO для девушки (email) активирован до', premiumUntil.toISOString());
             }
           } else if (user.auto_premium_source === 'female_bonus' && currentGender === 'Мужчина') {
             console.log('[ADS API] 🚫 Email девушка создала мужскую анкету — отменяем бонус PRO');
