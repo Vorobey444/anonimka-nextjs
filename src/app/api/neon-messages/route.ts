@@ -131,16 +131,16 @@ export async function POST(request: NextRequest) {
         const hasBlockedByToken = schemaCols.rows.some((r: any) => r.column_name === 'blocked_by_token');
         
         // Сначала просто получаем чат для диагностики
-        const chatDebug = await sql`SELECT id, accepted, blocked_by, blocked_by_token FROM private_chats WHERE id = ${chatId}`;
+        const chatDebug = await sql`SELECT id, accepted, blocked_by_token FROM private_chats WHERE id = ${chatId}`;
         console.log('[MESSAGES DEBUG] Chat info:', chatDebug.rows[0]);
         
         const chatCheck = hasBlockedByToken
-          ? await sql`SELECT * FROM private_chats WHERE id = ${chatId} AND accepted = true AND blocked_by IS NULL AND blocked_by_token IS NULL`
-          : await sql`SELECT * FROM private_chats WHERE id = ${chatId} AND accepted = true AND blocked_by IS NULL`;
+          ? await sql`SELECT * FROM private_chats WHERE id = ${chatId} AND accepted = true AND blocked_by_token IS NULL`
+          : await sql`SELECT * FROM private_chats WHERE id = ${chatId} AND accepted = true`;
         
         if (chatCheck.rows.length === 0) {
           // Более информативная ошибка
-          const chatExists = await sql`SELECT accepted, blocked_by, blocked_by_token FROM private_chats WHERE id = ${chatId}`;
+          const chatExists = await sql`SELECT accepted, blocked_by_token FROM private_chats WHERE id = ${chatId}`;
           if (chatExists.rows.length > 0) {
             const c = chatExists.rows[0];
             console.log('[MESSAGES] Chat exists but blocked or not accepted:', c);
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
               data: null, 
               error: { 
                 message: !c.accepted ? 'Chat not accepted yet' : 'Chat is blocked',
-                details: { accepted: c.accepted, blocked_by: c.blocked_by, blocked_by_token: c.blocked_by_token }
+                details: { accepted: c.accepted, blocked_by_token: c.blocked_by_token }
               } 
             }, { status: 403 });
           }

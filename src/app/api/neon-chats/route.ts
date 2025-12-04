@@ -11,12 +11,7 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'check-existing': {
         const { user1_token, user2_token, adId } = params;
-        // Учитываем возможный столбец blocked_by_token
-        const cols = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'private_chats'`;
-        const hasBlockedByToken = cols.rows.some((r: any) => r.column_name === 'blocked_by_token');
-        const result = hasBlockedByToken
-          ? await sql`SELECT id, accepted, blocked_by, blocked_by_token FROM private_chats WHERE user_token_1 = ${user1_token} AND user_token_2 = ${user2_token} AND ad_id = ${adId} LIMIT 1`
-          : await sql`SELECT id, accepted, blocked_by FROM private_chats WHERE user_token_1 = ${user1_token} AND user_token_2 = ${user2_token} AND ad_id = ${adId} LIMIT 1`;
+        const result = await sql`SELECT id, accepted, blocked_by_token FROM private_chats WHERE user_token_1 = ${user1_token} AND user_token_2 = ${user2_token} AND ad_id = ${adId} LIMIT 1`;
         return NextResponse.json({ data: result.rows[0] || null, error: null });
       }
 
@@ -214,8 +209,8 @@ export async function POST(request: NextRequest) {
         const cols3 = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'private_chats'`;
         const hasBlockedByToken3 = cols3.rows.some((r: any) => r.column_name === 'blocked_by_token');
         const result = hasBlockedByToken3
-          ? await sql`SELECT COUNT(*) as count FROM private_chats WHERE user_token_2 = ${userId} AND accepted = false AND blocked_by IS NULL AND blocked_by_token IS NULL`
-          : await sql`SELECT COUNT(*) as count FROM private_chats WHERE user_token_2 = ${userId} AND accepted = false AND blocked_by IS NULL`;
+          ? await sql`SELECT COUNT(*) as count FROM private_chats WHERE user_token_2 = ${userId} AND accepted = false AND blocked_by_token IS NULL`
+          : await sql`SELECT COUNT(*) as count FROM private_chats WHERE user_token_2 = ${userId} AND accepted = false`;
         return NextResponse.json({ data: { count: parseInt(result.rows[0].count) }, error: null });
       }
 
@@ -327,7 +322,7 @@ export async function POST(request: NextRequest) {
         
         // Ищем чат в обе стороны
         const result = await sql`
-          SELECT id, accepted, blocked_by, blocked_by_token, ad_id 
+          SELECT id, accepted, blocked_by_token, ad_id 
           FROM private_chats 
           WHERE (
             (user_token_1 = ${user1_token} AND user_token_2 = ${user2_token})
