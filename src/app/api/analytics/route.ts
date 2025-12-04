@@ -125,32 +125,33 @@ export async function GET(request: NextRequest) {
       `;
 
       // Дополнительная аналитика
-      // Общее количество зарегистрированных пользователей
+      // Общее количество зарегистрированных пользователей (исключаем тестовых)
       const totalUniqueUsers = await sql`
         SELECT COUNT(*) as count
         FROM users
-        WHERE id IS NOT NULL
+        WHERE id IS NOT NULL AND id < 999000
       `;
 
       // Пользователи активные за последние 24 часа
-      // Считаем по last_login_at (обновляется при каждом входе в приложение)
+      // Считаем по last_login_at (обновляется при каждом входе в приложение), исключаем тестовых
       const uniqueLast24h = await sql`
         SELECT COUNT(*) as count
         FROM users
-        WHERE last_login_at >= NOW() - INTERVAL '24 hours'
+        WHERE last_login_at >= NOW() - INTERVAL '24 hours' AND id < 999000
       `;
 
-      // Общее количество анкет (всех, включая удаленные)
+      // Общее количество активных анкет (только не удаленные)
       const totalAds = await sql`
         SELECT COUNT(*) as count
         FROM ads
+        WHERE is_deleted = false OR is_deleted IS NULL
       `;
 
-      // Количество пользователей, заблокировавших бота
+      // Количество пользователей, заблокировавших бота (исключаем тестовых)
       const blockedUsers = await sql`
         SELECT COUNT(*) as count
         FROM users
-        WHERE is_bot_blocked = true
+        WHERE is_bot_blocked = true AND id < 999000
       `;
 
       return NextResponse.json({
