@@ -64,7 +64,32 @@ export async function POST(request: NextRequest) {
       senderNickname = nicknameRows[0].display_nickname;
     }
 
-    // Формируем текст уведомления
+    // Отправляем push-уведомление получателю о новом запросе на чат
+    try {
+      const notificationText = messageText || 'Новый запрос на приватный чат';
+      console.log('[SEND-MESSAGE] Отправляем уведомление получателю:', { 
+        receiverToken: receiver_token, 
+        senderToken: sender_token,
+        adId,
+        message: notificationText 
+      });
+      
+      // Отправляем уведомление асинхронно (не блокируя ответ)
+      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}/api/send-notification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          receiverToken: receiver_token,
+          senderToken: sender_token,
+          adId: adId,
+          messageText: notificationText
+        })
+      }).catch(err => console.error('[SEND-MESSAGE] Ошибка отправки уведомления:', err));
+    } catch (notifyError) {
+      console.error('[SEND-MESSAGE] Ошибка при подготовке уведомления:', notifyError);
+    }
+
+    // Формируем текст уведомления для Telegram
     const notificationText = photoUrl
       ? `🔔 <b>Новый запрос на чат по вашему объявлению!</b>\n\nОт: ${senderNickname}\n\n📷 <i>Фотография</i>${messageText ? `\n💬 <i>\"${messageText}\"</i>` : ''}\n\nОткройте приложение чтобы принять или отклонить запрос.`
       : `🔔 <b>Новый запрос на чат по вашему объявлению!</b>\n\nОт: ${senderNickname}\n\n💬 <i>\"${messageText}\"</i>\n\nОткройте приложение чтобы принять или отклонить запрос.`;
