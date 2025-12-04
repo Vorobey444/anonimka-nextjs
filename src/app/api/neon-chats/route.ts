@@ -57,6 +57,32 @@ export async function POST(request: NextRequest) {
           VALUES (${user1_token}, ${user2_token}, ${adId}, ${message || ''}, false)
           RETURNING *
         `;
+        
+        // Отправляем push-уведомление получателю о новом запросе на чат
+        try {
+          const messageText = message || 'Новый запрос на приватный чат';
+          console.log('[NEON-CHATS] Отправляем уведомление получателю:', { 
+            receiverToken: user2_token, 
+            senderToken: user1_token,
+            adId,
+            message: messageText 
+          });
+          
+          // Отправляем уведомление асинхронно (не блокируя ответ)
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}/api/send-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              receiverToken: user2_token,
+              senderToken: user1_token,
+              adId: adId,
+              messageText: messageText
+            })
+          }).catch(err => console.error('[NEON-CHATS] Ошибка отправки уведомления:', err));
+        } catch (notifyError) {
+          console.error('[NEON-CHATS] Ошибка при подготовке уведомления:', notifyError);
+        }
+        
         return NextResponse.json({ data: result.rows[0], error: null });
       }
 
@@ -364,6 +390,30 @@ export async function POST(request: NextRequest) {
             INSERT INTO messages (chat_id, sender_token, display_nickname, from_nickname, to_nickname, message, read, created_at)
             VALUES (${chat.id}, ${actualSender}, ${senderNickname}, ${senderNickname}, ${receiverNickname}, ${message}, false, NOW())
           `;
+        }
+        
+        // Отправляем push-уведомление получателю о новом запросе на чат
+        try {
+          const receiverToken = user2_token;
+          const messageText = message || 'Новый запрос на приватный чат';
+          console.log('[NEON-CHATS] Отправляем уведомление получателю (create-direct):', { 
+            receiverToken: receiverToken, 
+            senderToken: user1_token,
+            message: messageText 
+          });
+          
+          // Отправляем уведомление асинхронно (не блокируя ответ)
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}/api/send-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              receiverToken: receiverToken,
+              senderToken: user1_token,
+              messageText: messageText
+            })
+          }).catch(err => console.error('[NEON-CHATS] Ошибка отправки уведомления:', err));
+        } catch (notifyError) {
+          console.error('[NEON-CHATS] Ошибка при подготовке уведомления:', notifyError);
         }
         
         return NextResponse.json({ data: chat, error: null });
