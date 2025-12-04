@@ -223,27 +223,15 @@ export async function POST(request: NextRequest) {
     // nickname_changed_at !== NULL → уже была хотя бы 1 смена
     const hasChangedBefore = !!existingUser?.nickname_changed_at;
     
-    // ВАЖНО: Если nickname_changed_at совпадает с created_at (в пределах 1 секунды),
-    // это значит никнейм был установлен при создании профиля, а не после.
-    // Такие смены не считаются "реальными" и блокировка не должна применяться.
-    let isFirstRealChange = false;
-    if (existingUser?.nickname_changed_at && existingUser?.created_at) {
-      const changedTime = new Date(existingUser.nickname_changed_at).getTime();
-      const createdTime = new Date(existingUser.created_at).getTime();
-      const timeDiff = Math.abs(changedTime - createdTime);
-      // Если разница менее 5 секунд, считаем это первоначальной установкой
-      if (timeDiff < 5000) {
-        isFirstRealChange = true;
-      }
-    } else if (!hasChangedBefore) {
-      isFirstRealChange = true;
-    }
+    // ВАЖНО: Если текущий никнейм == новому никнейму, это не смена вообще
+    const isSameNickname = existingUser?.display_nickname?.toLowerCase() === nickname.toLowerCase();
     
     console.log('[NICKNAME API] Проверка:', {
       userId,
       existingNickname: existingUser?.display_nickname,
+      newNickname: nickname,
+      isSameNickname,
       hasChangedBefore,
-      isFirstRealChange,
       isPremium,
       nickname_changed_at: existingUser?.nickname_changed_at,
       created_at: existingUser?.created_at
@@ -257,9 +245,10 @@ export async function POST(request: NextRequest) {
     const isAnonymousNickname = existingUser?.display_nickname?.startsWith('Аноним');
     
     // ВАЖНО: Проверяем ограничения ТОЛЬКО если:
-    // 1. Уже была РЕАЛЬНАЯ смена (не первоначальная установка)
-    // 2. И это не смена с "Аноним"
-    if (!isFirstRealChange && !isAnonymousNickname) {
+    // 1. Это реально НОВЫЙ никнейм (не такой же)
+    // 2. Уже была хотя бы одна предыдущая смена
+    // 3. И это не смена с "Аноним"
+    if (!isSameNickname && hasChangedBefore && !isAnonymousNickname) {
       if (!isPremium) {
         // FREE пользователи могут менять только 1 раз
         console.log('[NICKNAME API] ❌ FREE пользователь уже использовал бесплатную смену');
