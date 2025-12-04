@@ -321,5 +321,6 @@ class PinLockActivity : AppCompatActivity() {
             // При входе - закрываем приложение
             finishAffinity()
         }
+        // Don't call super.onBackPressed() to prevent default back behavior
     }
 }

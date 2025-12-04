@@ -295,11 +295,6 @@ class EmailAuthActivity : AppCompatActivity() {
     }
     
     private fun offerBiometricSetup() {
-        // Проверяем доступность биометрии
-        if (!BiometricAuthHelper.isAvailable(this)) {
-            return // Биометрия недоступна
-        }
-        
         // Проверяем, не настроен ли уже PIN-код
         if (authPrefs.contains("pin_code")) {
             return // PIN уже настроен
