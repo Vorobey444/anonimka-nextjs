@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 export default function Home() {
   const router = useRouter()
-  const [isMobile, setIsMobile] = useState(false)
+  const [shouldRender, setShouldRender] = useState(false)
 
   useEffect(() => {
     // КРИТИЧНО: Сразу проверяем Telegram WebApp БЕЗ задержки
@@ -28,7 +28,6 @@ export default function Home() {
       
       if (isMobileDevice) {
         console.log('📱 Mobile device detected, redirecting to webapp')
-        setIsMobile(true)
         // Для мобильных - сразу редирект на webapp
         router.replace('/webapp/')
         return true
@@ -42,10 +41,24 @@ export default function Home() {
       return
     }
     
+    // Если не было редиректа - показываем страницу
+    setShouldRender(true)
+    
     // Если SDK не загрузился, ждем его максимум 500мс
-    const timer = setTimeout(checkAuth, 500)
+    const timer = setTimeout(() => {
+      if (checkAuth()) {
+        return
+      }
+      // Если и после 500мс ничего - показываем страницу
+      setShouldRender(true)
+    }, 500)
     return () => clearTimeout(timer)
   }, [router])
+
+  // Скрываем всё пока идёт проверка и редирект
+  if (!shouldRender) {
+    return null
+  }
 
   const handleEmailAuth = () => {
     router.push('/webapp/?auth=email')
@@ -53,40 +66,6 @@ export default function Home() {
 
   const handleTelegramAuth = () => {
     router.push('/webapp/?auth=telegram')
-  }
-
-  // Если мобильный - показываем загрузку
-  if (isMobile) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%)',
-        color: '#00d4ff',
-        fontFamily: 'system-ui, sans-serif'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            fontSize: '3rem',
-            marginBottom: '1rem',
-            animation: 'pulse 1.5s ease-in-out infinite'
-          }}>
-            ⏳
-          </div>
-          <p style={{ fontSize: '1.25rem', opacity: 0.8 }}>
-            Загрузка Anonimka.Online...
-          </p>
-        </div>
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-          }
-        `}</style>
-      </div>
-    )
   }
 
   // Для десктопа - показываем выбор авторизации
