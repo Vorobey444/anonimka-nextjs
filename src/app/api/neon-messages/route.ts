@@ -221,14 +221,7 @@ export async function POST(request: NextRequest) {
         // Используем переданный nickname или дефолтный
         const nickname = senderNickname || 'Анонимный';
         
-        // Получаем информацию о получателе из чата
-        const chatInfo = await sql`
-          SELECT user_token_1, user_token_2 FROM private_chats WHERE id = ${chatId}
-        `;
-        const receiverToken = chatInfo.rows[0]?.user_token_1 === senderId 
-          ? chatInfo.rows[0]?.user_token_2 
-          : chatInfo.rows[0]?.user_token_1;
-        
+        // Получаем информацию о получателе
         const receiverInfo = await sql`
           SELECT display_nickname FROM users WHERE user_token = ${receiverToken} LIMIT 1
         `;
