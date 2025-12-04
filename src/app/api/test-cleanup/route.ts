@@ -84,18 +84,20 @@ export async function DELETE(request: NextRequest) {
     }
     console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.ads} ads`);
 
-    // 3. Удаляем реферальные записи
-    for (const id of testIds) {
+    // 3. Удаляем реферальные записи (по токенам, не по ID)
+    for (const token of testTokens) {
       try {
         const refResult = await sql`
           DELETE FROM referrals 
-          WHERE referrer_id = ${id} OR referred_id = ${id}
+          WHERE referrer_token = ${token} OR referred_token = ${token}
         `;
         deleted.referrals += refResult.rowCount || 0;
       } catch (e) {
         console.warn('[TEST CLEANUP] Referrals cleanup error:', e);
       }
     }
+    
+    // Продолжаем с другими таблицами
     for (const token of testTokens) {
       try {
         const refResult = await sql`

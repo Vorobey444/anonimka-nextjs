@@ -316,15 +316,22 @@ export async function POST(request: NextRequest) {
               if (starsCheck.rows.length > 0) {
                 subscriptionSource = 'stars';
               } else {
-                // ПРИОРИТЕТ 3: Проверяем реферальную программу
-                const referralCheck = await sql`
-                  SELECT id FROM referrals 
-                  WHERE referrer_id = ${numericUserId} AND reward_given = true
-                  LIMIT 1
-                `;
-                if (referralCheck.rows.length > 0) {
-                  subscriptionSource = 'referral';
-                } else {
+                // ПРИОРИТЕТ 3: Проверяем реферальную программу (используем user_token)
+                const userTokenResult = await sql`SELECT user_token FROM users WHERE id = ${numericUserId} LIMIT 1`;
+                const currentUserToken = userTokenResult.rows[0]?.user_token;
+                
+                if (currentUserToken) {
+                  const referralCheck = await sql`
+                    SELECT id FROM referrals 
+                    WHERE referrer_token = ${currentUserToken} AND reward_given = true
+                    LIMIT 1
+                  `;
+                  if (referralCheck.rows.length > 0) {
+                    subscriptionSource = 'referral';
+                  }
+                }
+                
+                if (!subscriptionSource) {
                   // ПРИОРИТЕТ 4: Проверяем триал (7 часов)
                   if (userData.trial7h_used) {
                     const premiumDuration = until.getTime() - now.getTime();

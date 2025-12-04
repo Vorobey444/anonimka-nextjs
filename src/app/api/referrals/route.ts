@@ -188,34 +188,21 @@ export async function GET(request: NextRequest) {
         }
 
         const byToken = isLikelyToken(userId);
-        const tgId = !byToken && isDigits(userId) ? Number(userId) : null;
 
-        // Получаем приглашенных: учитываем оба канала (token и numeric)
+        // Получаем приглашенных по referrer_token (используем реальную схему БД)
         const referrals = await sql`
-            WITH base AS (
-                SELECT 
-                    r.id,
-                    r.created_at,
-                    r.reward_given,
-                    r.reward_given_at,
-                    r.referred_token,
-                    r.referred_id
-                FROM referrals r
-                WHERE (${byToken} = TRUE AND r.referrer_token = ${byToken ? userId : null})
-                   OR (${tgId !== null} = TRUE AND r.referrer_id = ${tgId})
-            )
             SELECT 
-                b.id,
-                b.created_at,
-                b.reward_given,
-                b.reward_given_at,
-                COALESCE(a1.display_nickname, a2.display_nickname) AS nickname,
-                b.referred_token,
-                b.referred_id
-            FROM base b
-            LEFT JOIN ads a1 ON a1.user_token = b.referred_token
-            LEFT JOIN ads a2 ON a2.tg_id = b.referred_id
-            ORDER BY b.created_at DESC
+                r.id,
+                r.created_at,
+                r.reward_given,
+                r.reward_given_at,
+                r.referred_token,
+                COALESCE(a1.display_nickname, u1.display_nickname) AS nickname
+            FROM referrals r
+            LEFT JOIN ads a1 ON a1.user_token = r.referred_token
+            LEFT JOIN users u1 ON u1.user_token = r.referred_token
+            WHERE r.referrer_token = ${userId}
+            ORDER BY r.created_at DESC
         `;
 
         const rows = referrals.rows as any[];
