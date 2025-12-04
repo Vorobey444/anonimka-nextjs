@@ -1640,6 +1640,10 @@ function checkTelegramAuth() {
         if (authType === 'email') {
             console.log('📧 Показываем форму email авторизации');
             showEmailAuthModal();
+        } else if (isTelegramWebApp && tg.initDataUnsafe?.user?.id) {
+            // Если это Telegram WebApp с авторизованным пользователем - сразу показываем главное меню БЕЗ модального окна
+            console.log('✈️ Telegram WebApp с авторизацией - показываем главное меню сразу');
+            showMainMenu();
         } else {
             // По умолчанию - Telegram
             console.log('✈️ Показываем форму Telegram авторизации');
