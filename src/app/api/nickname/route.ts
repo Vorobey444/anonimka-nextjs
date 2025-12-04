@@ -353,7 +353,7 @@ export async function POST(request: NextRequest) {
     try {
       await sql`
         UPDATE ads 
-        SET nickname = ${nickname}
+        SET display_nickname = ${nickname}
         WHERE tg_id = ${userId}
       `;
       console.log('[NICKNAME API] Никнейм обновлён в таблице ads');

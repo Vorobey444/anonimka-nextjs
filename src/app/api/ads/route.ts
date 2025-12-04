@@ -423,7 +423,7 @@ export async function POST(req: NextRequest) {
     const result = await sql`
       INSERT INTO ads (
         gender, target, goal, age_from, age_to, my_age, 
-        body_type, orientation, text, nickname, country, region, city, tg_id, user_token, created_at
+        body_type, orientation, text, display_nickname, country, region, city, tg_id, user_token, created_at
       )
       VALUES (
         ${gender}, ${target}, ${goal}, 
@@ -434,7 +434,7 @@ export async function POST(req: NextRequest) {
         ${country || 'Россия'}, ${region || ''}, ${city}, 
         ${numericTgId}, ${finalUserToken}, CURRENT_TIMESTAMP
       )
-      RETURNING id, nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text
+      RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text
     `;
 
     const newAd = result.rows[0];
@@ -1003,7 +1003,7 @@ export async function PATCH(req: NextRequest) {
       } else if (tgId) {
         updated = await sql`
           UPDATE ads 
-          SET nickname = ${nickname}
+          SET display_nickname = ${nickname}
           WHERE tg_id = ${tgId}
           RETURNING id
         `;
