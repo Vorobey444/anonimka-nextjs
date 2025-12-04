@@ -219,16 +219,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Определяем количество смен никнейма
-    // nickname_changed_at === NULL → 0 смен (первая установка/изменение)
-    // nickname_changed_at !== NULL → уже была хотя бы 1 смена
+    // nickname_changed_at === NULL → 0 смен (первая установка при регистрации)
+    // nickname_changed_at !== NULL → уже была установка, это смена
     const hasChangedBefore = !!existingUser?.nickname_changed_at;
     
     // ВАЖНО: Если у пользователя нет никнейма вообще (NULL или пустая строка),
-    // это точно первая установка, никакие ограничения не применяются
+    // это точно первая установка при регистрации, никакие ограничения не применяются
     const hasNoNickname = !existingUser?.display_nickname || existingUser.display_nickname.trim() === '';
     
     // ВАЖНО: Если текущий никнейм == новому никнейму, это не смена вообще
     const isSameNickname = existingUser?.display_nickname?.toLowerCase() === nickname.toLowerCase();
+    
+    // Проверяем, была ли это РЕГИСТРАЦИОННАЯ установка (в день создания аккаунта)
+    let isInitialRegistrationSetup = false;
+    if (hasChangedBefore && existingUser?.created_at && existingUser?.nickname_changed_at) {
+      const createdDate = new Date(existingUser.created_at).toDateString();
+      const changedDate = new Date(existingUser.nickname_changed_at).toDateString();
+      isInitialRegistrationSetup = createdDate === changedDate;
+    }
     
     console.log('[NICKNAME API] Проверка:', {
       userId,
@@ -237,31 +245,34 @@ export async function POST(request: NextRequest) {
       isSameNickname,
       hasNoNickname,
       hasChangedBefore,
+      isInitialRegistrationSetup,
       isPremium,
       nickname_changed_at: existingUser?.nickname_changed_at,
       created_at: existingUser?.created_at
     });
 
     // Логика ограничений:
-    // FREE: 1 смена разрешена (подарок для исправления ошибки при регистрации)
+    // FREE: 
+    //   - Первая установка при регистрации: разрешено
+    //   - Одна бесплатная смена ПОСЛЕ регистрации: разрешено
+    //   - Все остальное: заблокировано
     // PRO: неограниченные смены, но не чаще 1 раза в 24 часа
     
     // СПЕЦИАЛЬНОЕ ПРАВИЛО: Пользователям с никнеймом "Аноним*" даем 1 бесплатную смену
     const isAnonymousNickname = existingUser?.display_nickname?.startsWith('Аноним');
     
-    // ВАЖНО: Проверяем ограничения ТОЛЬКО если:
-    // 1. У пользователя УЖЕ ЕСТЬ никнейм (не первая установка)
-    // 2. Это реально НОВЫЙ никнейм (не такой же)
-    // 3. Уже была хотя бы одна предыдущая смена
-    // 4. И это не смена с "Аноним"
-    if (!hasNoNickname && !isSameNickname && hasChangedBefore && !isAnonymousNickname) {
+    // Это вторая или последующие РЕАЛЬНЫЕ смены (не совпадает с регистрационной)?
+    const isRealSecondaryChange = !hasNoNickname && !isSameNickname && hasChangedBefore && !isInitialRegistrationSetup;
+    
+    // ПРОВЕРЯЕМ ОГРАНИЧЕНИЯ ТОЛЬКО ДЛЯ ВТОРЫХ И ПОСЛЕДУЮЩИХ СМЕН (после регистрации)
+    if (isRealSecondaryChange && !isAnonymousNickname) {
       if (!isPremium) {
-        // FREE пользователи могут менять только 1 раз
-        console.log('[NICKNAME API] ❌ FREE пользователь уже использовал бесплатную смену');
+        // FREE пользователи уже использовали свою регистрационную и 1 бесплатную смену
+        console.log('[NICKNAME API] ❌ FREE пользователь уже использовал все бесплатные смены');
         return NextResponse.json(
           { 
             success: false, 
-            error: 'Вы уже использовали бесплатную смену никнейма. Оформите PRO для неограниченных смен (раз в 24 часа).',
+            error: 'Вы уже использовали бесплатные смены никнейма. Оформите PRO для неограниченных смен (раз в 24 часа).',
             code: 'NICKNAME_LOCKED_FREE'
           },
           { status: 403 }
