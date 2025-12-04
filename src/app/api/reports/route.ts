@@ -25,13 +25,27 @@ export async function POST(request: NextRequest) {
 
     // Если переданы токены вместо ID - находим ID по токенам
     if (!reporterId && reporterToken) {
-      const reporterData = await sql`SELECT tg_id FROM ads WHERE user_token = ${reporterToken} ORDER BY created_at DESC LIMIT 1`;
-      reporterId = reporterData.rows[0]?.tg_id || null;
+      // Сначала ищем в users по user_token
+      const reporterUsers = await sql`SELECT id FROM users WHERE user_token = ${reporterToken} LIMIT 1`;
+      if (reporterUsers.rows.length > 0) {
+        reporterId = reporterUsers.rows[0].id;
+      } else {
+        // Если нет в users, ищем в ads
+        const reporterData = await sql`SELECT tg_id FROM ads WHERE user_token = ${reporterToken} ORDER BY created_at DESC LIMIT 1`;
+        reporterId = reporterData.rows[0]?.tg_id || null;
+      }
     }
     
     if (!reportedUserId && reportedToken) {
-      const reportedData = await sql`SELECT tg_id FROM ads WHERE user_token = ${reportedToken} ORDER BY created_at DESC LIMIT 1`;
-      reportedUserId = reportedData.rows[0]?.tg_id || null;
+      // Сначала ищем в users по user_token
+      const reportedUsers = await sql`SELECT id FROM users WHERE user_token = ${reportedToken} LIMIT 1`;
+      if (reportedUsers.rows.length > 0) {
+        reportedUserId = reportedUsers.rows[0].id;
+      } else {
+        // Если нет в users, ищем в ads
+        const reportedData = await sql`SELECT tg_id FROM ads WHERE user_token = ${reportedToken} ORDER BY created_at DESC LIMIT 1`;
+        reportedUserId = reportedData.rows[0]?.tg_id || null;
+      }
     }
 
     console.log('[REPORTS API] Получены данные:', {
