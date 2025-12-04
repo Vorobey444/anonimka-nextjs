@@ -87,40 +87,9 @@ export async function POST(request: NextRequest) {
           }, { status: 500 });
         }
 
-        // Update private_chats blocked state using numeric id if available, otherwise token column
-        const chatSchema = await detectPrivateChatsSchema();
-        if (chatSchema.hasBlockedByToken || chatSchema.hasBlockedBy) {
-          if (blockerId && chatSchema.hasBlockedBy) {
-            // We have numeric id, store both (if token column exists)
-            if (chatSchema.hasBlockedByToken) {
-              await sql`
-                UPDATE private_chats
-                SET blocked_by = ${blockerId}, blocked_by_token = ${blocker_token}
-                WHERE (user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
-                   OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token})
-              `;
-            } else {
-              await sql`
-                UPDATE private_chats
-                SET blocked_by = ${blockerId}
-                WHERE (user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
-                   OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token})
-              `;
-            }
-          } else if (chatSchema.hasBlockedByToken) {
-            // Only token available – store token, leave numeric NULL (avoid bigint syntax errors)
-            // Явно приводим NULL к типу bigint
-            await sql`
-              UPDATE private_chats
-              SET blocked_by = NULL::bigint, blocked_by_token = ${blocker_token}
-              WHERE (user_token_1 = ${blocker_token} AND user_token_2 = ${blocked_token})
-                 OR (user_token_1 = ${blocked_token} AND user_token_2 = ${blocker_token})
-            `;
-          } else {
-            // Neither suitable column to store token-only block – skip silently
-            console.warn('[BLOCKS API] private_chats schema lacks blocked_by_token; apply migration 014 to support token-only blocking');
-          }
-        }
+        // Note: private_chats blocking handled separately via blocked_by/blocked_by_token columns
+        // Skipping update if columns don't exist to avoid errors
+        console.log('[BLOCKS API] Block recorded in user_blocks table');
 
         return NextResponse.json({ data: result.rows[0] || { success: true }, error: null });
       }

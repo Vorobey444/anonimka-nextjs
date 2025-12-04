@@ -45,7 +45,7 @@ export async function DELETE(request: NextRequest) {
     let testTokens: string[] = [];
     if (testIds.length > 0) {
       const tokenResult = await sql`
-        SELECT DISTINCT user_token FROM ads WHERE tg_id IN (${testIds.join(',')})
+        SELECT DISTINCT user_token FROM ads WHERE tg_id = ANY(ARRAY[${testIds.join(',')}])
       `;
       testTokens = tokenResult.rows.map((r: any) => r.user_token).filter(Boolean);
     }
@@ -57,7 +57,7 @@ export async function DELETE(request: NextRequest) {
       try {
         const wcResult = await sql`
           DELETE FROM world_chat_messages 
-          WHERE user_token IN (${testTokens.join(',')})
+          WHERE user_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
         `;
         deleted.world_chat = wcResult.rowCount || 0;
         console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.world_chat} world chat messages`);
@@ -72,11 +72,12 @@ export async function DELETE(request: NextRequest) {
       if (testTokens.length > 0) {
         adsResult = await sql`
           DELETE FROM ads 
-          WHERE tg_id IN (${testIds.join(',')}) OR user_token IN (${testTokens.join(',')})
+          WHERE tg_id = ANY(ARRAY[${testIds.join(',')}]) 
+             OR user_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
         `;
       } else {
         adsResult = await sql`
-          DELETE FROM ads WHERE tg_id IN (${testIds.join(',')})
+          DELETE FROM ads WHERE tg_id = ANY(ARRAY[${testIds.join(',')}])
         `;
       }
       deleted.ads = adsResult.rowCount || 0;
@@ -91,15 +92,16 @@ export async function DELETE(request: NextRequest) {
       if (testTokens.length > 0) {
         refResult = await sql`
           DELETE FROM referrals 
-          WHERE referrer_id IN (${testIds.join(',')}) 
-             OR referred_id IN (${testIds.join(',')})
-             OR referrer_token IN (${testTokens.join(',')})
-             OR referred_token IN (${testTokens.join(',')})
+          WHERE referrer_id = ANY(ARRAY[${testIds.join(',')}]) 
+             OR referred_id = ANY(ARRAY[${testIds.join(',')}])
+             OR referrer_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
+             OR referred_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
         `;
       } else {
         refResult = await sql`
           DELETE FROM referrals 
-          WHERE referrer_id IN (${testIds.join(',')}) OR referred_id IN (${testIds.join(',')})
+          WHERE referrer_id = ANY(ARRAY[${testIds.join(',')}]) 
+             OR referred_id = ANY(ARRAY[${testIds.join(',')}])
         `;
       }
       deleted.referrals = refResult.rowCount || 0;
@@ -111,7 +113,7 @@ export async function DELETE(request: NextRequest) {
     // 4. Удаляем лимиты
     try {
       const limitsResult = await sql`
-        DELETE FROM user_limits WHERE user_id IN (${testIds.join(',')})
+        DELETE FROM user_limits WHERE user_id = ANY(ARRAY[${testIds.join(',')}])
       `;
       deleted.user_limits = limitsResult.rowCount || 0;
       console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.user_limits} user_limits`);
@@ -122,7 +124,8 @@ export async function DELETE(request: NextRequest) {
     if (testTokens.length > 0) {
       try {
         const webLimitsResult = await sql`
-          DELETE FROM web_user_limits WHERE user_token IN (${testTokens.join(',')})
+          DELETE FROM web_user_limits 
+          WHERE user_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
         `;
         deleted.web_user_limits = webLimitsResult.rowCount || 0;
         console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.web_user_limits} web_user_limits`);
@@ -135,7 +138,8 @@ export async function DELETE(request: NextRequest) {
     if (testTokens.length > 0) {
       try {
         const premiumResult = await sql`
-          DELETE FROM premium_tokens WHERE user_token IN (${testTokens.join(',')})
+          DELETE FROM premium_tokens 
+          WHERE user_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
         `;
         deleted.premium_tokens = premiumResult.rowCount || 0;
         console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.premium_tokens} premium_tokens`);
@@ -147,7 +151,7 @@ export async function DELETE(request: NextRequest) {
     // 6. Удаляем пользователей из users (в конце, т.к. есть foreign keys)
     try {
       const usersResult = await sql`
-        DELETE FROM users WHERE id IN (${testIds.join(',')})
+        DELETE FROM users WHERE id = ANY(ARRAY[${testIds.join(',')}])
       `;
       deleted.users = usersResult.rowCount || 0;
       console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.users} users`);
