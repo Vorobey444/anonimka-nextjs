@@ -233,8 +233,7 @@ export async function POST(request: NextRequest) {
     await ServerErrorLogger.logError(error as Error, {
       endpoint: '/api/reports',
       method: 'POST',
-      statusCode: 500,
-      userId: reporterId?.toString()
+      statusCode: 500
     });
     return NextResponse.json({ 
       error: 'Failed to create report',
