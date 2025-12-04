@@ -635,6 +635,18 @@ async function initializeUserInDatabase() {
             if (result.success && result.userToken) {
                 // Сохраняем токен в localStorage (вместо tg_id)
                 localStorage.setItem('user_token', result.userToken);
+                
+                // Обновляем last_login_at для статистики активных пользователей
+                try {
+                    await fetch('/api/users', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tgId: userId })
+                    });
+                    console.log('✅ last_login_at обновлён');
+                } catch (e) {
+                    console.warn('⚠️ Не удалось обновить last_login_at:', e);
+                }
                 console.log('✅ Пользователь инициализирован, токен получен');
                 
                 // Всегда подтягиваем никнейм из БД и синхронизируем локально (сервер — источник истины)

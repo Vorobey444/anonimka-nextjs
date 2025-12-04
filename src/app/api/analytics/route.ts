@@ -132,12 +132,12 @@ export async function GET(request: NextRequest) {
         WHERE id IS NOT NULL
       `;
 
-      // Пользователи активные за последние 24 часа (UTC+5)
-      // Считаем по updated_at из таблицы users
+      // Пользователи активные за последние 24 часа
+      // Считаем по last_login_at (обновляется при каждом входе в приложение)
       const uniqueLast24h = await sql`
         SELECT COUNT(*) as count
         FROM users
-        WHERE updated_at >= (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Almaty') - INTERVAL '24 hours'
+        WHERE last_login_at >= NOW() - INTERVAL '24 hours'
       `;
 
       // Общее количество анкет (всех, включая удаленные)
