@@ -223,6 +223,10 @@ export async function POST(request: NextRequest) {
     // nickname_changed_at !== NULL → уже была хотя бы 1 смена
     const hasChangedBefore = !!existingUser?.nickname_changed_at;
     
+    // ВАЖНО: Если у пользователя нет никнейма вообще (NULL или пустая строка),
+    // это точно первая установка, никакие ограничения не применяются
+    const hasNoNickname = !existingUser?.display_nickname || existingUser.display_nickname.trim() === '';
+    
     // ВАЖНО: Если текущий никнейм == новому никнейму, это не смена вообще
     const isSameNickname = existingUser?.display_nickname?.toLowerCase() === nickname.toLowerCase();
     
@@ -231,6 +235,7 @@ export async function POST(request: NextRequest) {
       existingNickname: existingUser?.display_nickname,
       newNickname: nickname,
       isSameNickname,
+      hasNoNickname,
       hasChangedBefore,
       isPremium,
       nickname_changed_at: existingUser?.nickname_changed_at,
@@ -245,10 +250,11 @@ export async function POST(request: NextRequest) {
     const isAnonymousNickname = existingUser?.display_nickname?.startsWith('Аноним');
     
     // ВАЖНО: Проверяем ограничения ТОЛЬКО если:
-    // 1. Это реально НОВЫЙ никнейм (не такой же)
-    // 2. Уже была хотя бы одна предыдущая смена
-    // 3. И это не смена с "Аноним"
-    if (!isSameNickname && hasChangedBefore && !isAnonymousNickname) {
+    // 1. У пользователя УЖЕ ЕСТЬ никнейм (не первая установка)
+    // 2. Это реально НОВЫЙ никнейм (не такой же)
+    // 3. Уже была хотя бы одна предыдущая смена
+    // 4. И это не смена с "Аноним"
+    if (!hasNoNickname && !isSameNickname && hasChangedBefore && !isAnonymousNickname) {
       if (!isPremium) {
         // FREE пользователи могут менять только 1 раз
         console.log('[NICKNAME API] ❌ FREE пользователь уже использовал бесплатную смену');
