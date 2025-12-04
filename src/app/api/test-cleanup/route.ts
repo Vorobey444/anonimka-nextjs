@@ -41,18 +41,30 @@ export async function DELETE(request: NextRequest) {
       premium_tokens: 0
     };
 
-    // Получаем токены пользователей для очистки (используем цикл для безопасности)
+    // Получаем токены пользователей из таблицы users (основной источник!)
     let testTokens: string[] = [];
+    for (const id of testIds) {
+      try {
+        const userResult = await sql`SELECT user_token FROM users WHERE tg_id = ${id}`;
+        testTokens.push(...userResult.rows.map((r: any) => r.user_token).filter(Boolean));
+      } catch (e) {
+        console.warn(`[TEST CLEANUP] Token lookup error from users for ID ${id}:`, e);
+      }
+    }
+    
+    // Дополняем из таблицы ads на случай если запись в users удалена
     for (const id of testIds) {
       try {
         const tokenResult = await sql`SELECT DISTINCT user_token FROM ads WHERE tg_id = ${id}`;
         testTokens.push(...tokenResult.rows.map((r: any) => r.user_token).filter(Boolean));
       } catch (e) {
-        console.warn(`[TEST CLEANUP] Token lookup error for ID ${id}:`, e);
+        console.warn(`[TEST CLEANUP] Token lookup error from ads for ID ${id}:`, e);
       }
     }
-
-    console.log('[TEST CLEANUP] Found tokens:', testTokens.length);
+    
+    // Удаляем дубликаты
+    testTokens = [...new Set(testTokens)];
+    console.log('[TEST CLEANUP] Found tokens:', testTokens.length, testTokens);
 
     // 1. Удаляем сообщения из world_chat_messages
     for (const token of testTokens) {
