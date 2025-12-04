@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
             m.chat_id,
             m.sender_token,
             m.message,
-            m.sender_nickname,
+            m.display_nickname as sender_nickname,
             m.photo_url,
             m.telegram_file_id,
             m.read,
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
         // Сохраняем сообщение с nickname и фото (используем sender_token и receiver_token)
         const result = await sql`
           INSERT INTO messages (
-            chat_id, sender_token, message, sender_nickname, 
+            chat_id, sender_token, message, display_nickname, 
             photo_url, telegram_file_id, reply_to_message_id, created_at
           )
           VALUES (

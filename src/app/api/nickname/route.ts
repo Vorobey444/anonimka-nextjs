@@ -320,7 +320,7 @@ export async function POST(request: NextRequest) {
       const userToken = userTokenResult.rows[0].user_token;
       await sql`
         UPDATE user_blocks
-        SET blocked_nickname = ${nickname}
+        SET blocked_display_nickname = ${nickname}
         WHERE blocked_token = ${userToken}
       `;
     }

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         }
         const result = await sql`
           SELECT pc.*,
-            (SELECT sender_nickname FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as sender_nickname,
+            (SELECT display_nickname FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as sender_nickname,
             (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) as last_message_text,
             -- токен оппонента (создателя запроса) теперь уже в user_token_1
             pc.user_token_1 as opponent_token,
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
           const senderNickname = senderInfo.rows[0]?.nickname || 'Аноним';
           
           await sql`
-            INSERT INTO messages (chat_id, sender_token, sender_nickname, message, created_at)
+            INSERT INTO messages (chat_id, sender_token, display_nickname, message, created_at)
             VALUES (${chatId}, ${chat.user_token_1}, ${senderNickname}, ${chat.message}, ${chat.created_at})
           `;
         }
@@ -352,7 +352,7 @@ export async function POST(request: NextRequest) {
         if (message) {
           const actualSender = senderToken || user1_token; // Используем senderToken если передан
           await sql`
-            INSERT INTO messages (chat_id, sender_token, sender_nickname, message, read, created_at)
+            INSERT INTO messages (chat_id, sender_token, display_nickname, message, read, created_at)
             VALUES (${chat.id}, ${actualSender}, ${senderNickname}, ${message}, false, NOW())
           `;
         }

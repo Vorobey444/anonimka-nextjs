@@ -121,8 +121,8 @@ async function getBlockedUsers(params: {
         });
     } catch (error: any) {
         console.error('❌ Ошибка при запросе user_blocks:', error.message);
-        // Если поле blocked_nickname не существует, делаем запрос без него
-        console.log('Fallback: blocked_nickname поле не найдено, используем базовый запрос');
+        // Если поле blocked_display_nickname не существует, делаем запрос без него
+        console.log('Fallback: blocked_display_nickname поле не найдено, используем базовый запрос');
         
         const result = await sql`
             SELECT blocked_token, created_at
@@ -144,12 +144,12 @@ async function getBlockedUsers(params: {
                     `;
                     return {
                         ...block,
-                        blocked_nickname: nicknameResult.rows[0]?.nickname || 'Неизвестный'
+                        blocked_display_nickname: nicknameResult.rows[0]?.display_nickname || 'Неизвестный'
                     };
                 } catch {
                     return {
                         ...block,
-                        blocked_nickname: 'Неизвестный'
+                        blocked_display_nickname: 'Неизвестный'
                     };
                 }
             })

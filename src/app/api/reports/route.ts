@@ -157,9 +157,8 @@ export async function POST(request: NextRequest) {
           
           // Получаем последние 20 сообщений из этого чата
           const messages = await sql`
-            SELECT m.message, m.sender_id, m.created_at, u.display_nickname
+            SELECT m.message, m.sender_token, m.display_nickname, m.created_at
             FROM messages m
-            LEFT JOIN users u ON m.sender_id = u.id
             WHERE m.chat_id = ${chatId}
             ORDER BY m.created_at DESC
             LIMIT 20

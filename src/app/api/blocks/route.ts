@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'block-user': {
-        const { blocker_token, blocked_token, blocked_nickname } = params || {};
+        const { blocker_token, blocked_token, blocked_display_nickname } = params || {};
         if (!blocker_token || !blocked_token) {
           return NextResponse.json({ error: { message: 'user_token не указан' } }, { status: 400 });
         }
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         const blockedId = await resolveTgId(blocked_token);
 
         // Получаем никнейм если не передан
-        let nickname = blocked_nickname;
+        let nickname = blocked_display_nickname;
         if (!nickname) {
           // Сначала пробуем из users
           const userNickname = await sql`
@@ -60,16 +60,16 @@ export async function POST(request: NextRequest) {
         }
 
         let result: any = { rows: [] };
-        if (schema.hasToken && schema.hasIds && blockerId && blockedId) {
+        if (schema.hasToken && blockerId && blockedId) {
           result = await sql`
-            INSERT INTO user_blocks (blocker_id, blocked_id, blocker_token, blocked_token, blocked_nickname, created_at)
-            VALUES (${blockerId}, ${blockedId}, ${blocker_token}, ${blocked_token}, ${nickname || 'Неизвестный'}, NOW())
+            INSERT INTO user_blocks (blocker_token, blocked_token, blocked_display_nickname, created_at)
+            VALUES (${blocker_token}, ${blocked_token}, ${nickname || 'Неизвестный'}, NOW())
             ON CONFLICT DO NOTHING
             RETURNING *
           `;
         } else if (schema.hasToken) {
           result = await sql`
-            INSERT INTO user_blocks (blocker_token, blocked_token, blocked_nickname, created_at)
+            INSERT INTO user_blocks (blocker_token, blocked_token, blocked_display_nickname, created_at)
             VALUES (${blocker_token}, ${blocked_token}, ${nickname || 'Неизвестный'}, NOW())
             ON CONFLICT DO NOTHING
             RETURNING *
