@@ -1317,30 +1317,55 @@ async function loadSiteStats() {
         const response = await fetch('/api/analytics?metric=all');
         const data = await response.json();
         
+        console.log('[STATS] API Response:', data);
+        
         // Обновляем счетчики на странице если они есть
         const totalVisitsEl = document.getElementById('totalVisits');
         const onlineNowEl = document.getElementById('onlineNow');
         const totalAdsEl = document.getElementById('totalAds');
         const blockedUsersEl = document.getElementById('blockedUsersCount');
         
+        console.log('[STATS] Found elements:', {
+            totalVisitsEl: !!totalVisitsEl,
+            onlineNowEl: !!onlineNowEl,
+            totalAdsEl: !!totalAdsEl,
+            blockedUsersEl: !!blockedUsersEl
+        });
+        
         // 👥 - Общее количество уникальных пользователей за все время
         if (totalVisitsEl && data.total_unique_users !== undefined) {
-            totalVisitsEl.textContent = formatNumber(data.total_unique_users);
+            const formatted = formatNumber(data.total_unique_users);
+            totalVisitsEl.textContent = formatted;
+            console.log('[STATS] Updated totalVisits:', data.total_unique_users, '->', formatted);
+        } else {
+            console.warn('[STATS] Cannot update totalVisits:', { el: !!totalVisitsEl, value: data.total_unique_users });
         }
         
         // 🔥 - Уникальные пользователи за последние 24 часа
         if (onlineNowEl && data.unique_last_24h !== undefined) {
-            onlineNowEl.textContent = formatNumber(data.unique_last_24h);
+            const formatted = formatNumber(data.unique_last_24h);
+            onlineNowEl.textContent = formatted;
+            console.log('[STATS] Updated onlineNow:', data.unique_last_24h, '->', formatted);
+        } else {
+            console.warn('[STATS] Cannot update onlineNow:', { el: !!onlineNowEl, value: data.unique_last_24h });
         }
         
         // 📢 - Общее количество анкет
         if (totalAdsEl && data.total_ads !== undefined) {
-            totalAdsEl.textContent = formatNumber(data.total_ads);
+            const formatted = formatNumber(data.total_ads);
+            totalAdsEl.textContent = formatted;
+            console.log('[STATS] Updated totalAds:', data.total_ads, '->', formatted);
+        } else {
+            console.warn('[STATS] Cannot update totalAds:', { el: !!totalAdsEl, value: data.total_ads });
         }
         
         // 🚫 - Заблокировали бота
         if (blockedUsersEl && data.blocked_users !== undefined) {
-            blockedUsersEl.textContent = formatNumber(data.blocked_users);
+            const formatted = formatNumber(data.blocked_users);
+            blockedUsersEl.textContent = formatted;
+            console.log('[STATS] Updated blockedUsers:', data.blocked_users, '->', formatted);
+        } else {
+            console.warn('[STATS] Cannot update blockedUsers:', { el: !!blockedUsersEl, value: data.blocked_users });
         }
     } catch (error) {
         console.error('Ошибка загрузки статистики:', error);
