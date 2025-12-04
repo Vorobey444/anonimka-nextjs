@@ -237,9 +237,10 @@ export async function POST(request: NextRequest) {
     // СПЕЦИАЛЬНОЕ ПРАВИЛО: Пользователям с никнеймом "Аноним*" даем 1 бесплатную смену
     const isAnonymousNickname = existingUser?.display_nickname?.startsWith('Аноним');
     
-    if (hasChangedBefore && !isAnonymousNickname) {
+    // ВАЖНО: Проверяем ограничения ТОЛЬКО если есть nickname_changed_at (то есть уже была смена)
+    if (existingUser?.nickname_changed_at && !isAnonymousNickname) {
       if (!isPremium) {
-        // FREE пользователи уже использовали свою 1 бесплатную смену
+        // FREE пользователи могут менять только 1 раз
         console.log('[NICKNAME API] ❌ FREE пользователь уже использовал бесплатную смену');
         return NextResponse.json(
           { 
@@ -293,44 +294,17 @@ export async function POST(request: NextRequest) {
     
     const token = generateUserToken(userId);
     
-    // Логика установки nickname_changed_at:
-    // - Если это ПЕРВАЯ установка никнейма (hasChangedBefore = false) -> НЕ устанавливаем (остается NULL)
-    // - Если это СМЕНА никнейма (hasChangedBefore = true) -> устанавливаем NOW() для 24-часовой блокировки
-    // - Если никнейм начинается с "Аноним" -> разрешаем ещё одну смену (не устанавливаем)
-    
-    let nicknameChangedAtValue: string | Date | null;
-    if (!hasChangedBefore || isAnonymousNickname) {
-      // Первая установка или смена с "Аноним" - не устанавливаем блокировку
-      nicknameChangedAtValue = null;
-    } else {
-      // Последующая смена - устанавливаем блокировку на 24 часа
-      nicknameChangedAtValue = new Date();
-    }
-    
-    // Используем rawSQL для nullable значения
-    if (nicknameChangedAtValue) {
-      await sql`
-        INSERT INTO users (id, user_token, display_nickname, nickname_changed_at, created_at, updated_at)
-        VALUES (${userId}, ${token}, ${nickname}, NOW(), NOW(), NOW())
-        ON CONFLICT (id) DO UPDATE
-        SET 
-          user_token = COALESCE(users.user_token, ${token}),
-          display_nickname = ${nickname}, 
-          nickname_changed_at = NOW(),
-          updated_at = NOW()
-      `;
-    } else {
-      await sql`
-        INSERT INTO users (id, user_token, display_nickname, nickname_changed_at, created_at, updated_at)
-        VALUES (${userId}, ${token}, ${nickname}, NULL, NOW(), NOW())
-        ON CONFLICT (id) DO UPDATE
-        SET 
-          user_token = COALESCE(users.user_token, ${token}),
-          display_nickname = ${nickname}, 
-          nickname_changed_at = NULL,
-          updated_at = NOW()
-      `;
-    }
+    // Всегда обновляем nickname_changed_at при смене никнейма
+    await sql`
+      INSERT INTO users (id, user_token, display_nickname, nickname_changed_at, created_at, updated_at)
+      VALUES (${userId}, ${token}, ${nickname}, NOW(), NOW(), NOW())
+      ON CONFLICT (id) DO UPDATE
+      SET 
+        user_token = COALESCE(users.user_token, ${token}),
+        display_nickname = ${nickname}, 
+        nickname_changed_at = NOW(),
+        updated_at = NOW()
+    `;
 
     // Обновляем никнейм во всех объявлениях пользователя
     await sql`
