@@ -652,18 +652,11 @@ export async function POST(req: NextRequest) {
       try {
         console.log('[ADS API] Проверка рефералки для user_token:', finalUserToken);
         
-        // Определяем возможный tg_id для этого токена
-        const tokenLookup = await sql`
-          SELECT tg_id FROM ads WHERE user_token = ${finalUserToken} ORDER BY created_at DESC LIMIT 1
-        `;
-        const refTgId: number | null = tokenLookup.rows[0]?.tg_id ?? null;
-
-        // Находим реферала: по referred_token (веб) или по referred_id (telegram)
+        // Находим реферала по referred_token (используем РЕАЛЬНУЮ схему БД)
         const referralResult = await sql`
-          SELECT id, referrer_id, referrer_token, reward_given, referred_id
+          SELECT id, referrer_token, reward_given
           FROM referrals 
-          WHERE (referred_token = ${finalUserToken})
-             OR (${refTgId !== null} AND referred_id = ${refTgId})
+          WHERE referred_token = ${finalUserToken}
           ORDER BY created_at DESC
           LIMIT 1
         `;
@@ -672,57 +665,30 @@ export async function POST(req: NextRequest) {
           console.log('[ADS API] Реферал не найден - пользователь пришел не по реферальной ссылке');
         } else {
           const referral = referralResult.rows[0];
-          
-          // Обновляем referred_id если он пустой и теперь известен tg_id
-          if (refTgId !== null && referral.referred_id === null) {
-            await sql`UPDATE referrals SET referred_id = ${refTgId} WHERE id = ${referral.id}`;
-            console.log('[ADS API] Обновлен referred_id =', refTgId);
-          }
 
           // Проверяем, не была ли уже выдана награда
           if (referral.reward_given) {
             console.log('[ADS API] Награда за этого реферала уже была выдана ранее');
           } else {
-            // Выдаем награду
+            // Выдаем награду реферу
             const now = new Date();
             const baseExpiry = new Date(now);
             baseExpiry.setDate(baseExpiry.getDate() + 30);
 
-            if (referral.referrer_token) {
-              // Проверяем, не имел ли реферер PRO ранее
-              const existing = await sql`SELECT user_token FROM premium_tokens WHERE user_token = ${referral.referrer_token} LIMIT 1`;
-              
-              if (existing.rows.length > 0) {
-                console.log('[ADS API] Реферер (token) уже получал PRO — акция действует один раз');
-                await sql`UPDATE referrals SET reward_given = TRUE, reward_given_at = NOW() WHERE id = ${referral.id}`;
-              } else {
-                // Выдаем PRO впервые
-                await sql`
-                  INSERT INTO premium_tokens (user_token, is_premium, premium_until)
-                  VALUES (${referral.referrer_token}, TRUE, ${baseExpiry.toISOString()})
-                `;
-                await sql`UPDATE referrals SET reward_given = TRUE, reward_given_at = NOW() WHERE id = ${referral.id}`;
-                console.log('[ADS API] ✅ PRO выдан рефереру (token) до:', baseExpiry.toISOString());
-              }
-            } else if (referral.referrer_id) {
-              // Проверяем users таблицу
-              const u = await sql`SELECT id, premium_until FROM users WHERE id = ${referral.referrer_id} LIMIT 1`;
-
-              if (u.rows.length > 0 && u.rows[0].premium_until !== null) {
-                console.log('[ADS API] Реферер (tg_id) уже получал PRO — акция действует один раз');
-                await sql`UPDATE referrals SET reward_given = TRUE, reward_given_at = NOW() WHERE id = ${referral.id}`;
-              } else {
-                // Выдаем PRO впервые
-                await sql`
-                  UPDATE users
-                  SET is_premium = TRUE,
-                      premium_until = ${baseExpiry.toISOString()},
-                      updated_at = NOW()
-                  WHERE id = ${referral.referrer_id}
-                `;
-                await sql`UPDATE referrals SET reward_given = TRUE, reward_given_at = NOW() WHERE id = ${referral.id}`;
-                console.log('[ADS API] ✅ PRO выдан рефереру (tg_id) до:', baseExpiry.toISOString());
-              }
+            // Проверяем, не имел ли реферер PRO ранее (акция один раз)
+            const existing = await sql`SELECT user_token FROM premium_tokens WHERE user_token = ${referral.referrer_token} LIMIT 1`;
+            
+            if (existing.rows.length > 0) {
+              console.log('[ADS API] Реферер уже получал PRO — акция действует один раз');
+              await sql`UPDATE referrals SET reward_given = TRUE, reward_given_at = NOW() WHERE id = ${referral.id}`;
+            } else {
+              // Выдаем PRO впервые
+              await sql`
+                INSERT INTO premium_tokens (user_token, is_premium, premium_until)
+                VALUES (${referral.referrer_token}, TRUE, ${baseExpiry.toISOString()})
+              `;
+              await sql`UPDATE referrals SET reward_given = TRUE, reward_given_at = NOW() WHERE id = ${referral.id}`;
+              console.log('[ADS API] ✅ PRO выдан рефереру до:', baseExpiry.toISOString());
             }
           }
         }
