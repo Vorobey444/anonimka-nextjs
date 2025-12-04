@@ -1303,20 +1303,34 @@ async function loadSiteStats() {
                     }
                 }
             }
-            console.log('[ADMIN STATS] Проверка админа для user_id:', userId);
+            
+            // Проверяем по user_token если нет Telegram ID (для email-пользователей из Android)
+            const userToken = localStorage.getItem('user_token');
+            console.log('[ADMIN STATS] Проверка админа для user_id:', userId, 'user_token:', userToken ? 'есть' : 'нет');
             
             if (userId) {
                 try {
                     const userStatusResponse = await fetch(`/api/users?action=check-admin&user_id=${userId}`);
                     const userStatusData = await userStatusResponse.json();
-                    console.log('[ADMIN STATS] Ответ API:', userStatusData);
+                    console.log('[ADMIN STATS] Ответ API (по user_id):', userStatusData);
                     isAdminUser = userStatusData.is_admin === true;
                     console.log('[ADMIN STATS] isAdminUser:', isAdminUser);
                 } catch (err) {
                     console.error('[ADMIN STATS] Ошибка проверки статуса админа:', err);
                 }
+            } else if (userToken) {
+                // Проверяем по user_token для email-пользователей
+                try {
+                    const userStatusResponse = await fetch(`/api/users?action=check-admin&userToken=${userToken}`);
+                    const userStatusData = await userStatusResponse.json();
+                    console.log('[ADMIN STATS] Ответ API (по userToken):', userStatusData);
+                    isAdminUser = userStatusData.is_admin === true;
+                    console.log('[ADMIN STATS] isAdminUser:', isAdminUser);
+                } catch (err) {
+                    console.error('[ADMIN STATS] Ошибка проверки статуса админа по токену:', err);
+                }
             } else {
-                console.warn('[ADMIN STATS] userId не найден');
+                console.warn('[ADMIN STATS] Ни userId, ни userToken не найдены');
             }
             
             adminCheckCompleted = true;

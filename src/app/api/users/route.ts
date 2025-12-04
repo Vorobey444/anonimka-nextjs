@@ -140,6 +140,18 @@ export async function GET(req: NextRequest) {
     // Проверка статуса админа
     if (action === 'check-admin') {
       const userId = userIdParam || tgIdParam;
+      
+      // Проверяем по user_token если передан (для email-пользователей из Android)
+      if (userToken) {
+        const result = await sql`
+          SELECT is_admin FROM users WHERE user_token = ${userToken}
+        `;
+        return NextResponse.json({ 
+          is_admin: result.rows[0]?.is_admin === true 
+        });
+      }
+      
+      // Проверяем по Telegram ID
       if (!userId) {
         return NextResponse.json({ is_admin: false });
       }
