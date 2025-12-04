@@ -54,7 +54,7 @@ export default async function handler(req, res) {
         SELECT 
           id,
           user_token as "userToken",
-          nickname,
+          display_nickname as nickname,
           message,
           type,
           is_bot as "isBot",
@@ -126,12 +126,12 @@ async function handleNewFormat(body, res) {
   const isBotMessage = is_bot || user_token.startsWith('bot_');
 
   const result = await sql`
-    INSERT INTO world_chat_messages (user_token, nickname, message, type, is_bot)
+    INSERT INTO world_chat_messages (user_token, display_nickname, message, type, is_bot)
     VALUES (${user_token}, ${nickname}, ${finalMessage}, ${type}, ${isBotMessage})
     RETURNING 
       id,
       user_token as "userToken",
-      nickname,
+      display_nickname as nickname,
       message,
       type,
       is_bot as "isBot",
@@ -230,7 +230,7 @@ async function getMessages(params, res) {
   if (tab === 'world') {
     // Вкладка "Мир" - мировые @ + городские & текущего города + свои ЛС
     const result = await sql`
-      SELECT id, user_token, nickname, message, type, target_user_token, target_nickname, 
+      SELECT id, user_token, display_nickname as nickname, message, type, target_user_token, target_display_nickname as target_nickname, 
              location_city, is_premium, is_bot, created_at
       FROM world_chat_messages
       WHERE (
@@ -252,7 +252,7 @@ async function getMessages(params, res) {
   } else if (tab === 'city') {
     // Вкладка "Город" - городские + ЛС
     const result = await sql`
-      SELECT id, user_token, nickname, message, type, target_user_token, target_nickname,
+      SELECT id, user_token, display_nickname as nickname, message, type, target_user_token, target_display_nickname as target_nickname,
              location_city, is_premium, is_bot, created_at
       FROM world_chat_messages
       WHERE (
@@ -273,7 +273,7 @@ async function getMessages(params, res) {
   } else if (tab === 'private') {
     // Вкладка "ЛС" - только личные сообщения
     const result = await sql`
-      SELECT id, user_token, nickname, message, type, target_user_token, target_nickname,
+      SELECT id, user_token, display_nickname as nickname, message, type, target_user_token, target_display_nickname as target_nickname,
              location_city, is_premium, is_bot, created_at
       FROM world_chat_messages
       WHERE type = 'private' AND (target_user_token = ${userToken} OR user_token = ${userToken})
@@ -338,9 +338,9 @@ async function sendMessage(params, res) {
 
     // Ищем пользователя сначала в чате, затем в объявлениях
     const targetUserResult = await sql`
-      SELECT DISTINCT user_token FROM world_chat_messages WHERE nickname = ${targetNickname}
+      SELECT DISTINCT user_token FROM world_chat_messages WHERE display_nickname = ${targetNickname}
       UNION
-      SELECT DISTINCT user_token FROM ads WHERE nickname = ${targetNickname}
+      SELECT DISTINCT user_token FROM ads WHERE display_nickname = ${targetNickname}
       LIMIT 1
     `;
 
