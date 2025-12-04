@@ -58,10 +58,10 @@ export async function POST(request: NextRequest) {
     // Получаем nickname отправителя
     let senderNickname = senderName || 'Пользователь';
     const { rows: nicknameRows } = await sql`
-      SELECT nickname FROM ads WHERE user_token = ${sender_token} LIMIT 1;
+      SELECT display_nickname FROM ads WHERE user_token = ${sender_token} LIMIT 1;
     `;
-    if (nicknameRows.length > 0 && nicknameRows[0].nickname) {
-      senderNickname = nicknameRows[0].nickname;
+    if (nicknameRows.length > 0 && nicknameRows[0].display_nickname) {
+      senderNickname = nicknameRows[0].display_nickname;
     }
 
     // Формируем текст уведомления

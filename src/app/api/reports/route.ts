@@ -98,10 +98,10 @@ export async function POST(request: NextRequest) {
     } else {
       // Если пользователя нет в users, ищем его nickname в ads
       const reporterAd = await sql`
-        SELECT nickname FROM ads WHERE tg_id = ${reporterId} ORDER BY created_at DESC LIMIT 1
+        SELECT display_nickname FROM ads WHERE tg_id = ${reporterId} ORDER BY created_at DESC LIMIT 1
       `;
       if (reporterAd.rows.length > 0) {
-        reporterNick = reporterAd.rows[0].nickname || 'Аноним';
+        reporterNick = reporterAd.rows[0].display_nickname || 'Аноним';
       }
     }
     
@@ -117,10 +117,10 @@ export async function POST(request: NextRequest) {
     } else {
       // Если пользователя нет в users, ищем его nickname в ads
       const reportedAd = await sql`
-        SELECT nickname FROM ads WHERE tg_id = ${reportedUserId} ORDER BY created_at DESC LIMIT 1
+        SELECT display_nickname FROM ads WHERE tg_id = ${reportedUserId} ORDER BY created_at DESC LIMIT 1
       `;
       if (reportedAd.rows.length > 0) {
-        reportedNick = reportedAd.rows[0].nickname || 'Аноним';
+        reportedNick = reportedAd.rows[0].display_nickname || 'Аноним';
       }
     }
 

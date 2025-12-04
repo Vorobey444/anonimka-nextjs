@@ -56,13 +56,13 @@ async function blockUser(params: {
     let nickname = blockedNickname;
     if (!nickname) {
         const nicknameResult = await sql`
-            SELECT nickname FROM ads 
+            SELECT display_nickname FROM ads 
             WHERE user_token = ${blockedToken} 
             ORDER BY created_at DESC 
             LIMIT 1
         `;
         if (nicknameResult.rows.length > 0) {
-            nickname = nicknameResult.rows[0].nickname;
+            nickname = nicknameResult.rows[0].display_nickname;
         }
     }
 

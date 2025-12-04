@@ -268,7 +268,7 @@ export async function GET(request: NextRequest) {
                 b.created_at,
                 b.reward_given,
                 b.reward_given_at,
-                COALESCE(a1.nickname, a2.nickname) AS nickname,
+                COALESCE(a1.display_nickname, a2.display_nickname) AS nickname,
                 b.referred_token,
                 b.referred_id
             FROM base b
