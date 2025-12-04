@@ -447,14 +447,33 @@ export async function PUT(req: NextRequest) {
     console.log('[USERS API] PUT location request', {
       hasTgId: Boolean(tgId),
       hasUserToken: Boolean(userToken),
-      location
+      location,
+      hasLocationCountry: location?.country,
+      hasLocationCity: location?.city
     });
 
-    if (!location || !location.country || !location.region || !location.city) {
-      return NextResponse.json(
-        { success: false, error: 'Локация должна содержать country, region и city' },
-        { status: 400 }
-      );
+    // Если нет локации - просто обновляем last_login_at
+    if (!location || !location.country || !location.city) {
+      console.log('[USERS API] Локация неполная, обновляем только last_login_at');
+      
+      if (tgId) {
+        const tgIdNum = Number(tgId);
+        if (Number.isFinite(tgIdNum)) {
+          await sql`
+            UPDATE users
+            SET last_login_at = NOW(), updated_at = NOW()
+            WHERE id = ${tgIdNum}
+          `;
+        }
+      } else if (userToken) {
+        await sql`
+          UPDATE users
+          SET last_login_at = NOW(), updated_at = NOW()
+          WHERE user_token = ${userToken}
+        `;
+      }
+      
+      return NextResponse.json({ success: true });
     }
 
     // Сохраняем локацию по tgId
