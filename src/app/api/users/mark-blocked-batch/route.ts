@@ -29,13 +29,17 @@ export async function POST(request: NextRequest) {
         }
 
         // Пакетное обновление статуса блокировки
-        await sql`
+        // Используем параметризованный запрос с правильной типизацией для массива
+        const placeholders = user_ids.map((_, i) => `$${i + 1}`).join(',');
+        const query = `
             UPDATE users
-            SET is_bot_blocked = ${blocked},
-                bot_blocked_at = CASE WHEN ${blocked} = true THEN NOW() ELSE NULL END,
+            SET is_bot_blocked = $${user_ids.length + 1},
+                bot_blocked_at = CASE WHEN $${user_ids.length + 1} = true THEN NOW() ELSE NULL END,
                 updated_at = NOW()
-            WHERE id = ANY(${user_ids})
+            WHERE id IN (${placeholders})
         `;
+        
+        await sql.query(query, [...user_ids, blocked]);
 
         console.log(`[BOT BLOCKED BATCH] ${user_ids.length} пользователей ${blocked ? 'заблокировали' : 'разблокировали'} бота`);
 
