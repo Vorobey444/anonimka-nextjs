@@ -41,123 +41,116 @@ export async function DELETE(request: NextRequest) {
       premium_tokens: 0
     };
 
-    // Получаем токены пользователей для очистки
+    // Получаем токены пользователей для очистки (используем цикл для безопасности)
     let testTokens: string[] = [];
-    if (testIds.length > 0) {
-      const tokenResult = await sql`
-        SELECT DISTINCT user_token FROM ads WHERE tg_id = ANY(ARRAY[${testIds.join(',')}])
-      `;
-      testTokens = tokenResult.rows.map((r: any) => r.user_token).filter(Boolean);
+    for (const id of testIds) {
+      try {
+        const tokenResult = await sql`SELECT DISTINCT user_token FROM ads WHERE tg_id = ${id}`;
+        testTokens.push(...tokenResult.rows.map((r: any) => r.user_token).filter(Boolean));
+      } catch (e) {
+        console.warn(`[TEST CLEANUP] Token lookup error for ID ${id}:`, e);
+      }
     }
 
     console.log('[TEST CLEANUP] Found tokens:', testTokens.length);
 
     // 1. Удаляем сообщения из world_chat_messages
-    if (testTokens.length > 0) {
+    for (const token of testTokens) {
       try {
-        const wcResult = await sql`
-          DELETE FROM world_chat_messages 
-          WHERE user_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
-        `;
-        deleted.world_chat = wcResult.rowCount || 0;
-        console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.world_chat} world chat messages`);
+        const wcResult = await sql`DELETE FROM world_chat_messages WHERE user_token = ${token}`;
+        deleted.world_chat += wcResult.rowCount || 0;
       } catch (e) {
         console.warn('[TEST CLEANUP] World chat cleanup error:', e);
       }
     }
+    console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.world_chat} world chat messages`);
 
     // 2. Удаляем объявления (ads)
-    try {
-      let adsResult;
-      if (testTokens.length > 0) {
-        adsResult = await sql`
-          DELETE FROM ads 
-          WHERE tg_id = ANY(ARRAY[${testIds.join(',')}]) 
-             OR user_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
-        `;
-      } else {
-        adsResult = await sql`
-          DELETE FROM ads WHERE tg_id = ANY(ARRAY[${testIds.join(',')}])
-        `;
+    for (const id of testIds) {
+      try {
+        const adsResult = await sql`DELETE FROM ads WHERE tg_id = ${id}`;
+        deleted.ads += adsResult.rowCount || 0;
+      } catch (e) {
+        console.warn('[TEST CLEANUP] Ads cleanup error:', e);
       }
-      deleted.ads = adsResult.rowCount || 0;
-      console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.ads} ads`);
-    } catch (e) {
-      console.warn('[TEST CLEANUP] Ads cleanup error:', e);
     }
+    for (const token of testTokens) {
+      try {
+        const adsResult = await sql`DELETE FROM ads WHERE user_token = ${token}`;
+        deleted.ads += adsResult.rowCount || 0;
+      } catch (e) {
+        console.warn('[TEST CLEANUP] Ads cleanup error:', e);
+      }
+    }
+    console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.ads} ads`);
 
     // 3. Удаляем реферальные записи
-    try {
-      let refResult;
-      if (testTokens.length > 0) {
-        refResult = await sql`
+    for (const id of testIds) {
+      try {
+        const refResult = await sql`
           DELETE FROM referrals 
-          WHERE referrer_id = ANY(ARRAY[${testIds.join(',')}]) 
-             OR referred_id = ANY(ARRAY[${testIds.join(',')}])
-             OR referrer_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
-             OR referred_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
+          WHERE referrer_id = ${id} OR referred_id = ${id}
         `;
-      } else {
-        refResult = await sql`
-          DELETE FROM referrals 
-          WHERE referrer_id = ANY(ARRAY[${testIds.join(',')}]) 
-             OR referred_id = ANY(ARRAY[${testIds.join(',')}])
-        `;
+        deleted.referrals += refResult.rowCount || 0;
+      } catch (e) {
+        console.warn('[TEST CLEANUP] Referrals cleanup error:', e);
       }
-      deleted.referrals = refResult.rowCount || 0;
-      console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.referrals} referrals`);
-    } catch (e) {
-      console.warn('[TEST CLEANUP] Referrals cleanup error:', e);
     }
+    for (const token of testTokens) {
+      try {
+        const refResult = await sql`
+          DELETE FROM referrals 
+          WHERE referrer_token = ${token} OR referred_token = ${token}
+        `;
+        deleted.referrals += refResult.rowCount || 0;
+      } catch (e) {
+        console.warn('[TEST CLEANUP] Referrals cleanup error:', e);
+      }
+    }
+    console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.referrals} referrals`);
 
     // 4. Удаляем лимиты
-    try {
-      const limitsResult = await sql`
-        DELETE FROM user_limits WHERE user_id = ANY(ARRAY[${testIds.join(',')}])
-      `;
-      deleted.user_limits = limitsResult.rowCount || 0;
-      console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.user_limits} user_limits`);
-    } catch (e) {
-      console.warn('[TEST CLEANUP] User limits cleanup error:', e);
-    }
-
-    if (testTokens.length > 0) {
+    for (const id of testIds) {
       try {
-        const webLimitsResult = await sql`
-          DELETE FROM web_user_limits 
-          WHERE user_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
-        `;
-        deleted.web_user_limits = webLimitsResult.rowCount || 0;
-        console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.web_user_limits} web_user_limits`);
+        const limitsResult = await sql`DELETE FROM user_limits WHERE user_id = ${id}`;
+        deleted.user_limits += limitsResult.rowCount || 0;
+      } catch (e) {
+        console.warn('[TEST CLEANUP] User limits cleanup error:', e);
+      }
+    }
+    console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.user_limits} user_limits`);
+
+    for (const token of testTokens) {
+      try {
+        const webLimitsResult = await sql`DELETE FROM web_user_limits WHERE user_token = ${token}`;
+        deleted.web_user_limits += webLimitsResult.rowCount || 0;
       } catch (e) {
         console.warn('[TEST CLEANUP] Web limits cleanup error:', e);
       }
     }
+    console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.web_user_limits} web_user_limits`);
 
     // 5. Удаляем premium_tokens
-    if (testTokens.length > 0) {
+    for (const token of testTokens) {
       try {
-        const premiumResult = await sql`
-          DELETE FROM premium_tokens 
-          WHERE user_token = ANY(ARRAY[${testTokens.map(t => `'${t}'`).join(',')}]::text[])
-        `;
-        deleted.premium_tokens = premiumResult.rowCount || 0;
-        console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.premium_tokens} premium_tokens`);
+        const premiumResult = await sql`DELETE FROM premium_tokens WHERE user_token = ${token}`;
+        deleted.premium_tokens += premiumResult.rowCount || 0;
       } catch (e) {
         console.warn('[TEST CLEANUP] Premium tokens cleanup error:', e);
       }
     }
+    console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.premium_tokens} premium_tokens`);
 
     // 6. Удаляем пользователей из users (в конце, т.к. есть foreign keys)
-    try {
-      const usersResult = await sql`
-        DELETE FROM users WHERE id = ANY(ARRAY[${testIds.join(',')}])
-      `;
-      deleted.users = usersResult.rowCount || 0;
-      console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.users} users`);
-    } catch (e) {
-      console.warn('[TEST CLEANUP] Users cleanup error:', e);
+    for (const id of testIds) {
+      try {
+        const usersResult = await sql`DELETE FROM users WHERE id = ${id}`;
+        deleted.users += usersResult.rowCount || 0;
+      } catch (e) {
+        console.warn('[TEST CLEANUP] Users cleanup error:', e);
+      }
     }
+    console.log(`[TEST CLEANUP] ✓ Deleted ${deleted.users} users`);
 
     console.log('[TEST CLEANUP] 🎉 Cleanup complete:', deleted);
 
