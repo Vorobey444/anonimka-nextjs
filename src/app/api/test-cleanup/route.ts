@@ -78,7 +78,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Удаляем дубликаты
-    testTokens = [...new Set(testTokens)];
+    testTokens = Array.from(new Set(testTokens));
     console.log('[TEST CLEANUP] Found tokens:', testTokens.length, testTokens);
 
     // 1. Удаляем сообщения из world_chat_messages
