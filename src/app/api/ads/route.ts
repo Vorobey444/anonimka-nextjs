@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
       result = await sql`
         SELECT 
           ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
-          ads.body_type, ads.orientation, ads.text, ads.nickname, ads.country, ads.region, ads.city, 
+          ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
       result = await sql`
         SELECT 
           ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
-          ads.body_type, ads.orientation, ads.text, ads.nickname, ads.country, ads.region, ads.city, 
+          ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
       result = await sql`
         SELECT 
           ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
-          ads.body_type, ads.orientation, ads.text, ads.nickname, ads.country, ads.region, ads.city, 
+          ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
       result = await sql`
         SELECT 
           ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
-          ads.body_type, ads.orientation, ads.text, ads.nickname, ads.country, ads.region, ads.city, 
+          ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
       result = await sql`
         SELECT 
           ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
-          ads.body_type, ads.orientation, ads.text, ads.nickname, ads.country, ads.region, ads.city, 
+          ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until
