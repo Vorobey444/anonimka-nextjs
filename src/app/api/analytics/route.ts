@@ -140,10 +140,11 @@ export async function GET(request: NextRequest) {
         WHERE last_login_at >= NOW() - INTERVAL '24 hours'
       `;
 
-      // Общее количество анкет
+      // Общее количество активных анкет (созданных за последние 30 дней)
       const totalAds = await sql`
         SELECT COUNT(*) as count
         FROM ads
+        WHERE created_at > NOW() - INTERVAL '30 days'
       `;
 
       // Количество пользователей, заблокировавших бота
