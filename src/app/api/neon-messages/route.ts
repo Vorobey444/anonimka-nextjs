@@ -221,14 +221,27 @@ export async function POST(request: NextRequest) {
         // Используем переданный nickname или дефолтный
         const nickname = senderNickname || 'Анонимный';
         
+        // Получаем информацию о получателе из чата
+        const chatInfo = await sql`
+          SELECT user_token_1, user_token_2 FROM private_chats WHERE id = ${chatId}
+        `;
+        const receiverToken = chatInfo.rows[0]?.user_token_1 === senderId 
+          ? chatInfo.rows[0]?.user_token_2 
+          : chatInfo.rows[0]?.user_token_1;
+        
+        const receiverInfo = await sql`
+          SELECT display_nickname FROM users WHERE user_token = ${receiverToken} LIMIT 1
+        `;
+        const receiverNickname = receiverInfo.rows[0]?.display_nickname || 'Аноним';
+        
         // Сохраняем сообщение с nickname и фото (используем sender_token и receiver_token)
         const result = await sql`
           INSERT INTO messages (
-            chat_id, sender_token, message, display_nickname, 
+            chat_id, sender_token, message, display_nickname, from_nickname, to_nickname,
             photo_url, telegram_file_id, reply_to_message_id, created_at
           )
           VALUES (
-            ${chatId}, ${senderId}, ${messageText || ''}, ${nickname},
+            ${chatId}, ${senderId}, ${messageText || ''}, ${nickname}, ${nickname}, ${receiverNickname},
             ${photoUrl || null}, ${telegramFileId || null}, ${replyToMessageId || null}, NOW()
           )
           RETURNING *

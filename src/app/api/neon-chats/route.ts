@@ -172,13 +172,19 @@ export async function POST(request: NextRequest) {
         if (chat.message && chat.message.trim()) {
           // Получаем nickname отправителя из его последней анкеты
           const senderInfo = await sql`
-            SELECT nickname FROM ads WHERE user_token = ${chat.user_token_1} ORDER BY created_at DESC LIMIT 1
+            SELECT display_nickname FROM users WHERE user_token = ${chat.user_token_1} LIMIT 1
           `;
-          const senderNickname = senderInfo.rows[0]?.nickname || 'Аноним';
+          const senderNickname = senderInfo.rows[0]?.display_nickname || 'Аноним';
+          
+          // Получаем nickname получателя
+          const receiverInfo = await sql`
+            SELECT display_nickname FROM users WHERE user_token = ${chat.user_token_2} LIMIT 1
+          `;
+          const receiverNickname = receiverInfo.rows[0]?.display_nickname || 'Аноним';
           
           await sql`
-            INSERT INTO messages (chat_id, sender_token, display_nickname, message, created_at)
-            VALUES (${chatId}, ${chat.user_token_1}, ${senderNickname}, ${chat.message}, ${chat.created_at})
+            INSERT INTO messages (chat_id, sender_token, display_nickname, from_nickname, to_nickname, message, created_at)
+            VALUES (${chatId}, ${chat.user_token_1}, ${senderNickname}, ${senderNickname}, ${receiverNickname}, ${chat.message}, ${chat.created_at})
           `;
         }
         
@@ -351,9 +357,17 @@ export async function POST(request: NextRequest) {
         // Отправляем первое сообщение (используем правильный sender_token)
         if (message) {
           const actualSender = senderToken || user1_token; // Используем senderToken если передан
+          
+          // Определяем получателя
+          const receiverToken = actualSender === user1_token ? user2_token : user1_token;
+          const receiverInfo = await sql`
+            SELECT display_nickname FROM users WHERE user_token = ${receiverToken} LIMIT 1
+          `;
+          const receiverNickname = receiverInfo.rows[0]?.display_nickname || 'Аноним';
+          
           await sql`
-            INSERT INTO messages (chat_id, sender_token, display_nickname, message, read, created_at)
-            VALUES (${chat.id}, ${actualSender}, ${senderNickname}, ${message}, false, NOW())
+            INSERT INTO messages (chat_id, sender_token, display_nickname, from_nickname, to_nickname, message, read, created_at)
+            VALUES (${chat.id}, ${actualSender}, ${senderNickname}, ${senderNickname}, ${receiverNickname}, ${message}, false, NOW())
           `;
         }
         
