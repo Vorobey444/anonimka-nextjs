@@ -292,16 +292,45 @@ export async function POST(request: NextRequest) {
     }
     
     const token = generateUserToken(userId);
-    await sql`
-      INSERT INTO users (id, user_token, display_nickname, nickname_changed_at, created_at, updated_at)
-      VALUES (${userId}, ${token}, ${nickname}, NOW(), NOW(), NOW())
-      ON CONFLICT (id) DO UPDATE
-      SET 
-        user_token = COALESCE(users.user_token, ${token}),
-        display_nickname = ${nickname}, 
-        nickname_changed_at = NOW(),
-        updated_at = NOW()
-    `;
+    
+    // Логика установки nickname_changed_at:
+    // - Если это ПЕРВАЯ установка никнейма (hasChangedBefore = false) -> НЕ устанавливаем (остается NULL)
+    // - Если это СМЕНА никнейма (hasChangedBefore = true) -> устанавливаем NOW() для 24-часовой блокировки
+    // - Если никнейм начинается с "Аноним" -> разрешаем ещё одну смену (не устанавливаем)
+    
+    let nicknameChangedAtValue: string | Date | null;
+    if (!hasChangedBefore || isAnonymousNickname) {
+      // Первая установка или смена с "Аноним" - не устанавливаем блокировку
+      nicknameChangedAtValue = null;
+    } else {
+      // Последующая смена - устанавливаем блокировку на 24 часа
+      nicknameChangedAtValue = new Date();
+    }
+    
+    // Используем rawSQL для nullable значения
+    if (nicknameChangedAtValue) {
+      await sql`
+        INSERT INTO users (id, user_token, display_nickname, nickname_changed_at, created_at, updated_at)
+        VALUES (${userId}, ${token}, ${nickname}, NOW(), NOW(), NOW())
+        ON CONFLICT (id) DO UPDATE
+        SET 
+          user_token = COALESCE(users.user_token, ${token}),
+          display_nickname = ${nickname}, 
+          nickname_changed_at = NOW(),
+          updated_at = NOW()
+      `;
+    } else {
+      await sql`
+        INSERT INTO users (id, user_token, display_nickname, nickname_changed_at, created_at, updated_at)
+        VALUES (${userId}, ${token}, ${nickname}, NULL, NOW(), NOW())
+        ON CONFLICT (id) DO UPDATE
+        SET 
+          user_token = COALESCE(users.user_token, ${token}),
+          display_nickname = ${nickname}, 
+          nickname_changed_at = NULL,
+          updated_at = NOW()
+      `;
+    }
 
     // Обновляем никнейм во всех объявлениях пользователя
     await sql`
