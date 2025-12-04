@@ -62,6 +62,21 @@ export async function DELETE(request: NextRequest) {
       }
     }
     
+    // Дополняем из таблицы referrals (тестовые пользователи могут только зарегистрировать реферал, но не создать ad)
+    try {
+      const refTokenResult = await sql`
+        SELECT DISTINCT referrer_token, referred_token 
+        FROM referrals 
+        WHERE 
+          referrer_token LIKE '0%' OR referrer_token LIKE '6%' OR 
+          referrer_token LIKE '5%' OR referred_token LIKE '0%' OR 
+          referred_token LIKE '6%' OR referred_token LIKE '5%'
+      `;
+      testTokens.push(...refTokenResult.rows.map((r: any) => [r.referrer_token, r.referred_token]).flat().filter(Boolean));
+    } catch (e) {
+      console.warn('[TEST CLEANUP] Token lookup error from referrals:', e);
+    }
+    
     // Удаляем дубликаты
     testTokens = [...new Set(testTokens)];
     console.log('[TEST CLEANUP] Found tokens:', testTokens.length, testTokens);
