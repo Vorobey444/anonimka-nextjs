@@ -89,11 +89,15 @@ export async function POST(request: NextRequest) {
         description, related_ad_id, related_message_id
       )
       VALUES (
-        ${reporterId}, ${reportedUserId}, ${reportType}, ${reason},
+        ${reporterId}, ${reportedUserId}, ${reportType || 'other'}, ${reason || 'No reason provided'},
         ${description || null}, ${relatedAdId || null}, ${relatedMessageId || null}
       )
       RETURNING id, created_at
     `;
+
+    if (!report.rows || report.rows.length === 0) {
+      throw new Error('Failed to insert report into database');
+    }
 
     const reportId = report.rows[0].id;
 
@@ -209,14 +213,19 @@ export async function POST(request: NextRequest) {
       success: true, 
       reportId 
     });
-  } catch (error) {
-    console.error('Error creating report:', error);
+  } catch (error: any) {
+    console.error('Error creating report:', error?.message);
+    console.error('Full error:', error);
     await ServerErrorLogger.logError(error as Error, {
       endpoint: '/api/reports',
       method: 'POST',
-      statusCode: 500
+      statusCode: 500,
+      message: error?.message
     });
-    return NextResponse.json({ error: 'Failed to create report' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to create report',
+      details: error?.message || 'Unknown error'
+    }, { status: 500 });
   }
 }
 

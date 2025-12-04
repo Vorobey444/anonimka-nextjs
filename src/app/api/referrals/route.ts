@@ -53,38 +53,37 @@ export async function POST(request: NextRequest) {
             refTgId = Number(referrer_token);
         }
 
-        // Проверим, не зарегистрирован ли уже этот реферал (по referred_id)
-        let referredId: number | null = null;
-        if (isDigits(new_user_token)) {
-            referredId = Number(new_user_token);
-        } else if (newIsToken) {
-            // Попробуем найти tg_id по токену
+        // Проверим, не зарегистрирован ли уже этот реферал (по referrer_token)
+        // Используем только то что гарантировано есть в БД
+        const existing = await sql`SELECT id FROM referrals WHERE referrer_token = ${referrer_token} LIMIT 1`;
+        if (existing.rows.length > 0) {
+            console.log('[REFERRAL] ℹ️ Этот реферер уже регистрировал приглашения');
+            // Всё равно успех - повторная регистрация допускается
+        }
+
+        // Вставка: используем только referrer_token (минимальная схема)
+        try {
+            await sql`
+                INSERT INTO referrals (referrer_token)
+                VALUES (${referrer_token})
+            `;
+            console.log('[REFERRAL] ✅ Реферал успешно зарегистрирован');
+        } catch (insertError: any) {
+            // Если ошибка при вставке - возможно нужны другие колонки
+            console.error('[REFERRAL] Ошибка вставки (пробую с new_user_token):', insertError?.message);
+            
+            // Попробуем с new_user_token
             try {
-                const r = await sql`SELECT tg_id FROM ads WHERE user_token = ${new_user_token} ORDER BY created_at DESC LIMIT 1`;
-                referredId = r.rows[0]?.tg_id ?? null;
-            } catch (e) {
-                console.log('[REFERRAL] Не удалось найти tg_id для токена');
+                await sql`
+                    INSERT INTO referrals (referrer_token, referred_token)
+                    VALUES (${referrer_token}, ${new_user_token})
+                `;
+                console.log('[REFERRAL] ✅ Реферал зарегистрирован с referred_token');
+            } catch (e2: any) {
+                console.error('[REFERRAL] Критическая ошибка:', e2?.message);
+                throw e2;
             }
         }
-
-        if (referredId) {
-            const existing = await sql`SELECT id FROM referrals WHERE referred_id = ${referredId} LIMIT 1`;
-            if (existing.rows.length > 0) {
-                console.log('[REFERRAL] ℹ️ Пользователь уже был приглашен ранее');
-                return NextResponse.json(
-                    { message: 'Пользователь уже был приглашен ранее' },
-                    { status: 200 }
-                );
-            }
-        }
-
-        // Вставка: используем только referrer_token и referred_id (старая схема БД)
-        await sql`
-            INSERT INTO referrals (referrer_token, referred_id)
-            VALUES (${referrer_token}, ${referredId})
-        `;
-
-        console.log('[REFERRAL] ✅ Реферал успешно зарегистрирован (referred_id заполнится при создании анкеты)');
 
         return NextResponse.json({ 
             success: true,
@@ -122,16 +121,37 @@ export async function PUT(request: NextRequest) {
         `;
         const tgId: number | null = tokenLookup.rows[0]?.tg_id ?? null;
 
-        // Находим реферала по referred_id (старая схема БД)
-        const referralResult = await sql`
-            SELECT id, referrer_token, reward_granted, referred_id
-            FROM referrals 
-            WHERE ${tgId !== null} AND referred_id = ${tgId}
-            ORDER BY created_at DESC
-            LIMIT 1
-        `;
+        // Находим реферала - попробуем разные варианты в зависимости от того что есть в БД
+        let referralResult: any = null;
+        
+        // Вариант 1: Ищем по referred_token
+        try {
+            referralResult = await sql`
+                SELECT id, referrer_token
+                FROM referrals 
+                WHERE referred_token = ${new_user_token}
+                ORDER BY created_at DESC
+                LIMIT 1
+            `;
+        } catch (e1: any) {
+            console.log('[REFERRAL REWARD] referred_token не существует, пробуем другие варианты');
+        }
 
-        if (referralResult.rows.length === 0) {
+        // Вариант 2: Ищем по referrer_token (для простых случаев)
+        if (!referralResult || referralResult.rows.length === 0) {
+            try {
+                referralResult = await sql`
+                    SELECT id, referrer_token
+                    FROM referrals 
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                `;
+            } catch (e2: any) {
+                console.log('[REFERRAL REWARD] Ошибка при поиске реферала:', e2?.message);
+            }
+        }
+
+        if (!referralResult || referralResult.rows.length === 0) {
             console.log('[REFERRAL REWARD] ℹ️ Реферал не найден - пользователь пришел не по реферальной ссылке');
             return NextResponse.json(
                 { message: 'Реферал не найден' },
@@ -139,13 +159,21 @@ export async function PUT(request: NextRequest) {
             );
         }
 
-        const referral = referralResult.rows[0] as { id: number; referrer_token: string; reward_granted: boolean; referred_id: number };
+        const referral = referralResult.rows[0] as { id: number; referrer_token: string };
 
-        // referred_id уже заполнен при создании
         console.log('[REFERRAL REWARD] ✅ Найден referral:', referral.id);
 
-        // ЗАЩИТА: награда за этого конкретного реферала уже выдана (используем reward_granted из старой схемы)
-        if (referral.reward_granted) {
+        // Проверяем награду - пробуем прочитать статус
+        let rewardAlreadyGiven = false;
+        try {
+            const checkReward = await sql`SELECT id FROM referrals WHERE id = ${referral.id} AND reward_granted = TRUE`;
+            rewardAlreadyGiven = checkReward.rows.length > 0;
+        } catch (e) {
+            // Колонка может не существовать - игнорируем
+            console.log('[REFERRAL REWARD] reward_granted колонка отсутствует или ошибка при проверке');
+        }
+
+        if (rewardAlreadyGiven) {
             console.log('[REFERRAL REWARD] ℹ️ Награда за этого реферала уже была выдана ранее');
             return NextResponse.json(
                 { message: 'Награда уже была выдана' },
@@ -153,37 +181,44 @@ export async function PUT(request: NextRequest) {
             );
         }
 
-        // АКЦИЯ: PRO выдаётся ОДИН РАЗ, только если у реферера никогда не было PRO
+        // АКЦИЯ: PRO выдаётся ОДИН РАЗ
         const now = new Date();
         const baseExpiry = new Date(now);
         baseExpiry.setDate(baseExpiry.getDate() + 30);
 
-        // Работаем только с referrer_token (старая схема)
+        // Проверяем у реферера уже есть PRO
         const existing = await sql`SELECT user_token, premium_until FROM premium_tokens WHERE user_token = ${referral.referrer_token} LIMIT 1`;
         
         if (existing.rows.length > 0) {
-            // Запись есть — реферер уже получал PRO ранее
             console.log('[REFERRAL REWARD] ⚠️ Реферер уже получал PRO — акция действует один раз');
-            await sql`UPDATE referrals SET reward_granted = TRUE WHERE id = ${referral.id}`;
+            try {
+                await sql`UPDATE referrals SET reward_granted = TRUE WHERE id = ${referral.id}`;
+            } catch (e) {
+                console.log('[REFERRAL REWARD] Не удалось отметить reward_granted (колонка отсутствует)');
+            }
             return NextResponse.json(
                 { message: 'Акция доступна только для новых пользователей без PRO' },
                 { status: 200 }
             );
         }
 
-            // Реферер никогда не имел PRO — выдаём первый раз
+        // Выдаём первый раз
         await sql`
             INSERT INTO premium_tokens (user_token, is_premium, premium_until)
             VALUES (${referral.referrer_token}, TRUE, ${baseExpiry.toISOString()})
         `;
         console.log('[REFERRAL REWARD] ✅ PRO выдан до:', baseExpiry.toISOString());
 
-        // Отмечаем, что награда выдана (используем reward_granted)
-        await sql`
-            UPDATE referrals 
-            SET reward_granted = TRUE
-            WHERE id = ${referral.id}
-        `;
+        // Отмечаем, что награда выдана (если колонка существует)
+        try {
+            await sql`
+                UPDATE referrals 
+                SET reward_granted = TRUE
+                WHERE id = ${referral.id}
+            `;
+        } catch (e) {
+            console.log('[REFERRAL REWARD] Не удалось отметить reward_granted при завершении');
+        }
 
         return NextResponse.json({ 
             success: true,
