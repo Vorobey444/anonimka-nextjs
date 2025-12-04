@@ -8,16 +8,16 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
-    // Небольшая задержка для загрузки Telegram WebApp SDK
+    // КРИТИЧНО: Сразу проверяем Telegram WebApp БЕЗ задержки
     const checkAuth = () => {
       // Проверяем Telegram WebApp (приоритет)
       if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
         const tg = (window as any).Telegram.WebApp
         // Проверяем что это действительно Telegram (есть initData или user)
         if (tg.initData || tg.initDataUnsafe?.user) {
-          console.log('🚀 Telegram WebApp detected, redirecting to /webapp/')
+          console.log('🚀 Telegram WebApp detected, redirecting immediately')
           router.replace('/webapp/')
-          return
+          return true
         }
       }
       
@@ -27,14 +27,23 @@ export default function Home() {
       const isMobileDevice = /android|iphone|ipad|ipod|mobile/i.test(userAgent) && !/windows|mac|linux/i.test(userAgent)
       
       if (isMobileDevice) {
+        console.log('📱 Mobile device detected, redirecting to webapp')
         setIsMobile(true)
         // Для мобильных - сразу редирект на webapp
         router.replace('/webapp/')
+        return true
       }
+      
+      return false
     }
     
-    // Даем 100мс на загрузку SDK
-    const timer = setTimeout(checkAuth, 100)
+    // Пробуем сразу, даже если Telegram SDK еще не загрузился
+    if (checkAuth()) {
+      return
+    }
+    
+    // Если SDK не загрузился, ждем его максимум 500мс
+    const timer = setTimeout(checkAuth, 500)
     return () => clearTimeout(timer)
   }, [router])
 

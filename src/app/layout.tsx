@@ -6,8 +6,8 @@ import { ErrorLoggerProvider } from '@/components/ErrorLoggerProvider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Anonimka.Online - Анонимная доска общения',
-  description: 'Размещайте анонимные объявления для общения в вашем городе',
+  title: 'Anonimka - Анонимный чат',
+  description: 'Анонимное общение без границ - чат с незнакомцами в вашем городе',
 }
 
 export default function RootLayout({
