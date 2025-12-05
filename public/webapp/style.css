@@ -1041,10 +1041,10 @@ h3 {
 .ad-card.compact .ad-text {
     margin-top: 4px;
     font-size: 11.5px;
-    line-height: 1.4;
+    line-height: 1.5;
     color: var(--text-light);
     opacity: 0.85;
-    max-height: 2.8em;
+    max-height: 3em;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
