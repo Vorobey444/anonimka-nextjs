@@ -18,6 +18,7 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Create a mapping table to track old -> new tokens for email users
+DROP TABLE IF EXISTS token_mapping;
 CREATE TEMP TABLE token_mapping AS
 SELECT 
   u.id,
