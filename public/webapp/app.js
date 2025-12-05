@@ -9297,20 +9297,23 @@ function setupMessageSwipeHandlers() {
             const diffX = currentX - startX;
             const diffY = Math.abs(currentY - startY);
             
-            // Отмечаем что было движение (более 5px)
-            if (Math.abs(diffX) > 5 || diffY > 5) {
-                hasMoved = true;
-            }
-            
             const isMine = msg.getAttribute('data-is-mine') === 'true';
             
             // Свайп влево (для всех) - ответить
             if (diffX < 0 && diffX > -150) {
                 msg.style.transform = `translateX(${diffX}px)`;
+                // Отмечаем движение только для горизонтального свайпа
+                if (Math.abs(diffX) > 5) {
+                    hasMoved = true;
+                }
             }
             // Свайп вправо (только свои) - удалить
             else if (diffX > 0 && diffX < 150 && isMine) {
                 msg.style.transform = `translateX(${diffX}px)`;
+                // Отмечаем движение только для горизонтального свайпа
+                if (Math.abs(diffX) > 5) {
+                    hasMoved = true;
+                }
             }
         };
         
