@@ -1039,7 +1039,7 @@ h3 {
 .ad-card.compact .ad-field .label { display:none; }
 
 .ad-card.compact .ad-text {
-    margin-top: 6px;
+    margin-top: 4px;
     font-size: 11.5px;
     line-height: 1.4;
     color: var(--text-light);
