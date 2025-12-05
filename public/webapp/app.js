@@ -9506,6 +9506,33 @@ function showReactionOnMessage(messageElement, emoji, count = 1) {
         ${count > 1 ? `<span class="message-reaction-count">${count}</span>` : ''}
     `;
     
+    // Клик на реакцию - удаляем её
+    reaction.onclick = async (e) => {
+        e.stopPropagation();
+        const messageId = messageElement.dataset.messageId;
+        const userToken = localStorage.getItem('user_token');
+        
+        try {
+            const response = await fetch('/api/reactions', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message_id: messageId,
+                    user_token: userToken
+                })
+            });
+            
+            if (response.ok) {
+                reaction.remove();
+                console.log('✅ Реакция удалена');
+            }
+        } catch (error) {
+            console.error('❌ Ошибка удаления реакции:', error);
+        }
+    };
+    
     messageElement.appendChild(reaction);
 }
 
