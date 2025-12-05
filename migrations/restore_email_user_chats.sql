@@ -32,28 +32,28 @@ WHERE u.auth_method = 'email' AND u.email IS NOT NULL
 WITH chat_updates AS (
   SELECT COUNT(*) as count
   FROM private_chats pc
-  WHERE pc.user_1_token IN (SELECT old_token FROM token_mapping)
-     OR pc.user_2_token IN (SELECT old_token FROM token_mapping)
+  WHERE pc.user_token_1 IN (SELECT old_token FROM token_mapping)
+     OR pc.user_token_2 IN (SELECT old_token FROM token_mapping)
 )
 SELECT 'Affected chats: ' || count::text FROM chat_updates;
 
--- Update private_chats table - user_1_token
+-- Update private_chats table - user_token_1
 UPDATE private_chats
-SET user_1_token = (
+SET user_token_1 = (
   SELECT new_token FROM token_mapping tm 
-  WHERE tm.old_token = private_chats.user_1_token
+  WHERE tm.old_token = private_chats.user_token_1
   LIMIT 1
 )
-WHERE user_1_token IN (SELECT old_token FROM token_mapping);
+WHERE user_token_1 IN (SELECT old_token FROM token_mapping);
 
--- Update private_chats table - user_2_token
+-- Update private_chats table - user_token_2
 UPDATE private_chats
-SET user_2_token = (
+SET user_token_2 = (
   SELECT new_token FROM token_mapping tm 
-  WHERE tm.old_token = private_chats.user_2_token
+  WHERE tm.old_token = private_chats.user_token_2
   LIMIT 1
 )
-WHERE user_2_token IN (SELECT old_token FROM token_mapping);
+WHERE user_token_2 IN (SELECT old_token FROM token_mapping);
 
 -- Update private_messages table - sender_token
 UPDATE private_messages
@@ -80,8 +80,8 @@ DECLARE
   msg_count INT;
 BEGIN
   SELECT COUNT(*) INTO chat_count FROM private_chats 
-  WHERE user_1_token IN (SELECT new_token FROM token_mapping) 
-     OR user_2_token IN (SELECT new_token FROM token_mapping);
+  WHERE user_token_1 IN (SELECT new_token FROM token_mapping) 
+     OR user_token_2 IN (SELECT new_token FROM token_mapping);
   
   SELECT COUNT(*) INTO msg_count FROM private_messages 
   WHERE sender_token IN (SELECT new_token FROM token_mapping) 
