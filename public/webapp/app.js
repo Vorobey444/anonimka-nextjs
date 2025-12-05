@@ -15070,7 +15070,20 @@ window.showHamburgerMenu = function() {
 // ============= ОПРОСЫ =============
 function showPolls() {
     showScreen('pollsScreen');
-    loadPollResults('photos_in_ads');
+    
+    // Проверяем каждый опрос - если пользователь голосовал, показываем результаты
+    const photosVoted = localStorage.getItem('poll_voted_photos_in_ads');
+    console.log('Show polls - photosVoted:', photosVoted);
+    
+    if (photosVoted) {
+        loadPollResults('photos_in_ads');
+    } else {
+        // Показываем кнопки для голосования
+        const optionsElement = document.getElementById('photosPollOptions');
+        const resultsElement = document.getElementById('photosPollResults');
+        if (optionsElement) optionsElement.style.display = 'flex';
+        if (resultsElement) resultsElement.style.display = 'none';
+    }
 }
 
 async function votePoll(pollId, answer) {
