@@ -2807,7 +2807,8 @@ function showTelegramAuthModal() {
     
     // Если в Android приложении - добавляем параметр для возврата
     const startParam = isAndroidApp ? `${authToken}_app` : authToken;
-    const telegramDeepLink = `https://t.me/${botUsername}?start=${startParam}`;
+    // Используем tg://resolve чтобы открывать приложение Telegram сразу (минуя веб-превью)
+    const telegramDeepLink = `tg://resolve?domain=${botUsername}&start=${startParam}`;
     
     console.log('🔗 Deep link:', telegramDeepLink);
     
