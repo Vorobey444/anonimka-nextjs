@@ -9483,6 +9483,15 @@ function showReactionPicker(messageElement, event) {
     
     document.body.appendChild(picker);
     
+    // Предотвращаем закрытие при скролле внутри меню
+    picker.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+    }, { passive: true });
+    
+    picker.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+    }, { passive: true });
+    
     // Позиционируем меню
     const rect = messageElement.getBoundingClientRect();
     const pickerRect = picker.getBoundingClientRect();

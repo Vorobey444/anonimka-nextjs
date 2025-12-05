@@ -4658,8 +4658,11 @@ body.emoji-flags-supported .country-code {
     box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
     animation: pickerSlideIn 0.2s ease;
     overflow-x: auto;
+    overflow-y: hidden;
     max-width: 90vw;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: thin;
 }
 
 .reaction-picker::-webkit-scrollbar {
