@@ -221,11 +221,23 @@ function ensureAuthModalVisibility() {
         modal.style.visibility = 'visible';
         modal.style.opacity = '1';
         modal.style.zIndex = '99999';
+        modal.classList.remove('hidden');
+        modal.removeAttribute('hidden');
 
         const loginWidgetContainer = document.getElementById('loginWidgetContainer');
         if (loginWidgetContainer) loginWidgetContainer.style.display = 'block';
         const loginWidgetDivider = document.getElementById('loginWidgetDivider');
         if (loginWidgetDivider) loginWidgetDivider.style.display = 'flex';
+
+        // Гарантируем отображение основного контента модалки
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.style.display = 'flex';
+            modalContent.style.opacity = '1';
+            modalContent.style.visibility = 'visible';
+        }
+        const modalBody = modal.querySelector('.modal-body');
+        if (modalBody) modalBody.style.display = 'block';
     }
 }
 
