@@ -44,30 +44,26 @@ html {
 }
 
 body {
-    background: var(--bg-dark);
-    background: 
-        radial-gradient(circle at 20% 25%, rgba(255, 0, 110, 0.18), transparent 35%),
-        radial-gradient(circle at 80% 20%, rgba(0, 217, 255, 0.18), transparent 32%),
-        radial-gradient(circle at 50% 60%, rgba(131, 56, 236, 0.2), transparent 40%),
-        linear-gradient(180deg, #0a0a0f 0%, #0c0c15 40%, #080810 100%);
+    /* Более мягкий неоновый фон: глубокий фиолет + бирюза с виньеткой */
+    background:
+        radial-gradient(circle at 20% 25%, rgba(0, 194, 255, 0.18), transparent 34%),
+        radial-gradient(circle at 78% 22%, rgba(255, 64, 160, 0.16), transparent 32%),
+        radial-gradient(circle at 45% 70%, rgba(120, 90, 255, 0.22), transparent 42%),
+        radial-gradient(ellipse at 50% 120%, rgba(0, 0, 0, 0.45), transparent 55%),
+        linear-gradient(180deg, #090912 0%, #0b0a18 45%, #0a0a11 100%);
     background-attachment: fixed;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--text-light);
     min-height: 100vh;
-    /* Высота 100% viewport */
     height: 100%;
     width: 100%;
-    /* Запрет скролла body */
     overflow: hidden;
-    /* Запрет увеличения на двойной тап */
     touch-action: manipulation;
-    /* Фиксированная позиция для iOS */
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    /* Защита от скриншотов */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
