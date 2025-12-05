@@ -15077,8 +15077,11 @@ async function votePoll(pollId, answer) {
     const userToken = localStorage.getItem('user_token');
     if (!userToken) {
         console.error('User token not found');
+        alert('Ошибка: токен пользователя не найден');
         return;
     }
+    
+    console.log('Voting:', { pollId, answer, userToken: userToken.substring(0, 10) + '...' });
     
     try {
         const response = await fetch('/api/poll', {
@@ -15094,18 +15097,23 @@ async function votePoll(pollId, answer) {
         });
         
         const data = await response.json();
+        console.log('Vote response:', data);
         
         if (response.ok) {
             localStorage.setItem(`poll_voted_${pollId}`, 'true');
             loadPollResults(pollId);
         } else {
+            console.error('Vote failed:', data);
             if (data.error === 'Already voted') {
                 alert('Вы уже проголосовали в этом опросе!');
                 loadPollResults(pollId);
+            } else {
+                alert('Ошибка голосования: ' + (data.error || 'Неизвестная ошибка'));
             }
         }
     } catch (error) {
         console.error('Ошибка голосования:', error);
+        alert('Ошибка соединения с сервером');
     }
 }
 
