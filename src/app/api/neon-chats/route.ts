@@ -69,7 +69,11 @@ export async function POST(request: NextRequest) {
           });
           
           // Отправляем уведомление асинхронно (не блокируя ответ)
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}/api/send-notification`, {
+          const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL 
+            ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` 
+            : process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+          
+          fetch(`${apiBaseUrl}/api/send-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -403,7 +407,11 @@ export async function POST(request: NextRequest) {
           });
           
           // Отправляем уведомление асинхронно (не блокируя ответ)
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}/api/send-notification`, {
+          const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL 
+            ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` 
+            : process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+          
+          fetch(`${apiBaseUrl}/api/send-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
