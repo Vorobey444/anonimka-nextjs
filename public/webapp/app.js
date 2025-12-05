@@ -68,23 +68,29 @@ const errorLogCache = new Map(); // Кеш с временными меткам�
 const ERROR_CACHE_TTL = 30000; // 30 секунд
 const ENABLE_ERROR_DEBUG = false; // Отладка системы логирования
 
-// ВАЖНО: Скрываем модальные окна авторизации в самом начале (до любых других скриптов)
+// ВАЖНО: Скрываем модальные окна авторизации ТОЛЬКО если пользователь уже авторизован
 (function hideAuthModalsImmediately() {
-    if (document.readyState === 'loading') {
-        // DOM еще не загружен, ждем
-        document.addEventListener('DOMContentLoaded', function() {
+    const userToken = localStorage.getItem('user_token');
+    
+    // Если токен есть - скрываем модалки (пользователь авторизован)
+    if (userToken) {
+        if (document.readyState === 'loading') {
+            // DOM еще не загружен, ждем
+            document.addEventListener('DOMContentLoaded', function() {
+                const telegramModal = document.getElementById('telegramAuthModal');
+                const emailModal = document.getElementById('emailAuthModal');
+                if (telegramModal) telegramModal.style.display = 'none';
+                if (emailModal) emailModal.style.display = 'none';
+            });
+        } else {
+            // DOM уже загружен
             const telegramModal = document.getElementById('telegramAuthModal');
             const emailModal = document.getElementById('emailAuthModal');
             if (telegramModal) telegramModal.style.display = 'none';
             if (emailModal) emailModal.style.display = 'none';
-        });
-    } else {
-        // DOM уже загружен
-        const telegramModal = document.getElementById('telegramAuthModal');
-        const emailModal = document.getElementById('emailAuthModal');
-        if (telegramModal) telegramModal.style.display = 'none';
-        if (emailModal) emailModal.style.display = 'none';
+        }
     }
+    // Если токена нет - НЕ скрываем модалки, они должны показаться
 })();
 
 // История действий пользователя (последние 10 действий)
