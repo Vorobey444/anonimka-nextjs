@@ -231,6 +231,36 @@
                 </div>
             </div>
             
+            <!-- Компактный опрос -->
+            <div class="compact-poll" id="photoPoll" style="display: none;">
+                <div class="poll-question">Вам нужны фотки в анкетах?</div>
+                <div class="poll-options" id="pollOptions">
+                    <button class="poll-option" onclick="votePoll('yes')">Да</button>
+                    <button class="poll-option" onclick="votePoll('no')">Нет это же Анонимка</button>
+                </div>
+                <div class="poll-results" id="pollResults" style="display: none;">
+                    <div class="poll-result-item">
+                        <div class="poll-result-text">
+                            <span>Да</span>
+                            <span class="poll-percent" id="yesPercent">0%</span>
+                        </div>
+                        <div class="poll-bar">
+                            <div class="poll-bar-fill" id="yesBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="poll-result-item">
+                        <div class="poll-result-text">
+                            <span>Нет это же Анонимка</span>
+                            <span class="poll-percent" id="noPercent">0%</span>
+                        </div>
+                        <div class="poll-bar">
+                            <div class="poll-bar-fill" id="noBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="poll-total">Всего голосов: <span id="totalVotes">0</span></div>
+                </div>
+            </div>
+            
             <div class="menu-buttons">
                 <div style="position: relative; display: inline-block; width: 100%;">
                     <button class="neon-button primary" onclick="showCreateAd()" id="createAdBtn" style="width: 100%;">

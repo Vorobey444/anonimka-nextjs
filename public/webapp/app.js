@@ -15053,6 +15053,7 @@ function initializeAndroidMenu() {
 // Инициализируем Android меню при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     initializeAndroidMenu();
+    initializePoll();
 });
 
 // Также инициализируем при открытии меню
@@ -15066,3 +15067,75 @@ window.showHamburgerMenu = function() {
         initializeAndroidMenu();
     }
 };
+
+// ============= ОПРОС =============
+function initializePoll() {
+    const pollElement = document.getElementById('photoPoll');
+    const hasVoted = localStorage.getItem('poll_voted');
+    
+    if (hasVoted) {
+        // Показываем результаты
+        showPollResults();
+    } else {
+        // Показываем опрос
+        pollElement.style.display = 'block';
+    }
+}
+
+async function votePoll(answer) {
+    const userToken = localStorage.getItem('user_token');
+    if (!userToken) {
+        console.error('User token not found');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/poll', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-Token': userToken
+            },
+            body: JSON.stringify({
+                poll_id: 'photos_in_ads',
+                answer: answer
+            })
+        });
+        
+        if (response.ok) {
+            localStorage.setItem('poll_voted', 'true');
+            showPollResults();
+        }
+    } catch (error) {
+        console.error('Ошибка голосования:', error);
+    }
+}
+
+async function showPollResults() {
+    const pollElement = document.getElementById('photoPoll');
+    const optionsElement = document.getElementById('pollOptions');
+    const resultsElement = document.getElementById('pollResults');
+    
+    try {
+        const response = await fetch('/api/poll?poll_id=photos_in_ads');
+        const data = await response.json();
+        
+        if (data.success) {
+            const total = data.results.yes + data.results.no;
+            const yesPercent = total > 0 ? Math.round((data.results.yes / total) * 100) : 0;
+            const noPercent = total > 0 ? Math.round((data.results.no / total) * 100) : 0;
+            
+            document.getElementById('yesPercent').textContent = yesPercent + '%';
+            document.getElementById('noPercent').textContent = noPercent + '%';
+            document.getElementById('yesBar').style.width = yesPercent + '%';
+            document.getElementById('noBar').style.width = noPercent + '%';
+            document.getElementById('totalVotes').textContent = total;
+            
+            optionsElement.style.display = 'none';
+            resultsElement.style.display = 'flex';
+            pollElement.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки результатов:', error);
+    }
+}
