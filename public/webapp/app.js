@@ -9366,7 +9366,7 @@ function showReactionPicker(messageElement, event) {
     // Закрываем предыдущее меню если есть
     closeReactionPicker();
     
-    const reactions = ['❤️', '👍', '😂', '🔥', '😍', '🎉'];
+    const reactions = ['❤️', '👍', '😂', '🔥', '👎', '😠'];
     
     const picker = document.createElement('div');
     picker.className = 'reaction-picker';
