@@ -3376,13 +3376,26 @@ function getUserNickname() {
 function getUserLocation() {
     const locationStr = localStorage.getItem('userLocation');
     console.log('📍 localStorage.userLocation:', locationStr);
+    if (locationStr === 'null' || locationStr === 'undefined') {
+        console.warn('⚠️ userLocation содержит строку null/undefined, очищаем');
+        localStorage.removeItem('userLocation');
+        return null;
+    }
     if (locationStr) {
         try {
             const parsed = JSON.parse(locationStr);
             console.log('📍 Parsed location:', parsed);
-            return parsed;
+            if (!parsed || typeof parsed !== 'object') return null;
+            const normalized = {
+                country: parsed.country || null,
+                region: parsed.region || null,
+                city: parsed.city || null,
+                timestamp: parsed.timestamp || Date.now()
+            };
+            return normalized;
         } catch (e) {
             console.error('Ошибка парсинга userLocation:', e);
+            localStorage.removeItem('userLocation');
             return null;
         }
     }
