@@ -351,6 +351,10 @@
                         <span class="hamburger-icon">🚫</span>
                         Мои заблокированные
                     </a>
+                    <a href="#" class="hamburger-item" id="adminMenuItem" style="display: none;" onclick="showAdminPanel(); return false;">
+                        <span class="hamburger-icon">🛠️</span>
+                        Админ-панель
+                    </a>
                     <a href="#" class="hamburger-item" onclick="showContacts(); return false;">
                         <span class="hamburger-icon">📞</span>
                         Тех.поддержка
@@ -1905,6 +1909,71 @@
         </div>
     </div>
 
+    <!-- Админ-панель -->
+    <div id="adminPanel" class="screen admin-screen" style="display: none;">
+        <div class="header">
+            <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+            <h2>Админ-панель</h2>
+        </div>
+        <div class="admin-tabs">
+            <button class="admin-tab active" data-tab="overview" onclick="switchAdminTab('overview')">Обзор</button>
+            <button class="admin-tab" data-tab="ads" onclick="switchAdminTab('ads')">Анкеты</button>
+            <button class="admin-tab" data-tab="chats" onclick="switchAdminTab('chats')">Чаты</button>
+            <button class="admin-tab" data-tab="users" onclick="switchAdminTab('users')">Баны</button>
+            <button class="admin-tab" data-tab="notify" onclick="switchAdminTab('notify')">Уведомления</button>
+        </div>
+
+        <div class="admin-content">
+            <div id="adminOverview" class="admin-section active">
+                <div class="admin-grid" id="adminOverviewGrid">
+                    <!-- Заполняется через JS -->
+                </div>
+            </div>
+
+            <div id="adminAds" class="admin-section">
+                <div class="admin-section-header">
+                    <h3>Анкеты</h3>
+                    <p class="admin-hint">Блокировка скрывает анкету из выдачи. Истекающая блокировка учитывается по времени.</p>
+                </div>
+                <div id="adminAdsList" class="admin-table"></div>
+            </div>
+
+            <div id="adminChats" class="admin-section">
+                <div class="admin-section-header">
+                    <h3>Приватные чаты</h3>
+                    <p class="admin-hint">Последние запросы и чаты для ручной модерации.</p>
+                </div>
+                <div id="adminChatsList" class="admin-table"></div>
+            </div>
+
+            <div id="adminUsers" class="admin-section">
+                <div class="admin-section-header">
+                    <h3>Баны пользователей</h3>
+                    <div class="admin-search">
+                        <input type="text" id="adminUserSearch" placeholder="Поиск по никнейму, email или токену">
+                        <button class="neon-button" onclick="loadAdminUsers()">Искать</button>
+                    </div>
+                    <p class="admin-hint">Укажите длительность в часах или оставьте пустым для бессрочного бана.</p>
+                </div>
+                <div id="adminUsersList" class="admin-table"></div>
+            </div>
+
+            <div id="adminNotify" class="admin-section">
+                <div class="admin-section-header">
+                    <h3>Отправить уведомление пользователю</h3>
+                    <p class="admin-hint">Работает через Telegram (если не заблокирован) и FCM для email-пользователей.</p>
+                </div>
+                <div class="admin-form">
+                    <input type="text" id="adminNotifyToken" placeholder="user_token получателя">
+                    <input type="text" id="adminNotifyTitle" placeholder="Заголовок" value="Уведомление">
+                    <textarea id="adminNotifyMessage" rows="3" placeholder="Текст уведомления"></textarea>
+                    <button class="neon-button primary" onclick="sendAdminNotification()">Отправить</button>
+                    <div id="adminNotifyStatus" class="admin-status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- FAQ модал для Мир чата -->
     <div id="worldChatFAQModal" class="modal" style="display: none;">
         <div class="modal-content world-chat-faq-content">
@@ -1972,7 +2041,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '1.0.2'; // Инкрементируем при критических исправлениях
+        const bugFixVersion = '1.0.3'; // Инкрементируем при критических исправлениях
         const lastVersion = localStorage.getItem('app_version');
         
         if (lastVersion !== bugFixVersion) {

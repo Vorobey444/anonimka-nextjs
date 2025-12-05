@@ -70,17 +70,30 @@ export async function POST(req: NextRequest) {
 
     // Проверяем не забанен ли пользователь
     const banCheck = await sql`
-      SELECT is_banned, ban_reason FROM users WHERE id = ${tgId}
+      SELECT is_banned, ban_reason, banned_until FROM users WHERE id = ${tgId}
     `;
     
     if (banCheck.rows.length > 0 && banCheck.rows[0].is_banned) {
-      const banReason = banCheck.rows[0].ban_reason || 'Нарушение правил сервиса';
-      return NextResponse.json({
-        success: false,
-        error: 'banned',
-        message: `Ваш аккаунт заблокирован. Причина: ${banReason}`,
-        banReason: banReason
-      }, { status: 403 });
+      const bannedUntilRaw = banCheck.rows[0].banned_until ? new Date(banCheck.rows[0].banned_until) : null;
+      const now = new Date();
+
+      if (bannedUntilRaw && bannedUntilRaw <= now) {
+        // Снятие истекшего бана автоматически
+        await sql`
+          UPDATE users
+          SET is_banned = FALSE, ban_reason = NULL, banned_until = NULL, updated_at = NOW()
+          WHERE id = ${tgId}
+        `;
+      } else {
+        const banReason = banCheck.rows[0].ban_reason || 'Нарушение правил сервиса';
+        return NextResponse.json({
+          success: false,
+          error: 'banned',
+          message: `Ваш аккаунт заблокирован. Причина: ${banReason}`,
+          banReason: banReason,
+          bannedUntil: bannedUntilRaw ? bannedUntilRaw.toISOString() : null
+        }, { status: 403 });
+      }
     }
 
     // Создаём/обновляем запись в users (ВСЕГДА обновляем user_token для синхронизации Premium)

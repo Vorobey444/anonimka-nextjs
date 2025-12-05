@@ -35,10 +35,15 @@ export async function GET(req: NextRequest) {
           ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
-          users.premium_until
+          users.premium_until,
+          ads.is_blocked, ads.blocked_reason, ads.blocked_until
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.id = ${parseInt(id)}
+          AND NOT (
+            COALESCE(ads.is_blocked, false) = true
+            AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW())
+          )
         LIMIT 1
       `;
     } else if (city && country) {
@@ -48,10 +53,15 @@ export async function GET(req: NextRequest) {
           ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
-          users.premium_until
+          users.premium_until,
+          ads.is_blocked, ads.blocked_reason, ads.blocked_until
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.city = ${city} AND ads.country = ${country}
+          AND NOT (
+            COALESCE(ads.is_blocked, false) = true
+            AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW())
+          )
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
           ads.created_at DESC
@@ -63,10 +73,15 @@ export async function GET(req: NextRequest) {
           ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
-          users.premium_until
+          users.premium_until,
+          ads.is_blocked, ads.blocked_reason, ads.blocked_until
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.city = ${city}
+          AND NOT (
+            COALESCE(ads.is_blocked, false) = true
+            AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW())
+          )
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
           ads.created_at DESC
@@ -78,10 +93,15 @@ export async function GET(req: NextRequest) {
           ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
-          users.premium_until
+          users.premium_until,
+          ads.is_blocked, ads.blocked_reason, ads.blocked_until
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.country = ${country}
+          AND NOT (
+            COALESCE(ads.is_blocked, false) = true
+            AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW())
+          )
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
           ads.created_at DESC
@@ -93,9 +113,14 @@ export async function GET(req: NextRequest) {
           ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
-          users.premium_until
+          users.premium_until,
+          ads.is_blocked, ads.blocked_reason, ads.blocked_until
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
+        WHERE NOT (
+          COALESCE(ads.is_blocked, false) = true
+          AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW())
+        )
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
           ads.created_at DESC
@@ -192,6 +217,24 @@ export async function POST(req: NextRequest) {
       } else {
         // Веб-пользователь без tgId — криптографически случайный токен (32 байта = 64 hex символа)
         finalUserToken = crypto.randomBytes(32).toString('hex');
+      }
+    }
+
+    // Блокируем создание анкет забаненными пользователями (учитываем срок бана)
+    if (finalUserToken) {
+      const banCheck = await sql`
+        SELECT is_banned, ban_reason, banned_until FROM users WHERE user_token = ${finalUserToken} LIMIT 1
+      `;
+      if (banCheck.rows.length > 0 && banCheck.rows[0].is_banned) {
+        const bannedUntilRaw = banCheck.rows[0].banned_until ? new Date(banCheck.rows[0].banned_until) : null;
+        const now = new Date();
+        if (!bannedUntilRaw || bannedUntilRaw > now) {
+          const banReason = banCheck.rows[0].ban_reason || 'Нарушение правил сервиса';
+          return NextResponse.json(
+            { success: false, error: `Аккаунт заблокирован. ${banReason}`, bannedUntil: bannedUntilRaw?.toISOString() || null },
+            { status: 403 }
+          );
+        }
       }
     }
     

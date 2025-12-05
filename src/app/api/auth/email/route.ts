@@ -2,16 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import { generateEmailUserToken } from '@/lib/userIdentity';
 
-// Генерация user_token для email пользователей
-function generateUserToken(email: string): string {
-  const timestamp = Date.now();
-  const random = crypto.randomBytes(16).toString('hex');
-  return crypto
-    .createHash('sha256')
-    .update(`${email}_${timestamp}_${random}`)
-    .digest('hex');
-}
+// Все токены генерируются детерминированно на основе email с HMAC-SHA256
+// Гарантирует совместимость со всеми API (nickname, ads, users и т.д.)
 
 // Генерация 6-значного кода подтверждения
 function generateVerificationCode(): string {
@@ -108,11 +102,12 @@ export async function POST(request: NextRequest) {
 
         // Проверяем, существует ли пользователь
         const existingUser = await sql`
-          SELECT id FROM users WHERE email = ${email} LIMIT 1
+          SELECT id FROM users WHERE LOWER(email) = ${email.toLowerCase().trim()} LIMIT 1
         `;
 
-        // Генерируем userToken заранее
-        const userToken = generateUserToken(email);
+        // Генерируем userToken заранее с нормализированным email
+        const normalizedEmail = email.toLowerCase().trim();
+        const userToken = generateEmailUserToken(normalizedEmail);
 
         // Создаём таблицу если её нет (для совместимости)
         await sql`
@@ -128,7 +123,7 @@ export async function POST(request: NextRequest) {
         // Сохраняем код и userToken в таблицу verification_codes
         await sql`
           INSERT INTO verification_codes (email, code, user_token, expires_at, created_at)
-          VALUES (${email}, ${verificationCode}, ${userToken}, ${expiresAt.toISOString()}, NOW())
+          VALUES (${normalizedEmail}, ${verificationCode}, ${userToken}, ${expiresAt.toISOString()}, NOW())
           ON CONFLICT (email) 
           DO UPDATE SET 
             code = ${verificationCode},
@@ -196,8 +191,9 @@ export async function POST(request: NextRequest) {
           let userId: number;
 
           if (testUser.rows.length === 0) {
-            // Создаём тестового пользователя
-            userToken = generateUserToken(email);
+            // Создаём тестового пользователя с нормализированным email
+            const normalizedEmail = email.toLowerCase().trim();
+            userToken = generateEmailUserToken(normalizedEmail);
             const testUserId = 10000000000001; // Фиксированный ID для тестового пользователя
 
             const newTestUser = await sql`
@@ -217,7 +213,7 @@ export async function POST(request: NextRequest) {
               VALUES (
                 ${testUserId},
                 ${userToken},
-                ${email},
+                ${normalizedEmail},
                 true,
                 'email',
                 true,
@@ -267,10 +263,11 @@ export async function POST(request: NextRequest) {
         }
 
         // Обычная проверка для реальных пользователей
+        const normalizedEmailVerify = email.toLowerCase().trim();
         const verificationResult = await sql`
           SELECT code, user_token, expires_at 
           FROM verification_codes 
-          WHERE email = ${email}
+          WHERE LOWER(email) = ${normalizedEmailVerify}
           LIMIT 1
         `;
 
@@ -308,12 +305,13 @@ export async function POST(request: NextRequest) {
           LIMIT 1
         `;
         
-        // Если не нашли по userToken, ищем по email
+        // Если не нашли по userToken, ищем по email (нормализированный)
         if (user.rows.length === 0) {
+          const normalizedEmail = email.toLowerCase().trim();
           user = await sql`
             SELECT id, user_token, email, is_premium, premium_until, auto_premium_source
             FROM users 
-            WHERE email = ${email}
+            WHERE LOWER(email) = ${normalizedEmail}
             LIMIT 1
           `;
         }
@@ -324,7 +322,8 @@ export async function POST(request: NextRequest) {
 
         if (user.rows.length === 0) {
           // Создаём нового пользователя с сохраненным userToken
-          userToken = savedUserToken || generateUserToken(email); // Используем сохраненный или генерируем новый (fallback)
+          const normalizedEmail = email.toLowerCase().trim();
+          userToken = savedUserToken || generateEmailUserToken(normalizedEmail); // Используем сохраненный или генерируем новый (fallback)
           
           // Генерируем уникальный ID для email пользователей (диапазон 10^13+)
           // Пробуем использовать функцию generate_email_user_id(), если нет - генерируем сами
@@ -359,7 +358,7 @@ export async function POST(request: NextRequest) {
               VALUES (
                 ${emailUserId},
                 ${userToken},
-                ${email},
+                ${normalizedEmail},
                 true,
                 'email',
                 false,
@@ -388,14 +387,16 @@ export async function POST(request: NextRequest) {
           }
         } else {
           // Обновляем существующего пользователя
+          const normalizedEmail = email.toLowerCase().trim();
           userId = user.rows[0].id;
           userToken = user.rows[0].user_token;
 
-          console.log('[EMAIL AUTH] 📧 Существующий пользователь найден. ID:', userId, 'userToken:', userToken ? userToken.substring(0, 16) + '...' : 'NULL', 'email:', email);
+          console.log('[EMAIL AUTH] 📧 Существующий пользователь найден. ID:', userId, 'userToken:', userToken ? userToken.substring(0, 16) + '...' : 'NULL', 'email:', normalizedEmail);
 
           await sql`
             UPDATE users 
             SET email_verified = true,
+                email = ${normalizedEmail},
                 last_login_at = NOW()
             WHERE id = ${userId}
           `;
@@ -403,9 +404,10 @@ export async function POST(request: NextRequest) {
           console.log('[EMAIL AUTH] ✅ Пользователь обновлен:', userId);
         }
 
-        // Удаляем использованный код
+        // Удаляем использованный код (нормализированный email)
+        const normalizedEmailDelete = email.toLowerCase().trim();
         await sql`
-          DELETE FROM verification_codes WHERE email = ${email}
+          DELETE FROM verification_codes WHERE LOWER(email) = ${normalizedEmailDelete}
         `;
 
         // Получаем полную информацию о пользователе

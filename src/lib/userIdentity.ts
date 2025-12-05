@@ -147,15 +147,17 @@ export function generateTelegramUserToken(tgId: number): string {
 }
 
 /**
- * Генерирует случайный user_token для Email пользователя
+ * Генерирует детерминированный user_token для Email пользователя
+ * Использует HMAC-SHA256, как и для Telegram пользователей
+ * Гарантирует, что одно и то же email всегда генерирует один и тот же токен
  */
 export function generateEmailUserToken(email: string): string {
-  const timestamp = Date.now();
-  const random = crypto.randomBytes(16).toString('hex');
-  return crypto
-    .createHash('sha256')
-    .update(`${email}_${timestamp}_${random}`)
-    .digest('hex');
+  const normalizedEmail = email.toLowerCase().trim();
+  const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET || 'dev-temp-secret';
+  const hmac = crypto.createHmac('sha256', secret);
+  hmac.update(normalizedEmail);
+  hmac.update(':email:v1');
+  return hmac.digest('hex');
 }
 
 /**
