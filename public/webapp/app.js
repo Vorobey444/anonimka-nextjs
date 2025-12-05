@@ -15121,6 +15121,12 @@ async function loadPollResults(pollId) {
     const optionsElement = document.getElementById(`${prefix}PollOptions`);
     const resultsElement = document.getElementById(`${prefix}PollResults`);
     
+    // Проверяем что элементы существуют
+    if (!optionsElement || !resultsElement) {
+        console.log('Poll elements not found, skipping results load');
+        return;
+    }
+    
     try {
         const response = await fetch(`/api/poll?poll_id=${pollId}`);
         const data = await response.json();
@@ -15131,14 +15137,22 @@ async function loadPollResults(pollId) {
             const noPercent = total > 0 ? Math.round((data.results.no / total) * 100) : 0;
             
             if (hasVoted || total > 0) {
-                // Показываем результаты
-                document.getElementById(`${prefix}YesPercent`).textContent = yesPercent + '%';
-                document.getElementById(`${prefix}NoPercent`).textContent = noPercent + '%';
-                document.getElementById(`${prefix}YesBar`).style.width = yesPercent + '%';
-                document.getElementById(`${prefix}NoBar`).style.width = noPercent + '%';
-                document.getElementById(`${prefix}YesCount`).textContent = data.results.yes + ' ' + getPluralForm(data.results.yes, 'голос', 'голоса', 'голосов');
-                document.getElementById(`${prefix}NoCount`).textContent = data.results.no + ' ' + getPluralForm(data.results.no, 'голос', 'голоса', 'голосов');
-                document.getElementById(`${prefix}TotalVotes`).textContent = total;
+                // Проверяем существование всех элементов перед обновлением
+                const yesPercentEl = document.getElementById(`${prefix}YesPercent`);
+                const noPercentEl = document.getElementById(`${prefix}NoPercent`);
+                const yesBarEl = document.getElementById(`${prefix}YesBar`);
+                const noBarEl = document.getElementById(`${prefix}NoBar`);
+                const yesCountEl = document.getElementById(`${prefix}YesCount`);
+                const noCountEl = document.getElementById(`${prefix}NoCount`);
+                const totalVotesEl = document.getElementById(`${prefix}TotalVotes`);
+                
+                if (yesPercentEl) yesPercentEl.textContent = yesPercent + '%';
+                if (noPercentEl) noPercentEl.textContent = noPercent + '%';
+                if (yesBarEl) yesBarEl.style.width = yesPercent + '%';
+                if (noBarEl) noBarEl.style.width = noPercent + '%';
+                if (yesCountEl) yesCountEl.textContent = data.results.yes + ' ' + getPluralForm(data.results.yes, 'голос', 'голоса', 'голосов');
+                if (noCountEl) noCountEl.textContent = data.results.no + ' ' + getPluralForm(data.results.no, 'голос', 'голоса', 'голосов');
+                if (totalVotesEl) totalVotesEl.textContent = total;
                 
                 optionsElement.style.display = 'none';
                 resultsElement.style.display = 'flex';
