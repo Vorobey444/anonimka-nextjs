@@ -9350,14 +9350,25 @@ function setupMessageReactions() {
     messages.forEach(msg => {
         let clickTimeout = null;
         let clickCount = 0;
+        let longPressTimer = null;
+        let longPressStarted = false;
         
         // Удаляем старые обработчики если есть
         msg.removeEventListener('click', msg._reactionClickHandler);
+        msg.removeEventListener('touchstart', msg._reactionTouchStart);
+        msg.removeEventListener('touchend', msg._reactionTouchEnd);
+        msg.removeEventListener('touchmove', msg._reactionTouchMove);
         
-        // Создаем новый обработчик
+        // Обработчик двойного клика
         const handleClick = (e) => {
-            // Игнорируем клики на фото, видео и кнопки
-            if (e.target.closest('.message-photo, .message-photo-secure, video, button, .message-reply-indicator')) {
+            // Игнорируем клики на фото, видео, кнопки и реакции
+            if (e.target.closest('.message-photo, .message-photo-secure, video, button, .message-reply-indicator, .message-reaction')) {
+                return;
+            }
+            
+            // Если было долгое нажатие, игнорируем клик
+            if (longPressStarted) {
+                longPressStarted = false;
                 return;
             }
             
@@ -9366,8 +9377,7 @@ function setupMessageReactions() {
             if (clickCount === 1) {
                 // Первый клик - ждем второй
                 clickTimeout = setTimeout(() => {
-                    // Одинарный клик - показываем меню реакций
-                    showReactionPicker(msg, e);
+                    // Одинарный клик - ничего не делаем (свайп для ответа)
                     clickCount = 0;
                 }, 300);
             } else if (clickCount === 2) {
@@ -9378,8 +9388,44 @@ function setupMessageReactions() {
             }
         };
         
+        // Долгое нажатие - показываем меню реакций
+        const handleTouchStart = (e) => {
+            if (e.target.closest('.message-photo, .message-photo-secure, video, button, .message-reply-indicator, .message-reaction')) {
+                return;
+            }
+            
+            longPressTimer = setTimeout(() => {
+                longPressStarted = true;
+                showReactionPicker(msg, e.touches[0]);
+            }, 500);
+        };
+        
+        const handleTouchEnd = () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+            setTimeout(() => {
+                longPressStarted = false;
+            }, 100);
+        };
+        
+        const handleTouchMove = () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        };
+        
         msg._reactionClickHandler = handleClick;
+        msg._reactionTouchStart = handleTouchStart;
+        msg._reactionTouchEnd = handleTouchEnd;
+        msg._reactionTouchMove = handleTouchMove;
+        
         msg.addEventListener('click', handleClick);
+        msg.addEventListener('touchstart', handleTouchStart, { passive: true });
+        msg.addEventListener('touchend', handleTouchEnd);
+        msg.addEventListener('touchmove', handleTouchMove);
     });
 }
 
