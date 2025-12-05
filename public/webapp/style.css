@@ -4572,6 +4572,8 @@ body.emoji-flags-supported .country-code {
     animation: messageSlideIn 0.3s ease;
     transition: transform 0.2s ease, background 0.3s ease;
     touch-action: pan-y;
+    cursor: pointer;
+    user-select: none;
 }
 
 /* Подсветка при скролле к сообщению */
@@ -4598,6 +4600,98 @@ body.emoji-flags-supported .country-code {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Реакция на сообщение */
+.message-reaction {
+    position: absolute;
+    bottom: -8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--neon-cyan);
+    border-radius: 12px;
+    padding: 2px 6px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    animation: reactionPop 0.3s ease;
+    z-index: 1;
+}
+
+.message-reaction-emoji {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.message-reaction-count {
+    font-size: 11px;
+    color: var(--neon-cyan);
+    font-weight: 500;
+}
+
+@keyframes reactionPop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Меню выбора реакций */
+.reaction-picker {
+    position: fixed;
+    background: rgba(20, 20, 30, 0.98);
+    border: 2px solid var(--neon-cyan);
+    border-radius: 20px;
+    padding: 8px;
+    display: flex;
+    gap: 4px;
+    z-index: 10000;
+    box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+    animation: pickerSlideIn 0.2s ease;
+}
+
+@keyframes pickerSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.reaction-option {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: rgba(0, 217, 255, 0.1);
+    border: 1px solid transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.reaction-option:hover {
+    background: rgba(0, 217, 255, 0.3);
+    border-color: var(--neon-cyan);
+    transform: scale(1.2);
+}
+
+.reaction-option:active {
+    transform: scale(0.95);
 }
 
 /* Мое сообщение */

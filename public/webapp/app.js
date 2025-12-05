@@ -9185,6 +9185,18 @@ async function loadChatMessages(chatId, silent = false) {
             
             const nickname = msg.sender_nickname || 'Собеседник';
             
+            // Реакции на сообщение
+            let reactionHtml = '';
+            if (msg.reactions && msg.reactions.length > 0) {
+                const topReaction = msg.reactions[0];
+                reactionHtml = `
+                    <div class="message-reaction">
+                        <span class="message-reaction-emoji">${topReaction.emoji}</span>
+                        ${topReaction.count > 1 ? `<span class="message-reaction-count">${topReaction.count}</span>` : ''}
+                    </div>
+                `;
+            }
+            
             return `
                 <div class="message ${messageClass}" 
                      data-message-id="${msg.id}" 
@@ -9196,12 +9208,16 @@ async function loadChatMessages(chatId, silent = false) {
                     ${photoHtml}
                     ${messageTextHtml}
                     <div class="message-time">${time} ${statusIcon}</div>
+                    ${reactionHtml}
                 </div>
             `;
         }).join('');
 
         // Добавляем обработчики long press для своих сообщений
         setupMessageLongPress();
+        
+        // Добавляем обработчики реакций на сообщения
+        setupMessageReactions();
         
         // Прокручиваем вниз если это первая загрузка или были внизу
         if (!silent || wasAtBottom) {
@@ -9303,6 +9319,180 @@ function setupMessageSwipeHandlers() {
             }
         });
     });
+}
+
+// Обработка реакций на сообщения
+function setupMessageReactions() {
+    const messages = document.querySelectorAll('.message');
+    
+    messages.forEach(msg => {
+        let clickTimeout = null;
+        let clickCount = 0;
+        
+        // Удаляем старые обработчики если есть
+        msg.removeEventListener('click', msg._reactionClickHandler);
+        
+        // Создаем новый обработчик
+        const handleClick = (e) => {
+            // Игнорируем клики на фото, видео и кнопки
+            if (e.target.closest('.message-photo, .message-photo-secure, video, button, .message-reply-indicator')) {
+                return;
+            }
+            
+            clickCount++;
+            
+            if (clickCount === 1) {
+                // Первый клик - ждем второй
+                clickTimeout = setTimeout(() => {
+                    // Одинарный клик - показываем меню реакций
+                    showReactionPicker(msg, e);
+                    clickCount = 0;
+                }, 300);
+            } else if (clickCount === 2) {
+                // Двойной клик - ставим сердечко
+                clearTimeout(clickTimeout);
+                clickCount = 0;
+                addReaction(msg, '❤️');
+            }
+        };
+        
+        msg._reactionClickHandler = handleClick;
+        msg.addEventListener('click', handleClick);
+    });
+}
+
+// Показать меню выбора реакций
+function showReactionPicker(messageElement, event) {
+    // Закрываем предыдущее меню если есть
+    closeReactionPicker();
+    
+    const reactions = ['❤️', '👍', '😂', '🔥', '😍', '🎉'];
+    
+    const picker = document.createElement('div');
+    picker.className = 'reaction-picker';
+    picker.id = 'reactionPicker';
+    
+    reactions.forEach(emoji => {
+        const option = document.createElement('div');
+        option.className = 'reaction-option';
+        option.textContent = emoji;
+        option.onclick = () => {
+            addReaction(messageElement, emoji);
+            closeReactionPicker();
+        };
+        picker.appendChild(option);
+    });
+    
+    document.body.appendChild(picker);
+    
+    // Позиционируем меню
+    const rect = messageElement.getBoundingClientRect();
+    const pickerRect = picker.getBoundingClientRect();
+    
+    // Размещаем над сообщением по центру
+    let left = rect.left + rect.width / 2 - pickerRect.width / 2;
+    let top = rect.top - pickerRect.height - 10;
+    
+    // Проверяем, не выходит ли за края экрана
+    if (left < 10) left = 10;
+    if (left + pickerRect.width > window.innerWidth - 10) {
+        left = window.innerWidth - pickerRect.width - 10;
+    }
+    if (top < 10) {
+        // Если не влезает сверху, показываем снизу
+        top = rect.bottom + 10;
+    }
+    
+    picker.style.left = left + 'px';
+    picker.style.top = top + 'px';
+    
+    // Закрываем при клике вне меню
+    setTimeout(() => {
+        document.addEventListener('click', closeReactionPickerOnClickOutside);
+    }, 100);
+}
+
+// Закрыть меню реакций
+function closeReactionPicker() {
+    const picker = document.getElementById('reactionPicker');
+    if (picker) {
+        picker.remove();
+        document.removeEventListener('click', closeReactionPickerOnClickOutside);
+    }
+}
+
+function closeReactionPickerOnClickOutside(e) {
+    const picker = document.getElementById('reactionPicker');
+    if (picker && !picker.contains(e.target)) {
+        closeReactionPicker();
+    }
+}
+
+// Добавить реакцию на сообщение
+async function addReaction(messageElement, emoji) {
+    const messageId = messageElement.dataset.messageId;
+    
+    if (!messageId) {
+        console.error('Message ID not found');
+        return;
+    }
+    
+    try {
+        // Показываем реакцию сразу для отзывчивости
+        showReactionOnMessage(messageElement, emoji);
+        
+        // Отправляем на сервер
+        const userToken = localStorage.getItem('user_token');
+        const response = await fetch('/api/reactions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message_id: messageId,
+                emoji: emoji,
+                user_token: userToken
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to add reaction');
+        }
+        
+        const data = await response.json();
+        console.log('✅ Реакция добавлена:', data);
+        
+    } catch (error) {
+        console.error('❌ Ошибка добавления реакции:', error);
+        // Убираем реакцию при ошибке
+        removeReactionFromMessage(messageElement);
+    }
+}
+
+// Показать реакцию на сообщении
+function showReactionOnMessage(messageElement, emoji, count = 1) {
+    // Удаляем старую реакцию если есть
+    const existingReaction = messageElement.querySelector('.message-reaction');
+    if (existingReaction) {
+        existingReaction.remove();
+    }
+    
+    const reaction = document.createElement('div');
+    reaction.className = 'message-reaction';
+    reaction.innerHTML = `
+        <span class="message-reaction-emoji">${emoji}</span>
+        ${count > 1 ? `<span class="message-reaction-count">${count}</span>` : ''}
+    `;
+    
+    messageElement.appendChild(reaction);
+}
+
+// Убрать реакцию с сообщения
+function removeReactionFromMessage(messageElement) {
+    const reaction = messageElement.querySelector('.message-reaction');
+    if (reaction) {
+        reaction.remove();
+    }
 }
 
 // Отправить сообщение

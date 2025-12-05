@@ -28,7 +28,16 @@ export async function POST(request: NextRequest) {
             m.created_at,
             pc.user_token_1, 
             pc.user_token_2,
-            pc.ad_id
+            pc.ad_id,
+            (
+              SELECT json_agg(json_build_object('emoji', emoji, 'count', count))
+              FROM (
+                SELECT emoji, COUNT(*) as count
+                FROM message_reactions
+                WHERE message_id = m.id
+                GROUP BY emoji
+              ) reactions
+            ) as reactions
           FROM messages m
           JOIN private_chats pc ON m.chat_id = pc.id
           WHERE m.chat_id = ${chatId}
