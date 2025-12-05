@@ -97,7 +97,8 @@ export async function GET(req: NextRequest) {
 // DELETE - удалить свою реакцию
 export async function DELETE(req: NextRequest) {
   try {
-    const { message_id, user_token } = await req.json();
+    const user_token = req.headers.get('X-User-Token');
+    const { message_id, emoji } = await req.json();
 
     if (!message_id || !user_token) {
       return NextResponse.json(
@@ -106,11 +107,22 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    await sql`
-      DELETE FROM message_reactions
-      WHERE message_id = ${message_id}
-        AND user_token = ${user_token}
-    `;
+    // Удаляем реакцию с учетом emoji (для точности)
+    if (emoji) {
+      await sql`
+        DELETE FROM message_reactions
+        WHERE message_id = ${message_id}
+          AND user_token = ${user_token}
+          AND emoji = ${emoji}
+      `;
+    } else {
+      // Если emoji не передан, удаляем любую реакцию пользователя на это сообщение
+      await sql`
+        DELETE FROM message_reactions
+        WHERE message_id = ${message_id}
+          AND user_token = ${user_token}
+      `;
+    }
 
     return NextResponse.json({
       success: true
