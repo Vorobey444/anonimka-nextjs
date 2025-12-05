@@ -67,9 +67,23 @@ export async function POST(request: NextRequest) {
     // Отправляем push-уведомление получателю о новом запросе на чат
     try {
       const notificationText = messageText || 'Новый запрос на приватный чат';
+      
+      // Получаем tg_id получателя и отправителя
+      const { rows: receiverRows } = await sql`
+        SELECT id FROM users WHERE user_token = ${receiver_token} LIMIT 1;
+      `;
+      const { rows: senderRows } = await sql`
+        SELECT id FROM users WHERE user_token = ${sender_token} LIMIT 1;
+      `;
+      
+      const receiverTgId = receiverRows[0]?.id;
+      const senderTgId = senderRows[0]?.id;
+      
       console.log('[SEND-MESSAGE] Отправляем уведомление получателю:', { 
-        receiverToken: receiver_token, 
+        receiverToken: receiver_token,
+        receiverTgId,
         senderToken: sender_token,
+        senderTgId,
         adId,
         message: notificationText 
       });
@@ -84,7 +98,8 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           receiverToken: receiver_token,
-          senderToken: sender_token,
+          receiverTgId: receiverTgId,
+          senderTgId: senderTgId,
           adId: adId,
           messageText: notificationText
         })

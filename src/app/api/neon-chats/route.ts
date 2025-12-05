@@ -61,9 +61,23 @@ export async function POST(request: NextRequest) {
         // Отправляем push-уведомление получателю о новом запросе на чат
         try {
           const messageText = message || 'Новый запрос на приватный чат';
+          
+          // Получаем tg_id получателя и отправителя
+          const { rows: receiverRows } = await sql`
+            SELECT id FROM users WHERE user_token = ${user2_token} LIMIT 1;
+          `;
+          const { rows: senderRows } = await sql`
+            SELECT id FROM users WHERE user_token = ${user1_token} LIMIT 1;
+          `;
+          
+          const receiverTgId = receiverRows[0]?.id;
+          const senderTgId = senderRows[0]?.id;
+          
           console.log('[NEON-CHATS] Отправляем уведомление получателю:', { 
-            receiverToken: user2_token, 
+            receiverToken: user2_token,
+            receiverTgId,
             senderToken: user1_token,
+            senderTgId,
             adId,
             message: messageText 
           });
@@ -78,7 +92,8 @@ export async function POST(request: NextRequest) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               receiverToken: user2_token,
-              senderToken: user1_token,
+              receiverTgId: receiverTgId,
+              senderTgId: senderTgId,
               adId: adId,
               messageText: messageText
             })
