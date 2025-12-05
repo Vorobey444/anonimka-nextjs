@@ -1776,6 +1776,9 @@ async function initializeNickname() {
         }
     } else {
         console.warn('⚠️ [DEBUG] Нет ни tgId, ни userToken для проверки никнейма');
+        // Если нет авторизации - НЕ показываем модальное окно никнейма
+        console.log('⚠️ Пользователь не авторизован - пропускаем initializeNickname');
+        return;
     }
     
     // Если никнейма нет ни в БД, ни в localStorage - показываем модальное окно
