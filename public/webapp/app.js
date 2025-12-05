@@ -3366,6 +3366,18 @@ function handleLogout() {
     localStorage.removeItem('auth_time');
     localStorage.removeItem('user_id');
     localStorage.removeItem('is_premium');
+    localStorage.removeItem('onboarding_completed');
+    localStorage.removeItem('onboarding_step');
+    localStorage.removeItem('user_data');
+    localStorage.removeItem('user_tg_id');
+    localStorage.removeItem('last_fetch_time');
+    localStorage.removeItem('chat_messages');
+    // Очищаем все ключи связанные с опросами
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('poll_voted_')) {
+            localStorage.removeItem(key);
+        }
+    });
     
     // Закрываем гамбургер меню
     closeHamburgerMenu();
@@ -15071,19 +15083,8 @@ window.showHamburgerMenu = function() {
 function showPolls() {
     showScreen('pollsScreen');
     
-    // Проверяем каждый опрос - если пользователь голосовал, показываем результаты
-    const photosVoted = localStorage.getItem('poll_voted_photos_in_ads');
-    console.log('Show polls - photosVoted:', photosVoted);
-    
-    if (photosVoted) {
-        loadPollResults('photos_in_ads');
-    } else {
-        // Показываем кнопки для голосования
-        const optionsElement = document.getElementById('photosPollOptions');
-        const resultsElement = document.getElementById('photosPollResults');
-        if (optionsElement) optionsElement.style.display = 'flex';
-        if (resultsElement) resultsElement.style.display = 'none';
-    }
+    // Загружаем результаты с проверкой голосования из БД
+    loadPollResults('photos_in_ads');
 }
 
 async function votePoll(pollId, answer) {
@@ -15131,8 +15132,6 @@ async function votePoll(pollId, answer) {
 }
 
 async function loadPollResults(pollId) {
-    const hasVoted = localStorage.getItem(`poll_voted_${pollId}`);
-    
     // Определяем префикс для ID элементов в зависимости от опроса
     let prefix = '';
     if (pollId === 'photos_in_ads') {
@@ -15149,16 +15148,31 @@ async function loadPollResults(pollId) {
     }
     
     try {
-        const response = await fetch(`/api/poll?poll_id=${pollId}`);
+        const userToken = localStorage.getItem('user_token');
+        console.log('[POLL] Loading results for:', pollId, 'with token:', userToken ? 'exists' : 'missing');
+        
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (userToken) {
+            headers['X-User-Token'] = userToken;
+        }
+        
+        const response = await fetch(`/api/poll?poll_id=${pollId}`, { headers });
         const data = await response.json();
+        
+        console.log('[POLL] API response:', data);
+        console.log('[POLL] hasVoted from API:', data.hasVoted);
+        console.log('[POLL] Results:', data.results);
         
         if (data.success) {
             const total = data.results.yes + data.results.no;
             const yesPercent = total > 0 ? Math.round((data.results.yes / total) * 100) : 0;
             const noPercent = total > 0 ? Math.round((data.results.no / total) * 100) : 0;
             
-            // Показываем результаты только если пользователь уже голосовал
-            if (hasVoted) {
+            // Показываем результаты только если пользователь уже голосовал (проверка из БД)
+            if (data.hasVoted) {
+                console.log('User has voted, showing results');
                 // Проверяем существование всех элементов перед обновлением
                 const yesPercentEl = document.getElementById(`${prefix}YesPercent`);
                 const noPercentEl = document.getElementById(`${prefix}NoPercent`);
@@ -15179,6 +15193,7 @@ async function loadPollResults(pollId) {
                 optionsElement.style.display = 'none';
                 resultsElement.style.display = 'flex';
             } else {
+                console.log('User has not voted, showing options');
                 // Показываем кнопки для голосования
                 optionsElement.style.display = 'flex';
                 resultsElement.style.display = 'none';
@@ -15186,6 +15201,9 @@ async function loadPollResults(pollId) {
         }
     } catch (error) {
         console.error('Ошибка загрузки результатов:', error);
+        // В случае ошибки показываем кнопки для голосования
+        optionsElement.style.display = 'flex';
+        resultsElement.style.display = 'none';
     }
 }
 

@@ -54,12 +54,25 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const poll_id = searchParams.get('poll_id');
+    const user_token = req.headers.get('X-User-Token');
 
     if (!poll_id) {
       return NextResponse.json(
         { success: false, error: 'Missing poll_id' },
         { status: 400 }
       );
+    }
+
+    // Проверяем, голосовал ли пользователь
+    let hasVoted = false;
+    if (user_token) {
+      const userVote = await sql`
+        SELECT id FROM poll_votes
+        WHERE poll_id = ${poll_id}
+          AND user_token = ${user_token}
+        LIMIT 1
+      `;
+      hasVoted = userVote.length > 0;
     }
 
     // Получаем результаты
@@ -81,6 +94,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      hasVoted: hasVoted,
       results: formattedResults
     });
 
