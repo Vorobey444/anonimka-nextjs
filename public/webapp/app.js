@@ -9223,8 +9223,7 @@ async function loadChatMessages(chatId, silent = false) {
                 <div class="message ${messageClass}" 
                      data-message-id="${msg.id}" 
                      data-nickname="${escapeHtml(nickname)}"
-                     data-is-mine="${isMine}"
-                     ${isMine ? 'oncontextmenu="return showDeleteMessageMenu(event, ' + msg.id + ')"' : ''}>
+                     data-is-mine="${isMine}">
                     ${replyIndicatorHtml}
                     ${nicknameHtml}
                     ${photoHtml}
@@ -9235,9 +9234,6 @@ async function loadChatMessages(chatId, silent = false) {
             `;
         }).join('');
 
-        // Добавляем обработчики long press для своих сообщений
-        setupMessageLongPress();
-        
         // Добавляем обработчики реакций на сообщения
         setupMessageReactions();
         
@@ -9306,8 +9302,14 @@ function setupMessageSwipeHandlers() {
                 hasMoved = true;
             }
             
-            // Свайп только влево (для всех сообщений)
+            const isMine = msg.getAttribute('data-is-mine') === 'true';
+            
+            // Свайп влево (для всех) - ответить
             if (diffX < 0 && diffX > -150) {
+                msg.style.transform = `translateX(${diffX}px)`;
+            }
+            // Свайп вправо (только свои) - удалить
+            else if (diffX > 0 && diffX < 150 && isMine) {
                 msg.style.transform = `translateX(${diffX}px)`;
             }
         };
@@ -9320,7 +9322,9 @@ function setupMessageSwipeHandlers() {
             msg.style.transition = 'transform 0.2s ease';
             msg.style.transform = '';
             
-            // Если свайпнули достаточно влево (-100px) И было движение, показываем ответ
+            const isMine = msg.getAttribute('data-is-mine') === 'true';
+            
+            // Свайп влево (-100px) И было движение - показываем ответ
             if (diff < -100 && hasMoved) {
                 const messageId = msg.getAttribute('data-message-id');
                 const nickname = msg.getAttribute('data-nickname');
@@ -9332,6 +9336,17 @@ function setupMessageSwipeHandlers() {
                         window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                     }
                     replyToMsg(messageId, nickname, messageText);
+                }
+            }
+            // Свайп вправо (100px) И своё сообщение И было движение - удалить
+            else if (diff > 100 && isMine && hasMoved) {
+                const messageId = msg.getAttribute('data-message-id');
+                if (messageId) {
+                    // Вибрация
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    }
+                    showDeleteMessageMenu(null, parseInt(messageId));
                 }
             }
             

@@ -4657,6 +4657,23 @@ body.emoji-flags-supported .country-code {
     z-index: 10000;
     box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
     animation: pickerSlideIn 0.2s ease;
+    overflow-x: auto;
+    max-width: 90vw;
+    -webkit-overflow-scrolling: touch;
+}
+
+.reaction-picker::-webkit-scrollbar {
+    height: 4px;
+}
+
+.reaction-picker::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 2px;
+}
+
+.reaction-picker::-webkit-scrollbar-thumb {
+    background: var(--neon-cyan);
+    border-radius: 2px;
 }
 
 @keyframes pickerSlideIn {
