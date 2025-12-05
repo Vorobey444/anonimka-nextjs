@@ -9212,7 +9212,7 @@ async function loadChatMessages(chatId, silent = false) {
             if (msg.reactions && msg.reactions.length > 0) {
                 const topReaction = msg.reactions[0];
                 reactionHtml = `
-                    <div class="message-reaction">
+                    <div class="message-reaction" data-message-id="${msg.id}">
                         <span class="message-reaction-emoji">${topReaction.emoji}</span>
                         ${topReaction.count > 1 ? `<span class="message-reaction-count">${topReaction.count}</span>` : ''}
                     </div>
@@ -9378,6 +9378,8 @@ function setupMessageReactions() {
     const messages = document.querySelectorAll('.message');
     
     messages.forEach(msg => {
+        const isMine = msg.getAttribute('data-is-mine') === 'true';
+        
         let clickTimeout = null;
         let clickCount = 0;
         let longPressTimer = null;
@@ -9393,6 +9395,11 @@ function setupMessageReactions() {
         const handleClick = (e) => {
             // Игнорируем клики на фото, видео, кнопки и реакции
             if (e.target.closest('.message-photo, .message-photo-secure, video, button, .message-reply-indicator, .message-reaction')) {
+                return;
+            }
+            
+            // Не разрешаем ставить реакции на свои сообщения
+            if (isMine) {
                 return;
             }
             
@@ -9421,6 +9428,11 @@ function setupMessageReactions() {
         // Долгое нажатие - показываем меню реакций
         const handleTouchStart = (e) => {
             if (e.target.closest('.message-photo, .message-photo-secure, video, button, .message-reply-indicator, .message-reaction')) {
+                return;
+            }
+            
+            // Не разрешаем ставить реакции на свои сообщения
+            if (isMine) {
                 return;
             }
             
@@ -9456,6 +9468,46 @@ function setupMessageReactions() {
         msg.addEventListener('touchstart', handleTouchStart, { passive: true });
         msg.addEventListener('touchend', handleTouchEnd);
         msg.addEventListener('touchmove', handleTouchMove);
+    });
+    
+    // Добавляем обработчики удаления для всех существующих реакций
+    document.querySelectorAll('.message-reaction').forEach(reactionEl => {
+        // Удаляем старый обработчик если есть
+        if (reactionEl._removeHandler) {
+            reactionEl.removeEventListener('click', reactionEl._removeHandler);
+        }
+        
+        const removeHandler = async (e) => {
+            e.stopPropagation();
+            const messageId = reactionEl.getAttribute('data-message-id');
+            const emojiEl = reactionEl.querySelector('.message-reaction-emoji');
+            if (!emojiEl) return;
+            
+            const emoji = emojiEl.textContent;
+            
+            try {
+                const response = await fetch('/api/reactions', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Token': window.userToken
+                    },
+                    body: JSON.stringify({
+                        message_id: parseInt(messageId),
+                        emoji: emoji
+                    })
+                });
+                
+                if (response.ok) {
+                    reactionEl.remove();
+                }
+            } catch (error) {
+                console.error('Ошибка удаления реакции:', error);
+            }
+        };
+        
+        reactionEl._removeHandler = removeHandler;
+        reactionEl.addEventListener('click', removeHandler);
     });
 }
 
@@ -9584,39 +9636,42 @@ function showReactionOnMessage(messageElement, emoji, count = 1) {
         existingReaction.remove();
     }
     
+    const messageId = messageElement.getAttribute('data-message-id');
     const reaction = document.createElement('div');
     reaction.className = 'message-reaction';
+    reaction.setAttribute('data-message-id', messageId);
     reaction.innerHTML = `
         <span class="message-reaction-emoji">${emoji}</span>
         ${count > 1 ? `<span class="message-reaction-count">${count}</span>` : ''}
     `;
     
     // Клик на реакцию - удаляем её
-    reaction.onclick = async (e) => {
+    const removeHandler = async (e) => {
         e.stopPropagation();
-        const messageId = messageElement.dataset.messageId;
-        const userToken = localStorage.getItem('user_token');
         
         try {
             const response = await fetch('/api/reactions', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-User-Token': window.userToken
                 },
                 body: JSON.stringify({
-                    message_id: messageId,
-                    user_token: userToken
+                    message_id: parseInt(messageId),
+                    emoji: emoji
                 })
             });
             
             if (response.ok) {
                 reaction.remove();
-                console.log('✅ Реакция удалена');
             }
         } catch (error) {
-            console.error('❌ Ошибка удаления реакции:', error);
+            console.error('Ошибка удаления реакции:', error);
         }
     };
+    
+    reaction._removeHandler = removeHandler;
+    reaction.addEventListener('click', removeHandler);
     
     messageElement.appendChild(reaction);
 }
