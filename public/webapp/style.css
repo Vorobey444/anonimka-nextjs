@@ -672,7 +672,7 @@ h3 {
 .menu-buttons {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     max-width: 260px;
     margin: 0 auto;
     position: relative;

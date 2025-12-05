@@ -15144,7 +15144,8 @@ async function loadPollResults(pollId) {
             const yesPercent = total > 0 ? Math.round((data.results.yes / total) * 100) : 0;
             const noPercent = total > 0 ? Math.round((data.results.no / total) * 100) : 0;
             
-            if (hasVoted || total > 0) {
+            // Показываем результаты только если пользователь уже голосовал
+            if (hasVoted) {
                 // Проверяем существование всех элементов перед обновлением
                 const yesPercentEl = document.getElementById(`${prefix}YesPercent`);
                 const noPercentEl = document.getElementById(`${prefix}NoPercent`);
@@ -15164,6 +15165,10 @@ async function loadPollResults(pollId) {
                 
                 optionsElement.style.display = 'none';
                 resultsElement.style.display = 'flex';
+            } else {
+                // Показываем кнопки для голосования
+                optionsElement.style.display = 'flex';
+                resultsElement.style.display = 'none';
             }
         }
     } catch (error) {
