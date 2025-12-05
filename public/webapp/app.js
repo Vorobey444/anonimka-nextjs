@@ -13481,8 +13481,10 @@ function closeWorldChatContextMenu() {
 
 // Меню для удаления сообщения
 function showDeleteMessageMenu(event, messageId) {
-    event.preventDefault();
-    event.stopPropagation();
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
     
     console.log('Меню удаления для сообщения:', messageId);
     
