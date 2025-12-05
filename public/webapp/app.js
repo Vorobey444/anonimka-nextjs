@@ -207,6 +207,28 @@ async function logErrorToServer(error, type = 'error') {
     }
 }
 
+// Резервный механизм: если авторизация не показалась, принудительно показать модалку
+function ensureAuthModalVisibility() {
+    const userToken = localStorage.getItem('user_token');
+    if (userToken) return;
+    const modal = document.getElementById('telegramAuthModal');
+    if (!modal) return;
+
+    const computedStyle = window.getComputedStyle(modal);
+    if (computedStyle.display === 'none') {
+        console.warn('⚠️ Fallback: принудительно показываем модальное окно авторизации');
+        modal.style.display = 'flex';
+        modal.style.visibility = 'visible';
+        modal.style.opacity = '1';
+        modal.style.zIndex = '99999';
+
+        const loginWidgetContainer = document.getElementById('loginWidgetContainer');
+        if (loginWidgetContainer) loginWidgetContainer.style.display = 'block';
+        const loginWidgetDivider = document.getElementById('loginWidgetDivider');
+        if (loginWidgetDivider) loginWidgetDivider.style.display = 'flex';
+    }
+}
+
 // Глобальный обработчик ошибок JavaScript
 window.addEventListener('error', (event) => {
     console.error('❌ Перехвачена ошибка:', event.error);
@@ -1051,6 +1073,10 @@ function initializeApp() {
     } catch (e) {
         console.error('❌ Ошибка checkUserLocation:', e);
     }
+
+    // Резервный вызов: если токена нет и модалка вдруг скрыта, покажем её
+    setTimeout(ensureAuthModalVisibility, 1500);
+    setTimeout(ensureAuthModalVisibility, 3000);
     
     try {
         setupEventListeners();
