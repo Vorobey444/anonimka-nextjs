@@ -2834,8 +2834,8 @@ function showTelegramAuthModal() {
                 return false;
             }
             
-            // Браузерный fallback
-            window.open(telegramDeepLink, '_blank');
+            // Браузерный fallback: принудительный переход (без popup)
+            window.location.href = telegramDeepLink;
             return false;
         };
         console.log('✅ Deep link установлен на кнопку с обработчиком клика');
