@@ -2778,7 +2778,25 @@ function showTelegramAuthModal() {
         // Добавляем обработчик клика для принудительного открытия
         deepLinkButton.onclick = function(e) {
             e.preventDefault();
-            console.log('🔗 Открываем Telegram:', telegramDeepLink);
+            console.log('🔗 Открываем Telegram:', telegramDeepLink, 'isTelegramWebApp:', isTelegramWebApp);
+
+            // Внутри Telegram WebApp используем родной метод
+            try {
+                if (isTelegramWebApp && window.Telegram?.WebApp?.openTelegramLink) {
+                    window.Telegram.WebApp.openTelegramLink(telegramDeepLink);
+                    return false;
+                }
+            } catch (err) {
+                console.error('❌ Ошибка openTelegramLink:', err);
+            }
+
+            // Если это Android-приложение (WebView), открываем напрямую
+            if (isAndroidApp) {
+                window.location.href = telegramDeepLink;
+                return false;
+            }
+            
+            // Браузерный fallback
             window.open(telegramDeepLink, '_blank');
             return false;
         };
