@@ -3751,6 +3751,22 @@ async function loadMyAds() {
             
             const nickname = ad.display_nickname || 'Аноним';
             
+            // Маппинг телосложения на читаемые значения
+            const bodyLabels = {
+                // Английские варианты (старые)
+                slim: 'Худощавое',
+                athletic: 'Спортивное',
+                average: 'Среднее',
+                curvy: 'Полное',
+                // Русские варианты (новые)
+                'Стройное': 'Стройное',
+                'Обычное': 'Обычное',
+                'Плотное': 'Плотное',
+                'Спортивное': 'Спортивное',
+                'Другое': 'Другое'
+            };
+            const bodyType = ad.body_type ? (bodyLabels[ad.body_type] || ad.body_type) : 'не указано';
+            
             const authorGender = formatGender(ad.gender);
             // Проверяем и на русском, и на английском
             const genderLower = ad.gender?.toLowerCase();
@@ -3782,7 +3798,7 @@ async function loadMyAds() {
                 <div class="ad-info">
                     <div class="ad-field">
                         <span class="icon">💪</span>
-                        <span><strong>Телосложение:</strong> ${ad.body_type || 'не указано'}</span>
+                        <span><strong>Телосложение:</strong> ${bodyType}</span>
                     </div>
                     ${ad.orientation ? `<div class="ad-field">
                         <span class="icon">💗</span>
@@ -4802,7 +4818,22 @@ function showAdDetails(index) {
     const myAge = ad.my_age || ad.myAge || '?';
     const ageFrom = ad.age_from || ad.ageFrom || '?';
     const ageTo = ad.age_to || ad.ageTo || '?';
-    const bodyType = ad.body_type || ad.body || '?';
+    
+    // Маппинг телосложения на читаемые значения
+    const bodyLabels = {
+        // Английские варианты (старые)
+        slim: 'Худощавое',
+        athletic: 'Спортивное',
+        average: 'Среднее',
+        curvy: 'Полное',
+        // Русские варианты (новые)
+        'Стройное': 'Стройное',
+        'Обычное': 'Обычное',
+        'Плотное': 'Плотное',
+        'Спортивное': 'Спортивное',
+        'Другое': 'Другое'
+    };
+    const bodyType = ad.body_type ? (bodyLabels[ad.body_type] || ad.body_type) : '?';
     const nickname = ad.display_nickname || 'Аноним';
     
     adContent.innerHTML = `
