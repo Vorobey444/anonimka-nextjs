@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
           SET 
             is_blocked = TRUE,
             blocked_reason = ${reason},
-            blocked_until = ${blockUntil},
+            blocked_until = ${blockUntil ? blockUntil.toISOString() : null},
             blocked_by_admin = ${admin.user_token},
             blocked_at = NOW()
           WHERE id = ${adId}
