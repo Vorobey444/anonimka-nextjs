@@ -45,6 +45,12 @@ html {
 
 body {
     background: var(--bg-dark);
+    background: 
+        radial-gradient(circle at 20% 25%, rgba(255, 0, 110, 0.18), transparent 35%),
+        radial-gradient(circle at 80% 20%, rgba(0, 217, 255, 0.18), transparent 32%),
+        radial-gradient(circle at 50% 60%, rgba(131, 56, 236, 0.2), transparent 40%),
+        linear-gradient(180deg, #0a0a0f 0%, #0c0c15 40%, #080810 100%);
+    background-attachment: fixed;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--text-light);
     min-height: 100vh;
@@ -73,7 +79,7 @@ body {
     height: 100%;
     width: 100%;
     position: relative;
-    background: var(--bg-dark);
+    background: transparent;
     /* Разрешаем скролл внутри контейнера */
     overflow-y: auto;
     overflow-x: hidden;
