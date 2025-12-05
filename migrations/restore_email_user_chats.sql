@@ -57,22 +57,13 @@ SET user_token_2 = (
 WHERE user_token_2 IN (SELECT old_token FROM token_mapping);
 
 -- Update private_messages table - sender_token
-UPDATE private_messages
+UPDATE messages
 SET sender_token = (
   SELECT new_token FROM token_mapping tm 
-  WHERE tm.old_token = private_messages.sender_token
+  WHERE tm.old_token = messages.sender_token
   LIMIT 1
 )
 WHERE sender_token IN (SELECT old_token FROM token_mapping);
-
--- Update private_messages table - receiver_token
-UPDATE private_messages
-SET receiver_token = (
-  SELECT new_token FROM token_mapping tm 
-  WHERE tm.old_token = private_messages.receiver_token
-  LIMIT 1
-)
-WHERE receiver_token IN (SELECT old_token FROM token_mapping);
 
 -- Verify the updates
 DO $$
@@ -84,9 +75,8 @@ BEGIN
   WHERE user_token_1 IN (SELECT new_token FROM token_mapping) 
      OR user_token_2 IN (SELECT new_token FROM token_mapping);
   
-  SELECT COUNT(*) INTO msg_count FROM private_messages 
-  WHERE sender_token IN (SELECT new_token FROM token_mapping) 
-     OR receiver_token IN (SELECT new_token FROM token_mapping);
+  SELECT COUNT(*) INTO msg_count FROM messages 
+  WHERE sender_token IN (SELECT new_token FROM token_mapping);
   
   RAISE NOTICE 'Migration completed!';
   RAISE NOTICE 'Chats with updated tokens: %', chat_count;
