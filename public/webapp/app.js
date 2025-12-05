@@ -9279,12 +9279,17 @@ function setupMessageSwipeHandlers() {
     
     messages.forEach(msg => {
         let startX = 0;
+        let startY = 0;
         let currentX = 0;
         let isDragging = false;
+        let hasMoved = false;
         
         const handleStart = (e) => {
             startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+            currentX = startX;
             isDragging = true;
+            hasMoved = false;
             msg.style.transition = 'none';
         };
         
@@ -9292,11 +9297,18 @@ function setupMessageSwipeHandlers() {
             if (!isDragging) return;
             
             currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-            const diff = currentX - startX;
+            const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+            const diffX = currentX - startX;
+            const diffY = Math.abs(currentY - startY);
+            
+            // Отмечаем что было движение (более 5px)
+            if (Math.abs(diffX) > 5 || diffY > 5) {
+                hasMoved = true;
+            }
             
             // Свайп только влево (для всех сообщений)
-            if (diff < 0 && diff > -150) {
-                msg.style.transform = `translateX(${diff}px)`;
+            if (diffX < 0 && diffX > -150) {
+                msg.style.transform = `translateX(${diffX}px)`;
             }
         };
         
@@ -9308,8 +9320,8 @@ function setupMessageSwipeHandlers() {
             msg.style.transition = 'transform 0.2s ease';
             msg.style.transform = '';
             
-            // Если свайпнули достаточно влево (-100px), показываем ответ
-            if (diff < -100) {
+            // Если свайпнули достаточно влево (-100px) И было движение, показываем ответ
+            if (diff < -100 && hasMoved) {
                 const messageId = msg.getAttribute('data-message-id');
                 const nickname = msg.getAttribute('data-nickname');
                 const messageText = msg.querySelector('.message-text')?.textContent || '';
@@ -9322,6 +9334,9 @@ function setupMessageSwipeHandlers() {
                     replyToMsg(messageId, nickname, messageText);
                 }
             }
+            
+            // Сбрасываем флаг
+            hasMoved = false;
         };
         
         // Touch events
