@@ -18,10 +18,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Supabase scripts removed (deprecated). All data flows via our Next.js API. -->
     <script src="/webapp/local-chat-storage.js?v=1.0"></script>
-    <!-- Скрываем модальное окно авторизации при загрузке страницы -->
+    <!-- Скрываем модальное окно авторизации при загрузке страницы (без !important, чтобы JS мог показать) -->
     <style>
         #telegramAuthModal, #emailAuthModal {
-            display: none !important;
+            display: none;
         }
     </style>
 </head>
