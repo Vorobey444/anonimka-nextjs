@@ -4798,7 +4798,7 @@ function displayAds(ads, city = null) {
                 ` : ''}
                 `}
             </div>
-            <div class="ad-text">"${compact ? ad.text.substring(0, 70) : ad.text.substring(0, 100)}${ad.text.length > (compact ? 70 : 100) ? '...' : ''}"</div>
+            <div class="ad-text">"${compact ? ad.text.substring(0, 120) : ad.text.substring(0, 100)}${ad.text.length > (compact ? 120 : 100) ? '...' : ''}"</div>
         </div>
     `;
     }).join('');
