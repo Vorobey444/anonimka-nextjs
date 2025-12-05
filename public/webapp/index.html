@@ -231,36 +231,6 @@
                 </div>
             </div>
             
-            <!-- Компактный опрос -->
-            <div class="compact-poll" id="photoPoll" style="display: none;">
-                <div class="poll-question">Вам нужны фотки в анкетах?</div>
-                <div class="poll-options" id="pollOptions">
-                    <button class="poll-option" onclick="votePoll('yes')">Да</button>
-                    <button class="poll-option" onclick="votePoll('no')">Нет это же Анонимка</button>
-                </div>
-                <div class="poll-results" id="pollResults" style="display: none;">
-                    <div class="poll-result-item">
-                        <div class="poll-result-text">
-                            <span>Да</span>
-                            <span class="poll-percent" id="yesPercent">0%</span>
-                        </div>
-                        <div class="poll-bar">
-                            <div class="poll-bar-fill" id="yesBar" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <div class="poll-result-item">
-                        <div class="poll-result-text">
-                            <span>Нет это же Анонимка</span>
-                            <span class="poll-percent" id="noPercent">0%</span>
-                        </div>
-                        <div class="poll-bar">
-                            <div class="poll-bar-fill" id="noBar" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <div class="poll-total">Всего голосов: <span id="totalVotes">0</span></div>
-                </div>
-            </div>
-            
             <div class="menu-buttons">
                 <div style="position: relative; display: inline-block; width: 100%;">
                     <button class="neon-button primary" onclick="showCreateAd()" id="createAdBtn" style="width: 100%;">
@@ -290,6 +260,11 @@
                         <div class="world-chat-title">Мир чат</div>
                         <div id="worldChatPreview" class="world-chat-preview">Загрузка...</div>
                     </div>
+                </button>
+                
+                <button class="neon-button" onclick="showPolls()" style="width: 100%;">
+                    <span class="icon">📊</span>
+                    Опросы
                 </button>
                 
                 <button id="referralMainButton" class="neon-button referral-button" onclick="showReferralModal()" style="display: none;">
@@ -1250,6 +1225,67 @@
                         <span>📤</span>
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Экран опросов -->
+        <div id="pollsScreen" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>📊 Опросы</h2>
+            </div>
+            
+            <div class="polls-container">
+                <div class="polls-intro">
+                    <p>Помогите нам стать лучше! Ваше мнение очень важно для развития Anonimka.</p>
+                </div>
+                
+                <!-- Опрос 1: Фотки в анкетах -->
+                <div class="poll-card">
+                    <div class="poll-header">
+                        <span class="poll-icon">📸</span>
+                        <h3>Фотографии в анкетах</h3>
+                    </div>
+                    
+                    <div class="poll-question-full">Вам нужны фотки в анкетах?</div>
+                    
+                    <div class="poll-options-full" id="photoPollOptions">
+                        <button class="poll-option-full" onclick="votePoll('photos_in_ads', 'yes')">
+                            <span class="poll-option-icon">✅</span>
+                            Да
+                        </button>
+                        <button class="poll-option-full" onclick="votePoll('photos_in_ads', 'no')">
+                            <span class="poll-option-icon">❌</span>
+                            Нет это же Анонимка
+                        </button>
+                    </div>
+                    
+                    <div class="poll-results-full" id="photoPollResults" style="display: none;">
+                        <div class="poll-result-item-full">
+                            <div class="poll-result-text-full">
+                                <span>✅ Да</span>
+                                <span class="poll-percent-full" id="photosYesPercent">0%</span>
+                            </div>
+                            <div class="poll-bar-full">
+                                <div class="poll-bar-fill-full" id="photosYesBar" style="width: 0%"></div>
+                            </div>
+                            <div class="poll-votes-count" id="photosYesCount">0 голосов</div>
+                        </div>
+                        <div class="poll-result-item-full">
+                            <div class="poll-result-text-full">
+                                <span>❌ Нет это же Анонимка</span>
+                                <span class="poll-percent-full" id="photosNoPercent">0%</span>
+                            </div>
+                            <div class="poll-bar-full">
+                                <div class="poll-bar-fill-full" id="photosNoBar" style="width: 0%"></div>
+                            </div>
+                            <div class="poll-votes-count" id="photosNoCount">0 голосов</div>
+                        </div>
+                        <div class="poll-total-full">Всего проголосовало: <span id="photosTotalVotes">0</span></div>
+                    </div>
+                </div>
+                
+                <!-- Здесь будут добавляться новые опросы -->
             </div>
         </div>
 

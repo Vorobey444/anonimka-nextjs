@@ -15053,7 +15053,6 @@ function initializeAndroidMenu() {
 // Инициализируем Android меню при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     initializeAndroidMenu();
-    initializePoll();
 });
 
 // Также инициализируем при открытии меню
@@ -15068,21 +15067,13 @@ window.showHamburgerMenu = function() {
     }
 };
 
-// ============= ОПРОС =============
-function initializePoll() {
-    const pollElement = document.getElementById('photoPoll');
-    const hasVoted = localStorage.getItem('poll_voted');
-    
-    if (hasVoted) {
-        // Показываем результаты
-        showPollResults();
-    } else {
-        // Показываем опрос
-        pollElement.style.display = 'block';
-    }
+// ============= ОПРОСЫ =============
+function showPolls() {
+    showScreen('pollsScreen');
+    loadPollResults('photos_in_ads');
 }
 
-async function votePoll(answer) {
+async function votePoll(pollId, answer) {
     const userToken = localStorage.getItem('user_token');
     if (!userToken) {
         console.error('User token not found');
@@ -15097,27 +15088,41 @@ async function votePoll(answer) {
                 'X-User-Token': userToken
             },
             body: JSON.stringify({
-                poll_id: 'photos_in_ads',
+                poll_id: pollId,
                 answer: answer
             })
         });
         
+        const data = await response.json();
+        
         if (response.ok) {
-            localStorage.setItem('poll_voted', 'true');
-            showPollResults();
+            localStorage.setItem(`poll_voted_${pollId}`, 'true');
+            loadPollResults(pollId);
+        } else {
+            if (data.error === 'Already voted') {
+                alert('Вы уже проголосовали в этом опросе!');
+                loadPollResults(pollId);
+            }
         }
     } catch (error) {
         console.error('Ошибка голосования:', error);
     }
 }
 
-async function showPollResults() {
-    const pollElement = document.getElementById('photoPoll');
-    const optionsElement = document.getElementById('pollOptions');
-    const resultsElement = document.getElementById('pollResults');
+async function loadPollResults(pollId) {
+    const hasVoted = localStorage.getItem(`poll_voted_${pollId}`);
+    
+    // Определяем префикс для ID элементов в зависимости от опроса
+    let prefix = '';
+    if (pollId === 'photos_in_ads') {
+        prefix = 'photos';
+    }
+    
+    const optionsElement = document.getElementById(`${prefix}PollOptions`);
+    const resultsElement = document.getElementById(`${prefix}PollResults`);
     
     try {
-        const response = await fetch('/api/poll?poll_id=photos_in_ads');
+        const response = await fetch(`/api/poll?poll_id=${pollId}`);
         const data = await response.json();
         
         if (data.success) {
@@ -15125,17 +15130,30 @@ async function showPollResults() {
             const yesPercent = total > 0 ? Math.round((data.results.yes / total) * 100) : 0;
             const noPercent = total > 0 ? Math.round((data.results.no / total) * 100) : 0;
             
-            document.getElementById('yesPercent').textContent = yesPercent + '%';
-            document.getElementById('noPercent').textContent = noPercent + '%';
-            document.getElementById('yesBar').style.width = yesPercent + '%';
-            document.getElementById('noBar').style.width = noPercent + '%';
-            document.getElementById('totalVotes').textContent = total;
-            
-            optionsElement.style.display = 'none';
-            resultsElement.style.display = 'flex';
-            pollElement.style.display = 'block';
+            if (hasVoted || total > 0) {
+                // Показываем результаты
+                document.getElementById(`${prefix}YesPercent`).textContent = yesPercent + '%';
+                document.getElementById(`${prefix}NoPercent`).textContent = noPercent + '%';
+                document.getElementById(`${prefix}YesBar`).style.width = yesPercent + '%';
+                document.getElementById(`${prefix}NoBar`).style.width = noPercent + '%';
+                document.getElementById(`${prefix}YesCount`).textContent = data.results.yes + ' ' + getPluralForm(data.results.yes, 'голос', 'голоса', 'голосов');
+                document.getElementById(`${prefix}NoCount`).textContent = data.results.no + ' ' + getPluralForm(data.results.no, 'голос', 'голоса', 'голосов');
+                document.getElementById(`${prefix}TotalVotes`).textContent = total;
+                
+                optionsElement.style.display = 'none';
+                resultsElement.style.display = 'flex';
+            }
         }
     } catch (error) {
         console.error('Ошибка загрузки результатов:', error);
     }
+}
+
+function getPluralForm(number, one, few, many) {
+    const mod10 = number % 10;
+    const mod100 = number % 100;
+    
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+    return many;
 }
