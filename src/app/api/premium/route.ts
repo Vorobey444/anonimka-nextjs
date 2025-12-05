@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
               // ПРИОРИТЕТ 2: Проверяем Stars платежи
               const starsCheck = await sql`
                 SELECT id FROM premium_transactions 
-                WHERE telegram_id = ${numericUserId.toString()}::BIGINT
+                WHERE telegram_id = ${numericUserId}
                 ORDER BY created_at DESC 
                 LIMIT 1
               `;
