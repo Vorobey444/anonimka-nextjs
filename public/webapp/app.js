@@ -2775,7 +2775,14 @@ function showTelegramAuthModal() {
     
     if (deepLinkButton) {
         deepLinkButton.href = telegramDeepLink;
-        console.log('✅ Deep link установлен на кнопку');
+        // Добавляем обработчик клика для принудительного открытия
+        deepLinkButton.onclick = function(e) {
+            e.preventDefault();
+            console.log('🔗 Открываем Telegram:', telegramDeepLink);
+            window.open(telegramDeepLink, '_blank');
+            return false;
+        };
+        console.log('✅ Deep link установлен на кнопку с обработчиком клика');
     }
     
     if (loginWidgetContainer) {
