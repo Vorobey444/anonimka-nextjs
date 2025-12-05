@@ -9341,8 +9341,8 @@ function setupMessageSwipeHandlers() {
                     replyToMsg(messageId, nickname, messageText);
                 }
             }
-            // Свайп вправо (100px) И своё сообщение И было движение - удалить
-            else if (diff > 100 && isMine && hasMoved) {
+            // Свайп вправо (60px) И своё сообщение И было движение - удалить
+            else if (diff > 60 && isMine && hasMoved) {
                 const messageId = msg.getAttribute('data-message-id');
                 if (messageId) {
                     // Вибрация
@@ -9390,9 +9390,12 @@ function setupMessageReactions() {
         
         // Удаляем старые обработчики если есть
         msg.removeEventListener('click', msg._reactionClickHandler);
-        msg.removeEventListener('touchstart', msg._reactionTouchStart);
-        msg.removeEventListener('touchend', msg._reactionTouchEnd);
-        msg.removeEventListener('touchmove', msg._reactionTouchMove);
+        msg.removeEventListener('touchstart', msg._reactionLongPressStart);
+        msg.removeEventListener('touchend', msg._reactionLongPressEnd);
+        msg.removeEventListener('touchmove', msg._reactionLongPressMove);
+        msg.removeEventListener('mousedown', msg._reactionLongPressStart);
+        msg.removeEventListener('mouseup', msg._reactionLongPressEnd);
+        msg.removeEventListener('mousemove', msg._reactionLongPressMove);
         
         // Обработчик двойного клика
         const handleClick = (e) => {
@@ -9429,7 +9432,7 @@ function setupMessageReactions() {
         };
         
         // Долгое нажатие - показываем меню реакций
-        const handleTouchStart = (e) => {
+        const handleLongPressStart = (e) => {
             if (e.target.closest('.message-photo, .message-photo-secure, video, button, .message-reply-indicator, .message-reaction')) {
                 return;
             }
@@ -9439,13 +9442,14 @@ function setupMessageReactions() {
                 return;
             }
             
+            const coords = e.touches ? e.touches[0] : e;
             longPressTimer = setTimeout(() => {
                 longPressStarted = true;
-                showReactionPicker(msg, e.touches[0]);
+                showReactionPicker(msg, coords);
             }, 500);
         };
         
-        const handleTouchEnd = () => {
+        const handleLongPressEnd = () => {
             if (longPressTimer) {
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
@@ -9455,7 +9459,7 @@ function setupMessageReactions() {
             }, 100);
         };
         
-        const handleTouchMove = () => {
+        const handleLongPressMove = () => {
             if (longPressTimer) {
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
@@ -9463,14 +9467,17 @@ function setupMessageReactions() {
         };
         
         msg._reactionClickHandler = handleClick;
-        msg._reactionTouchStart = handleTouchStart;
-        msg._reactionTouchEnd = handleTouchEnd;
-        msg._reactionTouchMove = handleTouchMove;
+        msg._reactionLongPressStart = handleLongPressStart;
+        msg._reactionLongPressEnd = handleLongPressEnd;
+        msg._reactionLongPressMove = handleLongPressMove;
         
         msg.addEventListener('click', handleClick);
-        msg.addEventListener('touchstart', handleTouchStart, { passive: true });
-        msg.addEventListener('touchend', handleTouchEnd);
-        msg.addEventListener('touchmove', handleTouchMove);
+        msg.addEventListener('touchstart', handleLongPressStart, { passive: true });
+        msg.addEventListener('touchend', handleLongPressEnd);
+        msg.addEventListener('touchmove', handleLongPressMove);
+        msg.addEventListener('mousedown', handleLongPressStart);
+        msg.addEventListener('mouseup', handleLongPressEnd);
+        msg.addEventListener('mousemove', handleLongPressMove);
     });
     
     // Добавляем обработчики удаления для всех существующих реакций
