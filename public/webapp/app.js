@@ -5797,26 +5797,9 @@ async function checkOnboardingStatus() {
         console.log('checkOnboardingStatus - tgId:', tgId, 'userToken:', userToken ? userToken.substring(0, 16) + '...' : 'null');
         
         if (!tgId && !userToken) {
-            // Если нет ни tgId, ни userToken - возможно данные еще не загрузились
-            // Для Android ждём инжекцию данных
-            const isAndroid = navigator.userAgent.includes('Android');
-            if (isAndroid) {
-                console.log('⏳ Android: ждём инжекцию auth данных...');
-                setTimeout(() => {
-                    const retryToken = localStorage.getItem('user_token');
-                    if (retryToken) {
-                        console.log('✅ Auth данные появились, повторяем проверку');
-                        checkOnboardingStatus();
-                    } else {
-                        console.log('❌ Нет auth данных после ожидания, показываем онбординг');
-                        showOnboardingScreen();
-                    }
-                }, 1500);
-                return;
-            }
-            
-            console.log('❌ Нет ни tgId ни userToken, показываем онбординг');
-            showOnboardingScreen();
+            // Если нет ни tgId, ни userToken - пользователь НЕ авторизован
+            // НЕ показываем онбординг - авторизация должна обработаться в checkTelegramAuth
+            console.log('⚠️ Нет ни tgId ни userToken - пропускаем онбординг (должна показаться авторизация)');
             return;
         }
         
