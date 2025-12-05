@@ -4715,6 +4715,20 @@ function displayAds(ads, city = null) {
         const nickname = ad.display_nickname || 'Аноним';
         const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > now);
         
+        // Маппинг телосложения на читаемые значения
+        const bodyLabels = {
+            slim: 'Худощавое',
+            athletic: 'Спортивное',
+            average: 'Среднее',
+            curvy: 'Полное',
+            'Стройное': 'Стройное',
+            'Обычное': 'Обычное',
+            'Плотное': 'Плотное',
+            'Спортивное': 'Спортивное',
+            'Другое': 'Другое'
+        };
+        const bodyType = ad.body_type ? (bodyLabels[ad.body_type] || ad.body_type) : null;
+        
         // Проверяем PRO статус
         const isPremium = ad.is_premium && (!ad.premium_until || new Date(ad.premium_until) > now);
         const premiumClass = isPremium ? 'premium-ad' : '';
@@ -4735,6 +4749,7 @@ function displayAds(ads, city = null) {
                 <div class="ad-field"><span class="icon">🎯</span>${formatGoals(ad.goal)}</div>
                 <div class="ad-field"><span class="icon">🎂</span>${myAge}л</div>
                 <div class="ad-field"><span class="icon">📅</span>${ageFrom}-${ageTo}</div>
+                ${bodyType ? `<div class="ad-field"><span class="icon">💪</span>${bodyType}</div>` : ''}
                 ${ad.orientation ? `<div class="ad-field"><span class="icon">💗</span>${formatOrientation(ad.orientation)}</div>` : ''}
                 ` : `
                 <div class="ad-field">
@@ -4767,6 +4782,13 @@ function displayAds(ads, city = null) {
                     <span class="label">Возраст партнера:</span>
                     <span class="value">${ageFrom} - ${ageTo} лет</span>
                 </div>
+                ${bodyType ? `
+                <div class="ad-field">
+                    <span class="icon">💪</span>
+                    <span class="label">Телосложение:</span>
+                    <span class="value">${bodyType}</span>
+                </div>
+                ` : ''}
                 ${ad.orientation ? `
                 <div class="ad-field">
                     <span class="icon">💗</span>
