@@ -9308,8 +9308,8 @@ function setupMessageSwipeHandlers() {
             msg.style.transition = 'transform 0.2s ease';
             msg.style.transform = '';
             
-            // Если свайпнули достаточно влево (-80px), показываем ответ
-            if (diff < -80) {
+            // Если свайпнули достаточно влево (-100px), показываем ответ
+            if (diff < -100) {
                 const messageId = msg.getAttribute('data-message-id');
                 const nickname = msg.getAttribute('data-nickname');
                 const messageText = msg.querySelector('.message-text')?.textContent || '';
