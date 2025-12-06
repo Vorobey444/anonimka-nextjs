@@ -10,6 +10,9 @@ export function generateUserToken(tgId: number | string): string {
     if (!secret) {
         throw new Error('USER_TOKEN_SECRET не задан в переменных окружения');
     }
+    if (tgId === null || tgId === undefined || tgId === '') {
+        throw new Error('tgId не задан для генерации user_token');
+    }
     try {
         const hmac = crypto.createHmac('sha256', secret);
         if (!hmac) {

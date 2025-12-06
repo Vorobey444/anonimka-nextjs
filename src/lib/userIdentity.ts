@@ -143,6 +143,9 @@ export function generateTelegramUserToken(tgId: number): string {
   if (!secret) {
     throw new Error('USER_TOKEN_SECRET не задан в переменных окружения');
   }
+  if (tgId === null || tgId === undefined || tgId === '') {
+    throw new Error('tgId не задан для генерации user_token');
+  }
   try {
     const hmac = crypto.createHmac('sha256', secret);
     if (!hmac) {
@@ -163,6 +166,9 @@ export function generateTelegramUserToken(tgId: number): string {
  * Гарантирует, что одно и то же email всегда генерирует один и тот же токен
  */
 export function generateEmailUserToken(email: string): string {
+  if (!email || typeof email !== 'string' || email.trim() === '') {
+    throw new Error('email не задан для генерации user_token');
+  }
   const normalizedEmail = email.toLowerCase().trim();
   const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET || 'dev-temp-secret';
   if (!secret) {
