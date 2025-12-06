@@ -624,8 +624,13 @@ export async function POST(req: NextRequest) {
             if (user.auto_premium_source === 'female_bonus' && currentGender === 'Мужчина') {
               console.log('[ADS API] 🚫 Девушка создала мужскую анкету — отменяем бонус PRO');
               
-              // Проверяем, есть ли платная подписка (защита от потери)
-              const hasPaidSubscription = user.premium_until !== null;
+              // Проверяем, есть ли РЕАЛЬНО оплаченная подписка (по транзакциям)
+              const paidCheck = await sql`
+                SELECT COUNT(*) as count FROM premium_transactions
+                WHERE user_token = ${finalUserToken} AND status = 'success'
+                LIMIT 1
+              `;
+              const hasPaidSubscription = paidCheck.rows[0]?.count > 0;
               
               if (hasPaidSubscription) {
                 console.log('[ADS API] ⚠️ Обнаружена платная подписка — сохраняем PRO, но убираем источник бонуса');
@@ -718,7 +723,13 @@ export async function POST(req: NextRequest) {
           } else if (user.auto_premium_source === 'female_bonus' && currentGender === 'Мужчина') {
             console.log('[ADS API] 🚫 Email девушка создала мужскую анкету — отменяем бонус PRO');
             
-            const hasPaidSubscription = user.premium_until !== null;
+            // Проверяем реальные платежи для email пользователей
+            const paidCheck = await sql`
+              SELECT COUNT(*) as count FROM premium_transactions
+              WHERE user_token = ${finalUserToken} AND status = 'success'
+              LIMIT 1
+            `;
+            const hasPaidSubscription = paidCheck.rows[0]?.count > 0;
             
             if (!hasPaidSubscription) {
               await sql`
