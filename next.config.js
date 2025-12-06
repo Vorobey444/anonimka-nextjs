@@ -2,6 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  generateBuildId: async () => {
+    // Уникальный Build ID для каждого деплоя (предотвращает проблемы с кэшем)
+    return `build-${Date.now()}`;
+  },
   async headers() {
     return [
       {
