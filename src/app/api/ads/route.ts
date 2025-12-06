@@ -626,13 +626,14 @@ export async function POST(req: NextRequest) {
               console.log('[ADS API] 🚫 Девушка создала мужскую анкету — отменяем бонус PRO');
               
               // Проверяем, есть ли РЕАЛЬНО оплаченная подписка (по транзакциям)
+              // Для TG пользователей используем telegram_id (он же numericTgId)
               const paidCheck = await sql`
                 SELECT COUNT(*) as count FROM premium_transactions
-                WHERE user_token = ${finalUserToken} AND status = 'success'
+                WHERE telegram_id = ${numericTgId} AND status = 'success'
                 LIMIT 1
               `;
               const hasPaidSubscription = paidCheck.rows[0]?.count > 0;
-              console.log('[ADS API] DEBUG: hasPaidSubscription =', hasPaidSubscription);
+              console.log('[ADS API] DEBUG: hasPaidSubscription =', hasPaidSubscription, 'для telegram_id=', numericTgId);
               
               if (hasPaidSubscription) {
                 console.log('[ADS API] ⚠️ Обнаружена платная подписка — сохраняем PRO, но убираем источник бонуса');
