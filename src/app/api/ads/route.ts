@@ -23,11 +23,46 @@ export async function GET(req: NextRequest) {
     const city = searchParams.get('city');
     const country = searchParams.get('country');
     const id = searchParams.get('id');
+    const userToken = searchParams.get('userToken');
+    const tgId = searchParams.get('tgId');
     
-    console.log("[ADS API] Получение объявлений:", { city, country, id });
+    console.log("[ADS API] Получение объявлений:", { city, country, id, userToken: userToken ? 'есть' : 'нет', tgId: tgId ? 'есть' : 'нет' });
 
     // Формируем SQL запрос с фильтрами
-    let result;    if (id) {
+    let result;
+    
+    // Если передан userToken или tgId - возвращаем только анкеты этого пользователя
+    if (userToken || tgId) {
+      if (tgId) {
+        result = await sql`
+          SELECT 
+            ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
+            ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
+            ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
+            COALESCE(users.is_premium, FALSE) as is_premium,
+            users.premium_until,
+            ads.is_blocked, ads.blocked_reason, ads.blocked_until
+          FROM ads
+          LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
+          WHERE ads.tg_id = ${parseInt(tgId)}
+          ORDER BY ads.created_at DESC
+        `;
+      } else {
+        result = await sql`
+          SELECT 
+            ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
+            ads.body_type, ads.orientation, ads.text, ads.display_nickname, ads.country, ads.region, ads.city, 
+            ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
+            COALESCE(users.is_premium, FALSE) as is_premium,
+            users.premium_until,
+            ads.is_blocked, ads.blocked_reason, ads.blocked_until
+          FROM ads
+          LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
+          WHERE ads.user_token = ${userToken}
+          ORDER BY ads.created_at DESC
+        `;
+      }
+    } else if (id) {
       // Получение конкретной анкеты по ID
       result = await sql`
         SELECT 
