@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
-const sql = neon(process.env.DATABASE_URL!);
+export const dynamic = 'force-dynamic';
+
+const getSql = () => neon(process.env.DATABASE_URL!);
 
 // POST - добавить/удалить реакцию
 export async function POST(req: NextRequest) {
@@ -14,6 +16,8 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const sql = getSql();
 
     // Проверяем, есть ли уже такая реакция от этого пользователя
     const existing = await sql`
@@ -73,6 +77,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const sql = getSql();
     const reactions = await sql`
       SELECT emoji, COUNT(*) as count
       FROM message_reactions
@@ -106,6 +111,8 @@ export async function DELETE(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const sql = getSql();
 
     // Удаляем реакцию с учетом emoji (для точности)
     if (emoji) {

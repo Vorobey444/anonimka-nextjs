@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
-const sql = neon(process.env.DATABASE_URL!);
+export const dynamic = 'force-dynamic';
+
+const getSql = () => neon(process.env.DATABASE_URL!);
 
 // POST - проголосовать
 export async function POST(req: NextRequest) {
@@ -17,6 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Проверяем, не голосовал ли уже пользователь
+    const sql = getSql();
     const existing = await sql`
       SELECT id FROM poll_votes
       WHERE poll_id = ${poll_id}
@@ -66,6 +69,7 @@ export async function GET(req: NextRequest) {
     // Проверяем, голосовал ли пользователь
     let hasVoted = false;
     if (user_token) {
+      const sql = getSql();
       const userVote = await sql`
         SELECT id FROM poll_votes
         WHERE poll_id = ${poll_id}
@@ -76,6 +80,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Получаем результаты
+    const sql = getSql();
     const results = await sql`
       SELECT answer, COUNT(*) as count
       FROM poll_votes
