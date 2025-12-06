@@ -5,9 +5,25 @@ export const dynamic = 'force-dynamic';
 // Временное хранилище для auth_token (в продакшене использовать Redis или БД)
 const authSessions = new Map<string, any>();
 
+// Функция для проверки и удаления истекших сессий
+function cleanupExpiredSessions() {
+  const now = Date.now();
+  const expirationTime = 5 * 60 * 1000; // 5 минут
+  
+  authSessions.forEach((userData, token) => {
+    if (now - userData.timestamp > expirationTime) {
+      authSessions.delete(token);
+      console.log(`Auth session expired for token: ${token}`);
+    }
+  });
+}
+
 // POST: Сохранить данные авторизации от бота
 export async function POST(request: NextRequest) {
   try {
+    // Очищаем истекшие сессии перед обработкой
+    cleanupExpiredSessions();
+    
     const { auth_token, user_data } = await request.json();
 
     if (!auth_token || !user_data) {
@@ -24,12 +40,6 @@ export async function POST(request: NextRequest) {
     });
 
     console.log(`Auth session created for token: ${auth_token}`, user_data);
-
-    // Автоматически удаляем через 5 минут
-    setTimeout(() => {
-      authSessions.delete(auth_token);
-      console.log(`Auth session expired for token: ${auth_token}`);
-    }, 300000);
 
     return NextResponse.json({
       success: true,
@@ -48,6 +58,9 @@ export async function POST(request: NextRequest) {
 // GET: Проверить статус авторизации по токену
 export async function GET(request: NextRequest) {
   try {
+    // Очищаем истекшие сессии перед проверкой
+    cleanupExpiredSessions();
+    
     const { searchParams } = request.nextUrl;
     const auth_token = searchParams.get('auth_token');
 

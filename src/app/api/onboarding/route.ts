@@ -19,11 +19,22 @@ export async function POST(request: NextRequest) {
                     { status: 500 }
                 );
             }
-            const hmac = crypto.createHmac('sha256', secret);
-            hmac.update(String(tgId));
-            hmac.update(':v1');
-            userToken = hmac.digest('hex');
-            console.log(`[ONBOARDING] Сгенерирован userToken для tg_id ${tgId}`);
+            try {
+                const hmac = crypto.createHmac('sha256', secret);
+                if (!hmac) {
+                    throw new Error('Failed to create HMAC object');
+                }
+                hmac.update(String(tgId));
+                hmac.update(':v1');
+                userToken = hmac.digest('hex');
+                console.log(`[ONBOARDING] Сгенерирован userToken для tg_id ${tgId}`);
+            } catch (hmacError) {
+                console.error('[ONBOARDING POST] Ошибка при создании HMAC:', hmacError);
+                return NextResponse.json(
+                    { success: false, error: 'Ошибка генерации токена' },
+                    { status: 500 }
+                );
+            }
         }
 
         if (!userToken) {
@@ -70,10 +81,21 @@ export async function GET(request: NextRequest) {
         if (!finalUserToken && tgId) {
             const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET;
             if (secret) {
-                const hmac = crypto.createHmac('sha256', secret);
-                hmac.update(String(tgId));
-                hmac.update(':v1');
-                finalUserToken = hmac.digest('hex');
+                try {
+                    const hmac = crypto.createHmac('sha256', secret);
+                    if (!hmac) {
+                        throw new Error('Failed to create HMAC object');
+                    }
+                    hmac.update(String(tgId));
+                    hmac.update(':v1');
+                    finalUserToken = hmac.digest('hex');
+                } catch (hmacError) {
+                    console.error('[ONBOARDING GET] Ошибка при создании HMAC:', hmacError);
+                    return NextResponse.json(
+                        { success: false, error: 'Ошибка генерации токена' },
+                        { status: 500 }
+                    );
+                }
             }
         }
 

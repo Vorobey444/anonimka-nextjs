@@ -6,18 +6,26 @@ export const dynamic = 'force-dynamic';
 // token -> { user_data, timestamp }
 const authTokens = new Map<string, { user: any; timestamp: number }>();
 
-// Очистка старых токенов (старше 5 минут)
-setInterval(() => {
+// Функция очистки старых токенов (старше 5 минут) - вызывается при каждом запросе
+function cleanupOldTokens() {
     const now = Date.now();
+    let cleanedCount = 0;
     authTokens.forEach((data, token) => {
         if (now - data.timestamp > 5 * 60 * 1000) {
             authTokens.delete(token);
+            cleanedCount++;
         }
     });
-}, 60000); // Каждую минуту
+    if (cleanedCount > 0) {
+        console.log(`[AUTH API] Очищено ${cleanedCount} старых токенов`);
+    }
+}
 
 export async function POST(request: NextRequest) {
     try {
+        // Очищаем старые токены перед обработкой
+        cleanupOldTokens();
+        
         const body = await request.json();
         const { token, user } = body;
 

@@ -140,10 +140,21 @@ export async function getUserTokenByTgId(tgId: number): Promise<string | null> {
  */
 export function generateTelegramUserToken(tgId: number): string {
   const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET || 'dev-temp-secret';
-  const hmac = crypto.createHmac('sha256', secret);
-  hmac.update(String(tgId));
-  hmac.update(':v1');
-  return hmac.digest('hex');
+  if (!secret) {
+    throw new Error('USER_TOKEN_SECRET не задан в переменных окружения');
+  }
+  try {
+    const hmac = crypto.createHmac('sha256', secret);
+    if (!hmac) {
+      throw new Error('Failed to create HMAC object');
+    }
+    hmac.update(String(tgId));
+    hmac.update(':v1');
+    return hmac.digest('hex');
+  } catch (error) {
+    console.error('[generateTelegramUserToken] Error:', error);
+    throw error;
+  }
 }
 
 /**
@@ -154,10 +165,21 @@ export function generateTelegramUserToken(tgId: number): string {
 export function generateEmailUserToken(email: string): string {
   const normalizedEmail = email.toLowerCase().trim();
   const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET || 'dev-temp-secret';
-  const hmac = crypto.createHmac('sha256', secret);
-  hmac.update(normalizedEmail);
-  hmac.update(':email:v1');
-  return hmac.digest('hex');
+  if (!secret) {
+    throw new Error('USER_TOKEN_SECRET не задан в переменных окружения');
+  }
+  try {
+    const hmac = crypto.createHmac('sha256', secret);
+    if (!hmac) {
+      throw new Error('Failed to create HMAC object');
+    }
+    hmac.update(normalizedEmail);
+    hmac.update(':email:v1');
+    return hmac.digest('hex');
+  } catch (error) {
+    console.error('[generateEmailUserToken] Error:', error);
+    throw error;
+  }
 }
 
 /**

@@ -59,10 +59,21 @@ export async function POST(req: NextRequest) {
         );
       }
       
-      const hmac = crypto.createHmac('sha256', secret);
-      hmac.update(String(tgId));
-      hmac.update(':v1'); // версия формулы на будущее
-      userToken = hmac.digest('hex');
+      try {
+        const hmac = crypto.createHmac('sha256', secret);
+        if (!hmac) {
+          throw new Error('Failed to create HMAC object');
+        }
+        hmac.update(String(tgId));
+        hmac.update(':v1'); // версия формулы на будущее
+        userToken = hmac.digest('hex');
+      } catch (hmacError) {
+        console.error('[USERS API] Ошибка при создании HMAC:', hmacError);
+        return NextResponse.json(
+          { success: false, error: 'Ошибка генерации токена' },
+          { status: 500 }
+        );
+      }
     }
 
     // Определяем страну из города

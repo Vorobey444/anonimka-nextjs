@@ -19,6 +19,15 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  // Проверяем метод запроса - только GET и POST допускаются
+  if (!['GET', 'POST'].includes(req.method)) {
+    return res.status(405).json({
+      success: false,
+      error: 'Method not allowed',
+      allowed_methods: ['GET', 'POST']
+    });
+  }
+
   try {
     // Периодическая очистка истёкших PRO и закреплений (раз в 10 запросов)
     if (Math.random() < 0.1) {
@@ -86,11 +95,6 @@ export default async function handler(req, res) {
         return await handleNewFormat(body, res);
       }
     }
-
-    return res.status(405).json({
-      success: false,
-      error: 'Метод не поддерживается'
-    });
 
   } catch (error) {
     console.error('❌ Ошибка в world-chat API:', error);

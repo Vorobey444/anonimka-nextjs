@@ -209,11 +209,31 @@ export async function POST(req: NextRequest) {
     if (!finalUserToken) {
       const crypto = require('crypto');
       if (numericTgId !== null) {
-        const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET || 'dev-temp-secret';
-        const h = crypto.createHmac('sha256', secret);
-        h.update(String(numericTgId));
-        h.update(':v1');
-        finalUserToken = h.digest('hex');
+        const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET;
+        
+        if (!secret) {
+          console.error('[ADS API] КРИТИЧЕСКАЯ ОШИБКА: USER_TOKEN_SECRET не задан в переменных окружения!');
+          return NextResponse.json(
+            { success: false, error: 'Ошибка конфигурации сервера' },
+            { status: 500 }
+          );
+        }
+        
+        try {
+          const h = crypto.createHmac('sha256', secret);
+          if (!h) {
+            throw new Error('Failed to create HMAC object');
+          }
+          h.update(String(numericTgId));
+          h.update(':v1');
+          finalUserToken = h.digest('hex');
+        } catch (hmacError) {
+          console.error('[ADS API] Ошибка при создании HMAC:', hmacError);
+          return NextResponse.json(
+            { success: false, error: 'Ошибка генерации токена' },
+            { status: 500 }
+          );
+        }
       } else {
         // Веб-пользователь без tgId — криптографически случайный токен (32 байта = 64 hex символа)
         finalUserToken = crypto.randomBytes(32).toString('hex');
