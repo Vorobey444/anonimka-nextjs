@@ -236,14 +236,14 @@ async function getMessages(params, res) {
     const result = await sql`
       SELECT id, user_token, display_nickname as nickname, message, type, target_user_token, target_display_nickname as target_nickname, 
              location_city, is_premium, is_bot, created_at
-      FROM world_chat_messages
+      FROM world_chat_messages wcm
       WHERE (
         type = 'world'
         OR (type = 'city' AND location_city = ${userCity})
         OR (type = 'private' AND (target_user_token = ${userToken} OR user_token = ${userToken}))
       )
-      AND user_token NOT IN (
-        SELECT blocked_token FROM user_blocks WHERE blocker_token = ${userToken}
+      AND NOT EXISTS (
+        SELECT 1 FROM user_blocks WHERE blocker_token = ${userToken} AND blocked_token = wcm.user_token
       )
       ORDER BY created_at DESC
       LIMIT 50
@@ -258,13 +258,13 @@ async function getMessages(params, res) {
     const result = await sql`
       SELECT id, user_token, display_nickname as nickname, message, type, target_user_token, target_display_nickname as target_nickname,
              location_city, is_premium, is_bot, created_at
-      FROM world_chat_messages
+      FROM world_chat_messages wcm
       WHERE (
         (type = 'city' AND location_city = ${userCity})
         OR (type = 'private' AND (target_user_token = ${userToken} OR user_token = ${userToken}))
       )
-      AND user_token NOT IN (
-        SELECT blocked_token FROM user_blocks WHERE blocker_token = ${userToken}
+      AND NOT EXISTS (
+        SELECT 1 FROM user_blocks WHERE blocker_token = ${userToken} AND blocked_token = wcm.user_token
       )
       ORDER BY created_at DESC
       LIMIT 50
@@ -279,10 +279,10 @@ async function getMessages(params, res) {
     const result = await sql`
       SELECT id, user_token, display_nickname as nickname, message, type, target_user_token, target_display_nickname as target_nickname,
              location_city, is_premium, is_bot, created_at
-      FROM world_chat_messages
+      FROM world_chat_messages wcm
       WHERE type = 'private' AND (target_user_token = ${userToken} OR user_token = ${userToken})
-      AND user_token NOT IN (
-        SELECT blocked_token FROM user_blocks WHERE blocker_token = ${userToken}
+      AND NOT EXISTS (
+        SELECT 1 FROM user_blocks WHERE blocker_token = ${userToken} AND blocked_token = wcm.user_token
       )
       ORDER BY created_at DESC
       LIMIT 50
