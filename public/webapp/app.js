@@ -14766,6 +14766,11 @@ async function verifyAndroidAuthCode(code) {
             localStorage.setItem('telegram_user', JSON.stringify(userData));
             localStorage.setItem('telegram_auth_time', Date.now().toString());
             localStorage.setItem('user_id', userData.id.toString());
+            // Сохраняем user_token (нужен для моих анкет и идентификации веб-пользователя)
+            if (userData.user_token) {
+                localStorage.setItem('user_token', userData.user_token);
+                localStorage.setItem('auth_method', 'email');
+            }
             
             // Удаляем временный Android ID
             localStorage.removeItem('android_device_id');

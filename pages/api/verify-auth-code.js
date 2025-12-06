@@ -86,6 +86,23 @@ export default async function handler(req, res) {
       });
     }
 
+    // Генерируем детерминированный user_token по telegram_id (как в остальных API)
+    const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET || 'dev-temp-secret';
+    let userToken;
+    try {
+      const crypto = require('crypto');
+      const hmac = crypto.createHmac('sha256', secret);
+      hmac.update(String(authCode.telegram_id));
+      hmac.update(':v1');
+      userToken = hmac.digest('hex');
+    } catch (e) {
+      console.error('Error generating user_token:', e);
+      return res.status(500).json({
+        success: false,
+        error: 'Ошибка генерации токена'
+      });
+    }
+
     // Удаляем использованный код
     await sql`DELETE FROM auth_codes WHERE code = ${code}`;
 
@@ -98,7 +115,8 @@ export default async function handler(req, res) {
         first_name: userData.first_name || '',
         last_name: userData.last_name || '',
         username: userData.username || '',
-        photo_url: userData.photo_url || ''
+        photo_url: userData.photo_url || '',
+        user_token: userToken
       }
     });
 
