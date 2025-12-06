@@ -619,6 +619,7 @@ export async function POST(req: NextRequest) {
           } else {
             // Не первая анкета — проверяем, нужно ли отменить бонус
             console.log('[ADS API] Не первая анкета. first_ad_gender:', user.first_ad_gender, ', текущий:', currentGender);
+            console.log('[ADS API] DEBUG: auto_premium_source =', user.auto_premium_source, ', is_premium =', user.is_premium, ', premium_until =', user.premium_until);
             
             // Если у пользователя был female_bonus и он создает анкету "Мужчина"
             if (user.auto_premium_source === 'female_bonus' && currentGender === 'Мужчина') {
@@ -631,6 +632,7 @@ export async function POST(req: NextRequest) {
                 LIMIT 1
               `;
               const hasPaidSubscription = paidCheck.rows[0]?.count > 0;
+              console.log('[ADS API] DEBUG: hasPaidSubscription =', hasPaidSubscription);
               
               if (hasPaidSubscription) {
                 console.log('[ADS API] ⚠️ Обнаружена платная подписка — сохраняем PRO, но убираем источник бонуса');
@@ -662,6 +664,8 @@ export async function POST(req: NextRequest) {
                 
                 console.log('[ADS API] ❌ Бонус PRO отменен');
               }
+            } else {
+              console.log('[ADS API] ℹ️ Не срабатывает условие отмены: auto_premium_source !== female_bonus или пол не Мужчина');
             }
           }
         }
