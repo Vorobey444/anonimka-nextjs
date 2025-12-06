@@ -5,6 +5,9 @@ import { ErrorLoggerProvider } from '@/components/ErrorLoggerProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export const metadata: Metadata = {
   title: 'Anonimka - Анонимный чат',
   description: 'Анонимное общение без границ - чат с незнакомцами в вашем городе',
