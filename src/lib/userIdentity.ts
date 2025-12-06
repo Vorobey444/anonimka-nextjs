@@ -143,7 +143,7 @@ export function generateTelegramUserToken(tgId: number): string {
   if (!secret) {
     throw new Error('USER_TOKEN_SECRET не задан в переменных окружения');
   }
-  if (tgId === null || tgId === undefined || tgId === '') {
+  if (tgId === null || tgId === undefined) {
     throw new Error('tgId не задан для генерации user_token');
   }
   try {
