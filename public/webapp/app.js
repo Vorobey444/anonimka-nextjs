@@ -14845,17 +14845,28 @@ async function fetchAdminData(action, params = {}) {
 }
 
 function showAdminPanel() {
+    console.log('[ADMIN PANEL] showAdminPanel вызвана');
+    console.log('[ADMIN PANEL] isAdminUser:', isAdminUser);
+    console.log('[ADMIN PANEL] userId:', localStorage.getItem('userId'));
+    console.log('[ADMIN PANEL] user_token:', localStorage.getItem('user_token'));
+    
     if (!isAdminUser) {
+        console.warn('[ADMIN PANEL] Доступ запрещен: isAdminUser = false');
         tg.showAlert ? tg.showAlert('Требуются права администратора') : alert('Требуются права администратора');
         return;
     }
 
+    console.log('[ADMIN PANEL] Доступ разрешен, открываем панель');
     closeHamburgerMenu();
     const panel = document.getElementById('adminPanel');
     if (panel) {
+        console.log('[ADMIN PANEL] Элемент adminPanel найден, показываем');
         panel.style.display = 'block';
+    } else {
+        console.error('[ADMIN PANEL] Элемент adminPanel не найден!');
     }
     showScreen('adminPanel');
+    console.log('[ADMIN PANEL] Переключаемся на вкладку overview');
     switchAdminTab('overview');
 }
 
@@ -14867,11 +14878,18 @@ function formatDateTime(dateStr) {
 }
 
 async function loadAdminOverview() {
+    console.log('[ADMIN PANEL] loadAdminOverview начата');
     const grid = document.getElementById('adminOverviewGrid');
-    if (!grid) return;
+    if (!grid) {
+        console.error('[ADMIN PANEL] adminOverviewGrid не найден!');
+        return;
+    }
+    console.log('[ADMIN PANEL] adminOverviewGrid найден, загружаем данные');
     grid.innerHTML = '<div class="loading-spinner"></div>';
     try {
+        console.log('[ADMIN PANEL] Запрашиваем данные обзора...');
         const res = await fetchAdminData('get-overview');
+        console.log('[ADMIN PANEL] Данные обзора получены:', res);
         const stats = res.data || {};
         const cards = [
             { label: 'Пользователи', value: stats.users },
@@ -14886,8 +14904,9 @@ async function loadAdminOverview() {
                 <div class="value">${card.value ?? 0}</div>
             </div>
         `).join('');
+        console.log('[ADMIN PANEL] Карточки обзора отрисованы');
     } catch (err) {
-        console.error('[ADMIN] Ошибка загрузки обзора:', err);
+        console.error('[ADMIN PANEL] Ошибка загрузки обзора:', err);
         grid.innerHTML = `<div class="admin-empty">Ошибка: ${err.message}</div>`;
     }
 }
