@@ -629,7 +629,7 @@ export async function POST(req: NextRequest) {
               // premium_transactions может использовать user_id или telegram_id
               const paidCheck = await sql`
                 SELECT COUNT(*) as count FROM premium_transactions
-                WHERE (user_id = ${numericTgId} OR telegram_id = ${numericTgId}) AND status = 'success'
+                WHERE (user_id = ${numericTgId} OR telegram_id = ${numericTgId}) AND status IN ('completed', 'success')
                 LIMIT 1
               `;
               const hasPaidSubscription = paidCheck.rows[0]?.count > 0;
@@ -680,7 +680,7 @@ export async function POST(req: NextRequest) {
         console.log('[ADS API] 🎀 Проверяем female_bonus для email пользователя');
         
         const userCheck = await sql`
-          SELECT first_ad_gender, auto_premium_source, is_premium, premium_until
+          SELECT id, first_ad_gender, auto_premium_source, is_premium, premium_until
           FROM users
           WHERE user_token = ${finalUserToken}
           LIMIT 1
@@ -731,7 +731,7 @@ export async function POST(req: NextRequest) {
             // Проверяем реальные платежи для email пользователей
             const paidCheck = await sql`
               SELECT COUNT(*) as count FROM premium_transactions
-              WHERE user_token = ${finalUserToken} AND status = 'success'
+              WHERE (user_id = ${user.id} OR telegram_id = ${user.id}) AND status IN ('completed', 'success')
               LIMIT 1
             `;
             const hasPaidSubscription = paidCheck.rows[0]?.count > 0;
