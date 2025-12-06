@@ -14861,7 +14861,15 @@ function showAdminPanel() {
     const panel = document.getElementById('adminPanel');
     if (panel) {
         console.log('[ADMIN PANEL] Элемент adminPanel найден, показываем');
+        // Форсируем показ экрана админки, даже если что-то сломает display стилей
+        document.querySelectorAll('.screen').forEach(s => {
+            s.classList.remove('active');
+            if (s.id !== 'adminPanel') {
+                s.style.display = 'none';
+            }
+        });
         panel.style.display = 'block';
+        panel.classList.add('active');
     } else {
         console.error('[ADMIN PANEL] Элемент adminPanel не найден!');
     }
