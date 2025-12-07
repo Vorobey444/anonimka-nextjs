@@ -30,11 +30,19 @@ export async function GET(request: NextRequest) {
 
     const targetSize = sizes[size] || sizes.medium;
 
+    // Если URL относительный, делаем его абсолютным
+    const absoluteUrl = imageUrl.startsWith('http') 
+      ? imageUrl 
+      : new URL(imageUrl, request.url).toString();
+
+    console.log('🖼️ Thumbnail request:', { imageUrl, absoluteUrl, size, targetSize });
+
     // Загружаем изображение
-    const imageResponse = await fetch(imageUrl);
+    const imageResponse = await fetch(absoluteUrl);
     if (!imageResponse.ok) {
+      console.error('❌ Failed to fetch image:', imageResponse.status, imageResponse.statusText);
       return NextResponse.json(
-        { error: 'Failed to fetch image' },
+        { error: 'Failed to fetch image', details: imageResponse.statusText },
         { status: 404 }
       );
     }
@@ -63,8 +71,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('❌ Thumbnail generation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: errorMessage },
       { status: 500 }
     );
   }
