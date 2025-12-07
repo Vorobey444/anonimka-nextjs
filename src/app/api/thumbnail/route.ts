@@ -31,9 +31,15 @@ export async function GET(request: NextRequest) {
     const targetSize = sizes[size] || sizes.medium;
 
     // Если URL относительный, делаем его абсолютным
-    const absoluteUrl = imageUrl.startsWith('http') 
-      ? imageUrl 
-      : new URL(imageUrl, request.url).toString();
+    let absoluteUrl: string;
+    if (imageUrl.startsWith('http')) {
+      absoluteUrl = imageUrl;
+    } else {
+      // Получаем базовый URL из request (протокол + хост)
+      const requestUrl = new URL(request.url);
+      const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
+      absoluteUrl = `${baseUrl}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+    }
 
     console.log('🖼️ Thumbnail request:', { imageUrl, absoluteUrl, size, targetSize });
 
