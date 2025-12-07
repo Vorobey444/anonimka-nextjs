@@ -10258,8 +10258,8 @@ async function compressImage(file, maxSizeMB = 4) {
                 let width = img.width;
                 let height = img.height;
                 
-                // Ограничиваем размер до 1920px по большей стороне
-                const maxDimension = 1920;
+                // Ограничиваем размер до 1280px по большей стороне (для совместимости с Telegram)
+                const maxDimension = 1280;
                 if (width > maxDimension || height > maxDimension) {
                     if (width > height) {
                         height = Math.round((height * maxDimension) / width);
@@ -10276,34 +10276,23 @@ async function compressImage(file, maxSizeMB = 4) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Начинаем с качества 0.85 и уменьшаем если нужно
-                let quality = 0.85;
-                const targetSize = maxSizeMB * 1024 * 1024;
-                
-                const tryCompress = (q) => {
-                    canvas.toBlob((blob) => {
-                        URL.revokeObjectURL(url);
-                        
-                        if (!blob) {
-                            reject(new Error('Не удалось сжать изображение'));
-                            return;
-                        }
-                        
-                        // Если размер подходит или качество уже минимальное
-                        if (blob.size <= targetSize || q <= 0.5) {
-                            const newFile = new File([blob], file.name, {
-                                type: 'image/jpeg',
-                                lastModified: Date.now()
-                            });
-                            resolve(newFile);
-                        } else {
-                            // Пробуем меньшее качество
-                            tryCompress(q - 0.1);
-                        }
-                    }, 'image/jpeg', q);
-                };
-                
-                tryCompress(quality);
+                // Конвертируем в JPEG с качеством 0.85
+                canvas.toBlob((blob) => {
+                    URL.revokeObjectURL(url);
+                    
+                    if (!blob) {
+                        reject(new Error('Не удалось сжать изображение'));
+                        return;
+                    }
+                    
+                    const newFile = new File([blob], file.name.replace(/\.(heic|heif|png|webp)$/i, '.jpg'), {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    
+                    console.log(`✅ Изображение сжато: ${file.size} → ${blob.size} bytes`);
+                    resolve(newFile);
+                }, 'image/jpeg', 0.85);
             } catch (err) {
                 URL.revokeObjectURL(url);
                 reject(err);
@@ -10384,9 +10373,9 @@ async function uploadPhotoToTelegram(file, userId) {
             }
         }
         
-        // Сжимаем изображение если оно слишком большое (макс 4MB для Vercel)
-        if (fileToUpload.type.startsWith('image/') && fileToUpload.size > 4 * 1024 * 1024) {
-            console.log('🗜️ Файл больше 4MB, сжимаем...');
+        // Сжимаем изображение для совместимости с Telegram
+        if (fileToUpload.type.startsWith('image/')) {
+            console.log('🗜️ Сжимаем и нормализуем изображение...');
             fileToUpload = await compressImage(fileToUpload, 4);
         }
         
