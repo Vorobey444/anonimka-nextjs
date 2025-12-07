@@ -163,6 +163,41 @@ export async function GET(req: NextRequest) {
     }
     
     const ads = result.rows;
+
+    // 🔄 Подтягиваем активные фото из user_photos (до 3) если в анкете нет photo_urls
+    const userTokens = Array.from(new Set(ads.map((a: any) => a.user_token).filter(Boolean)));
+    if (userTokens.length > 0) {
+      try {
+        const photosRes = await sql`
+          SELECT user_token, photo_url
+          FROM (
+            SELECT user_token, photo_url, position, id,
+                   ROW_NUMBER() OVER (PARTITION BY user_token ORDER BY position ASC, id ASC) AS rn
+            FROM user_photos
+            WHERE user_token = ANY(${userTokens}) AND is_active = TRUE
+          ) t
+          WHERE rn <= 3
+        `;
+
+        const photosMap = new Map<string, string[]>();
+        for (const row of photosRes.rows) {
+          if (!photosMap.has(row.user_token)) photosMap.set(row.user_token, []);
+          photosMap.get(row.user_token)!.push(row.photo_url);
+        }
+
+        ads.forEach((ad: any) => {
+          const existing = Array.isArray(ad.photo_urls) ? ad.photo_urls.filter(Boolean) : [];
+          if (!existing || existing.length === 0) {
+            const fallback = photosMap.get(ad.user_token) || [];
+            if (fallback.length > 0) {
+              ad.photo_urls = fallback;
+            }
+          }
+        });
+      } catch (photoErr) {
+        console.warn('[ADS API] ⚠️ Не удалось подставить user_photos:', photoErr);
+      }
+    }
     
     console.log('[ADS API] 📊 Результаты GET:', {
       total_ads: ads.length,
