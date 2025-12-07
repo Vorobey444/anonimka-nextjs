@@ -1126,9 +1126,20 @@ function initializeApp() {
     
     // Добавляем обработчик видимости страницы
     // Если пользователь вернулся после сканирования QR
+    // Флаг для отслеживания открытого file picker
+    let filePickerOpen = false;
+    
     document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
             console.log('📱 Страница стала видимой, повторная проверка авторизации');
+            
+            // Если file picker был открыт - не делаем ничего
+            if (filePickerOpen) {
+                console.log('📸 File picker был открыт - пропускаем проверку авторизации');
+                filePickerOpen = false;
+                return;
+            }
+            
             // Проверяем авторизацию еще раз
             setTimeout(() => {
                 try {
@@ -1141,6 +1152,12 @@ function initializeApp() {
             }, 500);
         }
     });
+    
+    // Экспортируем флаг для использования в addAdPhoto
+    window.setFilePickerOpen = (state) => {
+        filePickerOpen = state;
+        console.log('📸 setFilePickerOpen:', state);
+    };
     
     // Обработчик сообщений от всплывающего окна авторизации
     window.addEventListener('message', function(event) {
@@ -15542,9 +15559,24 @@ async function addAdPhoto() {
     console.log('📸 [addAdPhoto] Текущий шаг:', currentStep, 'из', totalSteps);
     console.log('📸 [addAdPhoto] Текущий экран:', document.querySelector('.screen.active')?.id);
     
+    // Запоминаем текущее состояние
+    const savedStep = currentStep;
+    const savedFormData = {...formData};
+    
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    
+    // Защита от случайного закрытия при открытии file picker
+    input.addEventListener('cancel', () => {
+        console.log('📸 [addAdPhoto] Пользователь отменил выбор файла');
+        // Восстанавливаем состояние если изменилось
+        if (currentStep !== savedStep) {
+            console.warn('⚠️ [addAdPhoto] Шаг изменился! Восстанавливаем:', savedStep);
+            currentStep = savedStep;
+            showStep(savedStep);
+        }
+    });
     
     input.onchange = async (e) => {
         const file = e.target.files[0];
@@ -15633,10 +15665,19 @@ async function addAdPhoto() {
     // Добавляем обработчик отмены выбора файла
     input.oncancel = () => {
         console.log('❌ [addAdPhoto] Выбор файла отменён');
+        if (window.setFilePickerOpen) window.setFilePickerOpen(false);
     };
+    
+    // Устанавливаем флаг перед открытием file picker
+    if (window.setFilePickerOpen) window.setFilePickerOpen(true);
     
     input.click();
     console.log('🖱️ [addAdPhoto] File input открыт');
+    
+    // Сбрасываем флаг через 2 секунды на случай если cancel не сработал
+    setTimeout(() => {
+        if (window.setFilePickerOpen) window.setFilePickerOpen(false);
+    }, 2000);
 }
 
 function removeAdPhoto() {
