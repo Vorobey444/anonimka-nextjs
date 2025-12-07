@@ -20,14 +20,15 @@ async function enforceLimits(userToken: string) {
   if (ids.length === 0) return isPremium;
 
   const allowed = isPremium ? 3 : 1;
-  const keepIds = ids.slice(0, allowed);
-  const dropIds = ids.slice(allowed);
 
-  if (keepIds.length) {
-    await sql`UPDATE user_photos SET is_active = TRUE WHERE id = ANY(${keepIds})`;
-  }
-  if (dropIds.length) {
-    await sql`UPDATE user_photos SET is_active = FALSE WHERE id = ANY(${dropIds})`;
+  // Activate first N photos, deactivate the rest
+  for (let i = 0; i < ids.length; i++) {
+    const shouldBeActive = i < allowed;
+    await sql`
+      UPDATE user_photos 
+      SET is_active = ${shouldBeActive} 
+      WHERE id = ${ids[i]} AND user_token = ${userToken}
+    `;
   }
 
   return isPremium;
