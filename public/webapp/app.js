@@ -4940,7 +4940,7 @@ function displayAds(ads, city = null) {
         adsList.classList.remove('compact');
     }
 
-    adsList.innerHTML = filteredAds.map((ad, index) => {
+    let adsHTML = filteredAds.map((ad, index) => {
         // Supabase возвращает поля с подчёркиваниями (age_from, my_age и т.д.)
         const myAge = ad.my_age || ad.myAge || '?';
         const ageFrom = ad.age_from || ad.ageFrom || '?';
