@@ -15365,10 +15365,10 @@ async function loadMyPhotos() {
         
         if (photos.length === 0) {
             gallery.innerHTML = `
-                <div class="no-ads">
-                    <div class="neon-icon">📸</div>
-                    <h3>Нет фото</h3>
-                    <p>Добавьте фото для своих объявлений</p>
+                <div class="no-ads" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; min-height: 200px;">
+                    <div class="neon-icon" style="font-size: 3rem; margin-bottom: 15px;">📸</div>
+                    <h3 style="color: var(--text-light); margin-bottom: 10px;">Нет фото</h3>
+                    <p style="color: var(--text-gray); text-align: center;">Нажмите кнопку выше, чтобы добавить фото для своих объявлений</p>
                 </div>
             `;
             return;
@@ -15469,6 +15469,73 @@ async function deletePhoto(photoId) {
     } catch (error) {
         tg.showAlert('❌ Ошибка: ' + error.message);
     }
+}
+
+// Добавить фото из галереи
+async function addPhotoFromGallery() {
+    const userToken = localStorage.getItem('user_token');
+    const userId = getCurrentUserId();
+    
+    if (!userToken) {
+        tg.showAlert('Требуется авторизация');
+        return;
+    }
+    
+    // Создаём скрытый input для выбора файла
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        
+        try {
+            // Показываем индикатор загрузки
+            const gallery = document.getElementById('photosGallery');
+            gallery.innerHTML = '<div class="loading-spinner"></div><p>Загрузка фото...</p>';
+            
+            console.log('📤 Uploading photo:', file.name);
+            
+            // Загружаем через существующий upload-photo API
+            const photoData = await uploadPhotoToTelegram(file, userId);
+            console.log('✅ Photo uploaded:', photoData);
+            
+            // Сохраняем в user_photos
+            const resp = await fetch('/api/user-photos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userToken,
+                    tgId: userId,
+                    fileId: photoData.file_id,
+                    photoUrl: photoData.photo_url,
+                    caption: null
+                })
+            });
+            
+            const result = await resp.json();
+            if (result.error) throw new Error(result.error.message);
+            
+            console.log('✅ Photo saved to gallery');
+            
+            // Перезагружаем галерею
+            await loadMyPhotos();
+            
+            if (result.overLimit) {
+                tg.showAlert(`⚠️ Достигнут лимит: ${result.limit} фото.\n\nЛишние фото деактивированы.`);
+            }
+        } catch (error) {
+            console.error('❌ Error adding photo:', error);
+            tg.showAlert('❌ Ошибка: ' + error.message);
+            await loadMyPhotos(); // Восстанавливаем галерею
+        }
+    };
+    
+    document.body.appendChild(input);
+    input.click();
+    setTimeout(() => input.remove(), 1000);
 }
 
 // CSS для фото галереи (добавить в style.css)
