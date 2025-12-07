@@ -4765,15 +4765,24 @@ function normalizeCity(cityName) {
     return cityAliases[normalized] || normalized;
 }
 
-function getPhotoUrl(photoUrlOrFileId) {
-    // Если уже защищённый URL - возвращаем как есть
+function getPhotoUrl(photoUrlOrFileId, size = null) {
+    // Если уже защищённый URL - возвращаем как есть или через thumbnail
     if (photoUrlOrFileId && photoUrlOrFileId.includes('/api/secure-photo')) {
+        // Для миниатюр используем thumbnail API
+        if (size && size !== 'large') {
+            return `/api/thumbnail?url=${encodeURIComponent(photoUrlOrFileId)}&size=${size}`;
+        }
         return photoUrlOrFileId;
     }
     
     // Если это file_id от Telegram - преобразуем в защищённый URL
     if (photoUrlOrFileId && photoUrlOrFileId.startsWith('Ag')) {
-        return `/api/secure-photo?fileId=${encodeURIComponent(photoUrlOrFileId)}`;
+        const secureUrl = `/api/secure-photo?fileId=${encodeURIComponent(photoUrlOrFileId)}`;
+        // Для миниатюр оборачиваем в thumbnail API
+        if (size && size !== 'large') {
+            return `/api/thumbnail?url=${encodeURIComponent(secureUrl)}&size=${size}`;
+        }
+        return secureUrl;
     }
     
     // Иначе возвращаем как есть (может быть уже готовый URL)
@@ -4921,8 +4930,16 @@ function displayAds(ads, city = null) {
             ${ad.photo_urls && ad.photo_urls.length > 0 ? `
             <div class="ad-photo-thumbnails" style="display: grid; grid-template-columns: repeat(${Math.min(ad.photo_urls.length, 3)}, 1fr); gap: 4px; margin-bottom: 12px;">
                 ${ad.photo_urls.slice(0, 3).map((photoUrl, photoIdx) => `
-                    <div style="aspect-ratio: 1; overflow: hidden; border-radius: 8px; background: rgba(26, 26, 46, 0.5);">
-                        <img src="${getPhotoUrl(photoUrl)}" alt="Фото ${photoIdx + 1}" style="width: 100%; height: 100%; object-fit: cover;">
+                    <div style="aspect-ratio: 1; overflow: hidden; border-radius: 8px; background: linear-gradient(135deg, rgba(26, 26, 46, 0.8) 0%, rgba(46, 46, 66, 0.6) 100%); position: relative;">
+                        <img 
+                            src="${getPhotoUrl(photoUrl, 'small')}" 
+                            alt="Фото ${photoIdx + 1}" 
+                            loading="lazy"
+                            decoding="async"
+                            fetchpriority="${photoIdx === 0 ? 'high' : 'low'}"
+                            style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease;"
+                            onload="this.style.opacity='1'"
+                            onerror="this.style.opacity='0.3'; this.alt='❌'">
                     </div>
                 `).join('')}
             </div>
@@ -5064,8 +5081,17 @@ function showAdDetails(index) {
             
             ${ad.photo_urls && ad.photo_urls.length > 0 ? `
             <div class="ad-details-photos">
-                <div class="ad-main-photo" id="adMainPhotoContainer" style="position: relative; touch-action: pan-y; width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; background: rgba(26, 26, 46, 0.5); border-radius: 12px; overflow: hidden;">
-                    <img id="adMainPhoto" src="${getPhotoUrl(ad.photo_urls[0])}" alt="Фото анкеты" style="width: 100%; height: 100%; object-fit: contain; cursor: pointer;" onclick="openPhotoFullscreen(this.src)">
+                <div class="ad-main-photo" id="adMainPhotoContainer" style="position: relative; touch-action: pan-y; width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a1a2e 0%, #2e2e42 100%); border-radius: 12px; overflow: hidden;">
+                    <img id="adMainPhoto" 
+                        src="${getPhotoUrl(ad.photo_urls[0], 'medium')}" 
+                        alt="Фото анкеты" 
+                        loading="eager"
+                        decoding="async"
+                        data-full-url="${getPhotoUrl(ad.photo_urls[0], 'large')}"
+                        style="width: 100%; height: 100%; object-fit: contain; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;" 
+                        onload="this.style.opacity='1'"
+                        onerror="this.style.opacity='0.3'; this.alt='❌ Ошибка загрузки'"
+                        onclick="openPhotoFullscreen(this.dataset.fullUrl || this.src)">
                     ${ad.photo_urls.length > 1 ? `
                     <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px; color: white; font-size: 0.8rem;">
                         <span id="photoCounter">1 / ${ad.photo_urls.length}</span>
@@ -5075,8 +5101,15 @@ function showAdDetails(index) {
                 ${ad.photo_urls.length > 1 ? `
                 <div class="ad-photo-gallery">
                     ${ad.photo_urls.map((photoUrl, photoIndex) => `
-                        <div class="ad-photo-thumbnail-small" onclick="event.stopPropagation(); switchAdPhoto(${photoIndex})">
-                            <img src="${getPhotoUrl(photoUrl)}" alt="Photo ${photoIndex + 1}" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div class="ad-photo-thumbnail-small" onclick="event.stopPropagation(); switchAdPhoto(${photoIndex})" style="background: linear-gradient(135deg, #1a1a2e 0%, #2e2e42 100%);">
+                            <img 
+                                src="${getPhotoUrl(photoUrl, 'small')}" 
+                                alt="Photo ${photoIndex + 1}" 
+                                loading="lazy"
+                                decoding="async"
+                                style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease;"
+                                onload="this.style.opacity='1'"
+                                onerror="this.style.opacity='0.3'">
                         </div>
                     `).join('')}
                 </div>
@@ -5140,7 +5173,10 @@ function switchAdPhoto(photoIndex) {
     window.currentPhotoIndex = photoIndex;
     const img = document.getElementById('adMainPhoto');
     const counter = document.getElementById('photoCounter');
-    if (img) img.src = getPhotoUrl(window.currentAdPhotos[photoIndex]);
+    if (img) {
+        img.src = getPhotoUrl(window.currentAdPhotos[photoIndex], 'medium');
+        img.dataset.fullUrl = getPhotoUrl(window.currentAdPhotos[photoIndex], 'large');
+    }
     if (counter) counter.textContent = `${photoIndex + 1} / ${window.currentAdPhotos.length}`;
 }
 
