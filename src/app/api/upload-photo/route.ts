@@ -69,19 +69,37 @@ export async function POST(request: NextRequest) {
     const lowerName = (fileName || '').toLowerCase();
     const isHeic = mimeType === 'image/heic' || mimeType === 'image/heif' || lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
     if (isHeic) {
+      const targetName = lowerName ? lowerName.replace(/\.(heic|heif)$/i, '.jpg') : 'photo.jpg';
+      let converted = false;
       try {
-        const converted = await sharp(buffer).rotate().jpeg({ quality: 92 }).toBuffer();
-        buffer = converted;
+        const convertedBuf = await sharp(buffer).rotate().jpeg({ quality: 92 }).toBuffer();
+        buffer = convertedBuf;
         mimeType = 'image/jpeg';
-        fileName = lowerName ? lowerName.replace(/\.(heic|heif)$/i, '.jpg') : 'photo.jpg';
+        fileName = targetName;
         isVideo = false; // после конвертации это точно фото
-        console.log('🔄 HEIC/HEIF converted to JPEG on server', { size: buffer.length });
+        converted = true;
+        console.log('🔄 HEIC/HEIF converted to JPEG on server (sharp)', { size: buffer.length });
       } catch (heicErr: any) {
-        console.error('❌ HEIC→JPEG convert failed:', heicErr?.message || heicErr);
-        return NextResponse.json(
-          { error: { message: 'Не удалось обработать HEIC/HEIF. Попробуйте другое фото или сохраните как JPG/PNG.' } },
-          { status: 415 }
-        );
+        console.warn('⚠️ sharp HEIC convert failed, fallback to heic-convert:', heicErr?.message || heicErr);
+      }
+
+      if (!converted) {
+        try {
+          const heicConvert = (await import('heic-convert')).default;
+          const output = await heicConvert({ buffer, format: 'JPEG', quality: 0.92 });
+          buffer = Buffer.from(output);
+          mimeType = 'image/jpeg';
+          fileName = targetName;
+          isVideo = false;
+          converted = true;
+          console.log('🔄 HEIC/HEIF converted via heic-convert fallback', { size: buffer.length });
+        } catch (fallbackErr: any) {
+          console.error('❌ HEIC→JPEG convert failed (fallback):', fallbackErr?.message || fallbackErr);
+          return NextResponse.json(
+            { error: { message: 'Не удалось обработать HEIC/HEIF. Попробуйте другое фото или сохраните как JPG/PNG.' } },
+            { status: 415 }
+          );
+        }
       }
     }
     
