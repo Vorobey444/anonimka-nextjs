@@ -26,7 +26,12 @@ export async function GET(req: NextRequest) {
     const userToken = searchParams.get('userToken');
     const tgId = searchParams.get('tgId');
     
-    console.log("[ADS API] Получение объявлений:", { city, country, id, userToken: userToken ? 'есть' : 'нет', tgId: tgId ? 'есть' : 'нет' });
+    // Пагинация
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const offset = (page - 1) * limit;
+    
+    console.log("[ADS API] Получение объявлений:", { city, country, id, userToken: userToken ? 'есть' : 'нет', tgId: tgId ? 'есть' : 'нет', page, limit });
 
     // Формируем SQL запрос с фильтрами
     let result;
@@ -142,6 +147,17 @@ export async function GET(req: NextRequest) {
           ads.created_at DESC
       `;
     } else {
+      // Получаем total count для пагинации
+      const countResult = await sql`
+        SELECT COUNT(*) as total
+        FROM ads
+        WHERE NOT (
+          COALESCE(is_blocked, false) = true
+          AND (blocked_until IS NULL OR blocked_until > NOW())
+        )
+      `;
+      const total = parseInt(countResult.rows[0]?.total || '0');
+      
       result = await sql`
         SELECT 
           ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
@@ -159,7 +175,19 @@ export async function GET(req: NextRequest) {
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
           ads.created_at DESC
+        LIMIT ${limit}
+        OFFSET ${offset}
       `;
+      
+      // Добавляем метаданные пагинации в результат
+      const pagination = {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: offset + limit < total
+      };
+      (result as any).pagination = pagination;
     }
     
     const ads = result.rows;
@@ -204,19 +232,31 @@ export async function GET(req: NextRequest) {
       }
     }
     
+    const paginationData = (result as any).pagination;
+    
     console.log('[ADS API] 📊 Результаты GET:', {
       total_ads: ads.length,
       first_ad_has_photo_urls: ads[0]?.photo_urls ? true : false,
       first_ad_photo_urls_value: ads[0]?.photo_urls,
-      first_ad_keys: ads[0] ? Object.keys(ads[0]) : []
+      first_ad_keys: ads[0] ? Object.keys(ads[0]) : [],
+      pagination: paginationData
     });
     
     console.log("[ADS API] Получено объявлений:", ads.length);
     
-    return NextResponse.json({
-      success: true,
-      ads
-    });
+    // Добавляем CDN кеш headers для ускорения
+    return NextResponse.json(
+      {
+        success: true,
+        ads,
+        pagination: paginationData
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, max-age=300, s-maxage=300', // 5 минут
+        }
+      }
+    );
 
   } catch (error: any) {
     console.error("[ADS API] Ошибка при получении объявлений:", error);

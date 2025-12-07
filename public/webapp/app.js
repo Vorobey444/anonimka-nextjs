@@ -4658,17 +4658,31 @@ async function submitAd() {
 }
 
 // Загрузка и отображение анкет
-async function loadAds(filters = {}) {
+// Глобальные переменные для пагинации
+window.currentAdsPage = 1;
+window.hasMoreAds = true;
+window.loadingAds = false;
+window.allLoadedAds = [];
+
+async function loadAds(filters = {}, append = false) {
+    if (window.loadingAds) return;
+    if (!append) {
+        window.currentAdsPage = 1;
+        window.allLoadedAds = [];
+        window.hasMoreAds = true;
+    }
+    
     try {
-        console.log('🔄 Загрузка анкет с фильтрами:', filters);
-        // По умолчанию включаем компактный режим, если не задано ранее
+        window.loadingAds = true;
+        console.log('🔄 Загрузка анкет:', { page: window.currentAdsPage, filters, append });
+        
+        // По умолчанию включаем компактный режим
         if (window.localStorage.getItem('ads_compact') === null) {
             window.localStorage.setItem('ads_compact', '1');
         }
         
-        // Показываем индикатор загрузки
         const adsList = document.getElementById('adsList');
-        if (adsList) {
+        if (adsList && !append) {
             const compact = window.localStorage.getItem('ads_compact') === '1';
             adsList.classList.toggle('compact', compact);
             adsList.innerHTML = `
@@ -4677,8 +4691,14 @@ async function loadAds(filters = {}) {
             `;
         }
 
+        // Пагинация: 20 анкет за раз
+        const params = new URLSearchParams({
+            page: window.currentAdsPage.toString(),
+            limit: '20'
+        });
+        
         // Запрашиваем анкеты через Neon API
-        const response = await fetch('/api/ads', {
+        const response = await fetch(`/api/ads?${params}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -4689,21 +4709,25 @@ async function loadAds(filters = {}) {
         
         const result = await response.json();
         const ads = result.ads || [];
+        const pagination = result.pagination;
         
-        console.log('✅ Получено анкет:', ads.length);
-        console.log('📋 первую анкету:', ads[0]);
-        if (ads[0]) {
-            console.log('🖼️ photo_urls в первой анкете:', ads[0].photo_urls);
-            console.log('🖼️ Все поля первой анкеты:', Object.keys(ads[0]));
+        console.log('✅ Получено анкет:', ads.length, 'Пагинация:', pagination);
+        
+        if (append) {
+            window.allLoadedAds.push(...ads);
+        } else {
+            window.allLoadedAds = ads;
         }
         
+        window.hasMoreAds = pagination?.hasMore || false;
+        
         // Отображаем анкеты
-        displayAds(ads, filters.city);
+        displayAds(window.allLoadedAds, filters.city);
 
     } catch (error) {
         console.error('❌ Ошибка загрузки анкет:', error);
         const adsList = document.getElementById('adsList');
-        if (adsList) {
+        if (adsList && !append) {
             const compact = window.localStorage.getItem('ads_compact') === '1';
             adsList.classList.toggle('compact', compact);
             adsList.innerHTML = `
@@ -4715,7 +4739,31 @@ async function loadAds(filters = {}) {
                 </div>
             `;
         }
+    } finally {
+        window.loadingAds = false;
     }
+}
+
+// Infinite scroll для автоматической подгрузки
+function setupInfiniteScroll() {
+    let scrollTimeout;
+    window.addEventListener('scroll', () => {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            const scrolledToBottom = (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500;
+            
+            if (scrolledToBottom && window.hasMoreAds && !window.loadingAds) {
+                console.log('📜 Достигнут конец страницы, загружаем еще...');
+                window.currentAdsPage++;
+                loadAds({}, true); // append = true
+            }
+        }, 100);
+    });
+}
+
+// Инициализируем infinite scroll при загрузке страницы
+if (typeof window !== 'undefined') {
+    setupInfiniteScroll();
 }
 
 // Вспомогательная функция для получения всех анкет
@@ -5004,6 +5052,18 @@ function displayAds(ads, city = null) {
         </div>
     `;
     }).join('');
+    
+    // Добавляем индикатор загрузки если есть еще анкеты
+    if (window.hasMoreAds) {
+        adsHTML += `
+            <div id="loadingMore" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 10px;">Загружаем еще анкеты...</p>
+            </div>
+        `;
+    }
+    
+    adsList.innerHTML = adsHTML;
     
     // Сохраняем анкеты для showAdDetails
     window.currentAds = filteredAds;
