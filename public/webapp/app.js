@@ -4664,6 +4664,7 @@ window.hasMoreAds = true;
 window.loadingAds = false;
 window.allLoadedAds = [];
 window.currentFilters = {}; // Сохраняем текущие фильтры для infinite scroll
+window.totalAds = 0; // Общее количество анкет
 
 async function loadAds(filters = {}, append = false) {
     if (window.loadingAds) return;
@@ -4729,6 +4730,11 @@ async function loadAds(filters = {}, append = false) {
             window.allLoadedAds = ads;
         }
         
+        // Сохраняем общее количество анкет
+        if (pagination && pagination.total) {
+            window.totalAds = pagination.total;
+        }
+        
         // Если пагинации нет (например, при фильтрах по городу), считаем что это все анкеты
         window.hasMoreAds = pagination ? (pagination.hasMore || false) : false;
         
@@ -4764,13 +4770,21 @@ async function loadAds(filters = {}, append = false) {
     }
 }
 
-// Infinite scroll для автоматической подгрузки
+// Функция для кнопки "Загрузить еще"
+function loadMoreAds() {
+    if (window.loadingAds || !window.hasMoreAds) return;
+    
+    console.log('🔘 Кнопка "Загрузить еще" нажата');
+    window.currentAdsPage++;
+    loadAds(window.currentFilters || {}, true);
+}
+
+// Infinite scroll для автоматической подгрузки (резервный механизм, основной - кнопка)
 function setupInfiniteScroll() {
     let scrollTimeout;
     const handleScroll = () => {
         if (scrollTimeout) clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(() => {
-            // Проверяем разные варианты определения позиции скролла
             const windowHeight = window.innerHeight || document.documentElement.clientHeight;
             const documentHeight = Math.max(
                 document.body.scrollHeight,
@@ -4780,38 +4794,18 @@ function setupInfiniteScroll() {
                 document.documentElement.offsetHeight
             );
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-            const scrolledToBottom = (windowHeight + scrollTop) >= documentHeight - 500;
-            
-            // Логируем состояние для отладки
-            if (scrollTop > 0 && window.hasMoreAds) {
-                console.log('🔍 Scroll:', {
-                    windowHeight,
-                    documentHeight,
-                    scrollTop,
-                    bottomDistance: documentHeight - (windowHeight + scrollTop),
-                    scrolledToBottom,
-                    hasMoreAds: window.hasMoreAds,
-                    loadingAds: window.loadingAds
-                });
-            }
+            const scrolledToBottom = (windowHeight + scrollTop) >= documentHeight - 300;
             
             if (scrolledToBottom && window.hasMoreAds && !window.loadingAds) {
-                console.log('📜 Достигнут конец страницы, загружаем еще...');
+                console.log('📜 Auto-scroll: загружаем следующую страницу');
                 window.currentAdsPage++;
-                loadAds(window.currentFilters || {}, true); // append = true, используем сохраненные фильтры
+                loadAds(window.currentFilters || {}, true);
             }
-        }, 100);
+        }, 150);
     };
     
-    // Подписываемся на события скролла на разных элементах
-    window.addEventListener('scroll', handleScroll);
-    document.addEventListener('scroll', handleScroll);
-    
-    // Также проверяем скролл контейнера анкет
-    const adsList = document.getElementById('adsList');
-    if (adsList && adsList.parentElement) {
-        adsList.parentElement.addEventListener('scroll', handleScroll);
-    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('scroll', handleScroll, { passive: true });
 }
 
 // Инициализируем infinite scroll при загрузке страницы
@@ -5106,18 +5100,20 @@ function displayAds(ads, city = null) {
     `;
     }).join('');
     
-    // Добавляем индикатор загрузки если есть еще анкеты И не идет загрузка сейчас
-    if (window.hasMoreAds && !window.loadingAds) {
-        adsHTML += `
-            <div id="loadingMore" style="text-align: center; padding: 20px; color: var(--text-secondary); opacity: 0.5;">
-                <p style="margin: 0;">Прокрутите вниз для загрузки еще...</p>
-            </div>
-        `;
-    } else if (window.loadingAds) {
+    // Добавляем кнопку загрузки или индикатор
+    if (window.loadingAds) {
         adsHTML += `
             <div id="loadingMore" style="text-align: center; padding: 20px; color: var(--text-secondary);">
                 <div class="loading-spinner"></div>
                 <p style="margin-top: 10px;">Загружаем еще анкеты...</p>
+            </div>
+        `;
+    } else if (window.hasMoreAds) {
+        adsHTML += `
+            <div id="loadingMore" style="text-align: center; padding: 20px;">
+                <button class="neon-button" onclick="loadMoreAds()" style="width: auto; padding: 12px 24px;">
+                    📜 Загрузить еще анкеты (${window.allLoadedAds.length} из ${window.totalAds || '?'})
+                </button>
             </div>
         `;
     } else if (!window.hasMoreAds && window.allLoadedAds.length > 0) {
