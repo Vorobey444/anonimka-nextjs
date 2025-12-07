@@ -2051,23 +2051,25 @@
             <h2>📸 Мои фото</h2>
         </div>
         
-        <div class="photos-info-banner">
-            <div class="info-icon">ℹ️</div>
-            <div class="info-text">
-                <p id="photosLimitText">Загрузка...</p>
-                <p style="font-size: 0.8rem; color: var(--text-gray); margin-top: 4px;">
+        <!-- Инфо баннер -->
+        <div style="display: flex; gap: 12px; padding: 12px 15px; background: rgba(0, 217, 255, 0.1); border-left: 3px solid #00d9ff; border-radius: 0 8px 8px 0; margin: 15px;">
+            <div style="font-size: 1.4rem; flex-shrink: 0;">ℹ️</div>
+            <div style="flex: 1;">
+                <p id="photosLimitText" style="margin: 0; color: #e0e0e0; font-size: 0.9rem;">Загрузка...</p>
+                <p style="font-size: 0.8rem; color: #888; margin: 4px 0 0 0;">
                     Фото будут показаны во всех ваших активных объявлениях
                 </p>
             </div>
         </div>
         
-        <button class="neon-button primary full-width" onclick="addPhotoFromGallery()" style="margin: 15px 0;">
+        <!-- Кнопка добавления -->
+        <button class="neon-button primary full-width" onclick="addPhotoFromGallery()" style="margin: 15px;">
             <span>➕ Добавить фото</span>
         </button>
         
-        <div id="photosGallery" class="photos-gallery" style="min-height: 200px; width: 100%;">
-            <div class="loading-spinner"></div>
-            <p>Загрузка фото...</p>
+        <!-- Контейнер галереи -->
+        <div id="photosGallery" style="padding: 15px; min-height: 300px; background: rgba(0,0,0,0.2); border-radius: 8px; margin: 0 15px;">
+            <p style="color: #888; text-align: center;">Загрузка фото...</p>
         </div>
     </div>
 

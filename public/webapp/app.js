@@ -15344,13 +15344,17 @@ async function loadMyPhotos() {
     console.log('📸 userToken:', userToken ? userToken.substring(0, 16) + '...' : 'НЕТ');
     
     if (!userToken) {
-        gallery.innerHTML = `<div class="no-ads"><div class="neon-icon">🔐</div><p>Требуется авторизация</p></div>`;
+        gallery.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: #888;">
+                <div style="font-size: 3rem; margin-bottom: 15px;">🔐</div>
+                <p>Требуется авторизация</p>
+            </div>`;
         return;
     }
     
     try {
-        gallery.innerHTML = `<div class="loading-spinner"></div><p>Загрузка...</p>`;
-        console.log('📸 Показали spinner загрузки');
+        gallery.innerHTML = `<p style="color: #888; text-align: center; padding: 20px;">⏳ Загрузка...</p>`;
+        console.log('📸 Показали текст загрузки');
         
         console.log('📸 Загружаем фото для userToken:', userToken.substring(0, 16) + '...');
         const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
@@ -15370,7 +15374,7 @@ async function loadMyPhotos() {
         const photos = result.data || [];
         console.log('📸 Получено фото:', photos.length);
         console.log('📸 userPremiumStatus:', userPremiumStatus);
-        const isPremium = userPremiumStatus.isPremium;
+        const isPremium = userPremiumStatus?.isPremium || false;
         const limit = isPremium ? 3 : 1;
         const active = photos.filter((p) => p.is_active).length;
         
@@ -15379,49 +15383,57 @@ async function loadMyPhotos() {
         
         if (photos.length === 0) {
             console.log('📸 Показываем пустое состояние (нет фото)');
-            gallery.classList.remove('has-photos');
             gallery.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; min-height: 200px; text-align: center;">
-                    <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.6;">📸</div>
-                    <h3 style="color: #e0e0e0; margin-bottom: 15px; font-size: 1.3rem;">Нет фото</h3>
-                    <p style="color: #888; text-align: center; line-height: 1.5;">Нажмите кнопку выше, чтобы добавить фото для своих объявлений</p>
+                <div style="text-align: center; padding: 60px 20px;">
+                    <div style="font-size: 5rem; margin-bottom: 20px; opacity: 0.5;">📸</div>
+                    <h3 style="color: #e0e0e0; margin: 0 0 15px 0; font-size: 1.4rem; font-weight: 600;">Нет фото</h3>
+                    <p style="color: #888; margin: 0; line-height: 1.6; font-size: 0.95rem;">Нажмите кнопку "Добавить фото" выше,<br>чтобы загрузить фото для своих объявлений</p>
                 </div>
             `;
-            console.log('📸 Пустое состояние установлено в gallery.innerHTML');
+            console.log('📸 Пустое состояние установлено');
             return;
         }
         
         console.log('📸 Рендерим галерею с', photos.length, 'фото');
-        gallery.classList.add('has-photos');
-        gallery.innerHTML = photos.map((photo) => {
+        
+        // Создаём grid контейнер
+        let gridHTML = `<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">`;
+        
+        photos.forEach((photo) => {
             const isActive = photo.is_active;
-            return `
-                <div class="photo-item ${!isActive ? 'inactive' : ''}">
-                    <div class="photo-thumbnail" onclick="showPhotoModal('${photo.photo_url}')" style="background-image: url('${photo.photo_url}'); cursor: pointer;">
-                        ${!isActive ? '<div class="photo-badge">❌ Отключено</div>' : ''}
+            const opacity = isActive ? '1' : '0.5';
+            
+            gridHTML += `
+                <div style="border-radius: 12px; overflow: hidden; background: rgba(26, 26, 46, 0.6); border: 2px solid ${isActive ? 'rgba(0, 217, 255, 0.3)' : 'rgba(255, 59, 48, 0.3)'}; opacity: ${opacity};">
+                    <div onclick="window.open('${photo.photo_url}', '_blank')" style="width: 100%; height: 150px; background-image: url('${photo.photo_url}'); background-size: cover; background-position: center; cursor: pointer; position: relative;">
+                        ${!isActive ? '<div style="position: absolute; top: 0; right: 0; background: rgba(255, 59, 48, 0.9); color: white; padding: 4px 8px; font-size: 0.7rem; border-radius: 0 0 0 8px;">❌ Отключено</div>' : ''}
                     </div>
-                    <div class="photo-controls">
-                        <div class="photo-position">Позиция: <strong>${photo.position}</strong></div>
-                        ${photo.caption ? `<div class="photo-caption">${photo.caption}</div>` : ''}
-                        <div class="photo-actions">
-                            <button class="photo-btn" onclick="editPhotoCaption(${photo.id}, '${(photo.caption || '').replace(/'/g, "\\'")}')">✏️ Подпись</button>
-                            <button class="photo-btn ${isActive ? 'active' : ''}" onclick="togglePhotoActive(${photo.id}, ${!isActive})">
+                    <div style="padding: 10px; font-size: 0.85rem;">
+                        <div style="color: #888; margin-bottom: 8px; font-size: 0.75rem;">Позиция: <strong>${photo.position}</strong></div>
+                        ${photo.caption ? `<div style="color: #e0e0e0; margin-bottom: 10px; font-size: 0.8rem; max-height: 30px; overflow: hidden;">${photo.caption}</div>` : ''}
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                            <button onclick="editPhotoCaption(${photo.id}, '${(photo.caption || '').replace(/'/g, "\\'")}'); event.stopPropagation();" style="flex: 1; min-width: 60px; padding: 8px 6px; background: rgba(131, 56, 236, 0.2); border: 1px solid rgba(131, 56, 236, 0.5); color: #8338ec; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">✏️ Подпись</button>
+                            <button onclick="togglePhotoActive(${photo.id}, ${!isActive}); event.stopPropagation();" style="flex: 1; min-width: 60px; padding: 8px 6px; background: ${isActive ? 'rgba(0, 217, 255, 0.2)' : 'rgba(131, 56, 236, 0.2)'}; border: 1px solid ${isActive ? 'rgba(0, 217, 255, 0.5)' : 'rgba(131, 56, 236, 0.5)'}; color: ${isActive ? '#00d9ff' : '#8338ec'}; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">
                                 ${isActive ? '👁️ Видимо' : '🚫 Скрыто'}
                             </button>
-                            <button class="photo-btn danger" onclick="deletePhoto(${photo.id})">🗑️ Удалить</button>
+                            <button onclick="deletePhoto(${photo.id}); event.stopPropagation();" style="flex: 1; min-width: 60px; padding: 8px 6px; background: rgba(255, 59, 48, 0.2); border: 1px solid rgba(255, 59, 48, 0.5); color: #ff3b30; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">🗑️ Удалить</button>
                         </div>
                     </div>
                 </div>
             `;
-        }).join('');
+        });
+        
+        gridHTML += `</div>`;
+        gallery.innerHTML = gridHTML;
+        console.log('📸 Галерея отрендерена');
         
     } catch (error) {
-        console.error('Ошибка загрузки фото:', error);
+        console.error('❌ Ошибка загрузки фото:', error);
         gallery.innerHTML = `
-            <div class="no-ads">
-                <div class="neon-icon">⚠️</div>
-                <p>${error.message}</p>
-                <button class="neon-button" onclick="loadMyPhotos()">🔄 Повторить</button>
+            <div style="text-align: center; padding: 40px 20px; color: #ff3b30;">
+                <div style="font-size: 3rem; margin-bottom: 15px;">⚠️</div>
+                <p style="margin-bottom: 15px;">${error.message}</p>
+                <button onclick="loadMyPhotos()" class="neon-button">🔄 Повторить</button>
             </div>
         `;
     }
@@ -15556,175 +15568,4 @@ async function addPhotoFromGallery() {
     input.click();
     setTimeout(() => input.remove(), 1000);
 }
-
-// CSS для фото галереи (добавить в style.css)
-const photosStyles = `
-.photos-gallery {
-    display: block;
-    padding: 15px;
-    min-height: 200px;
-}
-
-.photos-gallery.has-photos {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.photo-item {
-    border-radius: 12px;
-    overflow: hidden;
-    background: rgba(26, 26, 46, 0.6);
-    border: 2px solid rgba(255, 0, 110, 0.2);
-    transition: all 0.3s ease;
-}
-
-.photo-item.inactive {
-    opacity: 0.6;
-    border-color: rgba(255, 59, 48, 0.4);
-}
-
-.photo-thumbnail {
-    width: 100%;
-    height: 150px;
-    background-size: cover;
-    background-position: center;
-    position: relative;
-}
-
-.photo-badge {
-    position: absolute;
-    top: 0;
-    right: 0;
-    background: rgba(255, 59, 48, 0.9);
-    color: white;
-    padding: 4px 8px;
-    font-size: 0.75rem;
-    border-radius: 0 0 0 8px;
-}
-
-.photo-controls {
-    padding: 10px;
-    font-size: 0.85rem;
-}
-
-.photo-position {
-    color: var(--text-gray);
-    margin-bottom: 4px;
-}
-
-.photo-caption {
-    color: var(--text-light);
-    margin-bottom: 8px;
-    font-size: 0.8rem;
-    max-height: 30px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    opacity: 0.8;
-}
-
-.photo-actions {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-.photo-btn {
-    flex: 1;
-    min-width: 60px;
-    padding: 6px 8px;
-    background: rgba(131, 56, 236, 0.2);
-    border: 1px solid rgba(131, 56, 236, 0.5);
-    color: var(--neon-purple);
-    border-radius: 6px;
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.photo-btn:hover {
-    background: rgba(131, 56, 236, 0.4);
-}
-
-.photo-btn.active {
-    background: rgba(0, 217, 255, 0.2);
-    border-color: rgba(0, 217, 255, 0.5);
-    color: var(--neon-cyan);
-}
-
-.photo-btn.danger {
-    background: rgba(255, 59, 48, 0.2);
-    border-color: rgba(255, 59, 48, 0.5);
-    color: #ff3b30;
-}
-
-.photo-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    display: none;
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
-}
-
-.photo-modal-content {
-    position: relative;
-    width: 90%;
-    max-width: 600px;
-}
-
-.photo-modal-image-secure {
-    width: 100%;
-    height: auto;
-    max-height: 80vh;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-.photo-modal-close {
-    position: absolute;
-    top: -40px;
-    right: 0;
-    background: transparent;
-    color: white;
-    border: none;
-    font-size: 2rem;
-    cursor: pointer;
-}
-
-.photos-info-banner {
-    display: flex;
-    gap: 12px;
-    padding: 12px 15px;
-    background: rgba(0, 217, 255, 0.1);
-    border-left: 3px solid var(--neon-cyan);
-    border-radius: 0 8px 8px 0;
-    margin: 15px;
-}
-
-.info-icon {
-    font-size: 1.4rem;
-    flex-shrink: 0;
-}
-
-.info-text {
-    flex: 1;
-}
-
-.info-text p {
-    margin: 0;
-    color: var(--text-light);
-    font-size: 0.9rem;
-}
-`;
-
-// Инжектим CSS для фото
-const styleEl = document.createElement('style');
-styleEl.textContent = photosStyles;
-document.head.appendChild(styleEl);
 
