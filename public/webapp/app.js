@@ -12606,10 +12606,20 @@ async function processReferralReward() {
         
         const currentUserToken = localStorage.getItem('user_token');
         
-        console.log('[REWARD DEBUG] current user_token:', currentUserToken);
-        console.log('🎁 Запрос на выдачу PRO для реферера');
+        // ВАЖНО: Защита от самореферала - если человек пришел по своей же ссылке
+        if (referrerToken === currentUserToken) {
+            console.log('❌ [REWARD DEBUG] Попытка самореферала - реферер и текущий пользователь одинаковые');
+            localStorage.setItem('referral_reward_processed', 'true');
+            localStorage.removeItem('referrer_token');
+            localStorage.removeItem('pending_referral');
+            return;
+        }
         
-        const payload = { new_user_token: currentUserToken };
+        console.log('[REWARD DEBUG] current user_token:', currentUserToken);
+        console.log('🎁 Запрос на выдачу PRO для реферера (токен реферера)');
+        
+        // ИСПРАВКА: Отправляем токен РЕФЕРЕРА, а не текущего пользователя
+        const payload = { new_user_token: referrerToken };
         console.log('[REWARD DEBUG] Отправка PUT /api/referrals:', payload);
         
         const response = await fetch('/api/referrals', {
@@ -12624,7 +12634,7 @@ async function processReferralReward() {
         
         if (response.ok) {
             if (data.success) {
-                console.log(`✅ PRO подписка выдана до ${data.expiresAt}`);
+                console.log(`✅ PRO подписка выдана реферу до ${data.expiresAt}`);
             } else {
                 console.log('ℹ️ Награда уже была выдана ранее (сервер)');
             }
