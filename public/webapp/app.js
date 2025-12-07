@@ -4919,8 +4919,12 @@ function displayAds(ads, city = null) {
         <div class="ad-card ${compact ? 'compact' : ''} ${premiumClass}" onclick="showAdDetails(${index})">
             ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
             ${ad.photo_urls && ad.photo_urls.length > 0 ? `
-            <div class="ad-photo-thumbnail">
-                <img src="${getPhotoUrl(ad.photo_urls[0])}" alt="Фото анкеты" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;">
+            <div class="ad-photo-thumbnails" style="display: grid; grid-template-columns: repeat(${Math.min(ad.photo_urls.length, 3)}, 1fr); gap: 4px; margin-bottom: 12px;">
+                ${ad.photo_urls.slice(0, 3).map((photoUrl, photoIdx) => `
+                    <div style="aspect-ratio: 1; overflow: hidden; border-radius: 8px; background: rgba(26, 26, 46, 0.5);">
+                        <img src="${getPhotoUrl(photoUrl)}" alt="Фото ${photoIdx + 1}" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                `).join('')}
             </div>
             ` : ''}
             <div class="ad-header">
