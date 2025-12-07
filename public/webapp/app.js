@@ -16263,10 +16263,11 @@ async function deletePhotoFromStep9(photoId) {
         
         if (response.ok) {
             console.log('✅ Фото удалено');
-            // Перезагружаем галерею без смены экрана
+            // Сохраняем текущий экран перед перезагрузкой
             const currentScreen = document.querySelector('.screen.active')?.id;
             await loadMyPhotosForStep9();
-            if (currentScreen && currentScreen !== 'createAdScreen') {
+            // Возвращаемся на тот же экран
+            if (currentScreen) {
                 showScreen(currentScreen);
             }
         } else {
@@ -16299,10 +16300,11 @@ async function swapPhotoPositions(photoId1, photoId2) {
         
         if (response.ok) {
             console.log('✅ Позиции фото обменены');
-            // Перезагружаем галерею без смены экрана
+            // Сохраняем текущий экран перед перезагрузкой
             const currentScreen = document.querySelector('.screen.active')?.id;
             await loadMyPhotosForStep9();
-            if (currentScreen && currentScreen !== 'createAdScreen') {
+            // Возвращаемся на тот же экран
+            if (currentScreen) {
                 showScreen(currentScreen);
             }
         } else {
