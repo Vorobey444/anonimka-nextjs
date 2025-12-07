@@ -206,7 +206,9 @@ export async function POST(req: NextRequest) {
       region,
       city,
       tgId,
-      user_token
+      user_token,
+      photoFileId,
+      photoUrl
     } = body;
 
     // Helpers to safely coerce values coming from the client
@@ -515,13 +517,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Подготавливаем массив фото (если фото передано)
+    const photoUrls = photoUrl ? [photoUrl] : null;
+    
     // Вставляем в Neon PostgreSQL
     // tg_id уже приведён к числу или NULL
     
     const result = await sql`
       INSERT INTO ads (
         gender, target, goal, age_from, age_to, my_age, 
-        body_type, orientation, text, display_nickname, country, region, city, tg_id, user_token, created_at
+        body_type, orientation, text, display_nickname, country, region, city, tg_id, user_token, photo_urls, created_at
       )
       VALUES (
         ${gender}, ${target}, ${goal}, 
@@ -530,12 +535,17 @@ export async function POST(req: NextRequest) {
         ${parseOptionalInt(myAge)},
         ${bodyType || null}, ${orientation || null}, ${text}, ${finalNickname},
         ${country || 'Россия'}, ${region || ''}, ${city}, 
-        ${numericTgId}, ${finalUserToken}, CURRENT_TIMESTAMP
+        ${numericTgId}, ${finalUserToken}, ${photoUrls}, CURRENT_TIMESTAMP
       )
-      RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text
+      RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text, photo_urls
     `;
 
     const newAd = result.rows[0];
+    
+    // Логируем создание анкеты с фото
+    if (photoUrl) {
+      console.log('[ADS API] ✅ Анкета создана с фото:', { adId: newAd.id, photoUrl, hasFileId: !!photoFileId });
+    }
     
     // Увеличиваем счётчик объявлений (используем PostgreSQL timezone Asia/Almaty)
     if (numericTgId !== null) {

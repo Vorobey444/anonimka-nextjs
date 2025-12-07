@@ -907,7 +907,7 @@ String.prototype.hashCode = function() {
 // Данные формы
 let formData = {};
 let currentStep = 1;
-const totalSteps = 8; // Шаги: пол, кого ищете, цель, возраст партнёра, ваш возраст, телосложение, ориентация, текст
+const totalSteps = 9; // Шаги: пол, кого ищете, цель, возраст партнёра, ваш возраст, телосложение, ориентация, текст, фото
 
 // Инициализация приложения
 // Функция инициализации, которая вызывается когда DOM готов
@@ -4348,6 +4348,10 @@ function validateCurrentStep() {
             }
             
             return false;
+        case 9: // Фото (опционально)
+            // Всегда возвращаем true, так как фото необязательно
+            console.log(`Шаг 9 (Фото): ${formData.adPhotoFileId ? '✅ загружено' : '⏭️ пропущено'}`);
+            return true;
     }
     return false;
 }
@@ -4450,6 +4454,13 @@ async function submitAd() {
             // Используем новую функцию для получения ID
             tgId: getCurrentUserId()
         };
+        
+        // Добавляем фото если оно было загружено
+        if (formData.adPhotoFileId) {
+            adData.photoFileId = formData.adPhotoFileId;
+            adData.photoUrl = formData.adPhotoUrl;
+            console.log('📸 Анкета с фото:', formData.adPhotoFileId);
+        }
 
         safeLog('Отправка анкеты в Supabase');
         safeLog('Никнейм:', nickname);
@@ -4560,6 +4571,15 @@ async function submitAd() {
                 // Очищаем форму
                 formData = {};
                 currentStep = 1;
+                
+                // Скрываем превью фото если было
+                const preview = document.getElementById('adPhotoPreview');
+                const btn = document.getElementById('addAdPhotoBtn');
+                if (preview && btn) {
+                    preview.style.display = 'none';
+                    btn.style.display = 'block';
+                }
+                
                 // Финальное обновление статуса перед показом главного меню
                 await loadPremiumStatus();
                 updateAdLimitBadge(); // Обновляем счётчик анкет
@@ -15501,6 +15521,83 @@ async function deletePhoto(photoId) {
     } catch (error) {
         tg.showAlert('❌ Ошибка: ' + error.message);
     }
+}
+
+// ========== FUNCTIONS FOR AD PHOTO (Step 9) ==========
+
+async function addAdPhoto() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            const addBtn = document.getElementById('addAdPhotoBtn');
+            if (addBtn) {
+                addBtn.disabled = true;
+                addBtn.innerHTML = '<span>⏳ Загрузка...</span>';
+            }
+            
+            // Сжимаем если больше 4MB
+            let fileToUpload = file;
+            if (file.size > 4 * 1024 * 1024) {
+                console.log('🗜️ Файл больше 4MB, сжимаем...');
+                fileToUpload = await compressImage(file, 4);
+            }
+            
+            const userId = localStorage.getItem('user_token');
+            const photoData = await uploadPhotoToTelegram(fileToUpload, userId);
+            
+            // Сохраняем file_id и URL в formData
+            formData.adPhotoFileId = photoData.file_id;
+            formData.adPhotoUrl = photoData.photo_url;
+            
+            // Показываем превью
+            const preview = document.getElementById('adPhotoPreview');
+            const img = document.getElementById('adPhotoImage');
+            const btn = document.getElementById('addAdPhotoBtn');
+            
+            if (preview && img && btn) {
+                img.src = photoData.photo_url;
+                preview.style.display = 'block';
+                btn.style.display = 'none';
+            }
+            
+            console.log('✅ Фото для анкеты загружено:', photoData.file_id);
+            
+        } catch (error) {
+            console.error('❌ Ошибка загрузки фото:', error);
+            tg.showAlert('❌ Ошибка загрузки фото: ' + error.message);
+        } finally {
+            const addBtn = document.getElementById('addAdPhotoBtn');
+            if (addBtn) {
+                addBtn.disabled = false;
+                addBtn.innerHTML = '<span>📷 Выбрать фото</span>';
+            }
+        }
+    };
+    
+    input.click();
+}
+
+function removeAdPhoto() {
+    // Удаляем фото из formData
+    delete formData.adPhotoFileId;
+    delete formData.adPhotoUrl;
+    
+    // Скрываем превью и показываем кнопку загрузки
+    const preview = document.getElementById('adPhotoPreview');
+    const btn = document.getElementById('addAdPhotoBtn');
+    
+    if (preview && btn) {
+        preview.style.display = 'none';
+        btn.style.display = 'block';
+    }
+    
+    console.log('🗑️ Фото удалено из анкеты');
 }
 
 // Добавить фото из галереи
