@@ -4689,6 +4689,10 @@ async function loadAds(filters = {}) {
         
         console.log('✅ Получено анкет:', ads.length);
         console.log('📋 первую анкету:', ads[0]);
+        if (ads[0]) {
+            console.log('🖼️ photo_urls в первой анкете:', ads[0].photo_urls);
+            console.log('🖼️ Все поля первой анкеты:', Object.keys(ads[0]));
+        }
         
         // Отображаем анкеты
         displayAds(ads, filters.city);
@@ -4760,6 +4764,9 @@ function normalizeCity(cityName) {
 
 function displayAds(ads, city = null) {
     const adsList = document.getElementById('adsList');
+    
+    console.log('📊 displayAds вызвана с', ads.length, 'анкетами');
+    console.log('🖼️ Первая анкета photo_urls:', ads[0]?.photo_urls);
     
     if (!ads || ads.length === 0) {
         adsList.innerHTML = `
