@@ -4097,6 +4097,12 @@ function showStep(step) {
         });
     }
     
+    // Загружаем существующие фото на шаге 9
+    if (step === 9) {
+        console.log('📸 [showStep] Шаг 9: загружаем фото из галереи');
+        loadMyPhotosForStep9();
+    }
+    
     // Обновляем кнопки навигации
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
@@ -15685,16 +15691,139 @@ function removeAdPhoto() {
     delete formData.adPhotoFileId;
     delete formData.adPhotoUrl;
     
-    // Скрываем превью и показываем кнопку загрузки
+    // Скрываем превью
     const preview = document.getElementById('adPhotoPreview');
-    const btn = document.getElementById('addAdPhotoBtn');
-    
-    if (preview && btn) {
+    if (preview) {
         preview.style.display = 'none';
+        console.log('🗑️ Превью скрыто');
+    }
+    
+    // Показываем кнопку загрузки
+    const btn = document.getElementById('addAdPhotoBtn');
+    if (btn) {
         btn.style.display = 'block';
+        console.log('📷 Кнопка загрузки показана');
     }
     
     console.log('🗑️ Фото удалено из анкеты');
+}
+
+// Загрузить существующие фото на шаге 9
+async function loadMyPhotosForStep9() {
+    try {
+        console.log('📷 [loadMyPhotosForStep9] Загружаем фото из галереи...');
+        const userToken = localStorage.getItem('user_token');
+        
+        if (!userToken) {
+            console.log('❌ [loadMyPhotosForStep9] Токен не найден');
+            return;
+        }
+        
+        const response = await fetch(`/api/user-photos?userToken=${encodeURIComponent(userToken)}`);
+        const data = await response.json();
+        
+        if (data.error || !data.data || data.data.length === 0) {
+            console.log('ℹ️ [loadMyPhotosForStep9] Нет фото в галерее');
+            return;
+        }
+        
+        console.log(`✅ [loadMyPhotosForStep9] Загружено ${data.data.length} фото`);
+        
+        // Создаём контейнер для галереи
+        let galleryContainer = document.getElementById('step9PhotoGallery');
+        if (!galleryContainer) {
+            const step9 = document.getElementById('step9');
+            if (!step9) {
+                console.error('❌ step9 не найден');
+                return;
+            }
+            
+            // Вставляем галерею после заголовка
+            const h3 = step9.querySelector('h3');
+            if (h3) {
+                galleryContainer = document.createElement('div');
+                galleryContainer.id = 'step9PhotoGallery';
+                galleryContainer.style.cssText = 'display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; max-height: 200px; overflow-y: auto;';
+                h3.parentNode.insertBefore(galleryContainer, h3.nextSibling);
+            }
+        }
+        
+        if (!galleryContainer) return;
+        
+        // Очищаем галерею
+        galleryContainer.innerHTML = '';
+        
+        // Добавляем фото в галерею
+        data.data.forEach((photo, index) => {
+            const photoDiv = document.createElement('div');
+            photoDiv.style.cssText = 'position: relative; cursor: pointer; border: 2px solid transparent; border-radius: 8px; overflow: hidden; transition: all 0.2s;';
+            
+            const img = document.createElement('img');
+            img.src = photo.photo_url;
+            img.alt = `Photo ${index + 1}`;
+            img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; display: block;';
+            
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0); transition: all 0.2s; display: flex; align-items: center; justify-content: center;';
+            overlay.innerHTML = '<span style="color: white; font-size: 20px; text-shadow: 0 0 4px black;">✓</span>';
+            
+            photoDiv.appendChild(img);
+            photoDiv.appendChild(overlay);
+            
+            photoDiv.addEventListener('mouseover', () => {
+                photoDiv.style.borderColor = '#00ffff';
+                overlay.style.background = 'rgba(0,255,255,0.3)';
+            });
+            
+            photoDiv.addEventListener('mouseout', () => {
+                photoDiv.style.borderColor = 'transparent';
+                overlay.style.background = 'rgba(0,0,0,0)';
+            });
+            
+            photoDiv.addEventListener('click', () => {
+                console.log(`📸 [loadMyPhotosForStep9] Выбрано фото ${index + 1}`);
+                selectPhotoFromGallery(photo.photo_url, photo.id);
+            });
+            
+            galleryContainer.appendChild(photoDiv);
+        });
+        
+        console.log('✅ [loadMyPhotosForStep9] Галерея загружена');
+        
+    } catch (error) {
+        console.error('❌ [loadMyPhotosForStep9] Ошибка:', error);
+    }
+}
+
+// Выбрать фото из существующей галереи
+async function selectPhotoFromGallery(photoUrl, photoId) {
+    try {
+        console.log(`📸 [selectPhotoFromGallery] Выбираем фото ID ${photoId}`);
+        
+        // Сохраняем URL в formData
+        formData.adPhotoUrl = photoUrl;
+        formData.adPhotoFileId = `gallery_${photoId}`;
+        
+        // Показываем превью
+        const preview = document.getElementById('adPhotoPreview');
+        const img = document.getElementById('adPhotoImage');
+        const btn = document.getElementById('addAdPhotoBtn');
+        
+        if (preview && img) {
+            img.src = photoUrl;
+            preview.style.display = 'block';
+            console.log('✅ [selectPhotoFromGallery] Превью показано');
+        }
+        
+        if (btn) {
+            btn.style.display = 'none';
+        }
+        
+        console.log('✅ [selectPhotoFromGallery] Фото выбрано');
+        
+    } catch (error) {
+        console.error('❌ [selectPhotoFromGallery] Ошибка:', error);
+    }
 }
 
 // Добавить фото из галереи

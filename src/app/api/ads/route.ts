@@ -521,7 +521,12 @@ export async function POST(req: NextRequest) {
     // tg_id уже приведён к числу или NULL
     
     // Если есть фото - добавляем в INSERT, иначе пропускаем поле
-    const result = photoUrl 
+    let photoUrls: string[] | null = null;
+    if (photoUrl && typeof photoUrl === 'string') {
+      photoUrls = [photoUrl];
+    }
+    
+    const result = photoUrls 
       ? await sql`
           INSERT INTO ads (
             gender, target, goal, age_from, age_to, my_age, 
@@ -534,7 +539,7 @@ export async function POST(req: NextRequest) {
             ${parseOptionalInt(myAge)},
             ${bodyType || null}, ${orientation || null}, ${text}, ${finalNickname},
             ${country || 'Россия'}, ${region || ''}, ${city}, 
-            ${numericTgId}, ${finalUserToken}, ARRAY[${photoUrl}]::text[], CURRENT_TIMESTAMP
+            ${numericTgId}, ${finalUserToken}, ${photoUrls}, CURRENT_TIMESTAMP
           )
           RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text, photo_urls
         `
