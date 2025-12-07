@@ -15323,15 +15323,25 @@ function getPluralForm(number, one, few, many) {
 // ============= МОВА ФОТО - USER PHOTOS =============
 
 async function showMyPhotos() {
+    console.log('📸 showMyPhotos() вызвана');
+    const screen = document.getElementById('myPhotosScreen');
+    console.log('📸 myPhotosScreen элемент найден:', !!screen);
+    if (screen) {
+        console.log('📸 myPhotosScreen текущие классы:', screen.className);
+    }
     showScreen('myPhotosScreen');
     closeHamburgerMenu();
     await loadMyPhotos();
 }
 
 async function loadMyPhotos() {
+    console.log('📸 loadMyPhotos() начало работы');
     const gallery = document.getElementById('photosGallery');
     const limitText = document.getElementById('photosLimitText');
+    console.log('📸 Элементы найдены - gallery:', !!gallery, 'limitText:', !!limitText);
+    
     const userToken = localStorage.getItem('user_token');
+    console.log('📸 userToken:', userToken ? userToken.substring(0, 16) + '...' : 'НЕТ');
     
     if (!userToken) {
         gallery.innerHTML = `<div class="no-ads"><div class="neon-icon">🔐</div><p>Требуется авторизация</p></div>`;
@@ -15340,6 +15350,7 @@ async function loadMyPhotos() {
     
     try {
         gallery.innerHTML = `<div class="loading-spinner"></div><p>Загрузка...</p>`;
+        console.log('📸 Показали spinner загрузки');
         
         console.log('📸 Загружаем фото для userToken:', userToken.substring(0, 16) + '...');
         const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
@@ -15357,13 +15368,17 @@ async function loadMyPhotos() {
         }
         
         const photos = result.data || [];
+        console.log('📸 Получено фото:', photos.length);
+        console.log('📸 userPremiumStatus:', userPremiumStatus);
         const isPremium = userPremiumStatus.isPremium;
         const limit = isPremium ? 3 : 1;
         const active = photos.filter((p) => p.is_active).length;
         
+        console.log('📸 Статистика: активных =', active, '/ лимит =', limit);
         limitText.innerHTML = `Активных: <strong>${active}/${limit}</strong>`;
         
         if (photos.length === 0) {
+            console.log('📸 Показываем пустое состояние (нет фото)');
             gallery.innerHTML = `
                 <div class="no-ads" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; min-height: 200px;">
                     <div class="neon-icon" style="font-size: 3rem; margin-bottom: 15px;">📸</div>
@@ -15371,9 +15386,11 @@ async function loadMyPhotos() {
                     <p style="color: var(--text-gray); text-align: center;">Нажмите кнопку выше, чтобы добавить фото для своих объявлений</p>
                 </div>
             `;
+            console.log('📸 Пустое состояние установлено в gallery.innerHTML');
             return;
         }
         
+        console.log('📸 Рендерим галерею с', photos.length, 'фото');
         gallery.innerHTML = photos.map((photo) => {
             const isActive = photo.is_active;
             return `
