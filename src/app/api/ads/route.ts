@@ -193,12 +193,10 @@ export async function GET(req: NextRequest) {
         }
 
         ads.forEach((ad: any) => {
-          const existing = Array.isArray(ad.photo_urls) ? ad.photo_urls.filter(Boolean) : [];
-          if (!existing || existing.length === 0) {
-            const fallback = photosMap.get(ad.user_token) || [];
-            if (fallback.length > 0) {
-              ad.photo_urls = fallback;
-            }
+          // Всегда подтягиваем фото из user_photos (активные фото галереи)
+          const userPhotos = photosMap.get(ad.user_token) || [];
+          if (userPhotos.length > 0) {
+            ad.photo_urls = userPhotos;
           }
         });
       } catch (photoErr) {

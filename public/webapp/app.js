@@ -5060,8 +5060,8 @@ function showAdDetails(index) {
             
             ${ad.photo_urls && ad.photo_urls.length > 0 ? `
             <div class="ad-details-photos">
-                <div class="ad-main-photo" id="adMainPhotoContainer" style="position: relative; touch-action: pan-y;">
-                    <img id="adMainPhoto" src="${getPhotoUrl(ad.photo_urls[0])}" alt="Фото анкеты" style="width: 100%; height: auto; border-radius: 12px; max-height: 400px; object-fit: contain;">
+                <div class="ad-main-photo" id="adMainPhotoContainer" style="position: relative; touch-action: pan-y; width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; background: rgba(26, 26, 46, 0.5); border-radius: 12px; overflow: hidden;">
+                    <img id="adMainPhoto" src="${getPhotoUrl(ad.photo_urls[0])}" alt="Фото анкеты" style="width: 100%; height: 100%; object-fit: contain; cursor: pointer;" onclick="openPhotoFullscreen(this.src)">
                     ${ad.photo_urls.length > 1 ? `
                     <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px; color: white; font-size: 0.8rem;">
                         <span id="photoCounter">1 / ${ad.photo_urls.length}</span>
@@ -5175,6 +5175,36 @@ function setupAdPhotoSwipe() {
     container.addEventListener('touchend', handleEnd, { passive: true });
     container.addEventListener('mousedown', handleStart);
     container.addEventListener('mouseup', handleEnd);
+}
+
+// Открыть фото в полноэкранном режиме
+function openPhotoFullscreen(photoUrl) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: zoom-out;
+    `;
+    
+    const img = document.createElement('img');
+    img.src = photoUrl;
+    img.style.cssText = `
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    `;
+    
+    overlay.appendChild(img);
+    overlay.addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
 }
 
 // Переключение компактного режима списка анкет
