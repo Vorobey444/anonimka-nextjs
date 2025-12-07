@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Anonimka - Чат</title>
+    <link rel="stylesheet" href="/webapp-v2/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="app-container chat-page">
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='/webapp-v2/chats.html'">← Назад</button>
+            <div class="logo">
+                <div class="neon-icon small">
+                    <img src="/webapp-v2/logo.png" alt="Anonimka Logo" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 12px rgba(236,72,153,0.6);">
+                </div>
+                <h1 id="chatTitle" style="font-size: 1rem;">Чат</h1>
+            </div>
+        </div>
+
+        <div id="messages" class="chat-messages">
+            <div class="empty-state">Загрузка...</div>
+        </div>
+
+        <form id="messageForm" class="chat-input" onsubmit="sendMessage(event)">
+            <input type="text" id="messageInput" class="neon-input" placeholder="Введите сообщение..." autocomplete="off" required>
+            <button type="submit" class="neon-button primary" id="sendBtn">➤</button>
+        </form>
+    </div>
+
+    <script src="/webapp-v2/js/common.js"></script>
+    <script src="/webapp-v2/js/chat.js"></script>
+</body>
+</html>

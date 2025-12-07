@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Anonimka - Анкета</title>
+    <link rel="stylesheet" href="/webapp-v2/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="premium-toggle" id="premiumToggle">
+        <button class="premium-btn active free" id="freeBtn">FREE</button>
+        <button class="premium-btn" id="proBtn" title="Доступно через приглашение друга">PRO</button>
+    </div>
+
+    <div class="app-container">
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='/webapp-v2/my-ads.html'">← Назад</button>
+            <div class="logo">
+                <div class="neon-icon">
+                    <img src="/webapp-v2/logo.png" alt="Anonimka Logo" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 16px rgba(236,72,153,0.6);">
+                </div>
+                <h1 style="font-size: 1.1rem;">Анкета</h1>
+            </div>
+        </div>
+
+        <form id="adForm" class="form-card" onsubmit="saveAd(event)">
+            <div class="form-group">
+                <label>Никнейм *</label>
+                <input type="text" id="nickname" class="neon-input" placeholder="Ваш ник" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Пол *</label>
+                    <select id="gender" class="neon-input" required>
+                        <option value="">Выберите</option>
+                        <option value="female">Девушка</option>
+                        <option value="male">Парень</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Возраст *</label>
+                    <input type="number" id="age" class="neon-input" placeholder="18" min="18" max="80" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Город *</label>
+                <input type="text" id="city" class="neon-input" placeholder="Алматы" required>
+            </div>
+
+            <div class="form-group">
+                <label>О себе *</label>
+                <textarea id="about" class="neon-textarea" rows="4" placeholder="Коротко о себе" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Интересы (через запятую)</label>
+                <input type="text" id="interests" class="neon-input" placeholder="спорт, музыка, кино">
+            </div>
+
+            <div class="form-group">
+                <label>Кого ищу</label>
+                <input type="text" id="lookingFor" class="neon-input" placeholder="Например: общение / отношения / дружба">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="neon-button primary" id="saveBtn">💾 Сохранить</button>
+                <button type="button" class="neon-button secondary" onclick="window.location.href='/webapp-v2/my-ads.html'">Отмена</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="hamburgerMenuOverlay" class="hamburger-overlay" onclick="toggleHamburgerMenu()"></div>
+    <div id="hamburgerMenu" class="hamburger-menu-container">
+        <div class="hamburger-menu-header">
+            <h2>Меню</h2>
+            <button class="close-hamburger" onclick="toggleHamburgerMenu()">×</button>
+        </div>
+        <div class="hamburger-menu-content">
+            <button class="hamburger-menu-item" onclick="window.location.href='/webapp-v2/profile.html'">
+                <span class="icon">👤</span>
+                <span>Профиль и настройки</span>
+            </button>
+            <button class="hamburger-menu-item" onclick="window.location.href='/webapp-v2/index.html'">
+                <span class="icon">🏠</span>
+                <span>Главное меню</span>
+            </button>
+            <button class="hamburger-menu-item" onclick="logout()">
+                <span class="icon">🚪</span>
+                <span>Выйти</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="/webapp-v2/js/common.js"></script>
+    <script src="/webapp-v2/js/create-ad.js"></script>
+</body>
+</html>

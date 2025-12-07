@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Anonimka - Главное меню</title>
+    <link rel="stylesheet" href="/webapp-v2/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <!-- Переключатель Premium -->
+    <div class="premium-toggle" id="premiumToggle">
+        <button class="premium-btn active free" id="freeBtn">FREE</button>
+        <button class="premium-btn" id="proBtn" title="Доступно через приглашение друга">PRO</button>
+    </div>
+
+    <div class="app-container">
+        <!-- Главное меню -->
+        <div id="mainMenu" class="screen active">
+            <div class="header">
+                <button class="hamburger-menu" onclick="toggleHamburgerMenu()">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+                <div class="logo">
+                    <div class="neon-icon">
+                        <img src="/webapp-v2/logo.png" alt="Anonimka Logo" 
+                             style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; 
+                                    box-shadow: 0 0 20px rgba(236, 72, 153, 0.6);">
+                    </div>
+                    <h1 style="line-height: 1.2; font-size: 1.4rem;">
+                        Anonimka<br>
+                        <span style="font-size: 0.7em;">Анонимное общение</span>
+                    </h1>
+                    <div class="user-location" onclick="changeLocation()">
+                        <span class="location-info" id="userLocationDisplay">Загрузка...</span>
+                    </div>
+                    <!-- Счетчик посещений (только для админов) -->
+                    <div class="site-stats" id="adminStats" style="display: none;">
+                        <span class="stat-item">
+                            <span class="stat-icon">👥</span>
+                            <span class="stat-value" id="totalVisits">...</span>
+                        </span>
+                        <span class="stat-divider">•</span>
+                        <span class="stat-item">
+                            <span class="stat-icon">🔥</span>
+                            <span class="stat-value" id="onlineNow">...</span>
+                        </span>
+                        <span class="stat-divider">•</span>
+                        <span class="stat-item">
+                            <span class="stat-icon">📢</span>
+                            <span class="stat-value" id="totalAds">...</span>
+                        </span>
+                        <span class="stat-divider">•</span>
+                        <span class="stat-item">
+                            <span class="stat-icon">🚫</span>
+                            <span class="stat-value" id="blockedUsersCount">...</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="menu-buttons">
+                <div style="position: relative; display: inline-block; width: 100%;">
+                    <button class="neon-button primary" onclick="goToCreateAd()" id="createAdBtn" style="width: 100%;">
+                        <span class="icon">📝</span>
+                        Создать анкету
+                    </button>
+                    <span id="adLimitBadge" class="limit-badge" style="display: none;"></span>
+                </div>
+                <button class="neon-button" onclick="goToBrowse()">
+                    <span class="icon">👁️</span>
+                    Смотреть анкеты
+                </button>
+                <button class="neon-button chat-button" onclick="goToMyAds()">
+                    <span class="icon">📋</span>
+                    Мои анкеты
+                </button>
+                <div style="position: relative; display: inline-block; width: 100%;">
+                    <button class="neon-button chat-button" onclick="goToChats()" style="width: 100%;">
+                        <span class="icon">💬</span>
+                        Мои чаты
+                    </button>
+                    <span id="chatBadge" class="chat-badge" style="display: none;"></span>
+                </div>
+                <button class="neon-button world-chat-button" onclick="goToWorldChat()" style="width: 100%;">
+                    <span class="icon">🌍</span>
+                    <div class="world-chat-content">
+                        <div class="world-chat-title">Мир чат</div>
+                        <div id="worldChatPreview" class="world-chat-preview">Загрузка...</div>
+                    </div>
+                </button>
+                
+                <button class="neon-button" onclick="goToPolls()" style="width: 100%;">
+                    <span class="icon">📊</span>
+                    Опросы
+                </button>
+                
+                <button id="referralMainButton" class="neon-button referral-button" onclick="showReferralModal()" style="display: none;">
+                    <span class="icon pulse-icon">🎁</span>
+                    Пригласи друга - месяц PRO!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hamburger Menu -->
+    <div id="hamburgerMenuOverlay" class="hamburger-overlay" onclick="toggleHamburgerMenu()"></div>
+    <div id="hamburgerMenu" class="hamburger-menu-container">
+        <div class="hamburger-menu-header">
+            <h2>Меню</h2>
+            <button class="close-hamburger" onclick="toggleHamburgerMenu()">×</button>
+        </div>
+        <div class="hamburger-menu-content">
+            <button class="hamburger-menu-item" onclick="goToProfile()">
+                <span class="icon">👤</span>
+                <span>Профиль и настройки</span>
+            </button>
+            <button class="hamburger-menu-item" onclick="showContacts()">
+                <span class="icon">📞</span>
+                <span>Контакты</span>
+            </button>
+            <button class="hamburger-menu-item" onclick="showAbout()">
+                <span class="icon">ℹ️</span>
+                <span>О приложении</span>
+            </button>
+            <button class="hamburger-menu-item" onclick="logout()">
+                <span class="icon">🚪</span>
+                <span>Выйти</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно реферальной программы -->
+    <div id="referralModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeReferralModal()">&times;</span>
+            <h2 class="modal-title">🎁 Пригласи друга</h2>
+            <p class="modal-description">Пригласи друга и получи <strong>1 месяц PRO</strong> бесплатно!</p>
+            
+            <div class="referral-link-container">
+                <input type="text" id="referralLinkInput" class="referral-link-input" readonly>
+                <button class="copy-button" onclick="copyReferralLink()">📋 Копировать</button>
+            </div>
+            
+            <div class="referral-stats" id="referralStats" style="display: none;">
+                <p>Приглашено: <strong id="referredCount">0</strong></p>
+                <p>Premium до: <strong id="premiumUntil">-</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/webapp-v2/js/common.js"></script>
+    <script src="/webapp-v2/js/index.js"></script>
+</body>
+</html>
