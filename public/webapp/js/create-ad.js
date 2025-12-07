@@ -1,4 +1,4 @@
-// ============= СОЗДАНИЕ / РЕДАКТИРОВАНИЕ АНКЕТЫ =============
+﻿// ============= РЎРћР—Р”РђРќРР• / Р Р•Р”РђРљРўРР РћР’РђРќРР• РђРќРљР•РўР« =============
 
 let adId = null;
 
@@ -12,15 +12,15 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadAd(id) {
-    setSavingState(true, 'Загрузка...');
+    setSavingState(true, 'Р—Р°РіСЂСѓР·РєР°...');
     try {
         const data = await apiRequest(`/api/ads/${id}`);
-        if (!data || !data.ad) throw new Error('Анкета не найдена');
+        if (!data || !data.ad) throw new Error('РђРЅРєРµС‚Р° РЅРµ РЅР°Р№РґРµРЅР°');
         fillForm(data.ad);
     } catch (error) {
-        console.error('Ошибка загрузки анкеты:', error);
-        alert('Не удалось загрузить анкету');
-        window.location.href = '/webapp-v2/my-ads.html';
+        console.error('РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р°РЅРєРµС‚С‹:', error);
+        alert('РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ Р°РЅРєРµС‚Сѓ');
+        window.location.href = '/webapp/my-ads.html';
     } finally {
         setSavingState(false);
     }
@@ -38,11 +38,11 @@ function fillForm(ad) {
 
 async function saveAd(event) {
     event.preventDefault();
-    setSavingState(true, 'Сохранение...');
+    setSavingState(true, 'РЎРѕС…СЂР°РЅРµРЅРёРµ...');
 
     try {
         const userId = getUserId();
-        if (!userId) throw new Error('Нет авторизации');
+        if (!userId) throw new Error('РќРµС‚ Р°РІС‚РѕСЂРёР·Р°С†РёРё');
 
         const payload = collectForm();
         payload.tgId = userId;
@@ -59,11 +59,11 @@ async function saveAd(event) {
             });
         }
 
-        alert('✅ Анкета сохранена');
-        window.location.href = '/webapp-v2/my-ads.html';
+        alert('вњ… РђРЅРєРµС‚Р° СЃРѕС…СЂР°РЅРµРЅР°');
+        window.location.href = '/webapp/my-ads.html';
     } catch (error) {
-        console.error('Ошибка сохранения анкеты:', error);
-        alert('Не удалось сохранить анкету');
+        console.error('РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ Р°РЅРєРµС‚С‹:', error);
+        alert('РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ Р°РЅРєРµС‚Сѓ');
     } finally {
         setSavingState(false);
     }
@@ -84,12 +84,13 @@ function collectForm() {
     };
 }
 
-function setSavingState(isSaving, text = 'Сохранение...') {
+function setSavingState(isSaving, text = 'РЎРѕС…СЂР°РЅРµРЅРёРµ...') {
     const btn = document.getElementById('saveBtn');
     if (!btn) return;
     btn.disabled = isSaving;
-    btn.textContent = isSaving ? text : '💾 Сохранить';
+    btn.textContent = isSaving ? text : 'рџ’ѕ РЎРѕС…СЂР°РЅРёС‚СЊ';
 }
 
-// Экспорт
+// Р­РєСЃРїРѕСЂС‚
 window.saveAd = saveAd;
+

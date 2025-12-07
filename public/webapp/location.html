@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Anonimka - Р›РѕРєР°С†РёСЏ</title>
+    <link rel="stylesheet" href="/webapp/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="premium-toggle" id="premiumToggle">
+        <button class="premium-btn active free" id="freeBtn">FREE</button>
+        <button class="premium-btn" id="proBtn" title="Р”РѕСЃС‚СѓРїРЅРѕ С‡РµСЂРµР· РїСЂРёРіР»Р°С€РµРЅРёРµ РґСЂСѓРіР°">PRO</button>
+    </div>
+
+    <div class="app-container">
+        <div class="header">
+            <button class="back-btn" onclick="window.history.back()">в†ђ РќР°Р·Р°Рґ</button>
+            <div class="logo">
+                <div class="neon-icon">
+                    <img src="/webapp/logo.png" alt="Anonimka Logo" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 16px rgba(236,72,153,0.6);">
+                </div>
+                <h1 style="font-size: 1.1rem;">Р›РѕРєР°С†РёСЏ</h1>
+            </div>
+        </div>
+
+        <form id="locationForm" class="form-card" onsubmit="saveLocation(event)">
+            <div class="form-group">
+                <label>РЎС‚СЂР°РЅР°</label>
+                <select id="country" class="neon-input" required>
+                    <option value="kazakhstan">рџ‡°рџ‡ї РљР°Р·Р°С…СЃС‚Р°РЅ</option>
+                    <option value="russia">рџ‡·рџ‡є Р РѕСЃСЃРёСЏ</option>
+                    <option value="belarus">рџ‡§рџ‡ѕ Р‘РµР»Р°СЂСѓСЃСЊ</option>
+                    <option value="kyrgyzstan">рџ‡°рџ‡¬ РљС‹СЂРіС‹Р·СЃС‚Р°РЅ</option>
+                    <option value="uzbekistan">рџ‡єрџ‡ї РЈР·Р±РµРєРёСЃС‚Р°РЅ</option>
+                    <option value="armenia">рџ‡¦рџ‡І РђСЂРјРµРЅРёСЏ</option>
+                    <option value="azerbaijan">рџ‡¦рџ‡ї РђР·РµСЂР±Р°Р№РґР¶Р°РЅ</option>
+                    <option value="moldova">рџ‡Ірџ‡© РњРѕР»РґРѕРІР°</option>
+                    <option value="georgia">рџ‡¬рџ‡Є Р“СЂСѓР·РёСЏ</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Р РµРіРёРѕРЅ / РѕР±Р»Р°СЃС‚СЊ</label>
+                <input type="text" id="region" class="neon-input" placeholder="РќР°РїСЂРёРјРµСЂ: РђР»РјР°С‚РёРЅСЃРєР°СЏ РѕР±Р»Р°СЃС‚СЊ" required>
+            </div>
+            <div class="form-group">
+                <label>Р“РѕСЂРѕРґ</label>
+                <input type="text" id="city" class="neon-input" placeholder="РђР»РјР°С‚С‹" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="neon-button primary" id="saveLocationBtn">рџ’ѕ РЎРѕС…СЂР°РЅРёС‚СЊ</button>
+                <button type="button" class="neon-button secondary" onclick="resetLocation()">РЎР±СЂРѕСЃРёС‚СЊ</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="/webapp/js/common.js"></script>
+    <script src="/webapp/js/location.js"></script>
+</body>
+</html>
+

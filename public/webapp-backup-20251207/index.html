@@ -1,0 +1,2207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Anonimka.KZ - Анонимное общение</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/webapp/style.css?v=5.6">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-widget.js?22"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase scripts removed (deprecated). All data flows via our Next.js API. -->
+    <script src="/webapp/local-chat-storage.js?v=1.0"></script>
+    <!-- Скрываем модальное окно авторизации при загрузке страницы (без !important, чтобы JS мог показать) -->
+    <style>
+        #telegramAuthModal, #emailAuthModal {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Переключатель Premium (показывается на всех страницах) -->
+    <div class="premium-toggle" id="premiumToggle">
+    <button class="premium-btn active free" id="freeBtn" onclick="showPremiumModal()">FREE</button>
+    <button class="premium-btn" id="proBtn" onclick="showPremiumModal()" title="Доступно через приглашение друга">PRO</button>
+    </div>
+
+    <div class="app-container">
+        <!-- Экран выбора способа определения локации -->
+        <div id="locationChoice" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <div class="logo">
+                    <div class="neon-icon">🌍</div>
+                    <h1>Выберите способ</h1>
+                    <p>Как определить вашу локацию?</p>
+                </div>
+            </div>
+            
+            <div class="location-choice-container">
+                <button class="location-choice-btn auto" onclick="showAutoLocationDetection()">
+                    <div class="choice-icon">📍</div>
+                    <h3>Определить автоматически</h3>
+                    <p>Мы определим ваше местоположение по IP-адресу</p>
+                </button>
+                
+                <button class="location-choice-btn manual" onclick="showManualLocationSetup()">
+                    <div class="choice-icon">🎯</div>
+                    <h3>Выбрать вручную</h3>
+                    <p>Вы сами укажете страну, регион и город</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Автоматическое определение локации -->
+        <div id="autoLocationDetection" class="screen">
+            <div class="header">
+                <div class="logo">
+                    <div class="neon-icon pulse">🌍</div>
+                    <h1>Определяем местоположение</h1>
+                    <p>Пожалуйста, подождите...</p>
+                </div>
+            </div>
+            
+            <div class="auto-location-container">
+                <div class="detection-animation">
+                    <div class="radar-container">
+                        <div class="radar-circle"></div>
+                        <div class="radar-circle delay-1"></div>
+                        <div class="radar-circle delay-2"></div>
+                        <div class="radar-ping">📍</div>
+                    </div>
+                    <p class="detection-text">Анализируем ваш IP-адрес...</p>
+                </div>
+                
+                <div class="detection-result" style="display: none;">
+                    <!-- Результат будет вставлен через JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Выбор локации при первом запуске -->
+        <div id="locationSetup" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()" style="display: none;" id="locationBackBtn">← Назад</button>
+                <div class="logo">
+                    <div class="neon-icon">🌍</div>
+                    <h1>Выберите вашу страну</h1>
+                    <p>Это поможет находить людей рядом</p>
+                </div>
+            </div>
+            
+            <div class="location-setup-container">
+                <!-- Кнопка автоопределения -->
+                <div class="auto-location-section">
+                    <button class="neon-button primary full-width" onclick="autoDetectLocation()">
+                        📍 Определить автоматически
+                    </button>
+                    <p class="or-divider">или выберите вручную</p>
+                </div>
+
+                <!-- Выбор страны -->
+                <div class="setup-country-selection">
+                    <h3>Страна</h3>
+                    <div class="country-buttons">
+                        <button type="button" class="country-btn setup-country" data-country="russia">
+                            <span class="country-code">RU</span>
+                            <span class="flag">🇷🇺</span>
+                            Россия
+                        </button>
+                        <button type="button" class="country-btn setup-country" data-country="kazakhstan">
+                            <span class="country-code">KZ</span>
+                            <span class="flag">🇰🇿</span>
+                            Казахстан
+                        </button>
+                        <button type="button" class="country-btn setup-country" data-country="belarus">
+                            <span class="country-code">BY</span>
+                            <span class="flag">🇧🇾</span>
+                            Беларусь
+                        </button>
+                        <button type="button" class="country-btn setup-country" data-country="ukraine">
+                            <span class="country-code">UA</span>
+                            <span class="flag">🇺🇦</span>
+                            Украина
+                        </button>
+                        <button type="button" class="country-btn setup-country" data-country="kyrgyzstan">
+                            <span class="country-code">KG</span>
+                            <span class="flag">🇰🇬</span>
+                            Кыргызстан
+                        </button>
+                        <button type="button" class="country-btn setup-country" data-country="tajikistan">
+                            <span class="country-code">TJ</span>
+                            <span class="flag">🇹🇯</span>
+                            Таджикистан
+                        </button>
+                        <button type="button" class="country-btn setup-country" data-country="uzbekistan">
+                            <span class="country-code">UZ</span>
+                            <span class="flag">🇺🇿</span>
+                            Узбекистан
+                        </button>
+                        <button type="button" class="country-btn setup-country" data-country="armenia">
+                            <span class="country-code">AM</span>
+                            <span class="flag">🇦🇲</span>
+                            Армения
+                        </button>
+                        <button type="button" class="country-btn setup-country" data-country="azerbaijan">
+                            <span class="country-code">AZ</span>
+                            <span class="flag">🇦🇿</span>
+                            Азербайджан
+                        </button>
+                        <button type="button" class="country-btn setup-country" data-country="moldova">
+                            <span class="country-code">MD</span>
+                            <span class="flag">🇲🇩</span>
+                            Молдова
+                        </button>
+                        <button type="button" class="country-btn setup-country" data-country="georgia">
+                            <span class="country-code">GE</span>
+                            <span class="flag">🇬🇪</span>
+                            Грузия
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Выбор города -->
+                <div class="setup-city-selection" style="display: none;">
+                    <h3>Город</h3>
+                    <div class="search-container">
+                        <input type="text" class="setup-city-input" placeholder="Введите название города...">
+                        <div class="suggestions-list setup-city-suggestions"></div>
+                    </div>
+                </div>
+
+                <!-- Отображение выбранной локации -->
+                <div class="setup-selected-location" style="display: none;">
+                    <div class="location-display">
+                        <span class="setup-location-text"></span>
+                        <button type="button" class="reset-setup-location">🔄 Изменить</button>
+                    </div>
+                    <button class="neon-button primary full-width" onclick="saveLocationAndContinue()">
+                        ✅ Подтвердить и продолжить
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Главное меню -->
+        <div id="mainMenu" class="screen">
+            <div class="header">
+                <button class="hamburger-menu" onclick="toggleHamburgerMenu()">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+                <div class="logo">
+                    <div class="neon-icon">
+                        <img src="/webapp/logo.png" alt="Anonimka Logo" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 20px rgba(236, 72, 153, 0.6);">
+                    </div>
+                    <h1 style="line-height: 1.2; font-size: 1.4rem;">Anonimka<br><span style="font-size: 0.7em;">Анонимное общение</span></h1>
+                    <div class="user-location" onclick="showScreen('locationSetup')">
+                        <span class="location-info" id="userLocationDisplay"></span>
+                    </div>
+                    <!-- Счетчик посещений (только для админов) -->
+                    <div class="site-stats" id="adminStats" style="display: none;">
+                        <span class="stat-item">
+                            <span class="stat-icon">👥</span>
+                            <span class="stat-value" id="totalVisits">...</span>
+                        </span>
+                        <span class="stat-divider">•</span>
+                        <span class="stat-item">
+                            <span class="stat-icon">🔥</span>
+                            <span class="stat-value" id="onlineNow">...</span>
+                        </span>
+                        <span class="stat-divider">•</span>
+                        <span class="stat-item">
+                            <span class="stat-icon">📢</span>
+                            <span class="stat-value" id="totalAds">...</span>
+                        </span>
+                        <span class="stat-divider">•</span>
+                        <span class="stat-item">
+                            <span class="stat-icon">🚫</span>
+                            <span class="stat-value" id="blockedUsersCount">...</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="menu-buttons">
+                <div style="position: relative; display: inline-block; width: 100%;">
+                    <button class="neon-button primary" onclick="showCreateAd()" id="createAdBtn" style="width: 100%;">
+                        <span class="icon">📝</span>
+                        Создать анкету
+                    </button>
+                    <span id="adLimitBadge" class="limit-badge" style="display: none;"></span>
+                </div>
+                <button class="neon-button" onclick="showBrowseAds()">
+                    <span class="icon">👁️</span>
+                    Смотреть анкеты
+                </button>
+                <button class="neon-button chat-button" onclick="showMyAds()">
+                    <span class="icon">📋</span>
+                    Мои анкеты
+                </button>
+                <div style="position: relative; display: inline-block; width: 100%;">
+                    <button class="neon-button chat-button" onclick="showMyChats()" style="width: 100%;">
+                        <span class="icon">💬</span>
+                        Мои чаты
+                    </button>
+                    <span id="chatBadge" class="chat-badge" style="display: none;"></span>
+                </div>
+                <button class="neon-button world-chat-button" onclick="showWorldChat()" style="width: 100%;">
+                    <span class="icon">🌍</span>
+                    <div class="world-chat-content">
+                        <div class="world-chat-title">Мир чат</div>
+                        <div id="worldChatPreview" class="world-chat-preview">Загрузка...</div>
+                    </div>
+                </button>
+                
+                <button class="neon-button" onclick="showPolls()" style="width: 100%;">
+                    <span class="icon">📊</span>
+                    Опросы
+                </button>
+                
+                <button id="referralMainButton" class="neon-button referral-button" onclick="showReferralModal()" style="display: none;">
+                    <span class="icon pulse-icon">🎁</span>
+                    Пригласи друга - месяц PRO!
+                </button>
+                
+                <!-- Sticky Note Beta Notice (временно скрыт) -->
+                <div class="sticky-note" onclick="showContacts()" style="display: none;">
+                    <div class="sticky-note-tape"></div>
+                    <div class="sticky-note-content">
+                        <p class="sticky-note-text">🐛 Нашёл баг, ошибку или есть предложения?!</p>
+                        <p class="sticky-note-link">Напиши нам! →</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Onboarding экран -->
+        <div id="onboardingScreen" class="screen onboarding-screen">
+            <div class="onboarding-content">
+                <div class="onboarding-logo-compact">
+                    <img src="/webapp/logo.png" alt="Anonimka Logo" class="onboarding-logo-img">
+                </div>
+                
+                <h1 class="onboarding-title-compact">Добро пожаловать!</h1>
+                <p class="onboarding-subtitle-compact">Анонимный чат без фильтров</p>
+                
+                <div class="onboarding-card-compact">
+                    <!-- Шаг 1: Никнейм -->
+                    <div class="onboarding-step-compact">
+                        <div class="step-number">1</div>
+                        <h3>Придумайте никнейм</h3>
+                        <p class="step-description-compact">Это ваше уникальное имя в приложении</p>
+                        
+                        <div class="nickname-input-group">
+                            <input type="text" 
+                                   id="onboardingNicknameInput" 
+                                   class="onboarding-input" 
+                                   placeholder="Введите уникальный Ник" 
+                                   maxlength="30">
+                            <div id="nicknameStatus" class="nickname-status"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Шаг 2: Согласие -->
+                    <div class="onboarding-step-compact">
+                        <div class="step-number">2</div>
+                        <h3>Примите условия</h3>
+                        
+                        <label class="onboarding-checkbox">
+                            <input type="checkbox" id="agreeTerms">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">
+                                Согласен с <a href="#" onclick="showRulesModal(); return false;">правилами</a> 
+                                и <a href="#" onclick="showPrivacyModal(); return false;">политикой</a>
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <button id="onboardingContinue" class="onboarding-button" onclick="completeOnboarding()">
+                        ⏳ Сохраняем...
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Гамбургер меню -->
+        <div id="hamburgerMenuOverlay" class="hamburger-overlay">
+            <div class="hamburger-menu-content">
+                <div class="hamburger-header">
+                    <h2>Меню</h2>
+                    <button class="hamburger-close" onclick="closeHamburgerMenu()">×</button>
+                </div>
+                <nav class="hamburger-nav">
+                    <a href="#" class="hamburger-item active" onclick="goToHome(); return false;">
+                        <span class="hamburger-icon">🏠</span>
+                        Главная
+                    </a>
+                    <a href="#" class="hamburger-item" onclick="showMyPhotos(); return false;">
+                        <span class="hamburger-icon">📸</span>
+                        Мои фото
+                    </a>
+                    <a href="#" class="hamburger-item" onclick="showNicknameEditor(); return false;">
+                        <span class="hamburger-icon">✏️</span>
+                        Изменить никнейм
+                    </a>
+                    <a href="#" class="hamburger-item" onclick="showLocationChoiceScreen(); return false;">
+                        <span class="hamburger-icon">📍</span>
+                        Сменить город
+                    </a>
+                    <a href="#" class="hamburger-item" onclick="showBlockedUsers(); return false;">
+                        <span class="hamburger-icon">🚫</span>
+                        Мои заблокированные
+                    </a>
+                    <a href="#" class="hamburger-item" id="adminMenuItem" style="display: none;" onclick="showAdminPanel(); return false;">
+                        <span class="hamburger-icon">🛠️</span>
+                        Админ-панель
+                    </a>
+                    <a href="#" class="hamburger-item" onclick="showContacts(); return false;">
+                        <span class="hamburger-icon">📞</span>
+                        Тех.поддержка
+                    </a>
+                    <a href="#" class="hamburger-item" onclick="showRules(); return false;">
+                        <span class="hamburger-icon">📋</span>
+                        Правила использования
+                    </a>
+                    <a href="#" class="hamburger-item" onclick="showPrivacy(); return false;">
+                        <span class="hamburger-icon">🔒</span>
+                        Политика конфиденциальности
+                    </a>
+                    <a href="#" class="hamburger-item" onclick="showAbout(); return false;">
+                        <span class="hamburger-icon">ℹ️</span>
+                        О приложении
+                    </a>
+                    <!-- Скрыть для Android -->
+                    <a href="#" class="hamburger-item non-android-only" id="installAppBtn" onclick="promptInstallApp(); return false;">
+                        <span class="hamburger-icon">📲</span>
+                        Установить на рабочий стол
+                    </a>
+                    <a href="#" class="hamburger-item non-android-only" onclick="showAffiliateInfo(); return false;">
+                        <span class="hamburger-icon">💰</span>
+                        Хотите заработать?
+                    </a>
+                    <a href="#" class="hamburger-item logout-item" id="logoutBtn" onclick="handleLogout()" style="display: none;">
+                        <span class="hamburger-icon">🚪</span>
+                        Выйти из аккаунта
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Тех.поддержка -->
+        <div id="contacts" class="screen info-screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>Тех.поддержка</h2>
+            </div>
+            <div class="info-content">
+                <div class="contact-item" onclick="showEmailForm()">
+                    <span class="contact-icon">📧</span>
+                    <div class="contact-details">
+                        <h3>Написать письмо</h3>
+                        <p>aleksey@vorobey444.ru</p>
+                        <span class="contact-action">Нажмите для отправки письма</span>
+                    </div>
+                </div>
+                <div class="contact-item" onclick="openTelegramChat()">
+                    <span class="contact-icon">💬</span>
+                    <div class="contact-details">
+                        <h3>Telegram</h3>
+                        <p>@Vorobey_444</p>
+                        <span class="contact-action">Нажмите для открытия чата</span>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">⏰</span>
+                    <div class="contact-details">
+                        <h3>Время работы</h3>
+                        <p>С 9:00 до 21:00 по МСК<br>С 11:00 до 23:00 по Алматы</p>
+                    </div>
+                </div>
+                
+                <!-- Юридические документы -->
+                <div class="legal-links" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255, 0, 110, 0.2);">
+                    <h3 style="font-size: 0.9rem; color: var(--text-gray); margin-bottom: 1rem;">Юридическая информация</h3>
+                    <a href="/TERMS_OF_SERVICE.md" target="_blank" class="legal-link">
+                        📄 Пользовательское соглашение
+                    </a>
+                    <a href="/PRIVACY_POLICY.md" target="_blank" class="legal-link">
+                        🔒 Политика конфиденциальности
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Партнерская программа -->
+        <div id="affiliateInfo" class="screen info-screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>💰 Заработай на партнерской программе</h2>
+            </div>
+            <div class="info-content" style="padding: 2rem 1.5rem;">
+                <!-- 1. Партнерская программа -->
+                <div style="background: linear-gradient(135deg, rgba(255,0,110,0.1), rgba(110,0,255,0.1)); border: 2px solid var(--neon-pink); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                    <h3 style="color: var(--neon-pink); margin-bottom: 1rem; font-size: 1.3rem;">🚀 Партнерская программа Anonimka.KZ</h3>
+                    <p style="font-size: 1.1rem; line-height: 1.6; color: var(--text-primary); margin-bottom: 0.5rem;">
+                        Получай <strong style="color: var(--neon-cyan);">30% комиссии в Stars</strong> с каждой покупки PRO друзьями!
+                    </p>
+                    <p style="color: var(--text-gray); font-size: 0.95rem;">
+                        ⏰ Действует <strong>1 год</strong> с момента подключения
+                    </p>
+                </div>
+
+                <!-- 2. Как подключиться -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--neon-cyan); margin-bottom: 1rem; font-size: 1.2rem;">📋 Как подключиться:</h3>
+                    <div style="background: rgba(0,0,0,0.3); border-left: 3px solid var(--neon-cyan); padding: 1rem; border-radius: 8px;">
+                        <p style="margin-bottom: 0.7rem; line-height: 1.6; color: var(--text-primary); font-size: 1.05rem;">
+                            <strong style="color: var(--neon-pink);">1.</strong> Нажмите на <strong style="color: var(--neon-cyan);">название бота вверху</strong> этого окна
+                        </p>
+                        <p style="margin-bottom: 0.7rem; line-height: 1.6; color: var(--text-primary); font-size: 1.05rem;">
+                            <strong style="color: var(--neon-pink);">2.</strong> Там будет кнопка <strong style="color: var(--neon-cyan);">«Партнерская программа 30%»</strong>
+                        </p>
+                        <p style="margin-bottom: 0.7rem; line-height: 1.6; color: var(--text-primary); font-size: 1.05rem;">
+                            <strong style="color: var(--neon-pink);">3.</strong> Нажмите на нее
+                        </p>
+                        <p style="margin-bottom: 0.7rem; line-height: 1.6; color: var(--text-primary); font-size: 1.05rem;">
+                            <strong style="color: var(--neon-pink);">4.</strong> Нажмите синюю кнопку <strong style="color: var(--neon-cyan);">«Участвовать»</strong>
+                        </p>
+                        <p style="line-height: 1.6; color: var(--text-primary); font-size: 1.05rem;">
+                            <strong style="color: var(--neon-pink);">5.</strong> Появится реферальная ссылка для Вашего заработка! 🎉
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 3. Примеры заработка -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--neon-cyan); margin-bottom: 1rem; font-size: 1.2rem;">💡 Примеры заработка:</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 0.8rem; margin-bottom: 0.5rem; background: rgba(110,0,255,0.1); border-radius: 8px; border-left: 3px solid var(--neon-purple);">
+                            1 друг купил PRO (50 Stars) → Вы получили <strong style="color: var(--neon-pink);">15 Stars</strong>
+                        </li>
+                        <li style="padding: 0.8rem; margin-bottom: 0.5rem; background: rgba(110,0,255,0.1); border-radius: 8px; border-left: 3px solid var(--neon-purple);">
+                            10 друзей (500 Stars) → Вы получили <strong style="color: var(--neon-pink);">150 Stars ≈ $3</strong>
+                        </li>
+                        <li style="padding: 0.8rem; background: rgba(110,0,255,0.1); border-radius: 8px; border-left: 3px solid var(--neon-purple);">
+                            100 друзей (5000 Stars) → Вы получили <strong style="color: var(--neon-pink);">1500 Stars ≈ $30</strong>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 4. Что такое Stars -->
+                <div style="margin-bottom: 2rem; background: rgba(255,215,0,0.05); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; padding: 1.5rem;">
+                    <h3 style="color: #FFD700; margin-bottom: 1rem; font-size: 1.2rem;">⭐ Что такое Telegram Stars?</h3>
+                    <p style="font-size: 1rem; line-height: 1.6; color: var(--text-primary);">
+                        Это внутренняя валюта Telegram
+                    </p>
+                </div>
+
+                <!-- 5. Что с ними можно делать -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--neon-cyan); margin-bottom: 1rem; font-size: 1.2rem;">💵 Что с ними можно делать:</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 0.5rem 0; color: var(--text-primary); font-size: 1.05rem;">
+                            💰 <strong>Обменять на реальные деньги</strong> (вывести на карту)
+                        </li>
+                        <li style="padding: 0.5rem 0; color: var(--text-primary); font-size: 1.05rem;">
+                            💳 Использовать для покупок в боте
+                        </li>
+                        <li style="padding: 0.5rem 0; color: var(--text-primary); font-size: 1.05rem;">
+                            🎁 Дарить друзьям
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 6. Как вывести -->
+                <div style="margin-bottom: 2rem; background: rgba(0,200,83,0.1); border: 1px solid rgba(0,200,83,0.3); border-radius: 12px; padding: 1.5rem;">
+                    <h3 style="color: var(--neon-cyan); margin-bottom: 1rem; font-size: 1.2rem;">💸 Как вывести Stars в деньги:</h3>
+                    <ol style="padding-left: 1.2rem; margin: 0; line-height: 1.8; color: var(--text-primary);">
+                        <li>Нажми на название бота вверху окна</li>
+                        <li>Выбери <strong style="color: var(--neon-cyan);">«Партнерская программа 30%»</strong> → <strong>«Баланс»</strong></li>
+                        <li>Выводи на <strong style="color: var(--neon-pink);">Fragment.com</strong> или <strong style="color: var(--neon-pink);">TON кошелек</strong></li>
+                    </ol>
+                </div>
+
+                <div style="background: rgba(255,0,110,0.05); border: 1px solid rgba(255,0,110,0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <p style="color: var(--text-gray); font-size: 0.9rem; line-height: 1.5; margin: 0;">
+                        <strong style="color: var(--neon-pink);">🎯</strong> Чем больше друзей покупают PRO по Вашей ссылке, тем больше зарабатываете!
+                    </p>
+                </div>
+
+                <button onclick="openAffiliateProgram()" class="neon-button" style="width: 100%; padding: 1rem; font-size: 1.1rem; margin-top: 1rem;">
+                    ⭐ Участвовать в программе
+                </button>
+            </div>
+        </div>
+
+        <!-- Форма отправки письма -->
+        <div id="emailForm" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showContacts()">← Назад</button>
+                <h2>Написать письмо</h2>
+            </div>
+            
+            <div class="email-form-container">
+                <form id="contactForm" class="contact-form">
+                    <div class="form-group">
+                        <label for="senderEmail">Ваша почта для ответа *</label>
+                        <input type="email" id="senderEmail" class="neon-input" placeholder="your-email@example.com" required>
+                        <span class="input-hint">На эту почту придет ответ</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="emailSubject">Тема письма</label>
+                        <input type="text" id="emailSubject" class="neon-input" placeholder="Тема сообщения" value="Обращение через anonimka.online">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="emailMessage">Сообщение *</label>
+                        <textarea id="emailMessage" class="neon-textarea" placeholder="Опишите ваш вопрос или проблему..." rows="8" required></textarea>
+                        <span class="input-hint">Минимум 10 символов</span>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="neon-button secondary" onclick="showContacts()">
+                            🔙 Отмена
+                        </button>
+                        <button type="button" class="neon-button primary" id="sendEmailBtn" onclick="handleEmailSubmit(event)">
+                            📧 Отправить письмо
+                        </button>
+                    </div>
+                </form>
+                
+                <div id="emailStatus" class="email-status" style="display: none;">
+                    <!-- Статус отправки будет показан здесь -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Правила использования -->
+        <div id="rules" class="screen info-screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>📜 Правила использования</h2>
+            </div>
+            <div class="info-content">
+                <div class="rules-section" style="background: rgba(255, 0, 110, 0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 0, 110, 0.3); margin-bottom: 20px;">
+                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-gray); line-height: 1.5;">
+                        ⚠️ <strong>Это краткая выдержка основных положений.</strong><br>
+                        Полный текст Пользовательского соглашения содержит важные юридические условия, ограничения ответственности и ваши права. Действует в соответствии с законодательством Республики Казахстан и Российской Федерации.
+                    </p>
+                    <a href="/TERMS_OF_SERVICE.md" target="_blank" class="legal-link" style="display: inline-block; margin-top: 10px; padding: 10px 20px; background: var(--primary-color); color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                        📄 Читать полное соглашение
+                    </a>
+                </div>
+
+                <div class="rules-section">
+                    <h3>🔞 Возрастное ограничение</h3>
+                    <p><strong>Сервис строго 18+.</strong> Использование лицами младше 18 лет категорически запрещено. Предоставление ложных сведений о возрасте влечёт блокировку и передачу данных в правоохранительные органы.</p>
+                </div>
+
+                <div class="rules-section">
+                    <h3>🚫 Строго запрещено</h3>
+                    <ul>
+                        <li><strong>Незаконный контент:</strong> порнография, экстремизм, насилие, дискриминация, пропаганда наркотиков</li>
+                        <li><strong>Домогательства и угрозы:</strong> любые формы преследования, шантажа, вымогательства</li>
+                        <li><strong>Мошенничество:</strong> фейковые профили, выманивание денег/данных</li>
+                        <li><strong>Спам и реклама:</strong> массовые рассылки, коммерческие услуги без разрешения</li>
+                        <li><strong>Нарушение приватности:</strong> публикация чужих данных, переписок, фото без согласия</li>
+                        <li><strong>Технические нарушения:</strong> боты, взлом, DDoS-атаки</li>
+                    </ul>
+                    <p class="rules-note" style="color: #ff4444;">⚠️ Нарушение влечёт немедленную блокировку. Серьёзные нарушения передаются в полицию.</p>
+                </div>
+
+                <div class="rules-section">
+                    <h3>✅ Допустимое использование</h3>
+                    <ul>
+                        <li>Анонимный чат и общение между совершеннолетними</li>
+                        <li>Поиск друзей, собеседников, партнёров для отношений</li>
+                        <li>Флирт и обсуждение интимных тем (в рамках закона)</li>
+                        <li>Обмен контактами и организация встреч (на ваш риск)</li>
+                        <li>Фото в нижнем белье/купальниках (без демонстрации гениталий)</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h3>⚖️ Ответственность</h3>
+                    <p><strong>Вы несёте полную ответственность за:</strong></p>
+                    <ul>
+                        <li>Весь контент, который публикуете</li>
+                        <li>Свои действия и встречи с другими пользователями</li>
+                        <li>Соблюдение законодательства вашей страны</li>
+                    </ul>
+                    <p><strong>Администрация НЕ несёт ответственности за:</strong></p>
+                    <ul>
+                        <li>Действия других пользователей</li>
+                        <li>Встречи в реальной жизни и их последствия</li>
+                        <li>Финансовые потери, эмоциональный ущерб</li>
+                        <li>Технические сбои и потерю данных</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h3>🛡️ Модерация</h3>
+                    <p>Администрация вправе по своему усмотрению:</p>
+                    <ul>
+                        <li>Удалять любой контент без объяснения причин</li>
+                        <li>Блокировать аккаунты навсегда или временно</li>
+                        <li>Передавать данные правоохранительным органам</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section" style="background: rgba(255, 0, 110, 0.1); padding: 15px; border-radius: 12px; margin-top: 20px;">
+                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-gray);">
+                        📖 <strong>Важно:</strong> Это краткое изложение. Полное Пользовательское соглашение содержит детальные условия, юридические нюансы и дополнительные положения.
+                    </p>
+                    <a href="/TERMS_OF_SERVICE.md" target="_blank" class="legal-link" style="display: inline-block; margin-top: 10px; color: var(--primary-color); text-decoration: underline;">
+                        → Ознакомиться с полным текстом
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Политика конфиденциальности -->
+        <div id="privacy" class="screen info-screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>🔐 Политика конфиденциальности</h2>
+            </div>
+            <div class="info-content">
+                <div class="privacy-section" style="background: rgba(0, 255, 255, 0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(0, 255, 255, 0.3); margin-bottom: 20px;">
+                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-gray); line-height: 1.5;">
+                        ⚠️ <strong>Это краткая выдержка основных положений.</strong><br>
+                        Полная Политика конфиденциальности содержит подробную информацию о сборе, обработке и защите ваших данных в соответствии с законодательством РК и РФ.
+                    </p>
+                    <a href="/PRIVACY_POLICY.md" target="_blank" class="legal-link" style="display: inline-block; margin-top: 10px; padding: 10px 20px; background: #00ffff; color: #000; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                        🔒 Читать полную политику
+                    </a>
+                </div>
+
+                <div class="privacy-section">
+                    <h3>📊 Какие данные мы собираем</h3>
+                    <p><strong>От Telegram:</strong></p>
+                    <ul>
+                        <li>Telegram ID (для идентификации)</li>
+                        <li>Никнейм и фото профиля</li>
+                        <li>Язык интерфейса</li>
+                    </ul>
+                    <p><strong>Данные, которые вы предоставляете:</strong></p>
+                    <ul>
+                        <li>Выбранное отображаемое имя</li>
+                        <li>Локация (страна, город)</li>
+                        <li>Анкеты и сообщения</li>
+                        <li>Пол, возраст (при создании анкеты)</li>
+                    </ul>
+                    <p><strong>Автоматически:</strong></p>
+                    <ul>
+                        <li>IP-адрес (для определения региона)</li>
+                        <li>Информация об устройстве и браузере</li>
+                        <li>Время активности</li>
+                    </ul>
+                </div>
+
+                <div class="privacy-section">
+                    <h3>🎯 Как мы используем данные</h3>
+                    <ul>
+                        <li><strong>Основные функции:</strong> создание профиля, обмен сообщениями, подбор по локации</li>
+                        <li><strong>Безопасность:</strong> модерация контента, предотвращение спама и мошенничества</li>
+                        <li><strong>Аналитика:</strong> улучшение приложения, статистика использования</li>
+                    </ul>
+                    <p class="privacy-note">❌ Мы НЕ продаём данные рекламодателям<br>❌ Мы НЕ храним данные банковских карт</p>
+                </div>
+
+                <div class="privacy-section">
+                    <h3>🔒 Как мы храним данные</h3>
+                    <ul>
+                        <li><strong>База данных:</strong> защищенная база с шифрованием</li>
+                        <li><strong>Активные аккаунты:</strong> пока вы используете приложение</li>
+                        <li><strong>Удалённые данные:</strong> резервные копии до 30 дней</li>
+                        <li><strong>Сообщения:</strong> пока один из участников не удалит чат</li>
+                    </ul>
+                </div>
+
+                <div class="privacy-section">
+                    <h3>👥 С кем мы делимся данными</h3>
+                    <p><strong>С другими пользователями:</strong></p>
+                    <ul>
+                        <li>Публичная информация: никнейм, фото, город, анкеты</li>
+                        <li>В чатах: ваши сообщения видны собеседнику</li>
+                    </ul>
+                    <p><strong>С третьими сторонами:</strong></p>
+                    <ul>
+                        <li>Хостинг-провайдер и поставщик баз данных — для работы приложения</li>
+                        <li>Правоохранительные органы — по официальным запросам при расследовании преступлений</li>
+                    </ul>
+                </div>
+
+                <div class="privacy-section">
+                    <h3>✅ Ваши права</h3>
+                    <ul>
+                        <li><strong>Доступ:</strong> запросить копию всех ваших данных</li>
+                        <li><strong>Исправление:</strong> изменить никнейм, локацию, анкеты</li>
+                        <li><strong>Удаление:</strong> удалить анкеты через приложение или весь аккаунт (написать @Vorobey_444)</li>
+                        <li><strong>Отзыв согласия:</strong> прекратить использование приложения</li>
+                    </ul>
+                    <p style="margin-top: 15px; padding: 10px; background: rgba(0, 255, 255, 0.1); border-radius: 8px;">
+                        <a href="/delete-account.html" target="_blank" style="color: #00ffff; text-decoration: underline;">
+                            📝 Инструкция по удалению аккаунта →
+                        </a>
+                    </p>
+                </div>
+
+                <div class="privacy-section">
+                    <h3>🛡️ Безопасность</h3>
+                    <ul>
+                        <li>HTTPS шифрование при передаче данных</li>
+                        <li>Защита от SQL-инъекций и DDoS</li>
+                        <li>Rate limiting для предотвращения атак</li>
+                    </ul>
+                    <p class="privacy-note">⚠️ Несмотря на все меры, абсолютная безопасность не может быть гарантирована на 100%.</p>
+                </div>
+
+                <div class="privacy-section">
+                    <h3>🔞 Возрастные ограничения</h3>
+                    <p><strong>Приложение НЕ предназначено для лиц младше 18 лет.</strong> Мы не собираем данные несовершеннолетних преднамеренно. При выявлении пользователя младше 18 лет аккаунт удаляется немедленно.</p>
+                </div>
+
+                <div class="privacy-section">
+                    <h3>📬 Контакты</h3>
+                    <p>По вопросам конфиденциальности:</p>
+                    <ul>
+                        <li>Telegram: <strong>@Vorobey_444</strong></li>
+                        <li>Email: <a href="#" onclick="event.preventDefault(); closeHamburgerMenu(); showEmailForm();" class="email-link">aleksey@vorobey444.ru</a></li>
+                    </ul>
+                </div>
+
+                <div class="privacy-section" style="background: rgba(0, 255, 255, 0.1); padding: 15px; border-radius: 12px; margin-top: 20px;">
+                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-gray);">
+                        📖 <strong>Важно:</strong> Это краткое изложение. Полная Политика конфиденциальности содержит детальную информацию о GDPR-правах (для пользователей из ЕС), международных переводах данных и других важных аспектах.
+                    </p>
+                    <a href="/PRIVACY_POLICY.md" target="_blank" class="legal-link" style="display: inline-block; margin-top: 10px; color: #00ffff; text-decoration: underline;">
+                        → Ознакомиться с полным текстом
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- О приложении -->
+        <div id="about" class="screen info-screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>О приложении</h2>
+            </div>
+            <div class="info-content">
+                <div class="about-section">
+                    <div class="app-logo">
+                        <img src="/webapp/logo.png" alt="Logo" class="logo-image">
+                        <h3>Анонимный чат</h3>
+                        <p class="version">Версия 3.0</p>
+                    </div>
+                </div>
+                <div class="about-section">
+                    <h3>🎯 Миссия</h3>
+                    <p>Создать безопасное пространство для анонимного общения без страха осуждения.</p>
+                </div>
+                <div class="about-section">
+                    <h3>⚡ Особенности</h3>
+                    <ul>
+                        <li>Полная анонимность</li>
+                        <li>Автоматическое определение местоположения</li>
+                        <li>Киберпанк дизайн</li>
+                        <li>Безопасные чаты</li>
+                    </ul>
+                </div>
+                <div class="about-section">
+                    <p class="copyright">© 2025 Anonimka.kz. Все права защищены.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Мои заблокированные -->
+        <div id="blockedUsers" class="screen info-screen">
+            <div class="header">
+                <button class="back-btn" onclick="closeHamburgerAndGoHome()">← Назад</button>
+                <h2>🚫 Заблокированные</h2>
+            </div>
+            <div class="info-content">
+                <div id="blockedUsersContainer">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                        <p>Загрузка...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Редактирование никнейма -->
+        <div id="nicknameEditScreen" class="screen info-screen">
+            <div class="header">
+                <button class="back-btn" onclick="closeHamburgerAndGoHome()">← Назад</button>
+                <h2>✏️ Изменить никнейм</h2>
+            </div>
+            <div class="info-content">
+                <div class="nickname-edit-section">
+                    <div class="nickname-current">
+                        <h3>Текущий никнейм</h3>
+                        <div class="current-nickname-display">
+                            <span class="nickname-icon-large">🎭</span>
+                            <span class="nickname-text" id="currentNicknameDisplay">Аноним</span>
+                        </div>
+                    </div>
+                    
+                    <div class="nickname-edit-form">
+                        <h3>Новый никнейм</h3>
+                        <p class="nickname-hint-page">Выберите, как вас будут видеть в анкетах</p>
+                        
+                        <!-- Подсказка для Анонимов -->
+                        <div id="anonymousUserHint" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 16px; margin-bottom: 16px; color: white;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                <span style="font-size: 1.8rem;">🎁</span>
+                                <strong style="font-size: 1.1rem;">Бесплатная смена никнейма!</strong>
+                            </div>
+                            <p style="margin: 0; opacity: 0.95; line-height: 1.5;">
+                                У вас автоматически сгенерированный никнейм. Вы можете <strong>бесплатно изменить</strong> его один раз на любой другой!
+                            </p>
+                        </div>
+                        
+                        <div class="nickname-input-wrapper-page">
+                            <input type="text" 
+                                   id="nicknameInputPage" 
+                                   class="neon-input" 
+                                   placeholder="Введите новый никнейм" 
+                                   maxlength="30">
+                            <span class="input-icon">🎭</span>
+                        </div>
+                        
+                        <button class="neon-button primary full-width" onclick="saveNicknamePage()">
+                            ✅ Сохранить никнейм
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Создание анкеты -->
+        <div id="createAd" class="screen">
+            <div class="header">
+                <button class="back-btn" id="createAdBackBtn" onclick="handleCreateAdBack()">← Назад</button>
+                <h2>Создать анкету</h2>
+            </div>
+            
+            <form id="adForm" class="form-container">
+                <div class="form-step active" id="step1">
+                    <h3>👤 Ваш пол</h3>
+                    <div class="current-location">
+                        <p>📍 Ваш город: <span id="formLocationDisplay"></span></p>
+                        <button type="button" class="change-location-btn" onclick="showLocationSetup()">
+                            📍 Сменить город
+                        </button>
+                    </div>
+                    <div class="gender-select">
+                        <button type="button" class="gender-btn" data-gender="Мужчина">
+                            <span class="icon">👨</span>
+                            Мужчина
+                        </button>
+                        <button type="button" class="gender-btn" data-gender="Девушка">
+                            <span class="icon">👩</span>
+                            Девушка
+                        </button>
+                        <button type="button" class="gender-btn" data-gender="Пара">
+                            <span class="icon">👫</span>
+                            Пара
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-step" id="step2">
+                    <h3>🔍 Кого ищете</h3>
+                    <div class="target-select">
+                        <button type="button" class="target-btn" data-target="Мужчину">👨 Мужчину</button>
+                        <button type="button" class="target-btn" data-target="Девушку">👩 Девушку</button>
+                        <button type="button" class="target-btn" data-target="Пару">👫 Пару</button>
+                    </div>
+                </div>
+
+                <div class="form-step" id="step3">
+                    <h3>🎯 Цель общения</h3>
+                    <p style="font-size: 0.9rem; color: var(--text-gray); margin-bottom: 15px;">Выберите одну или несколько целей</p>
+                    <div class="goal-select">
+                        <button type="button" class="goal-btn" data-goal="Дружба">🤝 Дружба</button>
+                        <button type="button" class="goal-btn" data-goal="Флирт">😊 Флирт</button>
+                        <button type="button" class="goal-btn" data-goal="Путешествия">✈️ Путешествия</button>
+                        <button type="button" class="goal-btn" data-goal="Общение">💬 Общение</button>
+                        <button type="button" class="goal-btn" data-goal="Секс">🔥 Секс</button>
+                        <button type="button" class="goal-btn" data-goal="Другое">❓ Другое</button>
+                    </div>
+                </div>
+
+                <div class="form-step" id="step4">
+                    <h3>📅 Возраст партнера</h3>
+                    <div class="age-range">
+                        <div class="input-group">
+                            <label>От</label>
+                            <div class="age-control">
+                                <button type="button" class="age-btn minus" onclick="decreaseAge('ageFrom')">−</button>
+                                <input type="number" id="ageFrom" min="18" max="99" class="neon-input small" placeholder="">
+                                <button type="button" class="age-btn plus" onclick="increaseAge('ageFrom')">+</button>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>До</label>
+                            <div class="age-control">
+                                <button type="button" class="age-btn minus" onclick="decreaseAge('ageTo')">−</button>
+                                <input type="number" id="ageTo" min="18" max="99" class="neon-input small" placeholder="">
+                                <button type="button" class="age-btn plus" onclick="increaseAge('ageTo')">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-step" id="step5">
+                    <h3>🎂 Ваш возраст</h3>
+                    <div class="age-control centered">
+                        <button type="button" class="age-btn minus" onclick="decreaseAge('myAge')">−</button>
+                        <input type="number" id="myAge" min="18" max="99" class="neon-input" placeholder="">
+                        <button type="button" class="age-btn plus" onclick="increaseAge('myAge')">+</button>
+                    </div>
+                </div>
+
+                <div class="form-step" id="step6">
+                    <h3>💪 Телосложение</h3>
+                    <div class="body-select">
+                        <button type="button" class="body-btn" data-body="Стройное">✨ Стройное</button>
+                        <button type="button" class="body-btn" data-body="Обычное">👤 Обычное</button>
+                        <button type="button" class="body-btn" data-body="Плотное">💪 Плотное</button>
+                        <button type="button" class="body-btn" data-body="Спортивное">🏋️ Спортивное</button>
+                        <button type="button" class="body-btn" data-body="Другое">❓ Другое</button>
+                    </div>
+                </div>
+
+                <div class="form-step" id="step7">
+                    <h3>💗 Ориентация</h3>
+                    <div class="body-select">
+                        <button type="button" class="body-btn" data-orientation="hetero">💏 Гетеро</button>
+                        <button type="button" class="body-btn" data-orientation="gay">🔥 Гей / Лесбиянка</button>
+                        <button type="button" class="body-btn" data-orientation="bi">😈 Би</button>
+                        <button type="button" class="body-btn" data-orientation="pan">⚡ Пансексуал</button>
+                        <button type="button" class="body-btn" data-orientation="ace">😅 Асексуал</button>
+                        <button type="button" class="body-btn" data-orientation="demi">💫 Демисексуал</button>
+                        <button type="button" class="body-btn" data-orientation="queer">🌪 Квир</button>
+                        <button type="button" class="body-btn" data-orientation="grey">📶 Грейсексуал</button>
+                        <button type="button" class="body-btn" data-orientation="sever">🎤 Север</button>
+                    </div>
+                </div>
+
+                <div class="form-step" id="step8">
+                    <h3>💬 Текст анкеты</h3>
+                </div>
+                
+                <!-- Шаг 9: Добавление фото (опционально) -->
+                <div class="form-step" id="step9">
+                    <h3>📸 Фото</h3>
+                    <p style="color: var(--text-gray); text-align: center; margin-bottom: 12px; font-size: 0.85rem;">
+                        Опционально. Можно пропустить
+                    </p>
+                    
+                    <!-- Галерея существующих фото -->
+                    <div id="step9PhotoGallery" style="display: none; margin-bottom: 12px;"></div>
+                    
+                    <button type="button" id="addAdPhotoBtn" class="neon-button primary full-width" onclick="addAdPhoto()" style="margin-bottom: 0;">
+                        <span>📷 Выбрать фото</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Textarea вынесен отдельно для обхода проблем с display -->
+            <div id="textareaContainer" style="display: none; text-align: center; padding: 0 20px;">
+                <textarea 
+                    id="adText" 
+                    placeholder="Расскажите о себе и что ищете..." 
+                    rows="6"
+                    maxlength="500"
+                    oninput="updateCharacterCount()"
+                    style="
+                        width: 100%;
+                        max-width: 500px;
+                        padding: 15px;
+                        background: rgba(26, 26, 46, 0.8);
+                        border: 2px solid #ff00ff;
+                        border-radius: 15px;
+                        color: #e0e0ff;
+                        font-size: 16px;
+                        resize: vertical;
+                        min-height: 120px;
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        box-sizing: border-box;
+                        display: block !important;
+                        visibility: visible !important;
+                        opacity: 1 !important;
+                    "
+                ></textarea>
+                <div id="charCounter" style="text-align: right; color: var(--text-gray); font-size: 0.85rem; margin-top: 5px;">
+                    0/500
+                </div>
+            </div>
+
+            <div class="form-navigation">
+                <button id="prevBtn" class="nav-btn" onclick="previousStep()" style="display: none;">← Назад</button>
+                <button id="nextBtn" class="nav-btn primary" onclick="nextStep()">Далее →</button>
+                <button id="submitBtn" class="nav-btn success" onclick="submitAd()" style="display: none;">🚀 Опубликовать</button>
+            </div>
+        </div>
+
+        <!-- Просмотр анкет -->
+        <div id="browseAds" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>Анкеты</h2>
+            </div>
+            
+            <div class="current-location-display">
+                <p class="location-label">📍 Ваша локация:</p>
+                <p class="location-value" id="browseLocationDisplay">Загрузка...</p>
+                <button class="neon-button small" onclick="showLocationSetup()">
+                    🔄 Сменить локацию
+                </button>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="filters-container">
+                <button class="filter-toggle-btn" onclick="toggleFilters()">
+                    🔍 Фильтры <span id="filterBadge"></span>
+                </button>
+                
+                <div id="filtersPanel" class="filters-panel" style="display: none;">
+                    <div class="filter-group">
+                        <label>Пол:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn" data-filter-type="gender" data-value="all" onclick="setFilter('gender', 'all')">Все</button>
+                            <button class="filter-btn" data-filter-type="gender" data-value="male" onclick="setFilter('gender', 'male')">♂️ Мужчины</button>
+                            <button class="filter-btn" data-filter-type="gender" data-value="female" onclick="setFilter('gender', 'female')">♀️ Девушки</button>
+                            <button class="filter-btn" data-filter-type="gender" data-value="couple" onclick="setFilter('gender', 'couple')">👫 Пары</button>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Ищет:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn" data-filter-type="target" data-value="all" onclick="setFilter('target', 'all')">Все</button>
+                            <button class="filter-btn" data-filter-type="target" data-value="male" onclick="setFilter('target', 'male')">♂️ Мужчину</button>
+                            <button class="filter-btn" data-filter-type="target" data-value="female" onclick="setFilter('target', 'female')">♀️ Девушку</button>
+                            <button class="filter-btn" data-filter-type="target" data-value="couple" onclick="setFilter('target', 'couple')">♂️♀️ Пару</button>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Ориентация:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn" data-filter-type="orientation" data-value="all" onclick="setFilter('orientation', 'all')">Все</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="hetero" onclick="setFilter('orientation', 'hetero')">💏 Гетеро</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="gay" onclick="setFilter('orientation', 'gay')">🔥 Гей/Лесби</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="bi" onclick="setFilter('orientation', 'bi')">😈 Би</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="pan" onclick="setFilter('orientation', 'pan')">⚡ Пан</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="ace" onclick="setFilter('orientation', 'ace')">😶 Асексуал</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="demi" onclick="setFilter('orientation', 'demi')">💫 Деми</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="queer" onclick="setFilter('orientation', 'queer')">🌪 Квир</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="grey" onclick="setFilter('orientation', 'grey')">📶 Грей</button>
+                            <button class="filter-btn" data-filter-type="orientation" data-value="sever" onclick="setFilter('orientation', 'sever')">🎤 Север</button>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Возраст:</label>
+                        <div class="age-filter">
+                            <input type="number" id="ageFrom" placeholder="От" min="18" max="99" value="18">
+                            <span>—</span>
+                            <input type="number" id="ageTo" placeholder="До" min="18" max="99" value="99">
+                        </div>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button class="neon-button small" onclick="applyFilters()">✅ Применить</button>
+                        <button class="neon-button small secondary" onclick="resetFilters()">🔄 Сбросить</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="adsList" class="ads-list">
+                <!-- Анкеты будут загружены через JS -->
+            </div>
+        </div>
+
+        <!-- Мои анкеты -->
+        <div id="myAds" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>Мои анкеты</h2>
+            </div>
+
+            <div id="myAdsList" class="ads-list">
+                <!-- Анкеты пользователя будут загружены через JS -->
+            </div>
+        </div>
+
+        <!-- Мои чаты -->
+        <div id="myChats" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>💬 Мои чаты</h2>
+            </div>
+
+            <!-- Вкладки -->
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="switchChatTab('active')">
+                    <span class="tab-icon">✅</span>
+                    <span class="tab-label">Открытые чаты</span>
+                    <span class="tab-badge" id="activeChatsCount">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchChatTab('requests')">
+                    <span class="tab-icon">📨</span>
+                    <span class="tab-label">Запросы</span>
+                    <span class="tab-badge" id="requestsCount">0</span>
+                </button>
+            </div>
+
+            <div class="chats-container">
+                <!-- Вкладка: Открытые чаты -->
+                <div id="activeChatsTab" class="tab-content active">
+                    <div id="activeChats" class="chats-list">
+                        <!-- Открытые чаты будут загружены через JS -->
+                        <div class="loading-placeholder">
+                            <div class="neon-icon pulse">💬</div>
+                            <p>Загрузка чатов...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вкладка: Запросы -->
+                <div id="requestsTab" class="tab-content">
+                    <div id="chatRequests" class="chats-list">
+                        <!-- Запросы на чаты будут загружены через JS -->
+                        <div class="loading-placeholder">
+                            <div class="neon-icon pulse">📨</div>
+                            <p>Загрузка запросов...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Мир чат -->
+        <div id="worldChatScreen" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>🌍 Мир чат</h2>
+                <button class="world-chat-faq-btn" onclick="showWorldChatFAQ()" title="Инструкция">?</button>
+            </div>
+
+            <!-- Лента сообщений -->
+            <div class="world-chat-messages-container">
+                <div id="worldChatMessages" class="world-chat-messages">
+                    <!-- Сообщения будут загружены через JS -->
+                    <div class="loading-placeholder">
+                        <div class="neon-icon pulse">💬</div>
+                        <p>Загрузка сообщений...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Фиксированный футер с вкладками и инпутом -->
+            <div class="world-chat-footer">
+                <!-- Вкладки над полем ввода -->
+                <div class="world-chat-tabs">
+                    <button class="world-chat-tab active" onclick="switchWorldChatTab('world')" id="worldTab">Мир</button>
+                    <button class="world-chat-tab" onclick="switchWorldChatTab('city')" id="cityTab">Город</button>
+                    <button class="world-chat-tab" onclick="switchWorldChatTab('private')" id="privateTab">ЛС</button>
+                    <button class="world-chat-font-size-btn" onclick="toggleFontSize()" id="fontSizeBtn" title="Размер шрифта">A</button>
+                </div>
+
+                <!-- Инпут для сообщений -->
+                <div class="world-chat-input-container">
+                    <div class="world-chat-input-wrapper">
+                        <span class="world-chat-prefix" id="worldChatPrefix">@</span>
+                        <input 
+                            type="text" 
+                            id="worldChatInput" 
+                            class="world-chat-input" 
+                            placeholder="Введите сообщение..." 
+                            maxlength="120"
+                            onkeypress="if(event.key === 'Enter') sendWorldChatMessage()">
+                        <div class="world-chat-char-counter">
+                            <span id="worldChatCharCount">0</span>/120
+                        </div>
+                    </div>
+                    <button class="world-chat-send-btn" onclick="sendWorldChatMessage()">
+                        <span>📤</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Экран опросов -->
+        <div id="pollsScreen" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>📊 Опросы</h2>
+            </div>
+            
+            <div class="polls-container">
+                <div class="polls-intro">
+                    <p>Помогите нам стать лучше! Ваше мнение очень важно для развития Anonimka.</p>
+                </div>
+                
+                <!-- Опрос 1: Фотки в анкетах -->
+                <div class="poll-card">
+                    <div class="poll-header">
+                        <span class="poll-icon">📸</span>
+                        <h3>Фотографии в анкетах</h3>
+                    </div>
+                    
+                    <div class="poll-question-full">Вам нужны фотки в анкетах?</div>
+                    
+                    <div class="poll-options-full" id="photosPollOptions">
+                        <button class="poll-option-full" onclick="votePoll('photos_in_ads', 'yes')">
+                            <span class="poll-option-icon">✅</span>
+                            Да
+                        </button>
+                        <button class="poll-option-full" onclick="votePoll('photos_in_ads', 'no')">
+                            <span class="poll-option-icon">❌</span>
+                            Нет это же Анонимка
+                        </button>
+                    </div>
+                    
+                    <div class="poll-results-full" id="photosPollResults" style="display: none;">
+                        <div class="poll-result-item-full">
+                            <div class="poll-result-text-full">
+                                <span>✅ Да</span>
+                                <span class="poll-percent-full" id="photosYesPercent">0%</span>
+                            </div>
+                            <div class="poll-bar-full">
+                                <div class="poll-bar-fill-full" id="photosYesBar" style="width: 0%"></div>
+                            </div>
+                            <div class="poll-votes-count" id="photosYesCount">0 голосов</div>
+                        </div>
+                        <div class="poll-result-item-full">
+                            <div class="poll-result-text-full">
+                                <span>❌ Нет это же Анонимка</span>
+                                <span class="poll-percent-full" id="photosNoPercent">0%</span>
+                            </div>
+                            <div class="poll-bar-full">
+                                <div class="poll-bar-fill-full" id="photosNoBar" style="width: 0%"></div>
+                            </div>
+                            <div class="poll-votes-count" id="photosNoCount">0 голосов</div>
+                        </div>
+                        <div class="poll-total-full">Всего проголосовало: <span id="photosTotalVotes">0</span></div>
+                    </div>
+                </div>
+                
+                <!-- Здесь будут добавляться новые опросы -->
+            </div>
+        </div>
+
+        <!-- Экран открытого чата -->
+        <div id="chatView" class="screen">
+            <div class="header chat-header">
+                <button class="back-btn" onclick="showMyChats()">← Назад</button>
+                <div class="chat-info">
+                    <h2 id="chatTitle" style="line-height: 1.2; font-size: 1.2rem;">Anonimka<br><span style="font-size: 0.65em;">Анонимное общение</span></h2>
+                    <p id="chatAdId" class="chat-subtitle"></p>
+                </div>
+                <button class="chat-font-size-btn" onclick="toggleChatFontSize()" id="chatFontSizeBtn" title="Размер шрифта">A</button>
+                <button class="chat-menu-btn" onclick="toggleChatMenu()">⋮</button>
+            </div>
+            
+            <!-- Меню чата (троеточие) -->
+            <div id="chatMenu" class="chat-menu-dropdown" style="display: none;">
+                <button class="chat-menu-item" onclick="toggleBlockUser()">
+                    <span id="blockMenuText">🚫 Заблокировать собеседника</span>
+                </button>
+                <button class="chat-menu-item danger" onclick="confirmDeleteChat()">
+                    🗑️ Удалить чат
+                </button>
+            </div>
+
+            <div class="chat-messages-container">
+                <div id="chatMessages" class="chat-messages">
+                    <!-- Сообщения будут загружены через JS -->
+                </div>
+            </div>
+
+            <!-- Предупреждение о блокировке -->
+            <div id="blockWarning" class="block-warning" style="display: none;">
+                ⚠️ Собеседник внес вас в черный список
+            </div>
+
+            <!-- Превью ответа на сообщение -->
+            <div id="replyPreview" class="reply-preview" style="display: none;">
+                <div class="reply-preview-content">
+                    <div class="reply-preview-header">
+                        В ответ <span id="replyToNickname"></span>
+                    </div>
+                    <div class="reply-preview-text" id="replyToText"></div>
+                </div>
+                <button class="reply-preview-close" onclick="cancelReply()">×</button>
+            </div>
+
+            <div class="chat-input-container">
+                <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoSelect(event)" />
+                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoSelect(event)" />
+                <button class="attach-photo-button" onclick="showPhotoSourceMenu()" title="Прикрепить фото">
+                    <span>📷</span>
+                </button>
+                <div id="photoPreview" class="photo-preview" style="display: none;">
+                    <img id="photoPreviewImage" src="" alt="Preview" />
+                    <button class="remove-photo-button" onclick="removePhoto()">×</button>
+                </div>
+                <input type="text" id="messageInput" class="chat-input" placeholder="Введите сообщение..." onkeypress="if(event.key === 'Enter') sendMessage()" />
+                <button id="sendButton" class="send-button" onclick="sendMessage()">
+                    <span class="send-icon">✈️</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Детали анкеты -->
+        <div id="adDetails" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showBrowseAds()">← К анкетам</button>
+            </div>
+            
+            <div id="adContent" class="ad-details">
+                <!-- Контент анкеты -->
+            </div>
+            
+            <div class="ad-details-footer">
+                <button class="neon-button primary full-width" onclick="contactAuthor()">
+                    ✉️ Написать автору
+                </button>
+                <button class="neon-button danger-outline full-width" onclick="reportAd()" style="margin-top: 0.5rem;">
+                    🚨 Пожаловаться
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно жалобы -->
+    <div id="reportModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeReportModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🚨 Пожаловаться на пользователя</h2>
+                <button class="modal-close" onclick="closeReportModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-gray); margin-bottom: 1rem;">Выберите причину жалобы:</p>
+                
+                <div class="report-reasons">
+                    <button class="report-reason-btn" data-reason="spam" onclick="selectReportReason('spam')">
+                        <span class="reason-icon">📢</span>
+                        <div class="reason-text">
+                            <h4>Спам</h4>
+                            <p>Реклама, навязчивые сообщения</p>
+                        </div>
+                    </button>
+                    
+                    <button class="report-reason-btn" data-reason="porn" onclick="selectReportReason('porn')">
+                        <span class="reason-icon">🔞</span>
+                        <div class="reason-text">
+                            <h4>Порнография</h4>
+                            <p>Откровенные фото/видео</p>
+                        </div>
+                    </button>
+                    
+                    <button class="report-reason-btn" data-reason="harassment" onclick="selectReportReason('harassment')">
+                        <span class="reason-icon">😡</span>
+                        <div class="reason-text">
+                            <h4>Домогательства</h4>
+                            <p>Оскорбления, угрозы</p>
+                        </div>
+                    </button>
+                    
+                    <button class="report-reason-btn" data-reason="fake" onclick="selectReportReason('fake')">
+                        <span class="reason-icon">🎭</span>
+                        <div class="reason-text">
+                            <h4>Фейковый профиль</h4>
+                            <p>Подделка, ложная информация</p>
+                        </div>
+                    </button>
+                    
+                    <button class="report-reason-btn" data-reason="underage" onclick="selectReportReason('underage')">
+                        <span class="reason-icon">👶</span>
+                        <div class="reason-text">
+                            <h4>Несовершеннолетний</h4>
+                            <p>Пользователь младше 18 лет</p>
+                        </div>
+                    </button>
+                    
+                    <button class="report-reason-btn" data-reason="other" onclick="selectReportReason('other')">
+                        <span class="reason-icon">⚠️</span>
+                        <div class="reason-text">
+                            <h4>Другое</h4>
+                            <p>Иная причина</p>
+                        </div>
+                    </button>
+                </div>
+                
+                <div id="reportDetailsSection" style="display: none; margin-top: 1rem;">
+                    <label for="reportDescription" style="display: block; margin-bottom: 0.5rem; color: var(--text-light);">
+                        Дополнительная информация (необязательно):
+                    </label>
+                    <textarea 
+                        id="reportDescription" 
+                        class="neon-input" 
+                        rows="3" 
+                        maxlength="500"
+                        placeholder="Опишите ситуацию подробнее..."
+                        style="width: 100%; resize: vertical; font-size: 14px; padding: 0.8rem;"
+                    ></textarea>
+                    
+                    <button class="neon-button primary full-width" onclick="submitReport()" style="margin-top: 1rem;">
+                        ✅ Отправить жалобу
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно авторизации через Telegram -->
+    <div id="telegramAuthModal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔐 Авторизация через Telegram</h2>
+                <button class="modal-close" onclick="closeTelegramAuthModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="auth-warning">
+                    <div class="warning-icon">⚠️</div>
+                    <h3>Требуется авторизация</h3>
+                    <p>Для продолжения использования сайта необходимо авторизоваться через Telegram.</p>
+                    <p>Это позволит:</p>
+                    <ul>
+                        <li>✅ Создавать анкеты</li>
+                        <li>✅ Получать уведомления о сообщениях</li>
+                        <li>✅ Создавать приватные чаты</li>
+                    </ul>
+                </div>
+                
+                <div class="telegram-login-container">
+                    <h4>� Отсканируйте QR-код</h4>
+                    <p class="qr-instruction">
+                        1. Откройте камеру в мобильном приложении Telegram<br>
+                        2. Наведите на QR-код ниже<br>
+                        3. Нажмите "Открыть сайт" в боте<br>
+                        4. Авторизация завершится автоматически!
+                    </p>
+                    
+                    <div class="qr-code-wrapper">
+                        <div id="qrcode"></div>
+                        <div class="qr-loading" id="qrLoading">
+                            <div class="spinner"></div>
+                            <p>Генерация QR-кода...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="or-divider" id="loginWidgetDivider" style="display: none;">
+                        <span>или</span>
+                    </div>
+                    
+                    <div id="loginWidgetContainer" style="display: none;">
+                        <a id="telegramDeepLink" href="#" class="telegram-login-button" target="_blank">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+                            </svg>
+                            Войти через Telegram
+                        </a>
+                        <p class="login-hint">Откроется приложение Telegram на вашем устройстве</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 2rem;">
+                        <button 
+                            onclick="switchToEmailAuth()"
+                            style="
+                                background: none;
+                                border: none;
+                                color: #ff006e;
+                                text-decoration: underline;
+                                cursor: pointer;
+                                font-size: 1rem;
+                                padding: 0.5rem 1rem;
+                            "
+                        >
+                            📧 Войти через Email
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно Premium тарифов -->
+    <div id="premiumModal" class="modal" style="display: none;">
+        <div class="modal-content premium-modal">
+            <div class="modal-header">
+                <h2>⭐ Выберите тариф</h2>
+                <button class="modal-close" onclick="closePremiumModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="pricing-table">
+                    <!-- FREE план -->
+                    <div class="pricing-card">
+                        <div class="pricing-header">
+                            <h3>FREE</h3>
+                            <div class="pricing-price">
+                                <span class="price-amount">0</span>
+                                <span class="price-currency">$</span>
+                            </div>
+                            <p class="price-period">бесплатно</p>
+                        </div>
+                        <div class="pricing-features">
+                            <div class="feature-item">
+                                <span class="feature-icon">📢</span>
+                                <span class="feature-text">1 анкета/день</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">📸</span>
+                                <span class="feature-text">5 фото/день</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">📌</span>
+                                <span class="feature-text">Закреп: 1ч/3 дня</span>
+                            </div>
+                            <div class="feature-item disabled">
+                                <span class="feature-icon">✏️</span>
+                                <span class="feature-text">Смена ника недоступна</span>
+                            </div>
+                        </div>
+                        <button class="pricing-btn" onclick="selectPlan('free')" disabled>
+                            Текущий план
+                        </button>
+                    </div>
+
+                    <!-- PRO план -->
+                    <div class="pricing-card featured">
+                        <div class="premium-badge">⭐ ПОПУЛЯРНО</div>
+                        <div class="pricing-header">
+                            <h3>PRO</h3>
+                            <div class="pricing-price">
+                                <span class="price-amount">1</span>
+                                <span class="price-currency">$</span>
+                            </div>
+                            <p class="price-period">в месяц</p>
+                        </div>
+                        <div class="pricing-features">
+                            <div class="feature-item">
+                                <span class="feature-icon">📢</span>
+                                <span class="feature-text">3 анкеты/день</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">📸</span>
+                                <span class="feature-text">Безлимит фото</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">📌</span>
+                                <span class="feature-text">Закреп: 3×1ч/день</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">✏️</span>
+                                <span class="feature-text">Смена ника: 1/сутки</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">⭐</span>
+                                <span class="feature-text">Значок PRO</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">🎯</span>
+                                <span class="feature-text">Приоритет в поддержке</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Блок информации о текущей подписке -->
+                        <div id="currentSubscriptionInfo" style="display: none; margin: 10px 0; padding: 12px; background: rgba(0,217,255,0.1); border: 1px solid var(--neon-cyan); border-radius: 8px;">
+                            <div style="font-size: 0.85rem; color: var(--neon-cyan); margin-bottom: 5px;">
+                                ✅ <strong>Активная подписка</strong>
+                            </div>
+                            <div id="subscriptionDetails" style="font-size: 0.8rem; color: rgba(255,255,255,0.7);"></div>
+                        </div>
+                        
+                        <button class="pricing-btn premium" id="dollarPaymentBtn" onclick="showDollarPaymentComingSoon()" style="background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); border: 2px solid #00ff88; font-weight: bold;">
+                            💵 Купить PRO всего за 1$
+                        </button>
+                        <button class="pricing-btn premium" onclick="showStarsPurchaseModal()" id="buyPremiumBtn" style="margin-top:8px; display: none;">
+                            💳 Купить за Stars
+                        </button>
+                        <button class="pricing-btn secondary" onclick="showReferralModal()" id="referralBtn" style="margin-top:8px; display: none;">
+                            🎁 Получить бесплатно (пригласи друга)
+                        </button>
+                        <button class="pricing-btn secondary" onclick="showTrialOffer()" id="trialBtn" style="margin-top:8px; background: rgba(255,165,0,0.1); border-color: #ffa500;">
+                            ⚡ 7 часов PRO бесплатно (один раз)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для просмотра анкеты -->
+    <div id="adModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔍 Просмотр анкеты</h2>
+                <button class="modal-close" onclick="closeAdModal()">×</button>
+            </div>
+            <div class="modal-body" id="adModalBody">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Загрузка анкеты...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подмодальное окно для выбора срока подписки Stars -->
+    <div id="starsPurchaseModal" class="modal" style="display: none; z-index: 10001;">
+        <div class="modal-content" style="max-width: 360px;">
+            <div class="modal-header" style="padding: 15px 20px;">
+                <h2 style="font-size: 1.3rem; margin: 0;">⭐ Покупка PRO</h2>
+                <button class="modal-close" onclick="closeStarsPurchaseModal()">×</button>
+            </div>
+            <div class="modal-body" style="padding: 15px 20px 20px;">
+                <!-- Slider для выбора срока -->
+                <div style="text-align: center; margin-bottom: 12px;">
+                    <div id="premiumDurationLabel" style="color: var(--neon-pink); font-size: 1.4rem; font-weight: bold;">1 месяц</div>
+                </div>
+                
+                <input type="range" id="premiumSlider" min="1" max="12" value="1" step="1" 
+                    style="width: 100%; height: 5px; border-radius: 5px; background: linear-gradient(to right, #00d9ff, #8338ec); outline: none; cursor: pointer;" 
+                    oninput="updatePremiumPricing(this.value)">
+                <div style="position: relative; color: rgba(255,255,255,0.5); font-size: 0.7rem; margin-top: 6px; margin-bottom: 15px; height: 14px;">
+                    <span style="position: absolute; left: 0%; transform: translateX(0%);">1м</span>
+                    <span style="position: absolute; left: 18.18%; transform: translateX(-50%);">3м</span>
+                    <span style="position: absolute; left: 45.45%; transform: translateX(-50%);">6м</span>
+                    <span style="position: absolute; left: 100%; transform: translateX(-100%);">12м</span>
+                </div>
+
+                <!-- Блок с ценой (фиксированная высота) -->
+                <div style="background: rgba(131,56,236,0.15); border: 2px solid var(--neon-purple); border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: center; height: 110px; display: flex; flex-direction: column; justify-content: center;">
+                    <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-bottom: 5px;">Стоимость</div>
+                    <div id="premiumPrice" style="color: var(--neon-pink); font-size: 2.2rem; font-weight: bold; line-height: 1;">50 ⭐</div>
+                    <div id="premiumDiscount" style="color: var(--neon-cyan); font-size: 0.95rem; font-weight: bold; margin-top: 8px; height: 20px; line-height: 20px;"></div>
+                </div>
+
+                <!-- Кнопка покупки -->
+                <button class="neon-button primary" onclick="buyPremiumWithDuration()" style="width: 100%; padding: 12px; font-size: 1rem;">
+                    💳 Купить PRO
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Реферальное модальное окно -->
+    <div id="referralModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-header">
+                <h2>🎁 Пригласи друга</h2>
+                <button class="modal-close" onclick="closeReferralModal()">×</button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 20px;">
+                <div class="referral-info">
+                    <div class="pulse-gift" style="font-size: 48px; margin: 15px 0;">🎁</div>
+                    <h3 style="color: var(--neon-cyan); margin: 10px 0; font-size: 1.1rem;">Получи месяц PRO бесплатно!</h3>
+                    <p style="color: var(--text-gray); margin: 10px 0; line-height: 1.5; font-size: 0.9rem;">
+                        Пригласи друга через Telegram, и когда он <strong style="color: var(--neon-pink);">создаст анкету</strong> - 
+                        ты получишь <strong style="color: var(--neon-pink);">1 месяц PRO</strong> в подарок!
+                    </p>
+                    <p style="color: var(--text-gray); margin: 5px 0; line-height: 1.4; font-size: 0.8rem; opacity: 0.7;">
+                        ⚠️ Акция действует <strong>один раз</strong> для новых пользователей
+                    </p>
+                    <div class="referral-benefits" style="text-align: left; margin: 15px 0; background: rgba(0,217,255,0.05); padding: 12px; border-radius: 8px; border-left: 3px solid var(--neon-cyan);">
+                        <h4 style="color: var(--neon-cyan); margin-bottom: 8px; font-size: 0.95rem;">PRO возможности:</h4>
+                        <ul style="color: var(--text-gray); line-height: 1.6; font-size: 0.85rem; margin: 0; padding-left: 20px;">
+                            <li>3 анкеты в день</li>
+                            <li>Безлимит фото</li>
+                            <li>3 закрепления/день</li>
+                        </ul>
+                    </div>
+                    <div id="referralLinkContainer" style="margin: 15px 0;">
+                        <p style="color: var(--text-gray); margin-bottom: 8px; font-size: 0.85rem;">Ваша реферальная ссылка:</p>
+                        <div style="background: rgba(131,56,236,0.1); padding: 10px; border-radius: 8px; word-break: break-all; color: var(--neon-cyan); font-family: monospace; font-size: 0.7rem; line-height: 1.3;" id="referralLink">
+                            Загрузка...
+                        </div>
+                    </div>
+                    <button class="neon-button primary" onclick="copyReferralLink()" style="width: 100%; margin-top: 12px; padding: 10px;">
+                        <span class="icon">📋</span>
+                        Скопировать ссылку
+                    </button>
+                    <button class="neon-button" onclick="shareReferralLink()" style="width: 100%; margin-top: 8px; padding: 10px;">
+                        <span class="icon">📤</span>
+                        Поделиться в Telegram
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для просмотра фото -->
+    <div id="photoModal" class="photo-modal" style="display: none;" onclick="closePhotoModal()">
+        <div class="photo-modal-content">
+            <button class="photo-modal-close" onclick="closePhotoModal()">×</button>
+            <div id="photoModalImage" class="photo-modal-image-secure"></div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для alert -->
+    <div id="customAlertModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 2px solid rgba(255,0,110,0.3);">
+            <div id="customAlertMessage" style="color: #fff; font-size: 16px; line-height: 1.6; margin-bottom: 25px; white-space: pre-wrap;"></div>
+            <button id="customAlertBtn" style="
+                width: 100%;
+                padding: 15px;
+                background: linear-gradient(135deg, #ff006e 0%, #8338ec 100%);
+                color: white;
+                border: none;
+                border-radius: 12px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: 600;
+                box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+                transition: all 0.3s ease;
+            ">OK</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно для confirm -->
+    <div id="customConfirmModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 2px solid rgba(255,0,110,0.3);">
+            <div id="customConfirmMessage" style="color: #fff; font-size: 16px; line-height: 1.6; margin-bottom: 25px; white-space: pre-wrap;"></div>
+            <div style="display: flex; gap: 10px;">
+                <button id="customConfirmYes" style="
+                    flex: 1;
+                    padding: 15px;
+                    background: linear-gradient(135deg, #ff006e 0%, #8338ec 100%);
+                    color: white;
+                    border: none;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: 600;
+                    box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+                    transition: all 0.3s ease;
+                ">Да</button>
+                <button id="customConfirmNo" style="
+                    flex: 1;
+                    padding: 15px;
+                    background: rgba(255,255,255,0.1);
+                    color: white;
+                    border: 2px solid rgba(255,255,255,0.2);
+                    border-radius: 12px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: 600;
+                    transition: all 0.3s ease;
+                ">Нет</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для prompt -->
+    <div id="customPromptModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 2px solid rgba(255,0,110,0.3);">
+            <div id="customPromptMessage" style="color: #fff; font-size: 16px; line-height: 1.6; margin-bottom: 15px; white-space: pre-wrap;"></div>
+            <textarea id="customPromptInput" style="
+                width: 100%;
+                min-height: 100px;
+                padding: 15px;
+                background: rgba(255,255,255,0.05);
+                border: 2px solid rgba(255,255,255,0.1);
+                border-radius: 12px;
+                color: #fff;
+                font-size: 15px;
+                resize: vertical;
+                margin-bottom: 15px;
+                font-family: inherit;
+            " placeholder="Введите сообщение..."></textarea>
+            <div style="display: flex; gap: 10px;">
+                <button id="customPromptOk" style="
+                    flex: 1;
+                    padding: 15px;
+                    background: linear-gradient(135deg, #ff006e 0%, #8338ec 100%);
+                    color: white;
+                    border: none;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: 600;
+                    box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+                    transition: all 0.3s ease;
+                ">Отправить</button>
+                <button id="customPromptCancel" style="
+                    flex: 1;
+                    padding: 15px;
+                    background: rgba(255,255,255,0.1);
+                    color: white;
+                    border: 2px solid rgba(255,255,255,0.2);
+                    border-radius: 12px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: 600;
+                    transition: all 0.3s ease;
+                ">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Обязательное модальное окно выбора никнейма -->
+    <div id="requiredNicknameModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header" style="border-bottom: 2px solid var(--primary-color);">
+                <h2 style="margin: 0; font-size: 1.4rem;">🎭 Выберите никнейм</h2>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p style="color: var(--text-gray); margin-bottom: 20px; line-height: 1.5;">
+                    Перед использованием приложения нужно выбрать уникальный никнейм. 
+                    Это имя будут видеть другие пользователи.
+                </p>
+                
+                <div class="input-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; color: var(--text-light); font-weight: 600;">
+                        Ваш никнейм:
+                    </label>
+                    <input 
+                        type="text" 
+                        id="requiredNicknameInput" 
+                        class="neon-input" 
+                        placeholder="Введите никнейм..."
+                        maxlength="20"
+                        style="width: 100%; padding: 12px; font-size: 1rem;"
+                    />
+                    <p style="font-size: 0.75rem; color: var(--text-gray); margin-top: 5px;">
+                        Только буквы (рус/eng), цифры, _ и -
+                    </p>
+                </div>
+
+                <div id="nicknameError" style="display: none; background: rgba(255, 59, 48, 0.15); border-left: 3px solid #ff3b30; padding: 10px; border-radius: 6px; margin-bottom: 15px;">
+                    <p style="margin: 0; color: #ff3b30; font-size: 0.85rem;"></p>
+                </div>
+
+                <!-- Согласие с правилами (показывается только если ещё не принято) -->
+                <div id="termsAgreementSection" style="display: none; margin-bottom: 20px;">
+                    <label style="display: flex; align-items: flex-start; cursor: pointer; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <input 
+                            type="checkbox" 
+                            id="termsCheckbox" 
+                            style="margin-right: 10px; margin-top: 2px; cursor: pointer;"
+                        />
+                        <span style="font-size: 0.85rem; line-height: 1.5; color: var(--text-light);">
+                            Я принимаю 
+                            <a href="/TERMS_OF_SERVICE.md" target="_blank" style="color: var(--primary-color); text-decoration: underline;">
+                                правила использования
+                            </a> 
+                            и подтверждаю, что мне есть 18 лет
+                        </span>
+                    </label>
+                </div>
+
+                <button 
+                    class="neon-button primary full-width" 
+                    onclick="saveRequiredNickname()"
+                    style="padding: 14px; font-size: 1rem; font-weight: 600;"
+                >
+                    ✅ Сохранить и продолжить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальные окна правил и политики -->
+    <div id="rulesModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeRulesModal()">&times;</span>
+            <h2 style="margin-bottom: 12px; font-size: 1.3rem;">📋 Правила</h2>
+            <div class="modal-text">
+                <div style="background: rgba(255, 0, 110, 0.08); padding: 10px; border-radius: 6px; margin-bottom: 12px; border-left: 3px solid var(--primary-color);">
+                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-gray); line-height: 1.4;">⚠️ Краткая выдержка. Действует в соответствии с законодательством РК и РФ.</p>
+                </div>
+
+                <div style="font-size: 0.85rem; line-height: 1.5;">
+                    <p style="margin: 8px 0;"><strong>🔞 Только 18+</strong> • Младше — блокировка</p>
+                    
+                    <p style="margin: 8px 0;"><strong>🚫 Запрещено:</strong></p>
+                    <p style="margin: 4px 0 8px 0; color: var(--text-gray);">Порнография • Угрозы • Мошенничество • Спам • Нарушение приватности</p>
+                    
+                    <p style="margin: 8px 0;"><strong>✅ Допустимо:</strong></p>
+                    <p style="margin: 4px 0 8px 0; color: var(--text-gray);">Анонимный чат 18+ • Флирт • Общение</p>
+                    
+                    <p style="margin: 8px 0;"><strong>⚖️ Ответственность:</strong></p>
+                    <p style="margin: 4px 0 8px 0; color: var(--text-gray);">Вы отвечаете за свой контент. Администрация НЕ отвечает за действия других пользователей.</p>
+                </div>
+
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1); text-align: center;">
+                    <a href="/TERMS_OF_SERVICE.md" target="_blank" style="display: inline-block; padding: 8px 16px; background: var(--primary-color); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
+                        📄 Полное соглашение
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="privacyModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closePrivacyModal()">&times;</span>
+            <h2 style="margin-bottom: 12px; font-size: 1.3rem;">🔒 Конфиденциальность</h2>
+            <div class="modal-text">
+                <div style="background: rgba(0, 255, 255, 0.08); padding: 10px; border-radius: 6px; margin-bottom: 12px; border-left: 3px solid #00ffff;">
+                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-gray); line-height: 1.4;">⚠️ Краткая выдержка. Соответствует законодательству РК и РФ о защите персональных данных.</p>
+                </div>
+
+                <div style="font-size: 0.85rem; line-height: 1.5;">
+                    <p style="margin: 8px 0;"><strong>📊 Собираем:</strong></p>
+                    <p style="margin: 4px 0 8px 0; color: var(--text-gray);">Telegram ID, никнейм • Ваши анкеты, сообщения • IP (для региона)</p>
+                    
+                    <p style="margin: 8px 0;"><strong>🎯 Используем:</strong></p>
+                    <p style="margin: 4px 0 8px 0; color: var(--text-gray);">Работа приложения • Модерация • Аналитика</p>
+                    
+                    <p style="margin: 8px 0;"><strong>🔒 Безопасность:</strong></p>
+                    <p style="margin: 4px 0 8px 0; color: var(--text-gray);">HTTPS-шифрование • Удаление через 30 дней</p>
+                    
+                    <p style="margin: 8px 0;"><strong>❌ НЕ делаем:</strong></p>
+                    <p style="margin: 4px 0 8px 0; color: var(--text-gray);">Не продаём данные • Не храним карты • Не собираем данные детей</p>
+                    
+                    <p style="margin: 8px 0;"><strong>✅ Ваши права:</strong></p>
+                    <p style="margin: 4px 0 8px 0; color: var(--text-gray);">Запросить данные • Изменить • Удалить аккаунт (@Vorobey_444)</p>
+                </div>
+
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1); text-align: center;">
+                    <a href="/child-safety" target="_blank" style="display: inline-block; padding: 8px 16px; background: rgba(102, 126, 234, 0.2); color: #667eea; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.85rem; border: 1px solid #667eea; margin: 4px;">
+                        🛡️ Безопасность детей
+                    </a>
+                    <a href="/delete-account.html" target="_blank" style="display: inline-block; padding: 8px 16px; background: rgba(255, 68, 68, 0.2); color: #ff4444; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.85rem; border: 1px solid #ff4444; margin: 4px;">
+                        🗑️ Удалить аккаунт
+                    </a>
+                    <a href="/PRIVACY_POLICY.md" target="_blank" style="display: inline-block; padding: 8px 16px; background: #00ffff; color: #000; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.85rem; margin: 4px;">
+                        🔒 Полная политика
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Админ-панель -->
+    <div id="adminPanel" class="screen admin-screen" style="display: none;">
+        <div class="header">
+            <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+            <h2>Админ-панель</h2>
+        </div>
+        <div class="admin-tabs">
+            <button class="admin-tab active" data-tab="overview" onclick="switchAdminTab('overview')">Обзор</button>
+            <button class="admin-tab" data-tab="ads" onclick="switchAdminTab('ads')">Анкеты</button>
+            <button class="admin-tab" data-tab="chats" onclick="switchAdminTab('chats')">Чаты</button>
+            <button class="admin-tab" data-tab="users" onclick="switchAdminTab('users')">Баны</button>
+            <button class="admin-tab" data-tab="notify" onclick="switchAdminTab('notify')">Уведомления</button>
+        </div>
+
+        <div class="admin-content">
+            <div id="adminOverview" class="admin-section active">
+                <div class="admin-grid" id="adminOverviewGrid">
+                    <!-- Заполняется через JS -->
+                </div>
+            </div>
+
+            <div id="adminAds" class="admin-section">
+                <div class="admin-section-header">
+                    <h3>Анкеты</h3>
+                    <p class="admin-hint">Блокировка скрывает анкету из выдачи. Истекающая блокировка учитывается по времени.</p>
+                </div>
+                <div id="adminAdsList" class="admin-table"></div>
+            </div>
+
+            <div id="adminChats" class="admin-section">
+                <div class="admin-section-header">
+                    <h3>Приватные чаты</h3>
+                    <p class="admin-hint">Последние запросы и чаты для ручной модерации.</p>
+                </div>
+                <div id="adminChatsList" class="admin-table"></div>
+            </div>
+
+            <div id="adminUsers" class="admin-section">
+                <div class="admin-section-header">
+                    <h3>Баны пользователей</h3>
+                    <div class="admin-search">
+                        <input type="text" id="adminUserSearch" placeholder="Поиск по никнейму, email или токену">
+                        <button class="neon-button" onclick="loadAdminUsers()">Искать</button>
+                    </div>
+                    <p class="admin-hint">Укажите длительность в часах или оставьте пустым для бессрочного бана.</p>
+                </div>
+                <div id="adminUsersList" class="admin-table"></div>
+            </div>
+
+            <div id="adminNotify" class="admin-section">
+                <div class="admin-section-header">
+                    <h3>Отправить уведомление пользователю</h3>
+                    <p class="admin-hint">Работает через Telegram (если не заблокирован) и FCM для email-пользователей.</p>
+                </div>
+                <div class="admin-form">
+                    <input type="text" id="adminNotifyToken" placeholder="user_token получателя">
+                    <input type="text" id="adminNotifyTitle" placeholder="Заголовок" value="Уведомление">
+                    <textarea id="adminNotifyMessage" rows="3" placeholder="Текст уведомления"></textarea>
+                    <button class="neon-button primary" onclick="sendAdminNotification()">Отправить</button>
+                    <div id="adminNotifyStatus" class="admin-status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Мои фото -->
+    <div id="myPhotosScreen" class="screen">
+        <div class="header">
+            <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+            <h2>📸 Мои фото</h2>
+        </div>
+        
+        <!-- Инфо баннер -->
+        <div style="display: flex; gap: 12px; padding: 12px 15px; background: rgba(0, 217, 255, 0.1); border-left: 3px solid #00d9ff; border-radius: 0 8px 8px 0; margin: 15px;">
+            <div style="font-size: 1.4rem; flex-shrink: 0;">ℹ️</div>
+            <div style="flex: 1;">
+                <p id="photosLimitText" style="margin: 0; color: #e0e0e0; font-size: 0.9rem;">Загрузка...</p>
+                <p style="font-size: 0.8rem; color: #888; margin: 4px 0 0 0;">
+                    Фото будут показаны во всех ваших активных объявлениях
+                </p>
+            </div>
+        </div>
+        
+        <!-- Кнопка добавления -->
+        <button class="neon-button primary full-width" onclick="addPhotoFromGallery()" style="margin: 15px;">
+            <span>➕ Добавить фото</span>
+        </button>
+        
+        <!-- Контейнер галереи -->
+        <div id="photosGallery" style="padding: 15px; min-height: 300px; background: rgba(0,0,0,0.2); border-radius: 8px; margin: 0 15px;">
+            <p style="color: #888; text-align: center;">Загрузка фото...</p>
+        </div>
+    </div>
+
+    <!-- FAQ модал для Мир чата -->
+    <div id="worldChatFAQModal" class="modal" style="display: none;">
+        <div class="modal-content world-chat-faq-content">
+            <span class="modal-close" onclick="closeWorldChatFAQ()">&times;</span>
+            <h2>❓ Как пользоваться Мир чатом</h2>
+            <div class="modal-text world-chat-faq-text">
+                <p><strong>🌍 Что такое Мир чат?</strong></p>
+                <p>Это публичный чат где вы можете общаться с пользователями со всего мира. Есть три вкладки для разного типа общения.</p>
+                
+                <p><strong>📱 Три вкладки чата:</strong></p>
+                <ul>
+                    <li><span style="color: #ffaa00;">МИР</span> — общайтесь с пользователями со всего мира (префикс <span style="color: #ffaa00;">@</span>)</li>
+                    <li><span style="color: #00ffff;">ГОРОД</span> — общайтесь только с людьми из вашего города (префикс <span style="color: #00ffff;">&amp;</span>)</li>
+                    <li><span style="color: #ff0000;">ЛС</span> — личные сообщения (префикс <span style="color: #ff0000;">/</span>)</li>
+                </ul>
+                
+                <p><strong>⭐ Звездочка в никнейме:</strong></p>
+                <p>Золотая звезда ⭐ означает что у пользователя есть PRO подписка. PRO можно получить бесплатно пригласив друга!</p>
+                
+                <p><strong>✍️ Как отправить сообщение:</strong></p>
+                <ul>
+                    <li>Выберите нужную вкладку (Мир, Город или ЛС)</li>
+                    <li>Введите текст (максимум 50 символов)</li>
+                    <li>Нажмите кнопку отправки ➤</li>
+                </ul>
+                
+                <p><strong>� Размер текста:</strong></p>
+                <p>Нажмите кнопку <strong>A</strong> над кнопкой отправки сообщения чтобы изменить размер шрифта (маленький → средний → большой).</p>
+                
+                <p><strong>� Как создать приватный чат:</strong></p>
+                <p>Нажмите и удерживайте палец на никнейме пользователя в Мир или Город чате. В открывшемся меню выберите "Приват чат" чтобы начать личную переписку.</p>
+                
+                <p><strong>📍 Пример использования:</strong></p>
+                <p>1. Хотите найти людей по всему миру? → Выберите вкладку <span style="color: #ffaa00;">МИР</span><br>
+                2. Хотите найти соседей? → Выберите вкладку <span style="color: #00ffff;">ГОРОД</span><br>
+                3. Хотите написать приватно? → Создайте чат через долгое нажатие на ник или выберите вкладку <span style="color: #ff0000;">ЛС</span></p>
+                
+                <p><strong>⚠️ Правила:</strong></p>
+                <ul>
+                    <li>Будьте вежливы и уважайте других</li>
+                    <li>Запрещены оскорбления и спам</li>
+                    <li>Сообщения модерируются (автоцензура)</li>
+                    <li>За нарушения возможна блокировка</li>
+                </ul>
+                
+                <p><strong>💡 Совет:</strong></p>
+                <p>Используйте МИР чат для общения с интересными людьми, ГОРОД чат для местных встреч, а ЛС для приватного общения!</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/webapp/email-service.js?v=1.0"></script>
+    <script>
+        // Service Worker для принудительного обновления (отключен из-за проблем с Vercel)
+        if ('serviceWorker' in navigator && false) {
+            navigator.serviceWorker.register('/webapp/sw.js').then(reg => {
+                // Проверяем обновления каждые 30 секунд
+                setInterval(() => reg.update(), 30000);
+                
+                // Немедленная проверка при загрузке
+                reg.update();
+            }).catch(err => {
+                console.warn('[SW] Registration failed:', err);
+            });
+        }
+        
+        // Принудительная очистка кеша с версией исправления
+        const bugFixVersion = '1.0.3'; // Инкрементируем при критических исправлениях
+        const lastVersion = localStorage.getItem('app_version');
+        
+        if (lastVersion !== bugFixVersion) {
+            console.log('[CACHE] Обнаружена новая версия, очищаем кеш...');
+            localStorage.setItem('app_version', bugFixVersion);
+            
+            // Удаляем все зарегистрированные Service Workers
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(reg => {
+                        console.log('[CACHE] Удаляем Service Worker:', reg.scope);
+                        reg.unregister();
+                    });
+                });
+            }
+            
+            // Очищаем все кеши
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        console.log('[CACHE] Удаляем кеш:', name);
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            // Перезагружаем страницу без кеша через 500мс
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 500);
+        }
+        
+        const timestamp = Date.now();
+        
+        // Подключаем скрипт сжатия изображений
+        const compressScript = document.createElement('script');
+        compressScript.src = `/webapp/compress-image.js?v=${timestamp}`;
+        document.body.appendChild(compressScript);
+        
+        // Затем основной скрипт с версией
+        const script = document.createElement('script');
+        script.src = `/webapp/app.js?v=${bugFixVersion}.${timestamp}`;
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>
+
+
+

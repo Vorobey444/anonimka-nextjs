@@ -1,4 +1,4 @@
-// ============= ПРОСМОТР АНКЕТ =============
+﻿// ============= РџР РћРЎРњРћРўР  РђРќРљР•Рў =============
 
 let currentPage = 1;
 const pageSize = 20;
@@ -60,7 +60,7 @@ async function loadAds() {
     if (isLoading) return;
     isLoading = true;
     const list = document.getElementById('adsList');
-    list.innerHTML = '<div class="empty-state">Загрузка анкет...</div>';
+    list.innerHTML = '<div class="empty-state">Р—Р°РіСЂСѓР·РєР° Р°РЅРєРµС‚...</div>';
 
     try {
         const params = new URLSearchParams();
@@ -77,8 +77,8 @@ async function loadAds() {
         renderAds(data.ads || []);
         updatePagination(data.total || 0);
     } catch (error) {
-        console.error('Ошибка загрузки анкет:', error);
-        list.innerHTML = '<div class="empty-state">Не удалось загрузить анкеты</div>';
+        console.error('РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р°РЅРєРµС‚:', error);
+        list.innerHTML = '<div class="empty-state">РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ Р°РЅРєРµС‚С‹</div>';
     } finally {
         isLoading = false;
     }
@@ -88,7 +88,7 @@ function renderAds(ads) {
     const list = document.getElementById('adsList');
 
     if (!ads.length) {
-        list.innerHTML = '<div class="empty-state">Анкет не найдено</div>';
+        list.innerHTML = '<div class="empty-state">РђРЅРєРµС‚ РЅРµ РЅР°Р№РґРµРЅРѕ</div>';
         return;
     }
 
@@ -98,8 +98,8 @@ function renderAds(ads) {
         const card = document.createElement('div');
         card.className = 'profile-card neon-card';
 
-        const genderIcon = ad.gender === 'female' ? '👩' : ad.gender === 'male' ? '👨' : '👤';
-        const ageText = ad.age ? `${ad.age} лет` : '';
+        const genderIcon = ad.gender === 'female' ? 'рџ‘©' : ad.gender === 'male' ? 'рџ‘Ё' : 'рџ‘¤';
+        const ageText = ad.age ? `${ad.age} Р»РµС‚` : '';
         const cityText = ad.city ? ad.city : '';
         const badges = [];
         if (ad.premium) badges.push('<span class="badge premium">PRO</span>');
@@ -109,8 +109,8 @@ function renderAds(ads) {
             <div class="profile-card-header">
                 <div class="avatar-placeholder">${genderIcon}</div>
                 <div class="profile-card-info">
-                    <div class="profile-card-title">${ad.nickname || 'Аноним'}</div>
-                    <div class="profile-card-subtitle">${[ageText, cityText].filter(Boolean).join(' • ')}</div>
+                    <div class="profile-card-title">${ad.nickname || 'РђРЅРѕРЅРёРј'}</div>
+                    <div class="profile-card-subtitle">${[ageText, cityText].filter(Boolean).join(' вЂў ')}</div>
                 </div>
                 <div class="profile-card-badges">${badges.join(' ')}</div>
             </div>
@@ -119,8 +119,8 @@ function renderAds(ads) {
                 ${ad.interests ? `<div class="tag-list">${ad.interests.map(i => `<span class="tag">${i}</span>`).join('')}</div>` : ''}
             </div>
             <div class="profile-card-footer">
-                <button class="neon-button" onclick="openChat('${ad.id}')">💬 Написать</button>
-                <button class="neon-button secondary" onclick="openAd('${ad.id}')">👁️ Смотреть</button>
+                <button class="neon-button" onclick="openChat('${ad.id}')">рџ’¬ РќР°РїРёСЃР°С‚СЊ</button>
+                <button class="neon-button secondary" onclick="openAd('${ad.id}')">рџ‘ЃпёЏ РЎРјРѕС‚СЂРµС‚СЊ</button>
             </div>
         `;
 
@@ -136,17 +136,18 @@ function updatePagination(total) {
 
     prevBtn.disabled = currentPage <= 1;
     nextBtn.disabled = currentPage >= totalPages;
-    pageInfo.textContent = `Стр. ${currentPage} / ${totalPages}`;
+    pageInfo.textContent = `РЎС‚СЂ. ${currentPage} / ${totalPages}`;
 }
 
 function openChat(adId) {
-    window.location.href = `/webapp-v2/chat.html?adId=${encodeURIComponent(adId)}`;
+    window.location.href = `/webapp/chat.html?adId=${encodeURIComponent(adId)}`;
 }
 
 function openAd(adId) {
-    alert('Детальная карточка в разработке');
+    alert('Р”РµС‚Р°Р»СЊРЅР°СЏ РєР°СЂС‚РѕС‡РєР° РІ СЂР°Р·СЂР°Р±РѕС‚РєРµ');
 }
 
-// Экспорт в window
+// Р­РєСЃРїРѕСЂС‚ РІ window
 window.applyFilters = applyFilters;
 window.resetFilters = resetFilters;
+

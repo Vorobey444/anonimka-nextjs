@@ -1,17 +1,17 @@
-// Локальное хранилище чатов (обходим блокировку Supabase)
+﻿// Р›РѕРєР°Р»СЊРЅРѕРµ С…СЂР°РЅРёР»РёС‰Рµ С‡Р°С‚РѕРІ (РѕР±С…РѕРґРёРј Р±Р»РѕРєРёСЂРѕРІРєСѓ Supabase)
 const LocalChatStorage = {
-    // Получить все чаты
+    // РџРѕР»СѓС‡РёС‚СЊ РІСЃРµ С‡Р°С‚С‹
     getAllChats() {
         const chats = localStorage.getItem('private_chats');
         return chats ? JSON.parse(chats) : [];
     },
 
-    // Сохранить чаты
+    // РЎРѕС…СЂР°РЅРёС‚СЊ С‡Р°С‚С‹
     saveChats(chats) {
         localStorage.setItem('private_chats', JSON.stringify(chats));
     },
 
-    // Проверить существование чата
+    // РџСЂРѕРІРµСЂРёС‚СЊ СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ С‡Р°С‚Р°
     checkExisting(user1, user2, adId) {
         const chats = this.getAllChats();
         return chats.find(chat => 
@@ -21,7 +21,7 @@ const LocalChatStorage = {
         );
     },
 
-    // Создать новый чат
+    // РЎРѕР·РґР°С‚СЊ РЅРѕРІС‹Р№ С‡Р°С‚
     createChat(user1, user2, adId) {
         const chats = this.getAllChats();
         const newChat = {
@@ -39,7 +39,7 @@ const LocalChatStorage = {
         return newChat;
     },
 
-    // Получить входящие запросы
+    // РџРѕР»СѓС‡РёС‚СЊ РІС…РѕРґСЏС‰РёРµ Р·Р°РїСЂРѕСЃС‹
     getPendingRequests(userId) {
         const chats = this.getAllChats();
         return chats.filter(chat => 
@@ -49,7 +49,7 @@ const LocalChatStorage = {
         );
     },
 
-    // Получить активные чаты
+    // РџРѕР»СѓС‡РёС‚СЊ Р°РєС‚РёРІРЅС‹Рµ С‡Р°С‚С‹
     getActiveChats(userId) {
         const chats = this.getAllChats();
         return chats.filter(chat => 
@@ -58,7 +58,7 @@ const LocalChatStorage = {
         );
     },
 
-    // Принять запрос
+    // РџСЂРёРЅСЏС‚СЊ Р·Р°РїСЂРѕСЃ
     acceptChat(chatId, userId) {
         const chats = this.getAllChats();
         const chat = chats.find(c => c.id === chatId && c.user2 === userId);
@@ -70,7 +70,7 @@ const LocalChatStorage = {
         return false;
     },
 
-    // Отклонить запрос
+    // РћС‚РєР»РѕРЅРёС‚СЊ Р·Р°РїСЂРѕСЃ
     rejectChat(chatId, userId) {
         const chats = this.getAllChats();
         const filteredChats = chats.filter(c => 
@@ -80,10 +80,11 @@ const LocalChatStorage = {
         return true;
     },
 
-    // Подсчитать запросы
+    // РџРѕРґСЃС‡РёС‚Р°С‚СЊ Р·Р°РїСЂРѕСЃС‹
     countRequests(userId) {
         return this.getPendingRequests(userId).length;
     }
 };
 
 window.LocalChatStorage = LocalChatStorage;
+

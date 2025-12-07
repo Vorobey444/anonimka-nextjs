@@ -1,4 +1,4 @@
-// ============= ОКНО ЧАТА =============
+﻿// ============= РћРљРќРћ Р§РђРўРђ =============
 
 let chatId = null;
 let isSending = false;
@@ -7,8 +7,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     chatId = params.get('chatId');
     if (!chatId) {
-        alert('Чат не найден');
-        window.location.href = '/webapp-v2/chats.html';
+        alert('Р§Р°С‚ РЅРµ РЅР°Р№РґРµРЅ');
+        window.location.href = '/webapp/chats.html';
         return;
     }
 
@@ -22,24 +22,24 @@ async function loadChat() {
         const data = await apiRequest(`/api/chats/${chatId}`);
         const titleEl = document.getElementById('chatTitle');
         if (data.chat && titleEl) {
-            titleEl.textContent = data.chat.other_nickname || 'Чат';
+            titleEl.textContent = data.chat.other_nickname || 'Р§Р°С‚';
         }
     } catch (error) {
-        console.error('Ошибка загрузки чата:', error);
+        console.error('РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё С‡Р°С‚Р°:', error);
     }
 }
 
 async function loadMessages() {
     const container = document.getElementById('messages');
-    container.innerHTML = '<div class="empty-state">Загрузка...</div>';
+    container.innerHTML = '<div class="empty-state">Р—Р°РіСЂСѓР·РєР°...</div>';
 
     try {
         const data = await apiRequest(`/api/chats/${chatId}/messages`);
         const messages = data.messages || [];
         renderMessages(messages);
     } catch (error) {
-        console.error('Ошибка загрузки сообщений:', error);
-        container.innerHTML = '<div class="empty-state">Не удалось загрузить сообщения</div>';
+        console.error('РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЃРѕРѕР±С‰РµРЅРёР№:', error);
+        container.innerHTML = '<div class="empty-state">РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃРѕРѕР±С‰РµРЅРёСЏ</div>';
     }
 }
 
@@ -48,7 +48,7 @@ function renderMessages(messages) {
     container.innerHTML = '';
 
     if (!messages.length) {
-        container.innerHTML = '<div class="empty-state">Сообщений пока нет</div>';
+        container.innerHTML = '<div class="empty-state">РЎРѕРѕР±С‰РµРЅРёР№ РїРѕРєР° РЅРµС‚</div>';
         return;
     }
 
@@ -97,8 +97,8 @@ async function sendMessage(event) {
         input.value = '';
         await loadMessages();
     } catch (error) {
-        console.error('Ошибка отправки сообщения:', error);
-        alert('Не удалось отправить сообщение');
+        console.error('РћС€РёР±РєР° РѕС‚РїСЂР°РІРєРё СЃРѕРѕР±С‰РµРЅРёСЏ:', error);
+        alert('РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ');
     } finally {
         isSending = false;
         setSendState(false);
@@ -109,10 +109,10 @@ function setSendState(isSending) {
     const btn = document.getElementById('sendBtn');
     if (!btn) return;
     btn.disabled = isSending;
-    btn.textContent = isSending ? '...' : '➤';
+    btn.textContent = isSending ? '...' : 'вћ¤';
 }
 
-// Простая экранизация HTML
+// РџСЂРѕСЃС‚Р°СЏ СЌРєСЂР°РЅРёР·Р°С†РёСЏ HTML
 function escapeHtml(str) {
     return str.replace(/[&<>"']/g, (ch) => ({
         '&': '&amp;',
@@ -123,5 +123,6 @@ function escapeHtml(str) {
     }[ch]));
 }
 
-// Экспорт
+// Р­РєСЃРїРѕСЂС‚
 window.sendMessage = sendMessage;
+

@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Anonimka - РњРёСЂ С‡Р°С‚</title>
+    <link rel="stylesheet" href="/webapp/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="app-container chat-page">
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='/webapp/index.html'">в†ђ РќР°Р·Р°Рґ</button>
+            <div class="logo">
+                <div class="neon-icon small">
+                    <img src="/webapp/logo.png" alt="Anonimka Logo" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 12px rgba(236,72,153,0.6);">
+                </div>
+                <h1 style="font-size: 1rem;">РњРёСЂ С‡Р°С‚</h1>
+            </div>
+        </div>
+
+        <div id="worldMessages" class="chat-messages">
+            <div class="empty-state">Р—Р°РіСЂСѓР·РєР°...</div>
+        </div>
+
+        <form id="worldMessageForm" class="chat-input" onsubmit="sendWorldMessage(event)">
+            <input type="text" id="worldMessageInput" class="neon-input" placeholder="Р’РІРµРґРёС‚Рµ СЃРѕРѕР±С‰РµРЅРёРµ..." autocomplete="off" required>
+            <button type="submit" class="neon-button primary" id="worldSendBtn">вћ¤</button>
+        </form>
+    </div>
+
+    <script src="/webapp/js/common.js"></script>
+    <script src="/webapp/js/world-chat.js"></script>
+</body>
+</html>
+

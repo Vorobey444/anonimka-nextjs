@@ -1,6 +1,6 @@
-// ============= ОБЩИЕ КОНСТАНТЫ И ПЕРЕМЕННЫЕ =============
+﻿// ============= РћР‘Р©РР• РљРћРќРЎРўРђРќРўР« Р РџР•Р Р•РњР•РќРќР«Р• =============
 
-// Telegram Web App инициализация
+// Telegram Web App РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ
 let tg = window.Telegram?.WebApp || {
     expand: () => {},
     setHeaderColor: () => {},
@@ -15,9 +15,9 @@ let tg = window.Telegram?.WebApp || {
 
 const isTelegramWebApp = !!(window.Telegram?.WebApp?.platform && window.Telegram.WebApp.platform !== 'unknown');
 
-// ============= API ФУНКЦИИ =============
+// ============= API Р¤РЈРќРљР¦РР =============
 
-// Универсальная функция для API запросов
+// РЈРЅРёРІРµСЂСЃР°Р»СЊРЅР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ API Р·Р°РїСЂРѕСЃРѕРІ
 async function apiRequest(endpoint, options = {}) {
     const url = endpoint.startsWith('http') ? endpoint : endpoint;
     
@@ -27,7 +27,7 @@ async function apiRequest(endpoint, options = {}) {
         },
     };
 
-    // Добавляем user_token если есть
+    // Р”РѕР±Р°РІР»СЏРµРј user_token РµСЃР»Рё РµСЃС‚СЊ
     const userToken = localStorage.getItem('user_token');
     if (userToken) {
         defaultOptions.headers['Authorization'] = `Bearer ${userToken}`;
@@ -56,20 +56,20 @@ async function apiRequest(endpoint, options = {}) {
     }
 }
 
-// ============= ФУНКЦИИ АВТОРИЗАЦИИ =============
+// ============= Р¤РЈРќРљР¦РР РђР’РўРћР РР—РђР¦РР =============
 
-// Проверка авторизации
+// РџСЂРѕРІРµСЂРєР° Р°РІС‚РѕСЂРёР·Р°С†РёРё
 function checkAuth() {
     const userToken = localStorage.getItem('user_token');
     const authMethod = localStorage.getItem('auth_method');
     const savedUser = localStorage.getItem('telegram_user');
     
-    // Android авторизация через email
+    // Android Р°РІС‚РѕСЂРёР·Р°С†РёСЏ С‡РµСЂРµР· email
     if (userToken && authMethod === 'email') {
         return true;
     }
     
-    // Telegram авторизация
+    // Telegram Р°РІС‚РѕСЂРёР·Р°С†РёСЏ
     if (isTelegramWebApp && tg.initDataUnsafe?.user?.id) {
         const userData = {
             id: tg.initDataUnsafe.user.id,
@@ -82,87 +82,84 @@ function checkAuth() {
         return true;
     }
     
-    // Проверка сохранённых данных
+    // РџСЂРѕРІРµСЂРєР° СЃРѕС…СЂР°РЅС‘РЅРЅС‹С… РґР°РЅРЅС‹С…
     if (savedUser) {
         try {
             const userData = JSON.parse(savedUser);
             const authTime = localStorage.getItem('telegram_auth_time');
             const now = Date.now();
-            // Авторизация действительна 30 дней
+            // РђРІС‚РѕСЂРёР·Р°С†РёСЏ РґРµР№СЃС‚РІРёС‚РµР»СЊРЅР° 30 РґРЅРµР№
             if (authTime && (now - parseInt(authTime)) < 30 * 24 * 60 * 60 * 1000) {
                 return true;
             }
         } catch (e) {
-            console.error('Ошибка парсинга данных пользователя:', e);
+            console.error('РћС€РёР±РєР° РїР°СЂСЃРёРЅРіР° РґР°РЅРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ:', e);
         }
     }
     
     return false;
 }
 
-// Получить user_id
+// РџРѕР»СѓС‡РёС‚СЊ user_id
 function getUserId() {
     // Telegram
     if (isTelegramWebApp && tg.initDataUnsafe?.user?.id) {
         return tg.initDataUnsafe.user.id.toString();
     }
     
-    // Из localStorage
+    // РР· localStorage
     return localStorage.getItem('user_id');
 }
 
-// Выход
+// Р’С‹С…РѕРґ
 function logout() {
-    if (confirm('Вы уверены, что хотите выйти?')) {
+    if (confirm('Р’С‹ СѓРІРµСЂРµРЅС‹, С‡С‚Рѕ С…РѕС‚РёС‚Рµ РІС‹Р№С‚Рё?')) {
         localStorage.clear();
-        window.location.href = '/webapp-v2/index.html';
+        window.location.href = '/webapp/index.html';
     }
 }
 
-// ============= НАВИГАЦИЯ =============
+// ============= РќРђР’РР“РђР¦РРЇ =============
 
 function goToBrowse() {
-    window.location.href = '/webapp-v2/browse.html';
+    window.location.href = '/webapp/browse.html';
 }
 
 function goToMyAds() {
-    window.location.href = '/webapp-v2/my-ads.html';
+    window.location.href = '/webapp/my-ads.html';
 }
 
 function goToCreateAd() {
-    window.location.href = '/webapp-v2/create-ad.html';
+    window.location.href = '/webapp/create-ad.html';
 }
 
 function goToChats() {
-    window.location.href = '/webapp-v2/chats.html';
+    window.location.href = '/webapp/chats.html';
 }
 
 function goToProfile() {
-    window.location.href = '/webapp-v2/profile.html';
+    window.location.href = '/webapp/profile.html';
 }
 
 function goToWorldChat() {
-    // TODO: Реализовать страницу мир чата
-    alert('Мир чат в разработке');
+    window.location.href = '/webapp/world-chat.html';
 }
 
 function goToPolls() {
-    // TODO: Реализовать страницу опросов
-    alert('Опросы в разработке');
+    window.location.href = '/webapp/polls.html';
 }
 
 function changeLocation() {
-    // TODO: Реализовать смену локации
-    alert('Смена локации в разработке');
+    window.location.href = '/webapp/location.html';
 }
 
-// ============= БАННЕР ТЕХНИЧЕСКИХ РАБОТ =============
+// ============= Р‘РђРќРќР•Р  РўР•РҐРќРР§Р•РЎРљРРҐ Р РђР‘РћРў =============
 
 function insertMaintenanceBanner() {
-    // Если уже закрывали баннер — не показываем
+    // Р•СЃР»Рё СѓР¶Рµ Р·Р°РєСЂС‹РІР°Р»Рё Р±Р°РЅРЅРµСЂ вЂ” РЅРµ РїРѕРєР°Р·С‹РІР°РµРј
     if (localStorage.getItem('maintenanceBannerClosed') === 'true') return;
 
-    // Добавляем стили один раз
+    // Р”РѕР±Р°РІР»СЏРµРј СЃС‚РёР»Рё РѕРґРёРЅ СЂР°Р·
     if (!document.getElementById('maintenanceBannerStyles')) {
         const style = document.createElement('style');
         style.id = 'maintenanceBannerStyles';
@@ -230,12 +227,12 @@ function insertMaintenanceBanner() {
     banner.className = 'maintenance-banner';
     banner.innerHTML = `
         <div class="maintenance-banner-content">
-            <div class="maintenance-icon">🔧</div>
+            <div class="maintenance-icon">рџ”§</div>
             <div class="maintenance-text">
-                <strong>Ведутся технические работы</strong> по улучшению сервиса. Возможны временные ошибки или недоступность. Просим прощения за неудобства. Скоро всё починим! ✨
+                <strong>Р’РµРґСѓС‚СЃСЏ С‚РµС…РЅРёС‡РµСЃРєРёРµ СЂР°Р±РѕС‚С‹</strong> РїРѕ СѓР»СѓС‡С€РµРЅРёСЋ СЃРµСЂРІРёСЃР°. Р’РѕР·РјРѕР¶РЅС‹ РІСЂРµРјРµРЅРЅС‹Рµ РѕС€РёР±РєРё РёР»Рё РЅРµРґРѕСЃС‚СѓРїРЅРѕСЃС‚СЊ. РџСЂРѕСЃРёРј РїСЂРѕС‰РµРЅРёСЏ Р·Р° РЅРµСѓРґРѕР±СЃС‚РІР°. РЎРєРѕСЂРѕ РІСЃС‘ РїРѕС‡РёРЅРёРј! вњЁ
             </div>
         </div>
-        <button class="maintenance-close" aria-label="Закрыть" title="Закрыть">×</button>
+        <button class="maintenance-close" aria-label="Р—Р°РєСЂС‹С‚СЊ" title="Р—Р°РєСЂС‹С‚СЊ">Г—</button>
     `;
 
     const closeBtn = banner.querySelector('.maintenance-close');
@@ -282,10 +279,10 @@ function toggleHamburgerMenu() {
 // ============= PREMIUM =============
 
 function showPremiumModal() {
-    alert('Premium функции в разработке');
+    alert('Premium С„СѓРЅРєС†РёРё РІ СЂР°Р·СЂР°Р±РѕС‚РєРµ');
 }
 
-// ============= РЕФЕРАЛЬНАЯ ПРОГРАММА =============
+// ============= Р Р•Р¤Р•Р РђР›Р¬РќРђРЇ РџР РћР“Р РђРњРњРђ =============
 
 function showReferralModal() {
     const modal = document.getElementById('referralModal');
@@ -326,7 +323,7 @@ async function loadReferralInfo() {
             }
         }
     } catch (error) {
-        console.error('Ошибка загрузки реферальной информации:', error);
+        console.error('РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЂРµС„РµСЂР°Р»СЊРЅРѕР№ РёРЅС„РѕСЂРјР°С†РёРё:', error);
     }
 }
 
@@ -335,23 +332,23 @@ function copyReferralLink() {
     if (input) {
         input.select();
         document.execCommand('copy');
-        alert('✅ Ссылка скопирована!');
+        alert('вњ… РЎСЃС‹Р»РєР° СЃРєРѕРїРёСЂРѕРІР°РЅР°!');
     }
 }
 
-// ============= КОНТАКТЫ И О ПРИЛОЖЕНИИ =============
+// ============= РљРћРќРўРђРљРўР« Р Рћ РџР РР›РћР–Р•РќРР =============
 
 function showContacts() {
-    alert('Контакты:\n\nПо всем вопросам обращайтесь в Telegram: @support');
+    alert('РљРѕРЅС‚Р°РєС‚С‹:\n\nРџРѕ РІСЃРµРј РІРѕРїСЂРѕСЃР°Рј РѕР±СЂР°С‰Р°Р№С‚РµСЃСЊ РІ Telegram: @support');
 }
 
 function showAbout() {
-    alert('Anonimka v2.0\n\nАнонимное общение без границ\n\n© 2024');
+    alert('Anonimka v2.0\n\nРђРЅРѕРЅРёРјРЅРѕРµ РѕР±С‰РµРЅРёРµ Р±РµР· РіСЂР°РЅРёС†\n\nВ© 2024');
 }
 
-// ============= ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =============
+// ============= Р’РЎРџРћРњРћР“РђРўР•Р›Р¬РќР«Р• Р¤РЈРќРљР¦РР =============
 
-// Форматирование даты
+// Р¤РѕСЂРјР°С‚РёСЂРѕРІР°РЅРёРµ РґР°С‚С‹
 function formatDate(dateString) {
     const date = new Date(dateString);
     const now = new Date();
@@ -361,39 +358,39 @@ function formatDate(dateString) {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
     
-    if (minutes < 1) return 'только что';
-    if (minutes < 60) return `${minutes} мин назад`;
-    if (hours < 24) return `${hours} ч назад`;
-    if (days < 7) return `${days} д назад`;
+    if (minutes < 1) return 'С‚РѕР»СЊРєРѕ С‡С‚Рѕ';
+    if (minutes < 60) return `${minutes} РјРёРЅ РЅР°Р·Р°Рґ`;
+    if (hours < 24) return `${hours} С‡ РЅР°Р·Р°Рґ`;
+    if (days < 7) return `${days} Рґ РЅР°Р·Р°Рґ`;
     
     return date.toLocaleDateString('ru-RU');
 }
 
-// Обработка ошибок
+// РћР±СЂР°Р±РѕС‚РєР° РѕС€РёР±РѕРє
 function handleError(error, context = '') {
-    console.error(`Ошибка${context ? ' в ' + context : ''}:`, error);
-    alert(`Произошла ошибка${context ? ' при ' + context : ''}. Попробуйте позже.`);
+    console.error(`РћС€РёР±РєР°${context ? ' РІ ' + context : ''}:`, error);
+    alert(`РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР°${context ? ' РїСЂРё ' + context : ''}. РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.`);
 }
 
-// ============= ИНИЦИАЛИЗАЦИЯ =============
+// ============= РРќРР¦РРђР›РР—РђР¦РРЇ =============
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Common.js loaded');
     
-    // Проверяем авторизацию
+    // РџСЂРѕРІРµСЂСЏРµРј Р°РІС‚РѕСЂРёР·Р°С†РёСЋ
     if (!checkAuth()) {
-        console.log('Пользователь не авторизован');
-        // Для Android не редиректим (авторизация в native app)
+        console.log('РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ Р°РІС‚РѕСЂРёР·РѕРІР°РЅ');
+        // Р”Р»СЏ Android РЅРµ СЂРµРґРёСЂРµРєС‚РёРј (Р°РІС‚РѕСЂРёР·Р°С†РёСЏ РІ native app)
         const isAndroid = navigator.userAgent.includes('Android');
         if (!isAndroid) {
-            // Для веб-версии редирект на главную
+            // Р”Р»СЏ РІРµР±-РІРµСЂСЃРёРё СЂРµРґРёСЂРµРєС‚ РЅР° РіР»Р°РІРЅСѓСЋ
             if (!window.location.pathname.includes('index.html')) {
-                window.location.href = '/webapp-v2/index.html';
+                window.location.href = '/webapp/index.html';
             }
         }
     }
     
-    // Инициализация Telegram Web App
+    // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ Telegram Web App
     if (isTelegramWebApp) {
         tg.ready();
         tg.expand();
@@ -401,14 +398,15 @@ document.addEventListener('DOMContentLoaded', function() {
         tg.setBackgroundColor('#0a0a0f');
     }
 
-    // Показываем баннер о технических работах (один раз, пока не закрыт)
+    // РџРѕРєР°Р·С‹РІР°РµРј Р±Р°РЅРЅРµСЂ Рѕ С‚РµС…РЅРёС‡РµСЃРєРёС… СЂР°Р±РѕС‚Р°С… (РѕРґРёРЅ СЂР°Р·, РїРѕРєР° РЅРµ Р·Р°РєСЂС‹С‚)
     insertMaintenanceBanner();
 });
 
-// Экспорт функций для использования в других файлах
+// Р­РєСЃРїРѕСЂС‚ С„СѓРЅРєС†РёР№ РґР»СЏ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ РІ РґСЂСѓРіРёС… С„Р°Р№Р»Р°С…
 window.apiRequest = apiRequest;
 window.checkAuth = checkAuth;
 window.getUserId = getUserId;
 window.logout = logout;
 window.formatDate = formatDate;
 window.handleError = handleError;
+
