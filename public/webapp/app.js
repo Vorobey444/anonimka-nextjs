@@ -16001,13 +16001,6 @@ function removeAdPhoto() {
         console.log('🗑️ Превью скрыто');
     }
     
-    // Показываем кнопку загрузки
-    const btn = document.getElementById('addAdPhotoBtn');
-    if (btn) {
-        btn.style.display = 'block';
-        console.log('📷 Кнопка загрузки показана');
-    }
-    
     console.log('🗑️ Фото удалено из анкеты');
 }
 
@@ -16074,37 +16067,39 @@ async function loadMyPhotosForStep9() {
         `;
         galleryContainer.appendChild(infoDiv);
         
-        // Создаём горизонтальную галерею для фото
+        // Создаём горизонтальную галерею для фото с drag & drop
         const gridDiv = document.createElement('div');
+        gridDiv.id = 'step9PhotoGrid';
         gridDiv.style.cssText = `
-            display: flex;
-            gap: 8px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
             margin: 0;
             padding: 0;
-            overflow-x: auto;
-            overflow-y: hidden;
         `;
         
         // Добавляем фото в галерею (только активные, до 3 штук)
         const activePhotos = data.data.filter(p => p.is_active).slice(0, 3);
         activePhotos.forEach((photo, index) => {
             const photoWrapper = document.createElement('div');
+            photoWrapper.draggable = true;
+            photoWrapper.dataset.photoId = photo.id;
+            photoWrapper.dataset.position = photo.position;
             photoWrapper.style.cssText = `
                 position: relative;
-                flex-shrink: 0;
+                cursor: move;
+                transition: all 0.2s;
             `;
             
             const photoDiv = document.createElement('div');
             photoDiv.dataset.fileId = photo.file_id;
             photoDiv.dataset.photoUrl = photo.photo_url;
-            photoDiv.dataset.photoId = photo.id;
             photoDiv.style.cssText = `
                 position: relative;
                 border: 2px solid var(--neon-cyan);
                 border-radius: 8px;
                 overflow: hidden;
-                width: 100px;
-                height: 100px;
+                aspect-ratio: 1;
                 background: rgba(26, 26, 46, 0.5);
             `;
             
@@ -16116,6 +16111,7 @@ async function loadMyPhotosForStep9() {
                 height: 100%;
                 object-fit: cover;
                 display: block;
+                pointer-events: none;
             `;
             
             photoDiv.appendChild(img);
@@ -16127,14 +16123,14 @@ async function loadMyPhotosForStep9() {
                 position: absolute;
                 top: 4px;
                 right: 4px;
-                width: 24px;
-                height: 24px;
+                width: 28px;
+                height: 28px;
                 border-radius: 50%;
-                background: rgba(255, 0, 0, 0.8);
+                background: rgba(255, 0, 0, 0.9);
                 color: white;
                 border: none;
                 cursor: pointer;
-                font-size: 14px;
+                font-size: 16px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -16149,56 +16145,63 @@ async function loadMyPhotosForStep9() {
             });
             photoDiv.appendChild(deleteBtn);
             
-            // Стрелки для изменения порядка
-            const controlsDiv = document.createElement('div');
-            controlsDiv.style.cssText = `
+            // Индикатор перетаскивания
+            const dragIndicator = document.createElement('div');
+            dragIndicator.innerHTML = '⋮⋮';
+            dragIndicator.style.cssText = `
                 position: absolute;
                 bottom: 4px;
-                right: 4px;
-                display: flex;
-                gap: 2px;
-                z-index: 20;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 255, 255, 0.8);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 14px;
+                pointer-events: none;
             `;
+            photoDiv.appendChild(dragIndicator);
             
-            if (index > 0) {
-                const upBtn = document.createElement('button');
-                upBtn.innerHTML = '↑';
-                upBtn.style.cssText = `
-                    width: 24px;
-                    height: 24px;
-                    border-radius: 4px;
-                    background: rgba(0, 255, 255, 0.8);
-                    color: white;
-                    border: none;
-                    cursor: pointer;
-                    font-size: 16px;
-                `;
-                upBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    await movePhotoUp(photo.id);
-                });
-                controlsDiv.appendChild(upBtn);
-            }
+            photoWrapper.appendChild(photoDiv);
             
-            if (index < activePhotos.length - 1) {
-                const downBtn = document.createElement('button');
-                downBtn.innerHTML = '↓';
-                downBtn.style.cssText = `
-                    width: 24px;
-                    height: 24px;
-                    border-radius: 4px;
-                    background: rgba(0, 255, 255, 0.8);
-                    color: white;
-                    border: none;
-                    cursor: pointer;
-                    font-size: 16px;
-                `;
-                downBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    await movePhotoDown(photo.id);
-                });
-                controlsDiv.appendChild(downBtn);
-            }
+            // Drag & Drop события
+            photoWrapper.addEventListener('dragstart', (e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', photoWrapper.innerHTML);
+                photoWrapper.style.opacity = '0.5';
+                window.draggedElement = photoWrapper;
+            });
+            
+            photoWrapper.addEventListener('dragend', (e) => {
+                photoWrapper.style.opacity = '1';
+                window.draggedElement = null;
+            });
+            
+            photoWrapper.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (window.draggedElement && window.draggedElement !== photoWrapper) {
+                    photoWrapper.style.transform = 'scale(0.95)';
+                }
+            });
+            
+            photoWrapper.addEventListener('dragleave', (e) => {
+                photoWrapper.style.transform = 'scale(1)';
+            });
+            
+            photoWrapper.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                photoWrapper.style.transform = 'scale(1)';
+                
+                if (window.draggedElement && window.draggedElement !== photoWrapper) {
+                    const draggedId = window.draggedElement.dataset.photoId;
+                    const targetId = photoWrapper.dataset.photoId;
+                    
+                    // Меняем позиции местами
+                    await swapPhotoPositions(draggedId, targetId);
+                }
+            });
             
             photoDiv.appendChild(controlsDiv);
             photoWrapper.appendChild(photoDiv);
@@ -16235,6 +16238,37 @@ async function deletePhotoFromStep9(photoId) {
     } catch (error) {
         console.error('❌ Ошибка удаления фото:', error);
         tg.showAlert('Ошибка при удалении фото');
+    }
+}
+
+// Поменять местами позиции двух фото (drag & drop)
+async function swapPhotoPositions(photoId1, photoId2) {
+    try {
+        const userToken = localStorage.getItem('user_token');
+        if (!userToken) return;
+        
+        console.log(`🔄 Меняем местами фото ${photoId1} и ${photoId2}`);
+        
+        const response = await fetch('/api/user-photos', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                userToken, 
+                photoId1: parseInt(photoId1),
+                photoId2: parseInt(photoId2),
+                action: 'swap'
+            })
+        });
+        
+        if (response.ok) {
+            console.log('✅ Позиции фото обменены');
+            await loadMyPhotosForStep9(); // Перезагружаем галерею
+        } else {
+            throw new Error('Ошибка обмена позиций');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка обмена позиций:', error);
+        tg.showAlert('Ошибка при изменении порядка');
     }
 }
 

@@ -105,8 +105,30 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userToken, order, updates } = body || {};
+    const { userToken, order, updates, action, photoId1, photoId2 } = body || {};
     if (!userToken) return NextResponse.json({ error: { message: 'userToken required' } }, { status: 400 });
+
+    // Обмен позициями двух фото (drag & drop)
+    if (action === 'swap' && photoId1 && photoId2) {
+      console.log(`[user-photos][PATCH] Swapping positions: ${photoId1} <-> ${photoId2}`);
+      
+      // Получаем текущие позиции
+      const photo1 = await sql`SELECT position FROM user_photos WHERE id = ${photoId1} AND user_token = ${userToken}`;
+      const photo2 = await sql`SELECT position FROM user_photos WHERE id = ${photoId2} AND user_token = ${userToken}`;
+      
+      if (photo1.rows.length === 0 || photo2.rows.length === 0) {
+        return NextResponse.json({ error: { message: 'Photos not found' } }, { status: 404 });
+      }
+      
+      const pos1 = photo1.rows[0].position;
+      const pos2 = photo2.rows[0].position;
+      
+      // Меняем позиции местами
+      await sql`UPDATE user_photos SET position = ${pos2} WHERE id = ${photoId1} AND user_token = ${userToken}`;
+      await sql`UPDATE user_photos SET position = ${pos1} WHERE id = ${photoId2} AND user_token = ${userToken}`;
+      
+      console.log(`[user-photos][PATCH] Swapped: photo ${photoId1} (${pos1}->${pos2}), photo ${photoId2} (${pos2}->${pos1})`);
+    }
 
     if (Array.isArray(order)) {
       // reorder
