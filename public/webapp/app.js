@@ -16203,7 +16203,6 @@ async function loadMyPhotosForStep9() {
                 }
             });
             
-            photoDiv.appendChild(controlsDiv);
             photoWrapper.appendChild(photoDiv);
             gridDiv.appendChild(photoWrapper);
         });
