@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
             ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
             COALESCE(users.is_premium, FALSE) as is_premium,
             users.premium_until,
-            ads.is_blocked, ads.blocked_reason, ads.blocked_until
+            ads.is_blocked, ads.blocked_reason, ads.blocked_until, ads.photo_urls
           FROM ads
           LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
           WHERE ads.tg_id = ${parseInt(tgId)}
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
             ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
             COALESCE(users.is_premium, FALSE) as is_premium,
             users.premium_until,
-            ads.is_blocked, ads.blocked_reason, ads.blocked_until
+            ads.is_blocked, ads.blocked_reason, ads.blocked_until, ads.photo_urls
           FROM ads
           LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
           WHERE ads.user_token = ${userToken}
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until,
-          ads.is_blocked, ads.blocked_reason, ads.blocked_until
+          ads.is_blocked, ads.blocked_reason, ads.blocked_until, ads.photo_urls
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.id = ${parseInt(id)}
@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until,
-          ads.is_blocked, ads.blocked_reason, ads.blocked_until
+          ads.is_blocked, ads.blocked_reason, ads.blocked_until, ads.photo_urls
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.city = ${city} AND ads.country = ${country}
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until,
-          ads.is_blocked, ads.blocked_reason, ads.blocked_until
+          ads.is_blocked, ads.blocked_reason, ads.blocked_until, ads.photo_urls
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.city = ${city}
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until,
-          ads.is_blocked, ads.blocked_reason, ads.blocked_until
+          ads.is_blocked, ads.blocked_reason, ads.blocked_until, ads.photo_urls
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE ads.country = ${country}
@@ -149,7 +149,7 @@ export async function GET(req: NextRequest) {
           ads.is_pinned, ads.pinned_until, ads.created_at, ads.user_token, ads.tg_id as user_id,
           COALESCE(users.is_premium, FALSE) as is_premium,
           users.premium_until,
-          ads.is_blocked, ads.blocked_reason, ads.blocked_until
+          ads.is_blocked, ads.blocked_reason, ads.blocked_until, ads.photo_urls
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE NOT (
