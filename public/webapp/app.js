@@ -4738,11 +4738,6 @@ async function loadAds(filters = {}, append = false) {
             currentPage: window.currentAdsPage,
             filters: filters
         });
-        
-        // Отображаем анкеты
-        // При append используем сохраненные фильтры
-        const cityFilter = filters.city || (window.currentFilters && window.currentFilters.city);
-        displayAds(window.allLoadedAds, cityFilter);
 
     } catch (error) {
         console.error('❌ Ошибка загрузки анкет:', error);
@@ -4761,6 +4756,11 @@ async function loadAds(filters = {}, append = false) {
         }
     } finally {
         window.loadingAds = false;
+        
+        // Отображаем анкеты ПОСЛЕ сброса loadingAds
+        // При append используем сохраненные фильтры
+        const cityFilter = filters.city || (window.currentFilters && window.currentFilters.city);
+        displayAds(window.allLoadedAds, cityFilter);
     }
 }
 
