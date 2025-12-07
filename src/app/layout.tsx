@@ -5,7 +5,8 @@ import { ErrorLoggerProvider } from '@/components/ErrorLoggerProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const dynamic = 'force-dynamic'
+// Removed 'force-dynamic' - causes issues with client components and digest errors
+// Let Next.js handle static/dynamic rendering automatically
 export const runtime = 'nodejs'
 
 export const metadata: Metadata = {
