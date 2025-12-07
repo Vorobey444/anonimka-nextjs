@@ -5030,6 +5030,10 @@ function showAdDetails(index) {
     
     // Сохраняем индекс для кнопки "Написать автору"
     window.currentAdIndex = index;
+    window.currentPhotoIndex = 0;
+    window.currentAdPhotos = ad.photo_urls || [];
+    window.currentPhotoIndex = 0;
+    window.currentAdPhotos = ad.photo_urls || [];
     
     const myAge = ad.my_age || ad.myAge || '?';
     const ageFrom = ad.age_from || ad.ageFrom || '?';
@@ -5064,13 +5068,18 @@ function showAdDetails(index) {
             
             ${ad.photo_urls && ad.photo_urls.length > 0 ? `
             <div class="ad-details-photos">
-                <div class="ad-main-photo">
+                <div class="ad-main-photo" id="adMainPhotoContainer" style="position: relative; touch-action: pan-y;">
                     <img id="adMainPhoto" src="${getPhotoUrl(ad.photo_urls[0])}" alt="Фото анкеты" style="width: 100%; height: auto; border-radius: 12px; max-height: 400px; object-fit: contain;">
+                    ${ad.photo_urls.length > 1 ? `
+                    <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px; color: white; font-size: 0.8rem;">
+                        <span id="photoCounter">1 / ${ad.photo_urls.length}</span>
+                    </div>
+                    ` : ''}
                 </div>
                 ${ad.photo_urls.length > 1 ? `
                 <div class="ad-photo-gallery">
                     ${ad.photo_urls.map((photoUrl, photoIndex) => `
-                        <div class="ad-photo-thumbnail-small" onclick="event.stopPropagation(); document.getElementById('adMainPhoto').src='${getPhotoUrl(photoUrl)}'">
+                        <div class="ad-photo-thumbnail-small" onclick="event.stopPropagation(); switchAdPhoto(${photoIndex})">
                             <img src="${getPhotoUrl(photoUrl)}" alt="Photo ${photoIndex + 1}" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                     `).join('')}
@@ -5123,6 +5132,57 @@ function showAdDetails(index) {
     }
     
     showScreen('adDetails');
+    
+    // Подключаем свайп для фото
+    if (ad.photo_urls && ad.photo_urls.length > 1) {
+        setupAdPhotoSwipe();
+    }
+}
+
+function switchAdPhoto(photoIndex) {
+    if (!window.currentAdPhotos || photoIndex >= window.currentAdPhotos.length) return;
+    window.currentPhotoIndex = photoIndex;
+    const img = document.getElementById('adMainPhoto');
+    const counter = document.getElementById('photoCounter');
+    if (img) img.src = getPhotoUrl(window.currentAdPhotos[photoIndex]);
+    if (counter) counter.textContent = `${photoIndex + 1} / ${window.currentAdPhotos.length}`;
+}
+
+function setupAdPhotoSwipe() {
+    const container = document.getElementById('adMainPhotoContainer');
+    if (!container) return;
+    
+    let startX = 0;
+    let isDragging = false;
+    
+    const handleStart = (e) => {
+        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        isDragging = true;
+    };
+    
+    const handleEnd = (e) => {
+        if (!isDragging) return;
+        const endX = e.type === 'touchend' ? e.changedTouches[0].clientX : e.clientX;
+        const diff = startX - endX;
+        
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) {
+                // Swipe left -> next photo
+                const nextIndex = (window.currentPhotoIndex + 1) % window.currentAdPhotos.length;
+                switchAdPhoto(nextIndex);
+            } else {
+                // Swipe right -> previous photo
+                const prevIndex = (window.currentPhotoIndex - 1 + window.currentAdPhotos.length) % window.currentAdPhotos.length;
+                switchAdPhoto(prevIndex);
+            }
+        }
+        isDragging = false;
+    };
+    
+    container.addEventListener('touchstart', handleStart, { passive: true });
+    container.addEventListener('touchend', handleEnd, { passive: true });
+    container.addEventListener('mousedown', handleStart);
+    container.addEventListener('mouseup', handleEnd);
 }
 
 // Переключение компактного режима списка анкет
@@ -15641,9 +15701,11 @@ async function loadMyPhotos() {
         // Создаём grid контейнер
         let gridHTML = `<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">`;
         
-        photos.forEach((photo) => {
+        photos.forEach((photo, idx) => {
             const isActive = photo.is_active;
             const opacity = isActive ? '1' : '0.5';
+            const isFirst = idx === 0;
+            const isLast = idx === photos.length - 1;
             
             gridHTML += `
                 <div style="border-radius: 12px; overflow: hidden; background: rgba(26, 26, 46, 0.6); border: 2px solid ${isActive ? 'rgba(0, 217, 255, 0.3)' : 'rgba(255, 59, 48, 0.3)'}; opacity: ${opacity};">
@@ -15651,7 +15713,13 @@ async function loadMyPhotos() {
                         ${!isActive ? '<div style="position: absolute; top: 0; right: 0; background: rgba(255, 59, 48, 0.9); color: white; padding: 4px 8px; font-size: 0.7rem; border-radius: 0 0 0 8px;">❌ Отключено</div>' : ''}
                     </div>
                     <div style="padding: 10px; font-size: 0.85rem;">
-                        <div style="color: #888; margin-bottom: 8px; font-size: 0.75rem;">Позиция: <strong>${photo.position}</strong></div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <div style="color: #888; font-size: 0.75rem;">Позиция: <strong>${photo.position}</strong></div>
+                            <div style="display: flex; gap: 4px;">
+                                ${!isFirst ? `<button onclick="movePhotoUp(${photo.id}); event.stopPropagation();" style="padding: 4px 8px; background: rgba(0, 217, 255, 0.2); border: 1px solid rgba(0, 217, 255, 0.5); color: #00d9ff; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">↑</button>` : ''}
+                                ${!isLast ? `<button onclick="movePhotoDown(${photo.id}); event.stopPropagation();" style="padding: 4px 8px; background: rgba(0, 217, 255, 0.2); border: 1px solid rgba(0, 217, 255, 0.5); color: #00d9ff; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">↓</button>` : ''}
+                            </div>
+                        </div>
                         ${photo.caption ? `<div style="color: #e0e0e0; margin-bottom: 10px; font-size: 0.8rem; max-height: 30px; overflow: hidden;">${photo.caption}</div>` : ''}
                         <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
                             <button onclick="editPhotoCaption(${photo.id}, '${(photo.caption || '').replace(/'/g, "\\'")}'); event.stopPropagation();" style="flex: 1; min-width: 60px; padding: 8px 6px; background: rgba(131, 56, 236, 0.2); border: 1px solid rgba(131, 56, 236, 0.5); color: #8338ec; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">✏️ Подпись</button>
@@ -15738,6 +15806,62 @@ async function deletePhoto(photoId) {
         
         const result = await resp.json();
         if (result.error) throw new Error(result.error.message);
+        await loadMyPhotos();
+    } catch (error) {
+        tg.showAlert('❌ Ошибка: ' + error.message);
+    }
+}
+
+async function movePhotoUp(photoId) {
+    const userToken = localStorage.getItem('user_token');
+    try {
+        const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error.message);
+        
+        const photos = result.data || [];
+        const idx = photos.findIndex(p => p.id === photoId);
+        if (idx <= 0) return;
+        
+        const newOrder = photos.map(p => p.id);
+        [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
+        
+        const patchResp = await fetch('/api/user-photos', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userToken, order: newOrder })
+        });
+        
+        const patchResult = await patchResp.json();
+        if (patchResult.error) throw new Error(patchResult.error.message);
+        await loadMyPhotos();
+    } catch (error) {
+        tg.showAlert('❌ Ошибка: ' + error.message);
+    }
+}
+
+async function movePhotoDown(photoId) {
+    const userToken = localStorage.getItem('user_token');
+    try {
+        const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error.message);
+        
+        const photos = result.data || [];
+        const idx = photos.findIndex(p => p.id === photoId);
+        if (idx < 0 || idx >= photos.length - 1) return;
+        
+        const newOrder = photos.map(p => p.id);
+        [newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]];
+        
+        const patchResp = await fetch('/api/user-photos', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userToken, order: newOrder })
+        });
+        
+        const patchResult = await patchResp.json();
+        if (patchResult.error) throw new Error(patchResult.error.message);
         await loadMyPhotos();
     } catch (error) {
         tg.showAlert('❌ Ошибка: ' + error.message);
