@@ -1158,8 +1158,9 @@ h3 {
 .ad-photo-thumbnail img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     transition: transform 0.3s ease;
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .ad-card:hover .ad-photo-thumbnail img {
