@@ -120,7 +120,21 @@ ${safeStack ? `📋 <b>Stack:</b>\n<code>${safeStack}</code>` : ''}${stateText}$
 
 export async function POST(request: NextRequest) {
   try {
-    const errorLog: ErrorLog = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const errorLog: ErrorLog = {
+      message: body?.message || 'Unknown error',
+      stack: body?.stack,
+      url: body?.url || 'n/a',
+      userAgent: body?.userAgent || (request.headers.get('user-agent') || 'n/a'),
+      timestamp: body?.timestamp || new Date().toISOString(),
+      userId: body?.userId,
+      username: body?.username,
+      componentStack: body?.componentStack,
+      type: body?.type,
+      critical: body?.critical,
+      appState: body?.appState,
+      recentActions: body?.recentActions,
+    };
 
     // Логируем конфигурацию для диагностики
     console.log('=== Error Logging Debug ===');
@@ -136,8 +150,9 @@ export async function POST(request: NextRequest) {
       'Non-Error promise rejection',
     ];
 
-    const shouldIgnore = ignorePatterns.some(pattern =>
-      errorLog.message.includes(pattern)
+    const messageText = errorLog.message || '';
+    const shouldIgnore = typeof messageText === 'string' && ignorePatterns.some(pattern =>
+      messageText.includes(pattern)
     );
 
     if (shouldIgnore) {
@@ -175,7 +190,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error processing error log:', error);
     return NextResponse.json(
-      { error: 'Failed to log error' },
+      { error: 'Failed to log error', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
