@@ -16259,8 +16259,12 @@ async function deletePhotoFromStep9(photoId) {
         
         if (response.ok) {
             console.log('✅ Фото удалено');
-            tg.showAlert('Фото удалено из всех анкет');
-            await loadMyPhotosForStep9(); // Перезагружаем галерею
+            // Перезагружаем галерею без смены экрана
+            const currentScreen = document.querySelector('.screen.active')?.id;
+            await loadMyPhotosForStep9();
+            if (currentScreen && currentScreen !== 'createAdScreen') {
+                showScreen(currentScreen);
+            }
         } else {
             throw new Error('Ошибка удаления');
         }
@@ -16291,7 +16295,12 @@ async function swapPhotoPositions(photoId1, photoId2) {
         
         if (response.ok) {
             console.log('✅ Позиции фото обменены');
-            await loadMyPhotosForStep9(); // Перезагружаем галерею
+            // Перезагружаем галерею без смены экрана
+            const currentScreen = document.querySelector('.screen.active')?.id;
+            await loadMyPhotosForStep9();
+            if (currentScreen && currentScreen !== 'createAdScreen') {
+                showScreen(currentScreen);
+            }
         } else {
             throw new Error('Ошибка обмена позиций');
         }
