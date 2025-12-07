@@ -7,17 +7,29 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs'; // Ensure Node.js runtime for env vars
 
 /**
- * Удаляет EXIF метаданные из изображения
+ * Удаляет EXIF метаданные из изображения и конвертирует в JPEG если нужно
  */
-async function stripExifData(buffer: Buffer): Promise<Buffer> {
+async function stripExifData(buffer: Buffer, mediaType: string): Promise<Buffer> {
   try {
+    // Sharp не поддерживает HEIC на Vercel, поэтому просто конвертируем в JPEG
+    // для HEIC и других форматов, которые Telegram не принимает
+    const isHeic = mediaType.includes('heic') || mediaType.includes('heif');
+    
+    if (isHeic) {
+      console.log('⚠️ HEIC формат обнаружен, конвертируем в JPEG...');
+      // Просто конвертируем в JPEG без попытки обработать HEIC
+      return await sharp(buffer, { failOnError: false })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+    }
+    
     // Sharp автоматически удаляет EXIF при конвертации
     return await sharp(buffer)
       .rotate() // Автоповорот по EXIF (если есть), затем удаление
       .jpeg({ quality: 85 }) // Конвертируем в JPEG без метаданных
       .toBuffer();
   } catch (error) {
-    console.error('Ошибка удаления EXIF:', error);
+    console.error('Ошибка обработки изображения:', error);
     return buffer; // Возвращаем оригинал если не удалось
   }
 }
@@ -81,11 +93,11 @@ export async function POST(request: NextRequest) {
     
     // Удаляем EXIF метаданные из фото (для видео не применяется)
     if (!isVideo && photo.type.startsWith('image/')) {
-      console.log('🧹 Удаление EXIF метаданных...');
+      console.log('🧹 Обработка изображения...');
       const originalSize = buffer.length;
-      const cleanedBuffer = await stripExifData(buffer);
+      const cleanedBuffer = await stripExifData(buffer, photo.type);
       buffer = Buffer.from(cleanedBuffer);
-      console.log(`✅ EXIF удалён (${originalSize} → ${buffer.length} bytes)`);
+      console.log(`✅ Изображение обработано (${originalSize} → ${buffer.length} bytes)`);
     }
     
     console.log('📤 Загрузка медиа через Telegram Bot API:', {
