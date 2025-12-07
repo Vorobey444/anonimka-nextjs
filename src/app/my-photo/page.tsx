@@ -45,7 +45,11 @@ function MyPhotoContent() {
 
         const [photosResp, premiumResp] = await Promise.all([
           fetch(`/api/user-photos?userToken=${encodeURIComponent(userToken)}`),
-          fetch(`/api/premium?action=get-user-status&userId=${encodeURIComponent(userToken)}`),
+          fetch(`/api/premium`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "get-user-status", params: { userId: userToken } }),
+          }),
         ]);
 
         const photosData = await photosResp.json();
