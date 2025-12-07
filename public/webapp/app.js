@@ -10359,35 +10359,15 @@ async function convertHeicToJpeg(file) {
 // Загрузить фото в Telegram и получить file_id
 async function uploadPhotoToTelegram(file, userId) {
     try {
-        let fileToUpload = file;
-        
-        // Конвертируем HEIC в JPEG (Telegram не поддерживает HEIC)
-        if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
-            console.log('🔄 HEIC формат обнаружен, конвертируем в JPEG...');
-            try {
-                fileToUpload = await convertHeicToJpeg(file);
-                console.log('✅ HEIC конвертирован в JPEG');
-            } catch (heicError) {
-                console.error('❌ Ошибка конвертации HEIC:', heicError);
-                throw new Error('Не удалось обработать фото в формате HEIC. Попробуйте сделать новое фото или выберите другое.');
-            }
-        }
-        
-        // Сжимаем изображение для совместимости с Telegram
-        if (fileToUpload.type.startsWith('image/')) {
-            console.log('🗜️ Сжимаем и нормализуем изображение...');
-            fileToUpload = await compressImage(fileToUpload, 4);
-        }
-        
+        // Отправляем оригинальный файл без обработки - Telegram сам разберется
         const formData = new FormData();
-        formData.append('photo', fileToUpload);
+        formData.append('photo', file);
         formData.append('userId', userId);
         
-        console.log('📤 Отправка файла:', {
-            name: fileToUpload.name,
-            type: fileToUpload.type,
-            size: fileToUpload.size,
-            originalSize: file.size
+        console.log('📤 Отправка оригинального файла:', {
+            name: file.name,
+            type: file.type,
+            size: file.size
         });
         
         const response = await fetch('/api/upload-photo', {

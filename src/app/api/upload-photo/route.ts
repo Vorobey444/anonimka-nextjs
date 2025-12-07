@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 import { ENV } from '@/lib/env';
-import sharp from 'sharp';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs'; // Ensure Node.js runtime for env vars
@@ -58,38 +57,17 @@ export async function POST(request: NextRequest) {
     }
     
     // Конвертируем File в Buffer
-    let buffer: Buffer = Buffer.from(await photo.arrayBuffer());
+    const buffer: Buffer = Buffer.from(await photo.arrayBuffer());
     
     // Определяем тип медиа (фото или видео)
     const isVideo = photo.type.startsWith('video/');
-    const isHeic = photo.type.includes('heic') || photo.type.includes('heif');
     
-    // Удаляем EXIF метаданные из фото (для видео и HEIC не применяется)
-    // HEIC может обрабатывать сам Telegram, Sharp не поддерживает HEIC на Vercel
-    if (!isVideo && !isHeic && photo.type.startsWith('image/')) {
-      console.log('🧹 Обработка изображения...');
-      const originalSize = buffer.length;
-      try {
-        const cleanedBuffer = await sharp(buffer)
-          .rotate() // Автоповорот по EXIF (если есть), затем удаление
-          .jpeg({ quality: 85 }) // Конвертируем в JPEG без метаданных
-          .toBuffer();
-        buffer = Buffer.from(cleanedBuffer);
-        console.log(`✅ Изображение обработано (${originalSize} → ${buffer.length} bytes)`);
-      } catch (error) {
-        console.warn('⚠️ Не удалось обработать изображение, отправляем оригинал:', error);
-        // Продолжаем с оригинальным буфером
-      }
-    } else if (isHeic) {
-      console.log('ℹ️ HEIC формат - отправляем оригинал (Telegram поддерживает HEIC)');
-    }
-    
-    console.log('📤 Загрузка медиа через Telegram Bot API:', {
+    console.log('📤 Отправка оригинального файла в Telegram:', {
       userId: userId.substring(0, 10) + '...',
       tg_id: telegramUserId,
-      mediaSize: buffer.length,
-      mediaType: photo.type,
-      exifRemoved: !isVideo && photo.type.startsWith('image/')
+      size: buffer.length,
+      type: photo.type,
+      name: photo.name
     });
     
     // РЕШЕНИЕ: Используем служебный канал для хранения фото
@@ -105,11 +83,11 @@ export async function POST(request: NextRequest) {
     const fieldName = isVideo ? 'video' : 'photo';
     
     const telegramFormData = new FormData();
-    telegramFormData.append('chat_id', storageChannel); // Отправляем в канал-хранилище
-    // Создаем Blob из buffer
-    const blob = new Blob([buffer as any], { type: isVideo ? 'video/mp4' : 'image/jpeg' });
-    telegramFormData.append(fieldName, blob, isVideo ? 'video.mp4' : 'photo.jpg');
-    telegramFormData.append('caption', `${isVideo ? '🎥' : '📸'} User: ${telegramUserId} (EXIF stripped)`);
+    telegramFormData.append('chat_id', storageChannel);
+    // Отправляем оригинальный файл - Telegram сам обработает формат
+    const blob = new Blob([buffer as any], { type: photo.type });
+    telegramFormData.append(fieldName, blob, photo.name || (isVideo ? 'video.mp4' : 'photo.jpg'));
+    telegramFormData.append('caption', `${isVideo ? '🎥' : '📸'} User: ${telegramUserId}`);
     
     // Отправляем медиа в канал-хранилище
     const response = await fetch(`https://api.telegram.org/bot${botToken}/${endpoint}`, {
