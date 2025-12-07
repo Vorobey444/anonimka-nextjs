@@ -232,14 +232,14 @@ export async function POST(request: NextRequest) {
 
         if (schema.hasToken) {
           const list = await sql`
-            SELECT blocked_token, blocked_nickname, created_at AS blocked_at
+            SELECT blocked_token, blocked_display_nickname, created_at AS blocked_at
             FROM user_blocks
             WHERE blocker_token = ${user_token}
             ORDER BY created_at DESC
           `;
           const enriched = await Promise.all(list.rows.map(async (row: any) => {
-            // Используем сохраненный blocked_nickname, если он пустой - ищем в users
-            let nickname = row.blocked_nickname;
+            // Используем сохраненный blocked_display_nickname, если он пустой - ищем в users
+            let nickname = row.blocked_display_nickname;
             if (!nickname) {
               const userNick = await sql`SELECT display_nickname FROM users WHERE user_token = ${row.blocked_token} LIMIT 1`;
               nickname = userNick.rows[0]?.display_nickname || 'Собеседник';

@@ -68,7 +68,7 @@ async function blockUser(params: {
 
     // Добавляем блокировку с никнеймом
     await sql`
-        INSERT INTO user_blocks (blocker_token, blocked_token, blocked_nickname, created_at)
+        INSERT INTO user_blocks (blocker_token, blocked_token, blocked_display_nickname, created_at)
         VALUES (${blockerToken}, ${blockedToken}, ${nickname || 'Неизвестный'}, NOW())
     `;
 
@@ -105,9 +105,9 @@ async function getBlockedUsers(params: {
     console.log('🔍 getBlockedUsers вызван для userToken:', userToken);
 
     try {
-        // Пробуем с полем blocked_nickname
+        // Получаем заблокированных с никнеймом
         const result = await sql`
-            SELECT blocked_token, blocked_nickname, created_at
+            SELECT blocked_token, blocked_display_nickname, created_at
             FROM user_blocks 
             WHERE blocker_token = ${userToken}
             ORDER BY created_at DESC
