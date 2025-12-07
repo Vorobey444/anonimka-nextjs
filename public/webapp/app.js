@@ -4712,6 +4712,7 @@ async function loadAds(filters = {}, append = false) {
         const pagination = result.pagination;
         
         console.log('✅ Получено анкет:', ads.length, 'Пагинация:', pagination);
+        console.log('📊 Response:', { success: result.success, adsCount: ads.length, hasPagination: !!pagination });
         
         if (append) {
             window.allLoadedAds.push(...ads);
@@ -4719,7 +4720,14 @@ async function loadAds(filters = {}, append = false) {
             window.allLoadedAds = ads;
         }
         
-        window.hasMoreAds = pagination?.hasMore || false;
+        // Если пагинации нет (например, при фильтрах по городу), считаем что это все анкеты
+        window.hasMoreAds = pagination ? (pagination.hasMore || false) : false;
+        
+        console.log('🔢 Состояние:', { 
+            totalLoaded: window.allLoadedAds.length, 
+            hasMore: window.hasMoreAds,
+            currentPage: window.currentAdsPage 
+        });
         
         // Отображаем анкеты
         displayAds(window.allLoadedAds, filters.city);
@@ -5053,12 +5061,24 @@ function displayAds(ads, city = null) {
     `;
     }).join('');
     
-    // Добавляем индикатор загрузки если есть еще анкеты
-    if (window.hasMoreAds) {
+    // Добавляем индикатор загрузки если есть еще анкеты И не идет загрузка сейчас
+    if (window.hasMoreAds && !window.loadingAds) {
+        adsHTML += `
+            <div id="loadingMore" style="text-align: center; padding: 20px; color: var(--text-secondary); opacity: 0.5;">
+                <p style="margin: 0;">Прокрутите вниз для загрузки еще...</p>
+            </div>
+        `;
+    } else if (window.loadingAds) {
         adsHTML += `
             <div id="loadingMore" style="text-align: center; padding: 20px; color: var(--text-secondary);">
                 <div class="loading-spinner"></div>
                 <p style="margin-top: 10px;">Загружаем еще анкеты...</p>
+            </div>
+        `;
+    } else if (!window.hasMoreAds && window.allLoadedAds.length > 0) {
+        adsHTML += `
+            <div style="text-align: center; padding: 20px; color: var(--text-secondary); opacity: 0.5;">
+                <p style="margin: 0;">✅ Все анкеты загружены (${window.allLoadedAds.length})</p>
             </div>
         `;
     }
