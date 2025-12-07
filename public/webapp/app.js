@@ -10246,6 +10246,79 @@ function closePhotoModal() {
     modal.oncontextmenu = null;
 }
 
+// Сжать изображение до указанного максимального размера в MB
+async function compressImage(file, maxSizeMB = 4) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // Ограничиваем размер до 1920px по большей стороне
+                const maxDimension = 1920;
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Начинаем с качества 0.85 и уменьшаем если нужно
+                let quality = 0.85;
+                const targetSize = maxSizeMB * 1024 * 1024;
+                
+                const tryCompress = (q) => {
+                    canvas.toBlob((blob) => {
+                        URL.revokeObjectURL(url);
+                        
+                        if (!blob) {
+                            reject(new Error('Не удалось сжать изображение'));
+                            return;
+                        }
+                        
+                        // Если размер подходит или качество уже минимальное
+                        if (blob.size <= targetSize || q <= 0.5) {
+                            const newFile = new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            resolve(newFile);
+                        } else {
+                            // Пробуем меньшее качество
+                            tryCompress(q - 0.1);
+                        }
+                    }, 'image/jpeg', q);
+                };
+                
+                tryCompress(quality);
+            } catch (err) {
+                URL.revokeObjectURL(url);
+                reject(err);
+            }
+        };
+        
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('Не удалось загрузить изображение для сжатия'));
+        };
+        
+        img.src = url;
+    });
+}
+
 // Конвертировать HEIC в JPEG через Canvas
 async function convertHeicToJpeg(file) {
     return new Promise((resolve, reject) => {
