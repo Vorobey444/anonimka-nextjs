@@ -62,7 +62,9 @@ function MyPhotoContent() {
 
         const list: Photo[] = photosData.data || [];
         setPhotos(list);
-        const premiumFlag = !!premiumData.isPremium;
+        const premiumFlag = Boolean(
+          premiumData?.data?.isPremium ?? premiumData?.isPremium ?? false
+        );
         setIsPremium(premiumFlag);
         const limit = premiumFlag ? 3 : 1;
         const active = list.filter((p) => p.is_active).length;
