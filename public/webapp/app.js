@@ -15526,13 +15526,22 @@ async function deletePhoto(photoId) {
 // ========== FUNCTIONS FOR AD PHOTO (Step 9) ==========
 
 async function addAdPhoto() {
+    console.log('📸 [addAdPhoto] Начало загрузки фото для анкеты');
+    console.log('📸 [addAdPhoto] Текущий шаг:', currentStep, 'из', totalSteps);
+    console.log('📸 [addAdPhoto] Текущий экран:', document.querySelector('.screen.active')?.id);
+    
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
     
     input.onchange = async (e) => {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file) {
+            console.log('📸 [addAdPhoto] Файл не выбран');
+            return;
+        }
+        
+        console.log('📸 [addAdPhoto] Выбран файл:', file.name, 'Размер:', file.size);
         
         try {
             const addBtn = document.getElementById('addAdPhotoBtn');
@@ -15544,16 +15553,30 @@ async function addAdPhoto() {
             // Сжимаем если больше 4MB
             let fileToUpload = file;
             if (file.size > 4 * 1024 * 1024) {
-                console.log('🗜️ Файл больше 4MB, сжимаем...');
+                console.log('🗜️ [addAdPhoto] Файл больше 4MB, сжимаем...');
                 fileToUpload = await compressImage(file, 4);
+                console.log('🗜️ [addAdPhoto] Сжато до:', fileToUpload.size);
             }
             
             const userId = localStorage.getItem('user_token');
+            console.log('📸 [addAdPhoto] userId:', userId ? 'есть' : 'нет');
+            
+            if (!userId) {
+                throw new Error('Не удалось получить user_token. Попробуйте перезагрузить страницу.');
+            }
+            
+            console.log('📤 [addAdPhoto] Отправка на сервер...');
             const photoData = await uploadPhotoToTelegram(fileToUpload, userId);
+            console.log('✅ [addAdPhoto] Получен ответ:', photoData);
             
             // Сохраняем file_id и URL в formData
             formData.adPhotoFileId = photoData.file_id;
             formData.adPhotoUrl = photoData.photo_url;
+            
+            console.log('💾 [addAdPhoto] Сохранено в formData:', {
+                fileId: formData.adPhotoFileId,
+                url: formData.adPhotoUrl
+            });
             
             // Показываем превью
             const preview = document.getElementById('adPhotoPreview');
@@ -15564,23 +15587,44 @@ async function addAdPhoto() {
                 img.src = photoData.photo_url;
                 preview.style.display = 'block';
                 btn.style.display = 'none';
+                console.log('👁️ [addAdPhoto] Превью показано');
+            } else {
+                console.warn('⚠️ [addAdPhoto] Не найдены элементы для превью:', {
+                    preview: !!preview,
+                    img: !!img,
+                    btn: !!btn
+                });
             }
             
-            console.log('✅ Фото для анкеты загружено:', photoData.file_id);
+            console.log('✅ [addAdPhoto] Фото для анкеты успешно загружено!');
+            
+            // Показываем уведомление об успехе
+            tg.showAlert('✅ Фото загружено успешно!');
             
         } catch (error) {
-            console.error('❌ Ошибка загрузки фото:', error);
-            tg.showAlert('❌ Ошибка загрузки фото: ' + error.message);
+            console.error('❌ [addAdPhoto] Ошибка загрузки фото:', error);
+            console.error('❌ [addAdPhoto] Stack:', error.stack);
+            
+            // Показываем понятное сообщение об ошибке
+            const errorMessage = error.message || 'Неизвестная ошибка';
+            tg.showAlert('❌ Не удалось загрузить фото\n\n' + errorMessage + '\n\nПопробуйте:\n1. Выбрать другое фото\n2. Проверить интернет\n3. Перезагрузить страницу');
         } finally {
             const addBtn = document.getElementById('addAdPhotoBtn');
             if (addBtn) {
                 addBtn.disabled = false;
                 addBtn.innerHTML = '<span>📷 Выбрать фото</span>';
             }
+            console.log('🔄 [addAdPhoto] Завершено (finally block)');
         }
     };
     
+    // Добавляем обработчик отмены выбора файла
+    input.oncancel = () => {
+        console.log('❌ [addAdPhoto] Выбор файла отменён');
+    };
+    
     input.click();
+    console.log('🖱️ [addAdPhoto] File input открыт');
 }
 
 function removeAdPhoto() {
