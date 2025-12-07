@@ -10246,14 +10246,75 @@ function closePhotoModal() {
     modal.oncontextmenu = null;
 }
 
+// Конвертировать HEIC в JPEG через Canvas
+async function convertHeicToJpeg(file) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        
+        img.onload = () => {
+            try {
+                // Создаём canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                // Конвертируем в JPEG Blob
+                canvas.toBlob((blob) => {
+                    URL.revokeObjectURL(url);
+                    
+                    if (!blob) {
+                        reject(new Error('Не удалось конвертировать изображение'));
+                        return;
+                    }
+                    
+                    // Создаём новый File объект
+                    const newFile = new File([blob], file.name.replace(/\.heic$/i, '.jpg'), {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    
+                    resolve(newFile);
+                }, 'image/jpeg', 0.85);
+            } catch (err) {
+                URL.revokeObjectURL(url);
+                reject(err);
+            }
+        };
+        
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('Не удалось загрузить изображение для конвертации'));
+        };
+        
+        img.src = url;
+    });
+}
+
 // Загрузить фото в Telegram и получить file_id
 async function uploadPhotoToTelegram(file, userId) {
     try {
-        // Сжимаем изображение если оно слишком большое (макс 4MB для Vercel)
         let fileToUpload = file;
-        if (file.type.startsWith('image/') && file.size > 4 * 1024 * 1024) {
+        
+        // Конвертируем HEIC в JPEG (Telegram не поддерживает HEIC)
+        if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
+            console.log('🔄 HEIC формат обнаружен, конвертируем в JPEG...');
+            try {
+                fileToUpload = await convertHeicToJpeg(file);
+                console.log('✅ HEIC конвертирован в JPEG');
+            } catch (heicError) {
+                console.error('❌ Ошибка конвертации HEIC:', heicError);
+                throw new Error('Не удалось обработать фото в формате HEIC. Попробуйте сделать новое фото или выберите другое.');
+            }
+        }
+        
+        // Сжимаем изображение если оно слишком большое (макс 4MB для Vercel)
+        if (fileToUpload.type.startsWith('image/') && fileToUpload.size > 4 * 1024 * 1024) {
             console.log('🗜️ Файл больше 4MB, сжимаем...');
-            fileToUpload = await compressImage(file, 4);
+            fileToUpload = await compressImage(fileToUpload, 4);
         }
         
         const formData = new FormData();
