@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ interface Photo {
   is_active: boolean;
 }
 
-export default function MyPhotoPage() {
+function MyPhotoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -487,5 +487,13 @@ export default function MyPhotoPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MyPhotoPage() {
+  return (
+    <Suspense fallback={<div style={{ color: "#e0e0e0", padding: 24 }}>Загрузка...</div>}>
+      <MyPhotoContent />
+    </Suspense>
   );
 }
