@@ -24,7 +24,7 @@ export default function MyPhotoPage() {
 
   const userToken = useMemo(
     () =>
-      searchParams.get("userToken") ||
+      (searchParams?.get("userToken") ?? null) ||
       (typeof window !== "undefined" ? localStorage.getItem("user_token") : null),
     [searchParams]
   );
