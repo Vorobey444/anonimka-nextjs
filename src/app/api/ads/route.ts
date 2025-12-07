@@ -89,6 +89,18 @@ export async function GET(req: NextRequest) {
         LIMIT 1
       `;
     } else if (city && country) {
+      // Получаем total count для пагинации с фильтром по городу и стране
+      const countResult = await sql`
+        SELECT COUNT(*) as total
+        FROM ads
+        WHERE ads.city = ${city} AND ads.country = ${country}
+          AND NOT (
+            COALESCE(is_blocked, false) = true
+            AND (blocked_until IS NULL OR blocked_until > NOW())
+          )
+      `;
+      const total = parseInt(countResult.rows[0]?.total || '0');
+      
       result = await sql`
         SELECT 
           ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
@@ -107,8 +119,33 @@ export async function GET(req: NextRequest) {
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
           ads.created_at DESC
+        LIMIT ${limit}
+        OFFSET ${offset}
       `;
+      
+      // Добавляем метаданные пагинации
+      const pagination = {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: offset + limit < total
+      };
+      (result as any).pagination = pagination;
+      
     } else if (city) {
+      // Получаем total count для пагинации с фильтром по городу
+      const countResult = await sql`
+        SELECT COUNT(*) as total
+        FROM ads
+        WHERE ads.city = ${city}
+          AND NOT (
+            COALESCE(is_blocked, false) = true
+            AND (blocked_until IS NULL OR blocked_until > NOW())
+          )
+      `;
+      const total = parseInt(countResult.rows[0]?.total || '0');
+      
       result = await sql`
         SELECT 
           ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
@@ -127,8 +164,33 @@ export async function GET(req: NextRequest) {
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
           ads.created_at DESC
+        LIMIT ${limit}
+        OFFSET ${offset}
       `;
+      
+      // Добавляем метаданные пагинации
+      const pagination = {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: offset + limit < total
+      };
+      (result as any).pagination = pagination;
+      
     } else if (country) {
+      // Получаем total count для пагинации с фильтром по стране
+      const countResult = await sql`
+        SELECT COUNT(*) as total
+        FROM ads
+        WHERE ads.country = ${country}
+          AND NOT (
+            COALESCE(is_blocked, false) = true
+            AND (blocked_until IS NULL OR blocked_until > NOW())
+          )
+      `;
+      const total = parseInt(countResult.rows[0]?.total || '0');
+      
       result = await sql`
         SELECT 
           ads.id, ads.gender, ads.target, ads.goal, ads.age_from, ads.age_to, ads.my_age, 
@@ -147,7 +209,20 @@ export async function GET(req: NextRequest) {
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
           ads.created_at DESC
+        LIMIT ${limit}
+        OFFSET ${offset}
       `;
+      
+      // Добавляем метаданные пагинации
+      const pagination = {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: offset + limit < total
+      };
+      (result as any).pagination = pagination;
+      
     } else {
       // Получаем total count для пагинации
       const countResult = await sql`

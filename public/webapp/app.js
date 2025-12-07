@@ -4663,6 +4663,7 @@ window.currentAdsPage = 1;
 window.hasMoreAds = true;
 window.loadingAds = false;
 window.allLoadedAds = [];
+window.currentFilters = {}; // Сохраняем текущие фильтры для infinite scroll
 
 async function loadAds(filters = {}, append = false) {
     if (window.loadingAds) return;
@@ -4670,6 +4671,7 @@ async function loadAds(filters = {}, append = false) {
         window.currentAdsPage = 1;
         window.allLoadedAds = [];
         window.hasMoreAds = true;
+        window.currentFilters = filters; // Сохраняем фильтры
     }
     
     try {
@@ -4696,6 +4698,10 @@ async function loadAds(filters = {}, append = false) {
             page: window.currentAdsPage.toString(),
             limit: '20'
         });
+        
+        // Добавляем фильтры в параметры запроса
+        if (filters.country) params.append('country', filters.country);
+        if (filters.city) params.append('city', filters.city);
         
         // Запрашиваем анкеты через Neon API
         const response = await fetch(`/api/ads?${params}`, {
@@ -4763,7 +4769,7 @@ function setupInfiniteScroll() {
             if (scrolledToBottom && window.hasMoreAds && !window.loadingAds) {
                 console.log('📜 Достигнут конец страницы, загружаем еще...');
                 window.currentAdsPage++;
-                loadAds({}, true); // append = true
+                loadAds(window.currentFilters || {}, true); // append = true, используем сохраненные фильтры
             }
         }, 100);
     });
