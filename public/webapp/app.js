@@ -4703,8 +4703,11 @@ async function loadAds(filters = {}, append = false) {
         if (filters.country) params.append('country', filters.country);
         if (filters.city) params.append('city', filters.city);
         
+        const apiUrl = `/api/ads?${params}`;
+        console.log('🌐 API запрос:', apiUrl);
+        
         // Запрашиваем анкеты через Neon API
-        const response = await fetch(`/api/ads?${params}`, {
+        const response = await fetch(apiUrl, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -4732,11 +4735,14 @@ async function loadAds(filters = {}, append = false) {
         console.log('🔢 Состояние:', { 
             totalLoaded: window.allLoadedAds.length, 
             hasMore: window.hasMoreAds,
-            currentPage: window.currentAdsPage 
+            currentPage: window.currentAdsPage,
+            filters: filters
         });
         
         // Отображаем анкеты
-        displayAds(window.allLoadedAds, filters.city);
+        // При append используем сохраненные фильтры
+        const cityFilter = filters.city || (window.currentFilters && window.currentFilters.city);
+        displayAds(window.allLoadedAds, cityFilter);
 
     } catch (error) {
         console.error('❌ Ошибка загрузки анкет:', error);

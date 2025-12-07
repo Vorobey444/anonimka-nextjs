@@ -33,7 +33,17 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
     
-    console.log("[ADS API] Получение объявлений:", { city, country, id, userToken: userToken ? 'есть' : 'нет', tgId: tgId ? 'есть' : 'нет', page, limit });
+    console.log("[ADS API] 🔍 Получение объявлений:", { 
+      city, 
+      country, 
+      id, 
+      userToken: userToken ? 'есть' : 'нет', 
+      tgId: tgId ? 'есть' : 'нет', 
+      page, 
+      limit,
+      offset,
+      fullUrl: req.url
+    });
 
     // Формируем SQL запрос с фильтрами
     let result;
@@ -319,7 +329,8 @@ export async function GET(req: NextRequest) {
       pagination: paginationData
     });
     
-    console.log("[ADS API] Получено объявлений:", ads.length);
+    console.log("[ADS API] ✅ Получено объявлений:", ads.length);
+    console.log("[ADS API] 📄 Пагинация:", paginationData);
     
     return NextResponse.json({
       success: true,
