@@ -1145,6 +1145,27 @@ h3 {
     overflow: hidden;
 }
 
+/* Миниатюра фото в карточке анкеты */
+.ad-photo-thumbnail {
+    width: 100%;
+    height: 120px;
+    margin: -12px -12px 10px -12px;
+    border-radius: 12px 12px 0 0;
+    overflow: hidden;
+    border-bottom: 2px solid var(--neon-purple);
+}
+
+.ad-photo-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.ad-card:hover .ad-photo-thumbnail img {
+    transform: scale(1.05);
+}
+
 /* Компактный режим карточек анкет */
 .ads-list.compact {
     display: grid;
@@ -1154,6 +1175,12 @@ h3 {
 .ad-card.compact {
     padding: 10px 12px;
     border-radius: 12px;
+}
+
+.ad-card.compact .ad-photo-thumbnail {
+    height: 80px;
+    margin: -10px -12px 8px -12px;
+    border-radius: 12px 12px 0 0;
 }
 
 .ad-card.compact .ad-header {
@@ -3824,6 +3851,44 @@ body.emoji-flags-supported .country-code {
     border-radius: 20px;
     font-size: 0.85rem;
     border: 1px solid rgba(131, 56, 236, 0.3);
+}
+
+/* Фото в детальном просмотре */
+.ad-details-photos {
+    margin-bottom: 20px;
+}
+
+.ad-main-photo {
+    width: 100%;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid rgba(0, 217, 255, 0.3);
+}
+
+.ad-photo-gallery {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 5px 0;
+    scroll-snap-type: x mandatory;
+}
+
+.ad-photo-thumbnail-small {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    scroll-snap-align: start;
+}
+
+.ad-photo-thumbnail-small:hover {
+    border-color: var(--neon-cyan);
+    transform: scale(1.05);
 }
 
 .ad-author-info {

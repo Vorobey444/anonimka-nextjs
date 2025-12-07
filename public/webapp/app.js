@@ -4893,6 +4893,11 @@ function displayAds(ads, city = null) {
         return `
         <div class="ad-card ${compact ? 'compact' : ''} ${premiumClass}" onclick="showAdDetails(${index})">
             ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
+            ${ad.photo_urls && ad.photo_urls.length > 0 ? `
+            <div class="ad-photo-thumbnail">
+                <img src="${ad.photo_urls[0]}" alt="Фото анкеты" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+            </div>
+            ` : ''}
             <div class="ad-header">
                 <h3>👤 ${nickname}${premiumBadge}</h3>
                 <div class="created-at"><span class="icon">⏰</span> <span class="label">Создано:</span> <span class="value">${formatCreatedAt(ad.created_at)}</span></div>
@@ -5023,6 +5028,23 @@ function showAdDetails(index) {
                 </div>
                 <div class="ad-date-badge">${new Date(ad.created_at).toLocaleDateString('ru-RU')}</div>
             </div>
+            
+            ${ad.photo_urls && ad.photo_urls.length > 0 ? `
+            <div class="ad-details-photos">
+                <div class="ad-main-photo">
+                    <img id="adMainPhoto" src="${ad.photo_urls[0]}" alt="Фото анкеты" style="width: 100%; height: auto; border-radius: 12px; max-height: 400px; object-fit: contain;">
+                </div>
+                ${ad.photo_urls.length > 1 ? `
+                <div class="ad-photo-gallery">
+                    ${ad.photo_urls.map((photoUrl, photoIndex) => `
+                        <div class="ad-photo-thumbnail-small" onclick="event.stopPropagation(); document.getElementById('adMainPhoto').src='${photoUrl}'">
+                            <img src="${photoUrl}" alt="Photo ${photoIndex + 1}" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                    `).join('')}
+                </div>
+                ` : ''}
+            </div>
+            ` : ''}
             
             <div class="ad-author-info">
                 <div class="author-avatar">👤</div>
