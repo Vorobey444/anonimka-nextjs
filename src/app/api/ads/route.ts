@@ -520,9 +520,11 @@ export async function POST(req: NextRequest) {
     // Вставляем в Neon PostgreSQL
     // tg_id уже приведён к числу или NULL
     
-    // Если есть фото - добавляем в INSERT, иначе пропускаем поле
-    const result = photoUrl && typeof photoUrl === 'string'
-      ? await sql`
+    // Если есть фото - пытаемся добавить в INSERT (если колонка существует)
+    let result: any;
+    try {
+      if (photoUrl && typeof photoUrl === 'string') {
+        result = await sql`
           INSERT INTO ads (
             gender, target, goal, age_from, age_to, my_age, 
             body_type, orientation, text, display_nickname, country, region, city, tg_id, user_token, photo_urls, created_at
@@ -537,8 +539,9 @@ export async function POST(req: NextRequest) {
             ${numericTgId}, ${finalUserToken}, ARRAY[${photoUrl}]::TEXT[], CURRENT_TIMESTAMP
           )
           RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text, photo_urls
-        `
-      : await sql`
+        `;
+      } else {
+        result = await sql`
           INSERT INTO ads (
             gender, target, goal, age_from, age_to, my_age, 
             body_type, orientation, text, display_nickname, country, region, city, tg_id, user_token, created_at
@@ -552,8 +555,33 @@ export async function POST(req: NextRequest) {
             ${country || 'Россия'}, ${region || ''}, ${city}, 
             ${numericTgId}, ${finalUserToken}, CURRENT_TIMESTAMP
           )
-          RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text, photo_urls
+          RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text
         `;
+      }
+    } catch (error: any) {
+      // Если ошибка про несуществующую колонку photo_urls - создаём без неё
+      if (error?.message?.includes('photo_urls') || error?.code === '42703') {
+        console.log('[ADS API] ⚠️ Колонка photo_urls ещё не существует, создаём без фото');
+        result = await sql`
+          INSERT INTO ads (
+            gender, target, goal, age_from, age_to, my_age, 
+            body_type, orientation, text, display_nickname, country, region, city, tg_id, user_token, created_at
+          )
+          VALUES (
+            ${gender}, ${target}, ${goal}, 
+            ${parseOptionalInt(ageFrom)}, 
+            ${parseOptionalInt(ageTo)}, 
+            ${parseOptionalInt(myAge)},
+            ${bodyType || null}, ${orientation || null}, ${text}, ${finalNickname},
+            ${country || 'Россия'}, ${region || ''}, ${city}, 
+            ${numericTgId}, ${finalUserToken}, CURRENT_TIMESTAMP
+          )
+          RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text
+        `;
+      } else {
+        throw error;
+      }
+    }
 
     const newAd = result.rows[0];
     
