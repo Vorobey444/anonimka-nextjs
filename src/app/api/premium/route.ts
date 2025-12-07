@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
                 error: null
               });
             } else {
-              // Premium истёк или не активен - очищаем premium_tokens
+              // Premium истёк или не активен - очищаем premium_tokens и деактивируем лишние фото
               console.log('[PREMIUM API] ⚠️ Premium неактивен в users, очищаем premium_tokens');
               
               await sql`
@@ -140,6 +140,19 @@ export async function POST(request: NextRequest) {
                     updated_at = NOW()
                 WHERE user_token = ${userId}
               `;
+              
+              // Деактивируем лишние фото: FREE пользователю разрешено только 1 активное фото
+              console.log('[PREMIUM API] 📸 Деактивируем лишние фото (FREE лимит = 1)');
+              const photosRes = await sql`
+                SELECT id FROM user_photos WHERE user_token = ${userId} ORDER BY position ASC, id ASC
+              `;
+              const photoIds = photosRes.rows.map((r: any) => r.id);
+              if (photoIds.length > 1) {
+                const keepId = photoIds[0];
+                const dropIds = photoIds.slice(1);
+                await sql`UPDATE user_photos SET is_active = FALSE WHERE id = ANY(${dropIds})`;
+                console.log('[PREMIUM API] ✅ Деактивировано', dropIds.length, 'фото, осталось активным 1');
+              }
             }
           }
 
