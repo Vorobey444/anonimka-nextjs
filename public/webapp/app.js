@@ -15322,16 +15322,17 @@ function getPluralForm(number, one, few, many) {
 
 // ============= МОВА ФОТО - USER PHOTOS =============
 
-async function showMyPhotos() {
-    console.log('📸 showMyPhotos() вызвана');
-    const screen = document.getElementById('myPhotosScreen');
-    console.log('📸 myPhotosScreen элемент найден:', !!screen);
-    if (screen) {
-        console.log('📸 myPhotosScreen текущие классы:', screen.className);
+function showMyPhotos() {
+    const userToken = localStorage.getItem('user_token');
+    if (!userToken) {
+        tg.showAlert('❌ Требуется авторизация');
+        return;
     }
-    showScreen('myPhotosScreen');
+    
+    // Открываем отдельную страницу /my-photo
+    const url = window.location.origin + '/my-photo?userToken=' + userToken;
+    window.open(url, '_blank');
     closeHamburgerMenu();
-    await loadMyPhotos();
 }
 
 async function loadMyPhotos() {
