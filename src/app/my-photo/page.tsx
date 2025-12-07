@@ -116,16 +116,16 @@ function MyPhotoContent() {
       try {
         const formData = new FormData();
         formData.append("photo", file);
-        formData.append("userToken", userToken);
+        formData.append("userId", userToken); // backend ждёт userId
 
         const uploadResp = await fetch("/api/upload-photo", { method: "POST", body: formData });
         const uploadResult = await uploadResp.json();
-        if (uploadResult.error) throw new Error(uploadResult.error);
+        if (uploadResult.error) throw new Error(uploadResult.error.message || uploadResult.error);
 
         const saveResp = await fetch("/api/user-photos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userToken, fileId: uploadResult.file_id, photoUrl: uploadResult.url }),
+          body: JSON.stringify({ userToken, fileId: uploadResult.data.file_id, photoUrl: uploadResult.data.photo_url }),
         });
         const saveResult = await saveResp.json();
         if (saveResult.error) throw new Error(saveResult.error.message);
