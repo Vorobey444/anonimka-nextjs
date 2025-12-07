@@ -1148,8 +1148,8 @@ h3 {
 /* Миниатюра фото в карточке анкеты */
 .ad-photo-thumbnail {
     width: 100%;
-    height: 120px;
-    margin: -12px -12px 10px -12px;
+    height: 80px;
+    margin: -12px -12px 8px -12px;
     border-radius: 12px 12px 0 0;
     overflow: hidden;
     border-bottom: 2px solid var(--neon-purple);
@@ -1178,8 +1178,8 @@ h3 {
 }
 
 .ad-card.compact .ad-photo-thumbnail {
-    height: 80px;
-    margin: -10px -12px 8px -12px;
+    height: 60px;
+    margin: -10px -12px 6px -12px;
     border-radius: 12px 12px 0 0;
 }
 

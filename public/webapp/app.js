@@ -15773,15 +15773,15 @@ async function loadMyPhotosForStep9() {
         }
         
         // Очищаем галерею
-        galleryContainer.innerHTML = '<p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 10px; text-align: center;">Выберите фото из вашей галереи:</p>';
+        galleryContainer.innerHTML = '';
         galleryContainer.style.display = 'block';
         
         // Создаём сетку для фото
         const gridDiv = document.createElement('div');
         gridDiv.style.cssText = `
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
             margin: 0;
             padding: 0;
         `;
@@ -15824,7 +15824,7 @@ async function loadMyPhotosForStep9() {
                 justify-content: center;
                 z-index: 10;
             `;
-            overlay.innerHTML = '<span style="color: white; font-size: 24px; text-shadow: 0 0 4px black;">✓</span>';
+            overlay.innerHTML = '<span style="color: white; font-size: 16px; text-shadow: 0 0 4px black;">✓</span>';
             
             photoDiv.appendChild(img);
             photoDiv.appendChild(overlay);
