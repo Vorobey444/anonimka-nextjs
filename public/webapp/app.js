@@ -5168,15 +5168,41 @@ function showAdDetails(index) {
     }
 }
 
-function switchAdPhoto(photoIndex) {
+function switchAdPhoto(photoIndex, direction = 0) {
     if (!window.currentAdPhotos || photoIndex >= window.currentAdPhotos.length) return;
     window.currentPhotoIndex = photoIndex;
     const img = document.getElementById('adMainPhoto');
     const counter = document.getElementById('photoCounter');
-    if (img) {
-        img.src = getPhotoUrl(window.currentAdPhotos[photoIndex], 'medium');
-        img.dataset.fullUrl = getPhotoUrl(window.currentAdPhotos[photoIndex], 'large');
+    const container = document.getElementById('adMainPhotoContainer');
+    
+    if (img && container) {
+        // Анимация слайда
+        const slideDirection = direction > 0 ? 'translateX(-100%)' : direction < 0 ? 'translateX(100%)' : 'translateX(0)';
+        
+        // Выезжаем влево/вправо
+        img.style.transition = 'transform 0.3s ease-out, opacity 0.2s ease-out';
+        img.style.transform = slideDirection;
+        img.style.opacity = '0';
+        
+        setTimeout(() => {
+            // Меняем фото
+            img.src = getPhotoUrl(window.currentAdPhotos[photoIndex], 'medium');
+            img.dataset.fullUrl = getPhotoUrl(window.currentAdPhotos[photoIndex], 'large');
+            
+            // Начинаем с противоположной стороны
+            const enterDirection = direction > 0 ? 'translateX(100%)' : direction < 0 ? 'translateX(-100%)' : 'translateX(0)';
+            img.style.transition = 'none';
+            img.style.transform = enterDirection;
+            
+            // Заезжаем в центр
+            setTimeout(() => {
+                img.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+                img.style.transform = 'translateX(0)';
+                img.style.opacity = '1';
+            }, 10);
+        }, 150);
     }
+    
     if (counter) counter.textContent = `${photoIndex + 1} / ${window.currentAdPhotos.length}`;
 }
 
@@ -5201,11 +5227,11 @@ function setupAdPhotoSwipe() {
             if (diff > 0) {
                 // Swipe left -> next photo
                 const nextIndex = (window.currentPhotoIndex + 1) % window.currentAdPhotos.length;
-                switchAdPhoto(nextIndex);
+                switchAdPhoto(nextIndex, 1); // direction: 1 = вправо
             } else {
                 // Swipe right -> previous photo
                 const prevIndex = (window.currentPhotoIndex - 1 + window.currentAdPhotos.length) % window.currentAdPhotos.length;
-                switchAdPhoto(prevIndex);
+                switchAdPhoto(prevIndex, -1); // direction: -1 = влево
             }
         }
         isDragging = false;
@@ -16287,9 +16313,15 @@ async function loadMyPhotosForStep9() {
 
 // Удалить фото на шаге 9 (удаляет из галереи и всех анкет)
 async function deletePhotoFromStep9(photoId) {
+    let errorMessage = '';
     try {
         const userToken = localStorage.getItem('user_token');
-        if (!userToken) return;
+        if (!userToken) {
+            errorMessage = 'User token not found';
+            throw new Error(errorMessage);
+        }
+        
+        console.log('🗑️ Удаляем фото ID:', photoId);
         
         const response = await fetch('/api/user-photos', {
             method: 'DELETE',
@@ -16297,32 +16329,49 @@ async function deletePhotoFromStep9(photoId) {
             body: JSON.stringify({ userToken, photoId })
         });
         
-        if (response.ok) {
-            console.log('✅ Фото удалено');
-            // Просто удаляем элемент из DOM без перезагрузки экрана
-            const photoElement = document.querySelector(`[data-photo-id="${photoId}"]`);
-            if (photoElement && photoElement.parentElement) {
-                photoElement.parentElement.remove();
-            }
-            // Проверяем, остались ли фото
-            const gridDiv = document.getElementById('step9PhotoGrid');
-            if (gridDiv && gridDiv.children.length === 0) {
-                const galleryContainer = document.getElementById('step9PhotoGallery');
-                if (galleryContainer) {
-                    galleryContainer.innerHTML = `
-                        <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
-                            <p style="margin: 0;">📷 У вас пока нет фото в галерее</p>
-                            <p style="margin: 8px 0 0 0; font-size: 14px;">Добавьте фото ниже</p>
-                        </div>
-                    `;
-                }
-            }
-        } else {
-            throw new Error('Ошибка удаления');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            errorMessage = `HTTP ${response.status}: ${errorData.error || response.statusText}`;
+            throw new Error(errorMessage);
         }
+        
+        console.log('✅ Фото удалено');
+        
+        // Просто удаляем элемент из DOM без перезагрузки экрана
+        const photoElement = document.querySelector(`[data-photo-id="${photoId}"]`);
+        if (photoElement && photoElement.parentElement) {
+            photoElement.parentElement.remove();
+        }
+        
+        // Проверяем, остались ли фото
+        const gridDiv = document.getElementById('step9PhotoGrid');
+        if (gridDiv && gridDiv.children.length === 0) {
+            const galleryContainer = document.getElementById('step9PhotoGallery');
+            if (galleryContainer) {
+                galleryContainer.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                        <p style="margin: 0;">📷 У вас пока нет фото в галерее</p>
+                        <p style="margin: 8px 0 0 0; font-size: 14px;">Добавьте фото ниже</p>
+                    </div>
+                `;
+            }
+        }
+        
     } catch (error) {
-        console.error('❌ Ошибка удаления фото:', error);
-        tg.showAlert('Ошибка при удалении фото');
+        // КРИТИЧНО: Показываем ошибку ПЕРЕД любым возможным редиректом
+        const fullError = `❌ Ошибка удаления фото:\n\nID: ${photoId}\n${error.message}\n${error.stack || ''}`;
+        console.error(fullError);
+        
+        // Блокируем любые навигационные события
+        event?.stopPropagation?.();
+        event?.preventDefault?.();
+        
+        // Показываем alert с полной информацией об ошибке
+        if (typeof tg !== 'undefined' && tg.showAlert) {
+            tg.showAlert(fullError);
+        } else {
+            alert(fullError);
+        }
     }
 }
 
