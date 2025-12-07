@@ -148,10 +148,14 @@ export async function POST(request: NextRequest) {
               `;
               const photoIds = photosRes.rows.map((r: any) => r.id);
               if (photoIds.length > 1) {
-                const keepId = photoIds[0];
-                const dropIds = photoIds.slice(1);
-                await sql`UPDATE user_photos SET is_active = FALSE WHERE id = ANY(${dropIds})`;
-                console.log('[PREMIUM API] ✅ Деактивировано', dropIds.length, 'фото, осталось активным 1');
+                // Оставляем активным только первое фото, остальные деактивируем
+                await sql`
+                  UPDATE user_photos 
+                  SET is_active = FALSE 
+                  WHERE user_token = ${userId} 
+                    AND id != ${photoIds[0]}
+                `;
+                console.log('[PREMIUM API] ✅ Деактивировано', photoIds.length - 1, 'фото, осталось активным 1');
               }
             }
           }
