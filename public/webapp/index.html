@@ -1008,9 +1008,17 @@
                 <!-- Шаг 9: Добавление фото (опционально) -->
                 <div class="form-step" id="step9">
                     <h3>📸 Добавить фото</h3>
-                    <p style="color: var(--text-gray); text-align: center; margin-bottom: 20px; font-size: 0.9rem;">
+                    <p style="color: var(--text-gray); text-align: center; margin-bottom: 15px; font-size: 0.9rem;">
                         Это необязательный шаг. Вы можете добавить фото сейчас или пропустить.
                     </p>
+                    
+                    <!-- Галерея существующих фото -->
+                    <div id="step9PhotoGallery" style="display: none; margin-bottom: 20px;">
+                        <p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 10px; text-align: center;">
+                            Выберите фото из вашей галереи:
+                        </p>
+                        <!-- Фото будут вставлены сюда -->
+                    </div>
                     
                     <div id="adPhotoPreview" style="display: none; text-align: center; margin-bottom: 15px;">
                         <div style="position: relative; display: inline-block;">
@@ -1021,7 +1029,7 @@
                     </div>
                     
                     <button type="button" id="addAdPhotoBtn" class="neon-button primary full-width" onclick="addAdPhoto()" style="margin-bottom: 10px;">
-                        <span>📷 Выбрать фото</span>
+                        <span>📷 Выбрать новое фото</span>
                     </button>
                     
                     <p style="color: var(--text-gray); text-align: center; font-size: 0.85rem; margin-top: 15px;">

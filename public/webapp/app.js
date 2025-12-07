@@ -15724,55 +15724,82 @@ async function loadMyPhotosForStep9() {
         
         if (data.error || !data.data || data.data.length === 0) {
             console.log('ℹ️ [loadMyPhotosForStep9] Нет фото в галерее');
+            const galleryContainer = document.getElementById('step9PhotoGallery');
+            if (galleryContainer) {
+                galleryContainer.style.display = 'none';
+            }
             return;
         }
         
         console.log(`✅ [loadMyPhotosForStep9] Загружено ${data.data.length} фото`);
         
-        // Создаём контейнер для галереи
-        let galleryContainer = document.getElementById('step9PhotoGallery');
+        // Получаем контейнер галереи из HTML
+        const galleryContainer = document.getElementById('step9PhotoGallery');
         if (!galleryContainer) {
-            const step9 = document.getElementById('step9');
-            if (!step9) {
-                console.error('❌ step9 не найден');
-                return;
-            }
-            
-            // Вставляем галерею после заголовка
-            const h3 = step9.querySelector('h3');
-            if (h3) {
-                galleryContainer = document.createElement('div');
-                galleryContainer.id = 'step9PhotoGallery';
-                galleryContainer.style.cssText = 'display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; max-height: 200px; overflow-y: auto;';
-                h3.parentNode.insertBefore(galleryContainer, h3.nextSibling);
-            }
+            console.error('❌ step9PhotoGallery контейнер не найден');
+            return;
         }
         
-        if (!galleryContainer) return;
-        
         // Очищаем галерею
-        galleryContainer.innerHTML = '';
+        galleryContainer.innerHTML = '<p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 10px; text-align: center;">Выберите фото из вашей галереи:</p>';
+        galleryContainer.style.display = 'block';
+        
+        // Создаём сетку для фото
+        const gridDiv = document.createElement('div');
+        gridDiv.style.cssText = `
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 0;
+            padding: 0;
+        `;
         
         // Добавляем фото в галерею
         data.data.forEach((photo, index) => {
             const photoDiv = document.createElement('div');
-            photoDiv.style.cssText = 'position: relative; cursor: pointer; border: 2px solid transparent; border-radius: 8px; overflow: hidden; transition: all 0.2s;';
+            photoDiv.style.cssText = `
+                position: relative;
+                cursor: pointer;
+                border: 2px solid transparent;
+                border-radius: 8px;
+                overflow: hidden;
+                aspect-ratio: 1;
+                transition: all 0.2s;
+                background: rgba(26, 26, 46, 0.5);
+            `;
             
             const img = document.createElement('img');
             img.src = photo.photo_url;
             img.alt = `Photo ${index + 1}`;
-            img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; display: block;';
+            img.style.cssText = `
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            `;
             
             const overlay = document.createElement('div');
-            overlay.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0); transition: all 0.2s; display: flex; align-items: center; justify-content: center;';
-            overlay.innerHTML = '<span style="color: white; font-size: 20px; text-shadow: 0 0 4px black;">✓</span>';
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0);
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10;
+            `;
+            overlay.innerHTML = '<span style="color: white; font-size: 24px; text-shadow: 0 0 4px black;">✓</span>';
             
             photoDiv.appendChild(img);
             photoDiv.appendChild(overlay);
             
             photoDiv.addEventListener('mouseover', () => {
-                photoDiv.style.borderColor = '#00ffff';
-                overlay.style.background = 'rgba(0,255,255,0.3)';
+                photoDiv.style.borderColor = 'var(--neon-cyan)';
+                overlay.style.background = 'rgba(0,255,255,0.2)';
             });
             
             photoDiv.addEventListener('mouseout', () => {
@@ -15785,10 +15812,11 @@ async function loadMyPhotosForStep9() {
                 selectPhotoFromGallery(photo.photo_url, photo.id);
             });
             
-            galleryContainer.appendChild(photoDiv);
+            gridDiv.appendChild(photoDiv);
         });
         
-        console.log('✅ [loadMyPhotosForStep9] Галерея загружена');
+        galleryContainer.appendChild(gridDiv);
+        console.log('✅ [loadMyPhotosForStep9] Галерея загружена и отображена');
         
     } catch (error) {
         console.error('❌ [loadMyPhotosForStep9] Ошибка:', error);
