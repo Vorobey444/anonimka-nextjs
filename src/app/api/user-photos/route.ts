@@ -198,9 +198,16 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const userToken = req.headers.get('authorization')?.replace('Bearer ', '') || 
-                    new URL(req.url).searchParams.get('userToken');
-  const id = new URL(req.url).searchParams.get('id') || new URL(req.url).searchParams.get('photoId');
+  let userToken = req.headers.get('authorization')?.replace('Bearer ', '') || 
+                  new URL(req.url).searchParams.get('userToken');
+  let id = new URL(req.url).searchParams.get('id') || new URL(req.url).searchParams.get('photoId');
+
+  // Поддерживаем JSON body (как отправляет фронт)
+  if ((!id || !userToken) && req.headers.get('content-type')?.includes('application/json')) {
+    const body = await req.json().catch(() => ({}));
+    userToken = userToken || body.userToken;
+    id = id || body.photoId || body.id;
+  }
   
   try {
     if (!id || !userToken) {
