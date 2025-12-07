@@ -4767,10 +4767,33 @@ async function loadAds(filters = {}, append = false) {
 // Infinite scroll для автоматической подгрузки
 function setupInfiniteScroll() {
     let scrollTimeout;
-    window.addEventListener('scroll', () => {
+    const handleScroll = () => {
         if (scrollTimeout) clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(() => {
-            const scrolledToBottom = (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500;
+            // Проверяем разные варианты определения позиции скролла
+            const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+            const documentHeight = Math.max(
+                document.body.scrollHeight,
+                document.body.offsetHeight,
+                document.documentElement.clientHeight,
+                document.documentElement.scrollHeight,
+                document.documentElement.offsetHeight
+            );
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+            const scrolledToBottom = (windowHeight + scrollTop) >= documentHeight - 500;
+            
+            // Логируем состояние для отладки
+            if (scrollTop > 0 && window.hasMoreAds) {
+                console.log('🔍 Scroll:', {
+                    windowHeight,
+                    documentHeight,
+                    scrollTop,
+                    bottomDistance: documentHeight - (windowHeight + scrollTop),
+                    scrolledToBottom,
+                    hasMoreAds: window.hasMoreAds,
+                    loadingAds: window.loadingAds
+                });
+            }
             
             if (scrolledToBottom && window.hasMoreAds && !window.loadingAds) {
                 console.log('📜 Достигнут конец страницы, загружаем еще...');
@@ -4778,7 +4801,17 @@ function setupInfiniteScroll() {
                 loadAds(window.currentFilters || {}, true); // append = true, используем сохраненные фильтры
             }
         }, 100);
-    });
+    };
+    
+    // Подписываемся на события скролла на разных элементах
+    window.addEventListener('scroll', handleScroll);
+    document.addEventListener('scroll', handleScroll);
+    
+    // Также проверяем скролл контейнера анкет
+    const adsList = document.getElementById('adsList');
+    if (adsList && adsList.parentElement) {
+        adsList.parentElement.addEventListener('scroll', handleScroll);
+    }
 }
 
 // Инициализируем infinite scroll при загрузке страницы
