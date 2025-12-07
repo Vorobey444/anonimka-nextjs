@@ -148,7 +148,7 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get('id') || searchParams.get('photoId');
     const userToken = searchParams.get('userToken');
     if (!id || !userToken) return NextResponse.json({ error: { message: 'id and userToken required' } }, { status: 400 });
 
