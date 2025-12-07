@@ -16263,12 +16263,23 @@ async function deletePhotoFromStep9(photoId) {
         
         if (response.ok) {
             console.log('✅ Фото удалено');
-            // Сохраняем текущий экран перед перезагрузкой
-            const currentScreen = document.querySelector('.screen.active')?.id;
-            await loadMyPhotosForStep9();
-            // Возвращаемся на тот же экран
-            if (currentScreen) {
-                showScreen(currentScreen);
+            // Просто удаляем элемент из DOM без перезагрузки экрана
+            const photoElement = document.querySelector(`[data-photo-id="${photoId}"]`);
+            if (photoElement && photoElement.parentElement) {
+                photoElement.parentElement.remove();
+            }
+            // Проверяем, остались ли фото
+            const gridDiv = document.getElementById('step9PhotoGrid');
+            if (gridDiv && gridDiv.children.length === 0) {
+                const galleryContainer = document.getElementById('step9PhotoGallery');
+                if (galleryContainer) {
+                    galleryContainer.innerHTML = `
+                        <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                            <p style="margin: 0;">📷 У вас пока нет фото в галерее</p>
+                            <p style="margin: 8px 0 0 0; font-size: 14px;">Добавьте фото ниже</p>
+                        </div>
+                    `;
+                }
             }
         } else {
             throw new Error('Ошибка удаления');
@@ -16300,13 +16311,10 @@ async function swapPhotoPositions(photoId1, photoId2) {
         
         if (response.ok) {
             console.log('✅ Позиции фото обменены');
-            // Сохраняем текущий экран перед перезагрузкой
-            const currentScreen = document.querySelector('.screen.active')?.id;
-            await loadMyPhotosForStep9();
-            // Возвращаемся на тот же экран
-            if (currentScreen) {
-                showScreen(currentScreen);
-            }
+            // Просто обновим страницу через небольшую задержку, чтобы увидеть изменения
+            setTimeout(() => {
+                location.reload();
+            }, 500);
         } else {
             throw new Error('Ошибка обмена позиций');
         }
