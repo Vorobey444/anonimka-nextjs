@@ -517,28 +517,43 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Подготавливаем массив фото (если фото передано)
-    const photoUrls = photoUrl ? [photoUrl] : null;
-    
     // Вставляем в Neon PostgreSQL
     // tg_id уже приведён к числу или NULL
     
-    const result = await sql`
-      INSERT INTO ads (
-        gender, target, goal, age_from, age_to, my_age, 
-        body_type, orientation, text, display_nickname, country, region, city, tg_id, user_token, photo_urls, created_at
-      )
-      VALUES (
-        ${gender}, ${target}, ${goal}, 
-        ${parseOptionalInt(ageFrom)}, 
-        ${parseOptionalInt(ageTo)}, 
-        ${parseOptionalInt(myAge)},
-        ${bodyType || null}, ${orientation || null}, ${text}, ${finalNickname},
-        ${country || 'Россия'}, ${region || ''}, ${city}, 
-        ${numericTgId}, ${finalUserToken}, ${photoUrls}, CURRENT_TIMESTAMP
-      )
-      RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text, photo_urls
-    `;
+    // Если есть фото - добавляем в INSERT, иначе пропускаем поле
+    const result = photoUrl 
+      ? await sql`
+          INSERT INTO ads (
+            gender, target, goal, age_from, age_to, my_age, 
+            body_type, orientation, text, display_nickname, country, region, city, tg_id, user_token, photo_urls, created_at
+          )
+          VALUES (
+            ${gender}, ${target}, ${goal}, 
+            ${parseOptionalInt(ageFrom)}, 
+            ${parseOptionalInt(ageTo)}, 
+            ${parseOptionalInt(myAge)},
+            ${bodyType || null}, ${orientation || null}, ${text}, ${finalNickname},
+            ${country || 'Россия'}, ${region || ''}, ${city}, 
+            ${numericTgId}, ${finalUserToken}, ARRAY[${photoUrl}]::text[], CURRENT_TIMESTAMP
+          )
+          RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text, photo_urls
+        `
+      : await sql`
+          INSERT INTO ads (
+            gender, target, goal, age_from, age_to, my_age, 
+            body_type, orientation, text, display_nickname, country, region, city, tg_id, user_token, created_at
+          )
+          VALUES (
+            ${gender}, ${target}, ${goal}, 
+            ${parseOptionalInt(ageFrom)}, 
+            ${parseOptionalInt(ageTo)}, 
+            ${parseOptionalInt(myAge)},
+            ${bodyType || null}, ${orientation || null}, ${text}, ${finalNickname},
+            ${country || 'Россия'}, ${region || ''}, ${city}, 
+            ${numericTgId}, ${finalUserToken}, CURRENT_TIMESTAMP
+          )
+          RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text, photo_urls
+        `;
 
     const newAd = result.rows[0];
     
