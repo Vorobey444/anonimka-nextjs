@@ -4928,7 +4928,7 @@ function displayAds(ads, city = null) {
             ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
             ${ad.photo_urls && ad.photo_urls.length > 0 ? `
             <div class="ad-photo-thumbnail">
-                <img src="${getPhotoUrl(ad.photo_urls[0])}" alt="Фото анкеты" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                <img src="${getPhotoUrl(ad.photo_urls[0])}" alt="Фото анкеты" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;">
             </div>
             ` : ''}
             <div class="ad-header">
