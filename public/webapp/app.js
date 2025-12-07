@@ -3665,6 +3665,11 @@ function showMainMenu() {
 }
 
 function showCreateAd() {
+    console.log('🎯 [showCreateAd] ВЫЗВАНА! Stack trace:');
+    console.trace();
+    console.log('🎯 [showCreateAd] currentStep ДО:', currentStep);
+    console.log('🎯 [showCreateAd] formData ДО:', Object.keys(formData).length, 'полей', formData);
+    
     // КРИТИЧНО: Проверяем никнейм перед созданием объявления
     const nickname = localStorage.getItem('userNickname');
     if (!nickname || nickname.trim() === '') {
@@ -3720,6 +3725,13 @@ function showCreateAd() {
             }
             return;
         }
+    }
+    
+    // Проверяем, не находимся ли мы уже в процессе создания анкеты
+    const currentScreen = document.querySelector('.screen.active')?.id;
+    if (currentScreen === 'createAd' && currentStep > 1) {
+        console.warn('⚠️ [showCreateAd] Уже создаём анкету на шаге', currentStep, '- игнорируем повторный вызов');
+        return;
     }
     
     showScreen('createAd');
