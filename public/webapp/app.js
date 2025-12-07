@@ -16353,15 +16353,41 @@ async function deletePhotoFromStep9(photoId) {
         }
         
     } catch (error) {
-        // КРИТИЧНО: Показываем ошибку ПЕРЕД любым возможным редиректом
-        const fullError = `❌ Ошибка удаления фото:\n\nID: ${photoId}\n${error.message}\n${error.stack || ''}`;
-        console.error(fullError);
+        const errorDetails = {
+            photoId,
+            message: error.message || String(error),
+            stack: error.stack || '',
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Логируем в консоль ДО отправки на сервер
+        console.error('❌ Photo deletion error:', errorDetails);
+        
+        // Отправляем ошибку на сервер для логирования
+        try {
+            await fetch('/api/log-error', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'DELETE_PHOTO_STEP9',
+                    error: errorDetails.message,
+                    stack: errorDetails.stack,
+                    photoId: photoId,
+                    userAgent: errorDetails.userAgent,
+                    timestamp: errorDetails.timestamp
+                })
+            }).catch(err => console.log('⚠️ Could not send error to server:', err.message));
+        } catch (logErr) {
+            console.log('⚠️ Error logging failed:', logErr);
+        }
         
         // Блокируем любые навигационные события
         event?.stopPropagation?.();
         event?.preventDefault?.();
         
         // Показываем alert с полной информацией об ошибке
+        const fullError = `❌ Ошибка удаления фото:\n\nID: ${photoId}\n${errorDetails.message}\n\nОшибка отправлена на сервер для анализа.`;
         if (typeof tg !== 'undefined' && tg.showAlert) {
             tg.showAlert(fullError);
         } else {

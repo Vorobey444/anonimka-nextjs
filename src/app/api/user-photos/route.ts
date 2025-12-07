@@ -4,6 +4,36 @@ import { sql } from '@vercel/postgres';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+// Логирование ошибок в БД для отладки
+async function logErrorToDatabase(errorData: {
+  userToken?: string;
+  photoId?: string;
+  action: string;
+  error: string;
+  stack?: string;
+  statusCode?: number;
+}) {
+  try {
+    // Проверяем, есть ли таблица для логов ошибок
+    await sql`
+      INSERT INTO error_logs (user_token, photo_id, action, error_message, error_stack, status_code, created_at)
+      VALUES (
+        ${errorData.userToken || null},
+        ${errorData.photoId || null},
+        ${errorData.action},
+        ${errorData.error},
+        ${errorData.stack || null},
+        ${errorData.statusCode || 500},
+        NOW()
+      )
+    `;
+    console.log('✅ Error logged to database');
+  } catch (logErr) {
+    // Если таблицы нет, просто логируем в консоль
+    console.log('⚠️ Could not log to database, but error is logged in console');
+  }
+}
+
 // Helper to enforce free vs pro limits
 async function enforceLimits(userToken: string) {
   // get user premium
@@ -168,11 +198,16 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const userToken = req.headers.get('authorization')?.replace('Bearer ', '') || 
+                    new URL(req.url).searchParams.get('userToken');
+  const id = new URL(req.url).searchParams.get('id') || new URL(req.url).searchParams.get('photoId');
+  
   try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id') || searchParams.get('photoId');
-    const userToken = searchParams.get('userToken');
-    if (!id || !userToken) return NextResponse.json({ error: { message: 'id and userToken required' } }, { status: 400 });
+    if (!id || !userToken) {
+      return NextResponse.json({ error: { message: 'id and userToken required' } }, { status: 400 });
+    }
+
+    console.log(`[user-photos][DELETE] Deleting photo ${id} for user ${userToken?.substring(0, 16)}...`);
 
     await sql`DELETE FROM user_photos WHERE id = ${id} AND user_token = ${userToken}`;
     await enforceLimits(userToken);
@@ -184,9 +219,29 @@ export async function DELETE(req: NextRequest) {
       ORDER BY position ASC, id ASC
     `;
 
+    console.log(`[user-photos][DELETE] Successfully deleted photo ${id}`);
     return NextResponse.json({ data: photos.rows, error: null });
   } catch (err: any) {
+    const errorMsg = err?.message || 'Server error';
+    const errorStack = err?.stack || '';
+    
     console.error('[user-photos][DELETE] error:', err);
-    return NextResponse.json({ error: { message: err?.message || 'Server error' } }, { status: 500 });
+    
+    // Логируем ошибку в БД для отладки
+    await logErrorToDatabase({
+      userToken: userToken || undefined,
+      photoId: id || undefined,
+      action: 'DELETE_PHOTO',
+      error: errorMsg,
+      stack: errorStack,
+      statusCode: 500
+    });
+
+    return NextResponse.json({ 
+      error: { 
+        message: errorMsg,
+        details: process.env.NODE_ENV === 'development' ? errorStack : undefined
+      } 
+    }, { status: 500 });
   }
 }
