@@ -168,16 +168,23 @@ export async function GET(req: NextRequest) {
     const userTokens = Array.from(new Set(ads.map((a: any) => a.user_token).filter(Boolean)));
     if (userTokens.length > 0) {
       try {
-        const photosRes = await sql`
-          SELECT user_token, photo_url
-          FROM (
-            SELECT user_token, photo_url, position, id,
-                   ROW_NUMBER() OVER (PARTITION BY user_token ORDER BY position ASC, id ASC) AS rn
-            FROM user_photos
-            WHERE user_token = ANY(${userTokens}) AND is_active = TRUE
-          ) t
-          WHERE rn <= 3
-        `;
+        // Используем отдельные запросы для каждого токена и объединяем результаты
+        const allPhotos: any[] = [];
+        for (const token of userTokens) {
+          const photosRes = await sql`
+            SELECT user_token, photo_url
+            FROM (
+              SELECT user_token, photo_url, position, id,
+                     ROW_NUMBER() OVER (PARTITION BY user_token ORDER BY position ASC, id ASC) AS rn
+              FROM user_photos
+              WHERE user_token = ${token} AND is_active = TRUE
+            ) t
+            WHERE rn <= 3
+          `;
+          allPhotos.push(...photosRes.rows);
+        }
+        
+        const photosRes = { rows: allPhotos };
 
         const photosMap = new Map<string, string[]>();
         for (const row of photosRes.rows) {
@@ -596,6 +603,8 @@ export async function POST(req: NextRequest) {
     try {
       if (photosForDatabase.length > 0) {
         console.log('[ADS API] 📸 CREATE: Вставляем с фото_urls');
+        // Вставляем каждое фото отдельно, затем собираем в массив
+        const photoUrlsStr = JSON.stringify(photosForDatabase);
         result = await sql`
           INSERT INTO ads (
             gender, target, goal, age_from, age_to, my_age, 
@@ -608,7 +617,7 @@ export async function POST(req: NextRequest) {
             ${parseOptionalInt(myAge)},
             ${bodyType || null}, ${orientation || null}, ${text}, ${finalNickname},
             ${country || 'Россия'}, ${region || ''}, ${city}, 
-            ${numericTgId}, ${finalUserToken}, ${photosForDatabase}::TEXT[], CURRENT_TIMESTAMP
+            ${numericTgId}, ${finalUserToken}, ${photoUrlsStr}::jsonb::text[], CURRENT_TIMESTAMP
           )
           RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text, photo_urls
         `;
