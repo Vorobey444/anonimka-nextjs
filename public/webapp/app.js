@@ -4490,26 +4490,9 @@ async function submitAd() {
             tgId: getCurrentUserId()
         };
         
-        // Добавляем фото если они были выбраны (новый формат - массив до 3 фото)
-        if (formData.selectedPhotos && formData.selectedPhotos.length > 0) {
-            adData.photoFileIds = formData.selectedPhotos.map(p => p.file_id);
-            adData.photoUrls = formData.selectedPhotos.map(p => p.photo_url);
-            console.log('📸 [submitAd] Анкета с фото:', {
-                count: formData.selectedPhotos.length,
-                fileIds: adData.photoFileIds,
-                urls: adData.photoUrls.map(u => u?.substring(0, 40) + '...')
-            });
-        } else if (formData.adPhotoFileId) {
-            // Обратная совместимость со старым форматом (одно фото)
-            adData.photoFileIds = [formData.adPhotoFileId];
-            adData.photoUrls = [formData.adPhotoUrl];
-            console.log('📸 [submitAd] Анкета с фото (старый формат):', {
-                fileId: formData.adPhotoFileId,
-                url: formData.adPhotoUrl?.substring(0, 60) + '...'
-            });
-        } else {
-            console.log('📸 [submitAd] Анкета БЕЗ фото');
-        }
+        // Фото автоматически подтянутся из галереи "Мои фото" на стороне API
+        // Передаем user_token, чтобы API мог получить активные фото пользователя
+        console.log('📸 [submitAd] Фото будут автоматически добавлены из галереи "Мои фото"');
 
         safeLog('Отправка анкеты в Supabase');
         safeLog('Никнейм:', nickname);
@@ -16042,17 +16025,6 @@ async function loadMyPhotosForStep9() {
         const response = await fetch(`/api/user-photos?userToken=${encodeURIComponent(userToken)}`);
         const data = await response.json();
         
-        if (data.error || !data.data || data.data.length === 0) {
-            console.log('ℹ️ [loadMyPhotosForStep9] Нет фото в галерее');
-            const galleryContainer = document.getElementById('step9PhotoGallery');
-            if (galleryContainer) {
-                galleryContainer.style.display = 'none';
-            }
-            return;
-        }
-        
-        console.log(`✅ [loadMyPhotosForStep9] Загружено ${data.data.length} фото`);
-        
         // Получаем контейнер галереи из HTML
         const galleryContainer = document.getElementById('step9PhotoGallery');
         if (!galleryContainer) {
@@ -16060,14 +16032,47 @@ async function loadMyPhotosForStep9() {
             return;
         }
         
+        if (data.error || !data.data || data.data.length === 0) {
+            console.log('ℹ️ [loadMyPhotosForStep9] Нет фото в галерее');
+            galleryContainer.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                    <p style="margin: 0;">📷 У вас пока нет фото в галерее</p>
+                    <p style="margin: 8px 0 0 0; font-size: 14px;">Добавьте фото ниже</p>
+                </div>
+            `;
+            galleryContainer.style.display = 'block';
+            return;
+        }
+        
+        console.log(`✅ [loadMyPhotosForStep9] Загружено ${data.data.length} фото`);
+        
         // Очищаем галерею
         galleryContainer.innerHTML = '';
         galleryContainer.style.display = 'block';
         
-        // Инициализируем массив выбранных фото если его еще нет
-        if (!formData.selectedPhotos) {
-            formData.selectedPhotos = [];
-        }
+        // Добавляем подсказку
+        const infoDiv = document.createElement('div');
+        infoDiv.style.cssText = `
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            color: var(--neon-cyan);
+            font-size: 13px;
+            line-height: 1.4;
+        `;
+        infoDiv.innerHTML = `
+            <div style="display: flex; align-items: start; gap: 8px;">
+                <span style="font-size: 16px;">ℹ️</span>
+                <div>
+                    <strong>Все ваши фото будут отображаться во всех анкетах</strong><br>
+                    Удалить или изменить порядок можно здесь или в разделе "Мои фото".
+                    Изменения автоматически обновятся во всех анкетах.
+                </div>
+            </div>
+        `;
+        galleryContainer.appendChild(infoDiv);
         
         // Создаём горизонтальную галерею для фото
         const gridDiv = document.createElement('div');
@@ -16080,21 +16085,26 @@ async function loadMyPhotosForStep9() {
             overflow-y: hidden;
         `;
         
-        // Добавляем фото в галерею
-        data.data.forEach((photo, index) => {
+        // Добавляем фото в галерею (только активные, до 3 штук)
+        const activePhotos = data.data.filter(p => p.is_active).slice(0, 3);
+        activePhotos.forEach((photo, index) => {
+            const photoWrapper = document.createElement('div');
+            photoWrapper.style.cssText = `
+                position: relative;
+                flex-shrink: 0;
+            `;
+            
             const photoDiv = document.createElement('div');
             photoDiv.dataset.fileId = photo.file_id;
             photoDiv.dataset.photoUrl = photo.photo_url;
+            photoDiv.dataset.photoId = photo.id;
             photoDiv.style.cssText = `
                 position: relative;
-                cursor: pointer;
-                border: 2px solid transparent;
+                border: 2px solid var(--neon-cyan);
                 border-radius: 8px;
                 overflow: hidden;
-                flex-shrink: 0;
                 width: 100px;
                 height: 100px;
-                transition: all 0.2s;
                 background: rgba(26, 26, 46, 0.5);
             `;
             
@@ -16108,53 +16118,91 @@ async function loadMyPhotosForStep9() {
                 display: block;
             `;
             
-            const overlay = document.createElement('div');
-            overlay.className = 'photo-overlay';
-            overlay.style.cssText = `
+            photoDiv.appendChild(img);
+            
+            // Кнопка удаления
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '✕';
+            deleteBtn.style.cssText = `
                 position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0);
-                transition: all 0.2s;
+                top: 4px;
+                right: 4px;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: rgba(255, 0, 0, 0.8);
+                color: white;
+                border: none;
+                cursor: pointer;
+                font-size: 14px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 10;
+                z-index: 20;
+                transition: all 0.2s;
             `;
-            overlay.innerHTML = '<span style="color: white; font-size: 24px; text-shadow: 0 0 4px black;">✓</span>';
+            deleteBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm('Удалить это фото из всех анкет?')) {
+                    await deletePhotoFromStep9(photo.id);
+                }
+            });
+            photoDiv.appendChild(deleteBtn);
             
-            photoDiv.appendChild(img);
-            photoDiv.appendChild(overlay);
+            // Стрелки для изменения порядка
+            const controlsDiv = document.createElement('div');
+            controlsDiv.style.cssText = `
+                position: absolute;
+                bottom: 4px;
+                right: 4px;
+                display: flex;
+                gap: 2px;
+                z-index: 20;
+            `;
             
-            // Проверяем, было ли это фото уже выбрано
-            const isSelected = formData.selectedPhotos.some(p => p.file_id === photo.file_id);
-            if (isSelected) {
-                photoDiv.style.borderColor = 'var(--neon-cyan)';
-                overlay.style.background = 'rgba(0,255,255,0.5)';
+            if (index > 0) {
+                const upBtn = document.createElement('button');
+                upBtn.innerHTML = '↑';
+                upBtn.style.cssText = `
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 4px;
+                    background: rgba(0, 255, 255, 0.8);
+                    color: white;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 16px;
+                `;
+                upBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await movePhotoUp(photo.id);
+                });
+                controlsDiv.appendChild(upBtn);
             }
             
-            photoDiv.addEventListener('mouseover', () => {
-                if (!formData.selectedPhotos.some(p => p.file_id === photo.file_id)) {
-                    photoDiv.style.borderColor = 'var(--neon-cyan)';
-                    overlay.style.background = 'rgba(0,255,255,0.2)';
-                }
-            });
+            if (index < activePhotos.length - 1) {
+                const downBtn = document.createElement('button');
+                downBtn.innerHTML = '↓';
+                downBtn.style.cssText = `
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 4px;
+                    background: rgba(0, 255, 255, 0.8);
+                    color: white;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 16px;
+                `;
+                downBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await movePhotoDown(photo.id);
+                });
+                controlsDiv.appendChild(downBtn);
+            }
             
-            photoDiv.addEventListener('mouseout', () => {
-                if (!formData.selectedPhotos.some(p => p.file_id === photo.file_id)) {
-                    photoDiv.style.borderColor = 'transparent';
-                    overlay.style.background = 'rgba(0,0,0,0)';
-                }
-            });
-            
-            photoDiv.addEventListener('click', () => {
-                console.log(`📸 [loadMyPhotosForStep9] Клик по фото ${index + 1}`);
-                selectPhotoFromGallery(photo.photo_url, photo.file_id, photoDiv);
-            });
-            
-            gridDiv.appendChild(photoDiv);
+            photoDiv.appendChild(controlsDiv);
+            photoWrapper.appendChild(photoDiv);
+            gridDiv.appendChild(photoWrapper);
         });
         
         galleryContainer.appendChild(gridDiv);
@@ -16165,96 +16213,29 @@ async function loadMyPhotosForStep9() {
     }
 }
 
-// Выбрать фото из существующей галереи (мультивыбор до 3 фото)
-async function selectPhotoFromGallery(photoUrl, fileId, photoDiv) {
+// Удалить фото на шаге 9 (удаляет из галереи и всех анкет)
+async function deletePhotoFromStep9(photoId) {
     try {
-        console.log(`📸 [selectPhotoFromGallery] Выбираем фото file_id ${fileId}`);
+        const userToken = localStorage.getItem('user_token');
+        if (!userToken) return;
         
-        // Инициализируем массив выбранных фото если его еще нет
-        if (!formData.selectedPhotos) {
-            formData.selectedPhotos = [];
-        }
+        const response = await fetch('/api/user-photos', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userToken, photoId })
+        });
         
-        // Проверяем, выбрано ли это фото уже
-        const existingIndex = formData.selectedPhotos.findIndex(p => p.file_id === fileId);
-        
-        if (existingIndex !== -1) {
-            // Убираем выделение
-            formData.selectedPhotos.splice(existingIndex, 1);
-            photoDiv.style.borderColor = 'transparent';
-            const overlay = photoDiv.querySelector('.photo-overlay');
-            if (overlay) overlay.style.background = 'rgba(0,0,0,0)';
-            
-            console.log(`❌ [selectPhotoFromGallery] Снято выделение с фото ${fileId}`);
+        if (response.ok) {
+            console.log('✅ Фото удалено');
+            tg.showAlert('Фото удалено из всех анкет');
+            await loadMyPhotosForStep9(); // Перезагружаем галерею
         } else {
-            // Проверяем лимит в 3 фото
-            if (formData.selectedPhotos.length >= 3) {
-                tg.showAlert('Можно выбрать максимум 3 фото');
-                console.log('⚠️ [selectPhotoFromGallery] Достигнут лимит в 3 фото');
-                return;
-            }
-            
-            // Добавляем фото в выбранные
-            formData.selectedPhotos.push({ file_id: fileId, photo_url: photoUrl });
-            photoDiv.style.borderColor = 'var(--neon-cyan)';
-            const overlay = photoDiv.querySelector('.photo-overlay');
-            if (overlay) overlay.style.background = 'rgba(0,255,255,0.5)';
-            
-            console.log(`✅ [selectPhotoFromGallery] Добавлено фото ${fileId}`);
+            throw new Error('Ошибка удаления');
         }
-        
-        console.log(`📊 [selectPhotoFromGallery] Всего выбрано: ${formData.selectedPhotos.length}/3`);
-        
-        // Обновляем превью
-        updatePhotoPreview();
-        
     } catch (error) {
-        console.error('❌ [selectPhotoFromGallery] Ошибка:', error);
+        console.error('❌ Ошибка удаления фото:', error);
+        tg.showAlert('Ошибка при удалении фото');
     }
-}
-
-// Обновить превью выбранных фото на шаге 9
-function updatePhotoPreview() {
-    const preview = document.getElementById('adPhotoPreview');
-    const btn = document.getElementById('addAdPhotoBtn');
-    
-    if (!formData.selectedPhotos || formData.selectedPhotos.length === 0) {
-        // Нет выбранных фото - скрываем превью
-        if (preview) preview.style.display = 'none';
-        if (btn) btn.style.display = 'block';
-        return;
-    }
-    
-    // Показываем первое выбранное фото в превью
-    const img = document.getElementById('adPhotoImage');
-    if (preview && img && formData.selectedPhotos[0]) {
-        img.src = formData.selectedPhotos[0].photo_url;
-        preview.style.display = 'block';
-        
-        // Добавляем счетчик выбранных фото
-        let counter = preview.querySelector('.photo-counter');
-        if (!counter) {
-            counter = document.createElement('div');
-            counter.className = 'photo-counter';
-            counter.style.cssText = `
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                background: rgba(0, 0, 0, 0.7);
-                color: var(--neon-cyan);
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 12px;
-                font-weight: bold;
-            `;
-            preview.appendChild(counter);
-        }
-        counter.textContent = `${formData.selectedPhotos.length}/3`;
-        
-        console.log('👁️ [updatePhotoPreview] Превью обновлено');
-    }
-    
-    if (btn) btn.style.display = 'none';
 }
 
 // Добавить фото из галереи
