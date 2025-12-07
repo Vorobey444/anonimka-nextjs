@@ -3470,12 +3470,16 @@ function handleLogout() {
     
     // Для Android - перезагружаем (MainActivity проверит отсутствие user_token)
     if (isAndroid) {
-        console.log('📱 Android: reloading to trigger native email auth...');
+        console.log('📱 Android: reloading to trigger native auth flow...');
         window.location.reload();
     } else {
-        // Для браузера - показываем модальное окно авторизации
+        // Для браузера - показываем нужное модальное окно авторизации
         setTimeout(() => {
-            showTelegramAuthModal();
+            if (authMethod === 'email' || localStorage.getItem('user_email')) {
+                showEmailAuthModal();
+            } else {
+                showTelegramAuthModal();
+            }
             console.log('✅ Выход выполнен, показано модальное окно авторизации');
         }, 300);
     }
@@ -3486,19 +3490,16 @@ function updateLogoutButtonVisibility() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
     
-    // Проверяем реальную Telegram авторизацию (через WebApp или Login Widget)
-    const hasRealTelegramAuth = !!(
-        window.Telegram?.WebApp?.initDataUnsafe?.user?.id
-    );
-    
-    // Показываем кнопку только для Login Widget (браузерная авторизация)
-    if (!hasRealTelegramAuth) {
-        const savedUser = localStorage.getItem('telegram_user');
-        if (savedUser) {
-            logoutBtn.style.display = 'flex';
-        } else {
-            logoutBtn.style.display = 'none';
-        }
+    // Проверяем реальную Telegram авторизацию (через WebApp)
+    const hasRealTelegramAuth = !!(window.Telegram?.WebApp?.initDataUnsafe?.user?.id);
+    const authMethod = localStorage.getItem('auth_method');
+    const hasEmailAuth = authMethod === 'email' || !!localStorage.getItem('user_email');
+    const hasLoginWidget = !!localStorage.getItem('telegram_user');
+    const hasUserToken = !!localStorage.getItem('user_token');
+
+    // Показываем кнопку для браузерной авторизации (email или login widget)
+    if (!hasRealTelegramAuth && (hasEmailAuth || hasLoginWidget || hasUserToken)) {
+        logoutBtn.style.display = 'flex';
     } else {
         // В Telegram WebApp кнопка выхода не нужна (встроенная авторизация)
         logoutBtn.style.display = 'none';
