@@ -15379,11 +15379,12 @@ async function loadMyPhotos() {
         
         if (photos.length === 0) {
             console.log('📸 Показываем пустое состояние (нет фото)');
+            gallery.classList.remove('has-photos');
             gallery.innerHTML = `
-                <div class="no-ads" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; min-height: 200px;">
-                    <div class="neon-icon" style="font-size: 3rem; margin-bottom: 15px;">📸</div>
-                    <h3 style="color: var(--text-light); margin-bottom: 10px;">Нет фото</h3>
-                    <p style="color: var(--text-gray); text-align: center;">Нажмите кнопку выше, чтобы добавить фото для своих объявлений</p>
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; min-height: 200px; text-align: center;">
+                    <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.6;">📸</div>
+                    <h3 style="color: #e0e0e0; margin-bottom: 15px; font-size: 1.3rem;">Нет фото</h3>
+                    <p style="color: #888; text-align: center; line-height: 1.5;">Нажмите кнопку выше, чтобы добавить фото для своих объявлений</p>
                 </div>
             `;
             console.log('📸 Пустое состояние установлено в gallery.innerHTML');
@@ -15391,6 +15392,7 @@ async function loadMyPhotos() {
         }
         
         console.log('📸 Рендерим галерею с', photos.length, 'фото');
+        gallery.classList.add('has-photos');
         gallery.innerHTML = photos.map((photo) => {
             const isActive = photo.is_active;
             return `
@@ -15558,10 +15560,15 @@ async function addPhotoFromGallery() {
 // CSS для фото галереи (добавить в style.css)
 const photosStyles = `
 .photos-gallery {
+    display: block;
+    padding: 15px;
+    min-height: 200px;
+}
+
+.photos-gallery.has-photos {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    padding: 15px;
 }
 
 .photo-item {
