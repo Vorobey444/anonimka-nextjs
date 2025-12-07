@@ -103,6 +103,50 @@ function MyPhotoContent() {
 
   const handleBack = () => router.back();
 
+  const compressImage = async (file: File, maxSizeMB: number): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          const maxDimension = 1920;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = (height / width) * maxDimension;
+              width = maxDimension;
+            } else {
+              width = (width / height) * maxDimension;
+              height = maxDimension;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressed = new File([blob], file.name, { type: "image/jpeg" });
+                resolve(compressed);
+              } else {
+                reject(new Error("Не удалось сжать изображение"));
+              }
+            },
+            "image/jpeg",
+            0.85
+          );
+        };
+        img.onerror = () => reject(new Error("Не удалось загрузить изображение"));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error("Не удалось прочитать файл"));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleAddPhoto = async () => {
     if (!userToken) return alert("Требуется авторизация");
     const input = document.createElement("input");
@@ -114,9 +158,18 @@ function MyPhotoContent() {
       setIsLoading(true);
       setError(null);
       try {
+        let fileToUpload = file;
+        
+        // Сжимаем если больше 4MB
+        if (file.size > 4 * 1024 * 1024) {
+          console.log("🗜️ Файл больше 4MB, сжимаем...");
+          fileToUpload = await compressImage(file, 4);
+          console.log(`✅ Сжато: ${file.size} → ${fileToUpload.size} bytes`);
+        }
+        
         const formData = new FormData();
-        formData.append("photo", file);
-        formData.append("userId", userToken); // backend ждёт userId
+        formData.append("photo", fileToUpload);
+        formData.append("userId", userToken);
 
         const uploadResp = await fetch("/api/upload-photo", { method: "POST", body: formData });
         const uploadResult = await uploadResp.json();
