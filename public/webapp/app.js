@@ -3496,9 +3496,11 @@ function updateLogoutButtonVisibility() {
     const hasEmailAuth = authMethod === 'email' || !!localStorage.getItem('user_email');
     const hasLoginWidget = !!localStorage.getItem('telegram_user');
     const hasUserToken = !!localStorage.getItem('user_token');
+    const isAndroid = navigator.userAgent.includes('Android');
 
     // Показываем кнопку для браузерной авторизации (email или login widget)
-    if (!hasRealTelegramAuth && (hasEmailAuth || hasLoginWidget || hasUserToken)) {
+    // Особый случай: Android + email auth — даем выйти, даже если есть initData WebApp
+    if ((isAndroid && hasEmailAuth) || (!hasRealTelegramAuth && (hasEmailAuth || hasLoginWidget || hasUserToken))) {
         logoutBtn.style.display = 'flex';
     } else {
         // В Telegram WebApp кнопка выхода не нужна (встроенная авторизация)
