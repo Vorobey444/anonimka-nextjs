@@ -15329,9 +15329,9 @@ function showMyPhotos() {
         return;
     }
     
-    // Открываем отдельную страницу /my-photo
+    // Переходим на отдельную страницу /my-photo в этой же вкладке
     const url = window.location.origin + '/my-photo?userToken=' + userToken;
-    window.open(url, '_blank');
+    window.location.href = url;
     closeHamburgerMenu();
 }
 
