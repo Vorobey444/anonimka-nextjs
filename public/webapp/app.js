@@ -15319,3 +15319,313 @@ function getPluralForm(number, one, few, many) {
     if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
     return many;
 }
+
+// ============= МОВА ФОТО - USER PHOTOS =============
+
+async function showMyPhotos() {
+    showScreen('myPhotosScreen');
+    closeHamburgerMenu();
+    await loadMyPhotos();
+}
+
+async function loadMyPhotos() {
+    const gallery = document.getElementById('photosGallery');
+    const limitText = document.getElementById('photosLimitText');
+    const userToken = localStorage.getItem('user_token');
+    
+    if (!userToken) {
+        gallery.innerHTML = `<div class="no-ads"><div class="neon-icon">🔐</div><p>Требуется авторизация</p></div>`;
+        return;
+    }
+    
+    try {
+        gallery.innerHTML = `<div class="loading-spinner"></div><p>Загрузка...</p>`;
+        
+        const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
+        const result = await resp.json();
+        
+        if (result.error) {
+            throw new Error(result.error.message);
+        }
+        
+        const photos = result.data || [];
+        const isPremium = userPremiumStatus.isPremium;
+        const limit = isPremium ? 3 : 1;
+        const active = photos.filter((p) => p.is_active).length;
+        
+        limitText.innerHTML = `Активных: <strong>${active}/${limit}</strong>`;
+        
+        if (photos.length === 0) {
+            gallery.innerHTML = `
+                <div class="no-ads">
+                    <div class="neon-icon">📸</div>
+                    <h3>Нет фото</h3>
+                    <p>Добавьте фото для своих объявлений</p>
+                </div>
+            `;
+            return;
+        }
+        
+        gallery.innerHTML = photos.map((photo) => {
+            const isActive = photo.is_active;
+            return `
+                <div class="photo-item ${!isActive ? 'inactive' : ''}">
+                    <div class="photo-thumbnail" onclick="showPhotoModal('${photo.photo_url}')" style="background-image: url('${photo.photo_url}'); cursor: pointer;">
+                        ${!isActive ? '<div class="photo-badge">❌ Отключено</div>' : ''}
+                    </div>
+                    <div class="photo-controls">
+                        <div class="photo-position">Позиция: <strong>${photo.position}</strong></div>
+                        ${photo.caption ? `<div class="photo-caption">${photo.caption}</div>` : ''}
+                        <div class="photo-actions">
+                            <button class="photo-btn" onclick="editPhotoCaption(${photo.id}, '${(photo.caption || '').replace(/'/g, "\\'")}')">✏️ Подпись</button>
+                            <button class="photo-btn ${isActive ? 'active' : ''}" onclick="togglePhotoActive(${photo.id}, ${!isActive})">
+                                ${isActive ? '👁️ Видимо' : '🚫 Скрыто'}
+                            </button>
+                            <button class="photo-btn danger" onclick="deletePhoto(${photo.id})">🗑️ Удалить</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Ошибка загрузки фото:', error);
+        gallery.innerHTML = `
+            <div class="no-ads">
+                <div class="neon-icon">⚠️</div>
+                <p>${error.message}</p>
+                <button class="neon-button" onclick="loadMyPhotos()">🔄 Повторить</button>
+            </div>
+        `;
+    }
+}
+
+async function editPhotoCaption(photoId, oldCaption) {
+    const userToken = localStorage.getItem('user_token');
+    const newCaption = prompt('Введите подпись к фото (или оставьте пусто):', oldCaption || '');
+    
+    if (newCaption === null) return; // Отмена
+    
+    try {
+        const resp = await fetch('/api/user-photos', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userToken,
+                updates: [{ id: photoId, caption: newCaption || null }]
+            })
+        });
+        
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error.message);
+        await loadMyPhotos();
+    } catch (error) {
+        tg.showAlert('❌ Ошибка: ' + error.message);
+    }
+}
+
+async function togglePhotoActive(photoId, newState) {
+    const userToken = localStorage.getItem('user_token');
+    
+    try {
+        const resp = await fetch('/api/user-photos', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userToken,
+                updates: [{ id: photoId, is_active: newState }]
+            })
+        });
+        
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error.message);
+        await loadMyPhotos();
+    } catch (error) {
+        tg.showAlert('❌ Ошибка: ' + error.message);
+    }
+}
+
+async function deletePhoto(photoId) {
+    if (!confirm('Удалить фото?')) return;
+    
+    const userToken = localStorage.getItem('user_token');
+    
+    try {
+        const resp = await fetch(`/api/user-photos?id=${photoId}&userToken=${userToken}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error.message);
+        await loadMyPhotos();
+    } catch (error) {
+        tg.showAlert('❌ Ошибка: ' + error.message);
+    }
+}
+
+// CSS для фото галереи (добавить в style.css)
+const photosStyles = `
+.photos-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 15px;
+}
+
+.photo-item {
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(26, 26, 46, 0.6);
+    border: 2px solid rgba(255, 0, 110, 0.2);
+    transition: all 0.3s ease;
+}
+
+.photo-item.inactive {
+    opacity: 0.6;
+    border-color: rgba(255, 59, 48, 0.4);
+}
+
+.photo-thumbnail {
+    width: 100%;
+    height: 150px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.photo-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: rgba(255, 59, 48, 0.9);
+    color: white;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 0 0 0 8px;
+}
+
+.photo-controls {
+    padding: 10px;
+    font-size: 0.85rem;
+}
+
+.photo-position {
+    color: var(--text-gray);
+    margin-bottom: 4px;
+}
+
+.photo-caption {
+    color: var(--text-light);
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    max-height: 30px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.8;
+}
+
+.photo-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.photo-btn {
+    flex: 1;
+    min-width: 60px;
+    padding: 6px 8px;
+    background: rgba(131, 56, 236, 0.2);
+    border: 1px solid rgba(131, 56, 236, 0.5);
+    color: var(--neon-purple);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.photo-btn:hover {
+    background: rgba(131, 56, 236, 0.4);
+}
+
+.photo-btn.active {
+    background: rgba(0, 217, 255, 0.2);
+    border-color: rgba(0, 217, 255, 0.5);
+    color: var(--neon-cyan);
+}
+
+.photo-btn.danger {
+    background: rgba(255, 59, 48, 0.2);
+    border-color: rgba(255, 59, 48, 0.5);
+    color: #ff3b30;
+}
+
+.photo-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: none;
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.photo-modal-content {
+    position: relative;
+    width: 90%;
+    max-width: 600px;
+}
+
+.photo-modal-image-secure {
+    width: 100%;
+    height: auto;
+    max-height: 80vh;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.photo-modal-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: transparent;
+    color: white;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+}
+
+.photos-info-banner {
+    display: flex;
+    gap: 12px;
+    padding: 12px 15px;
+    background: rgba(0, 217, 255, 0.1);
+    border-left: 3px solid var(--neon-cyan);
+    border-radius: 0 8px 8px 0;
+    margin: 15px;
+}
+
+.info-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.info-text {
+    flex: 1;
+}
+
+.info-text p {
+    margin: 0;
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+`;
+
+// Инжектим CSS для фото
+const styleEl = document.createElement('style');
+styleEl.textContent = photosStyles;
+document.head.appendChild(styleEl);
+

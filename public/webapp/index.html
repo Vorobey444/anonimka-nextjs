@@ -356,6 +356,10 @@
                         <span class="hamburger-icon">🚫</span>
                         Мои заблокированные
                     </a>
+                    <a href="#" class="hamburger-item" onclick="showMyPhotos(); return false;">
+                        <span class="hamburger-icon">📸</span>
+                        Мои фото
+                    </a>
                     <a href="#" class="hamburger-item" id="adminMenuItem" style="display: none;" onclick="showAdminPanel(); return false;">
                         <span class="hamburger-icon">🛠️</span>
                         Админ-панель
@@ -2037,6 +2041,33 @@
                     <div id="adminNotifyStatus" class="admin-status"></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Мои фото -->
+    <div id="myPhotosScreen" class="screen">
+        <div class="header">
+            <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+            <h2>📸 Мои фото</h2>
+        </div>
+        
+        <div class="photos-info-banner">
+            <div class="info-icon">ℹ️</div>
+            <div class="info-text">
+                <p id="photosLimitText">Загрузка...</p>
+                <p style="font-size: 0.8rem; color: var(--text-gray); margin-top: 4px;">
+                    Фото будут показаны во всех ваших активных объявлениях
+                </p>
+            </div>
+        </div>
+        
+        <button class="neon-button primary full-width" onclick="showPhotoSourceMenu()" style="margin: 15px 0;">
+            <span>➕ Добавить фото</span>
+        </button>
+        
+        <div id="photosGallery" class="photos-gallery">
+            <div class="loading-spinner"></div>
+            <p>Загрузка фото...</p>
         </div>
     </div>
 
