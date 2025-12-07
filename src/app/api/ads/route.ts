@@ -164,6 +164,13 @@ export async function GET(req: NextRequest) {
     
     const ads = result.rows;
     
+    console.log('[ADS API] 📊 Результаты GET:', {
+      total_ads: ads.length,
+      first_ad_has_photo_urls: ads[0]?.photo_urls ? true : false,
+      first_ad_photo_urls_value: ads[0]?.photo_urls,
+      first_ad_keys: ads[0] ? Object.keys(ads[0]) : []
+    });
+    
     console.log("[ADS API] Получено объявлений:", ads.length);
     
     return NextResponse.json({
@@ -522,8 +529,16 @@ export async function POST(req: NextRequest) {
     
     // Если есть фото - пытаемся добавить в INSERT (если колонка существует)
     let result: any;
+    
+    console.log('[ADS API] 📸 Данные для INSERT:', {
+      hasPhotoUrl: !!photoUrl,
+      photoUrl: photoUrl?.substring(0, 50) + '...',
+      photoFileId: !!photoFileId,
+    });
+    
     try {
       if (photoUrl && typeof photoUrl === 'string') {
+        console.log('[ADS API] 📸 CREATE: Вставляем с фото_urls');
         result = await sql`
           INSERT INTO ads (
             gender, target, goal, age_from, age_to, my_age, 
@@ -541,6 +556,7 @@ export async function POST(req: NextRequest) {
           RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text, photo_urls
         `;
       } else {
+        console.log('[ADS API] 📸 CREATE: Вставляем БЕЗ фото');
         result = await sql`
           INSERT INTO ads (
             gender, target, goal, age_from, age_to, my_age, 
@@ -584,6 +600,13 @@ export async function POST(req: NextRequest) {
     }
 
     const newAd = result.rows[0];
+    
+    console.log('[ADS API] ✅ Анкета создана:', {
+      id: newAd.id,
+      has_photo_urls: !!newAd.photo_urls,
+      photo_urls_value: newAd.photo_urls,
+      user_token: newAd.user_token?.substring(0, 10) + '...'
+    });
     
     // Логируем создание анкеты с фото
     if (photoUrl) {

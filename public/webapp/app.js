@@ -4494,7 +4494,12 @@ async function submitAd() {
         if (formData.adPhotoFileId) {
             adData.photoFileId = formData.adPhotoFileId;
             adData.photoUrl = formData.adPhotoUrl;
-            console.log('📸 Анкета с фото:', formData.adPhotoFileId);
+            console.log('📸 [submitAd] Анкета с фото:', {
+                fileId: formData.adPhotoFileId,
+                url: formData.adPhotoUrl?.substring(0, 60) + '...'
+            });
+        } else {
+            console.log('📸 [submitAd] Анкета БЕЗ фото');
         }
 
         safeLog('Отправка анкеты в Supabase');
@@ -4509,6 +4514,12 @@ async function submitAd() {
         }
 
         // Отправляем в API через POST запрос
+        console.log('📤 [submitAd] Отправляем данные:', {
+            adData_keys: Object.keys(adData),
+            has_photo: !!adData.photoUrl,
+            photo_url_start: adData.photoUrl?.substring(0, 60)
+        });
+        
         const response = await fetch('/api/ads', {
             method: 'POST',
             headers: {
