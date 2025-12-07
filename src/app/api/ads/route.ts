@@ -250,7 +250,9 @@ export async function POST(req: NextRequest) {
       tgId,
       user_token,
       photoFileId,
-      photoUrl
+      photoUrl,
+      photoFileIds,
+      photoUrls
     } = body;
 
     // Helpers to safely coerce values coming from the client
@@ -565,18 +567,35 @@ export async function POST(req: NextRequest) {
     // Если есть фото - пытаемся добавить в INSERT (если колонка существует)
     let result: any;
     
-    // Для photo_urls используем file_id если есть, иначе photoUrl (это может быть защищённый URL)
-    const photoForDatabase = photoFileId || photoUrl;
+    // Поддерживаем новый формат (массив фото) и старый формат (одно фото)
+    let photosForDatabase: string[] = [];
+    
+    if (photoFileIds && Array.isArray(photoFileIds) && photoFileIds.length > 0) {
+      // Новый формат - массив file_id
+      photosForDatabase = photoFileIds.filter((id: any) => typeof id === 'string' && id.length > 0);
+      console.log('[ADS API] 📸 Используем новый формат (массив photoFileIds):', photosForDatabase);
+    } else if (photoUrls && Array.isArray(photoUrls) && photoUrls.length > 0) {
+      // Новый формат - массив URL
+      photosForDatabase = photoUrls.filter((url: any) => typeof url === 'string' && url.length > 0);
+      console.log('[ADS API] 📸 Используем новый формат (массив photoUrls):', photosForDatabase.map(u => u.substring(0, 40)));
+    } else if (photoFileId && typeof photoFileId === 'string') {
+      // Старый формат - одно file_id
+      photosForDatabase = [photoFileId];
+      console.log('[ADS API] 📸 Используем старый формат (одно photoFileId):', photoFileId);
+    } else if (photoUrl && typeof photoUrl === 'string') {
+      // Старый формат - один URL
+      photosForDatabase = [photoUrl];
+      console.log('[ADS API] 📸 Используем старый формат (одно photoUrl):', photoUrl.substring(0, 40));
+    }
     
     console.log('[ADS API] 📸 Данные для INSERT:', {
-      hasPhotoUrl: !!photoUrl,
-      hasPhotoFileId: !!photoFileId,
-      photoForDatabase: photoForDatabase?.substring(0, 80),
+      photosCount: photosForDatabase.length,
+      photos: photosForDatabase.map(p => p.substring(0, 40) + '...')
     });
     
     try {
-      if (photoForDatabase && typeof photoForDatabase === 'string') {
-        console.log('[ADS API] 📸 CREATE: Вставляем с фото_urls (file_id)');
+      if (photosForDatabase.length > 0) {
+        console.log('[ADS API] 📸 CREATE: Вставляем с фото_urls');
         result = await sql`
           INSERT INTO ads (
             gender, target, goal, age_from, age_to, my_age, 
@@ -589,7 +608,7 @@ export async function POST(req: NextRequest) {
             ${parseOptionalInt(myAge)},
             ${bodyType || null}, ${orientation || null}, ${text}, ${finalNickname},
             ${country || 'Россия'}, ${region || ''}, ${city}, 
-            ${numericTgId}, ${finalUserToken}, ARRAY[${photoForDatabase}]::TEXT[], CURRENT_TIMESTAMP
+            ${numericTgId}, ${finalUserToken}, ${photosForDatabase}::TEXT[], CURRENT_TIMESTAMP
           )
           RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text, photo_urls
         `;
@@ -642,13 +661,18 @@ export async function POST(req: NextRequest) {
     console.log('[ADS API] ✅ Анкета создана:', {
       id: newAd.id,
       has_photo_urls: !!newAd.photo_urls,
+      photo_urls_count: newAd.photo_urls?.length || 0,
       photo_urls_value: newAd.photo_urls,
       user_token: newAd.user_token?.substring(0, 10) + '...'
     });
     
     // Логируем создание анкеты с фото
-    if (photoUrl) {
-      console.log('[ADS API] ✅ Анкета создана с фото:', { adId: newAd.id, photoUrl, hasFileId: !!photoFileId });
+    if (photosForDatabase.length > 0) {
+      console.log('[ADS API] ✅ Анкета создана с фото:', { 
+        adId: newAd.id, 
+        photosCount: photosForDatabase.length,
+        photoUrls: photosForDatabase.map(p => p.substring(0, 40) + '...')
+      });
     }
     
     // Увеличиваем счётчик объявлений (используем PostgreSQL timezone Asia/Almaty)

@@ -4490,11 +4490,20 @@ async function submitAd() {
             tgId: getCurrentUserId()
         };
         
-        // Добавляем фото если оно было загружено
-        if (formData.adPhotoFileId) {
-            adData.photoFileId = formData.adPhotoFileId;
-            adData.photoUrl = formData.adPhotoUrl;
+        // Добавляем фото если они были выбраны (новый формат - массив до 3 фото)
+        if (formData.selectedPhotos && formData.selectedPhotos.length > 0) {
+            adData.photoFileIds = formData.selectedPhotos.map(p => p.file_id);
+            adData.photoUrls = formData.selectedPhotos.map(p => p.photo_url);
             console.log('📸 [submitAd] Анкета с фото:', {
+                count: formData.selectedPhotos.length,
+                fileIds: adData.photoFileIds,
+                urls: adData.photoUrls.map(u => u?.substring(0, 40) + '...')
+            });
+        } else if (formData.adPhotoFileId) {
+            // Обратная совместимость со старым форматом (одно фото)
+            adData.photoFileIds = [formData.adPhotoFileId];
+            adData.photoUrls = [formData.adPhotoUrl];
+            console.log('📸 [submitAd] Анкета с фото (старый формат):', {
                 fileId: formData.adPhotoFileId,
                 url: formData.adPhotoUrl?.substring(0, 60) + '...'
             });
@@ -16055,26 +16064,36 @@ async function loadMyPhotosForStep9() {
         galleryContainer.innerHTML = '';
         galleryContainer.style.display = 'block';
         
-        // Создаём сетку для фото
+        // Инициализируем массив выбранных фото если его еще нет
+        if (!formData.selectedPhotos) {
+            formData.selectedPhotos = [];
+        }
+        
+        // Создаём горизонтальную галерею для фото
         const gridDiv = document.createElement('div');
         gridDiv.style.cssText = `
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
+            display: flex;
+            gap: 8px;
             margin: 0;
             padding: 0;
+            overflow-x: auto;
+            overflow-y: hidden;
         `;
         
         // Добавляем фото в галерею
         data.data.forEach((photo, index) => {
             const photoDiv = document.createElement('div');
+            photoDiv.dataset.fileId = photo.file_id;
+            photoDiv.dataset.photoUrl = photo.photo_url;
             photoDiv.style.cssText = `
                 position: relative;
                 cursor: pointer;
                 border: 2px solid transparent;
                 border-radius: 8px;
                 overflow: hidden;
-                aspect-ratio: 1;
+                flex-shrink: 0;
+                width: 100px;
+                height: 100px;
                 transition: all 0.2s;
                 background: rgba(26, 26, 46, 0.5);
             `;
@@ -16090,6 +16109,7 @@ async function loadMyPhotosForStep9() {
             `;
             
             const overlay = document.createElement('div');
+            overlay.className = 'photo-overlay';
             overlay.style.cssText = `
                 position: absolute;
                 top: 0;
@@ -16103,24 +16123,35 @@ async function loadMyPhotosForStep9() {
                 justify-content: center;
                 z-index: 10;
             `;
-            overlay.innerHTML = '<span style="color: white; font-size: 16px; text-shadow: 0 0 4px black;">✓</span>';
+            overlay.innerHTML = '<span style="color: white; font-size: 24px; text-shadow: 0 0 4px black;">✓</span>';
             
             photoDiv.appendChild(img);
             photoDiv.appendChild(overlay);
             
-            photoDiv.addEventListener('mouseover', () => {
+            // Проверяем, было ли это фото уже выбрано
+            const isSelected = formData.selectedPhotos.some(p => p.file_id === photo.file_id);
+            if (isSelected) {
                 photoDiv.style.borderColor = 'var(--neon-cyan)';
-                overlay.style.background = 'rgba(0,255,255,0.2)';
+                overlay.style.background = 'rgba(0,255,255,0.5)';
+            }
+            
+            photoDiv.addEventListener('mouseover', () => {
+                if (!formData.selectedPhotos.some(p => p.file_id === photo.file_id)) {
+                    photoDiv.style.borderColor = 'var(--neon-cyan)';
+                    overlay.style.background = 'rgba(0,255,255,0.2)';
+                }
             });
             
             photoDiv.addEventListener('mouseout', () => {
-                photoDiv.style.borderColor = 'transparent';
-                overlay.style.background = 'rgba(0,0,0,0)';
+                if (!formData.selectedPhotos.some(p => p.file_id === photo.file_id)) {
+                    photoDiv.style.borderColor = 'transparent';
+                    overlay.style.background = 'rgba(0,0,0,0)';
+                }
             });
             
             photoDiv.addEventListener('click', () => {
-                console.log(`📸 [loadMyPhotosForStep9] Выбрано фото ${index + 1}`);
-                selectPhotoFromGallery(photo.photo_url, photo.file_id);
+                console.log(`📸 [loadMyPhotosForStep9] Клик по фото ${index + 1}`);
+                selectPhotoFromGallery(photo.photo_url, photo.file_id, photoDiv);
             });
             
             gridDiv.appendChild(photoDiv);
@@ -16134,40 +16165,96 @@ async function loadMyPhotosForStep9() {
     }
 }
 
-// Выбрать фото из существующей галереи
-async function selectPhotoFromGallery(photoUrl, fileId) {
+// Выбрать фото из существующей галереи (мультивыбор до 3 фото)
+async function selectPhotoFromGallery(photoUrl, fileId, photoDiv) {
     try {
         console.log(`📸 [selectPhotoFromGallery] Выбираем фото file_id ${fileId}`);
         
-        // Сохраняем URL в formData
-        formData.adPhotoUrl = photoUrl;
-        formData.adPhotoFileId = fileId;  // Прямо сохраняем file_id от Telegram
-        
-        console.log('💾 [selectPhotoFromGallery] Сохранено в formData:', {
-            fileId: formData.adPhotoFileId,
-            url: formData.adPhotoUrl?.substring(0, 60) + '...'
-        });
-        
-        // Показываем превью
-        const preview = document.getElementById('adPhotoPreview');
-        const img = document.getElementById('adPhotoImage');
-        const btn = document.getElementById('addAdPhotoBtn');
-        
-        if (preview && img) {
-            img.src = photoUrl;
-            preview.style.display = 'block';
-            console.log('👁️ [selectPhotoFromGallery] Превью показано');
+        // Инициализируем массив выбранных фото если его еще нет
+        if (!formData.selectedPhotos) {
+            formData.selectedPhotos = [];
         }
         
-        if (btn) {
-            btn.style.display = 'none';
+        // Проверяем, выбрано ли это фото уже
+        const existingIndex = formData.selectedPhotos.findIndex(p => p.file_id === fileId);
+        
+        if (existingIndex !== -1) {
+            // Убираем выделение
+            formData.selectedPhotos.splice(existingIndex, 1);
+            photoDiv.style.borderColor = 'transparent';
+            const overlay = photoDiv.querySelector('.photo-overlay');
+            if (overlay) overlay.style.background = 'rgba(0,0,0,0)';
+            
+            console.log(`❌ [selectPhotoFromGallery] Снято выделение с фото ${fileId}`);
+        } else {
+            // Проверяем лимит в 3 фото
+            if (formData.selectedPhotos.length >= 3) {
+                tg.showAlert('Можно выбрать максимум 3 фото');
+                console.log('⚠️ [selectPhotoFromGallery] Достигнут лимит в 3 фото');
+                return;
+            }
+            
+            // Добавляем фото в выбранные
+            formData.selectedPhotos.push({ file_id: fileId, photo_url: photoUrl });
+            photoDiv.style.borderColor = 'var(--neon-cyan)';
+            const overlay = photoDiv.querySelector('.photo-overlay');
+            if (overlay) overlay.style.background = 'rgba(0,255,255,0.5)';
+            
+            console.log(`✅ [selectPhotoFromGallery] Добавлено фото ${fileId}`);
         }
         
-        console.log('✅ [selectPhotoFromGallery] Фото выбрано');
+        console.log(`📊 [selectPhotoFromGallery] Всего выбрано: ${formData.selectedPhotos.length}/3`);
+        
+        // Обновляем превью
+        updatePhotoPreview();
         
     } catch (error) {
         console.error('❌ [selectPhotoFromGallery] Ошибка:', error);
     }
+}
+
+// Обновить превью выбранных фото на шаге 9
+function updatePhotoPreview() {
+    const preview = document.getElementById('adPhotoPreview');
+    const btn = document.getElementById('addAdPhotoBtn');
+    
+    if (!formData.selectedPhotos || formData.selectedPhotos.length === 0) {
+        // Нет выбранных фото - скрываем превью
+        if (preview) preview.style.display = 'none';
+        if (btn) btn.style.display = 'block';
+        return;
+    }
+    
+    // Показываем первое выбранное фото в превью
+    const img = document.getElementById('adPhotoImage');
+    if (preview && img && formData.selectedPhotos[0]) {
+        img.src = formData.selectedPhotos[0].photo_url;
+        preview.style.display = 'block';
+        
+        // Добавляем счетчик выбранных фото
+        let counter = preview.querySelector('.photo-counter');
+        if (!counter) {
+            counter = document.createElement('div');
+            counter.className = 'photo-counter';
+            counter.style.cssText = `
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: rgba(0, 0, 0, 0.7);
+                color: var(--neon-cyan);
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: bold;
+            `;
+            preview.appendChild(counter);
+        }
+        counter.textContent = `${formData.selectedPhotos.length}/3`;
+        
+        console.log('👁️ [updatePhotoPreview] Превью обновлено');
+    }
+    
+    if (btn) btn.style.display = 'none';
 }
 
 // Добавить фото из галереи
