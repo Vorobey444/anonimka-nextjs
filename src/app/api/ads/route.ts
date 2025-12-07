@@ -3,6 +3,8 @@ import { sql } from '@vercel/postgres';
 import { generateUserToken } from '@/lib/userToken';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 
 // GET - получение объявлений
 export async function GET(req: NextRequest) {
@@ -244,19 +246,11 @@ export async function GET(req: NextRequest) {
     
     console.log("[ADS API] Получено объявлений:", ads.length);
     
-    // Добавляем CDN кеш headers для ускорения
-    return NextResponse.json(
-      {
-        success: true,
-        ads,
-        pagination: paginationData
-      },
-      {
-        headers: {
-          'Cache-Control': 'public, max-age=300, s-maxage=300', // 5 минут
-        }
-      }
-    );
+    return NextResponse.json({
+      success: true,
+      ads,
+      pagination: paginationData
+    });
 
   } catch (error: any) {
     console.error("[ADS API] Ошибка при получении объявлений:", error);
