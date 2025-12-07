@@ -38,12 +38,16 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const userToken = searchParams.get('userToken');
+    console.log('[user-photos][GET] userToken:', userToken?.substring(0, 16) + '...');
+    
     if (!userToken) {
       return NextResponse.json({ error: { message: 'userToken required' } }, { status: 400 });
     }
 
+    console.log('[user-photos][GET] Enforcing limits...');
     await enforceLimits(userToken);
 
+    console.log('[user-photos][GET] Fetching photos from DB...');
     const photos = await sql`
       SELECT id, file_id, photo_url, caption, position, is_active, created_at, updated_at
       FROM user_photos
@@ -51,6 +55,7 @@ export async function GET(req: NextRequest) {
       ORDER BY position ASC, id ASC
     `;
 
+    console.log('[user-photos][GET] Found', photos.rows.length, 'photos');
     return NextResponse.json({ data: photos.rows, error: null });
   } catch (err: any) {
     console.error('[user-photos][GET] error:', err);

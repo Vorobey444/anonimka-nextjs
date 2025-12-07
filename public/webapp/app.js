@@ -15341,8 +15341,16 @@ async function loadMyPhotos() {
     try {
         gallery.innerHTML = `<div class="loading-spinner"></div><p>Загрузка...</p>`;
         
+        console.log('📸 Загружаем фото для userToken:', userToken.substring(0, 16) + '...');
         const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
+        
+        if (!resp.ok) {
+            console.error('❌ API error:', resp.status, resp.statusText);
+            throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+        }
+        
         const result = await resp.json();
+        console.log('📸 API Response:', result);
         
         if (result.error) {
             throw new Error(result.error.message);
