@@ -4766,22 +4766,17 @@ function normalizeCity(cityName) {
 }
 
 function getPhotoUrl(photoUrlOrFileId, size = null) {
-    // Если уже защищённый URL - возвращаем как есть или через thumbnail
+    // TEMPORARY: Отключил thumbnails для быстрой загрузки
+    // TODO: Нужно добавить CDN кеширование или pre-generated thumbnails
+    
+    // Если уже защищённый URL - возвращаем как есть
     if (photoUrlOrFileId && photoUrlOrFileId.includes('/api/secure-photo')) {
-        // Для миниатюр используем thumbnail API
-        if (size && size !== 'large') {
-            return `/api/thumbnail?url=${encodeURIComponent(photoUrlOrFileId)}&size=${size}`;
-        }
         return photoUrlOrFileId;
     }
     
     // Если это file_id от Telegram - преобразуем в защищённый URL
     if (photoUrlOrFileId && photoUrlOrFileId.startsWith('Ag')) {
         const secureUrl = `/api/secure-photo?fileId=${encodeURIComponent(photoUrlOrFileId)}`;
-        // Для миниатюр оборачиваем в thumbnail API
-        if (size && size !== 'large') {
-            return `/api/thumbnail?url=${encodeURIComponent(secureUrl)}&size=${size}`;
-        }
         return secureUrl;
     }
     
