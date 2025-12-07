@@ -4773,6 +4773,21 @@ function normalizeCity(cityName) {
     return cityAliases[normalized] || normalized;
 }
 
+function getPhotoUrl(photoUrlOrFileId) {
+    // Если уже защищённый URL - возвращаем как есть
+    if (photoUrlOrFileId && photoUrlOrFileId.includes('/api/secure-photo')) {
+        return photoUrlOrFileId;
+    }
+    
+    // Если это file_id от Telegram - преобразуем в защищённый URL
+    if (photoUrlOrFileId && photoUrlOrFileId.startsWith('Ag')) {
+        return `/api/secure-photo?fileId=${encodeURIComponent(photoUrlOrFileId)}`;
+    }
+    
+    // Иначе возвращаем как есть (может быть уже готовый URL)
+    return photoUrlOrFileId;
+}
+
 function displayAds(ads, city = null) {
     const adsList = document.getElementById('adsList');
     
@@ -4913,7 +4928,7 @@ function displayAds(ads, city = null) {
             ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
             ${ad.photo_urls && ad.photo_urls.length > 0 ? `
             <div class="ad-photo-thumbnail">
-                <img src="${ad.photo_urls[0]}" alt="Фото анкеты" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                <img src="${getPhotoUrl(ad.photo_urls[0])}" alt="Фото анкеты" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
             </div>
             ` : ''}
             <div class="ad-header">
@@ -5050,13 +5065,13 @@ function showAdDetails(index) {
             ${ad.photo_urls && ad.photo_urls.length > 0 ? `
             <div class="ad-details-photos">
                 <div class="ad-main-photo">
-                    <img id="adMainPhoto" src="${ad.photo_urls[0]}" alt="Фото анкеты" style="width: 100%; height: auto; border-radius: 12px; max-height: 400px; object-fit: contain;">
+                    <img id="adMainPhoto" src="${getPhotoUrl(ad.photo_urls[0])}" alt="Фото анкеты" style="width: 100%; height: auto; border-radius: 12px; max-height: 400px; object-fit: contain;">
                 </div>
                 ${ad.photo_urls.length > 1 ? `
                 <div class="ad-photo-gallery">
                     ${ad.photo_urls.map((photoUrl, photoIndex) => `
-                        <div class="ad-photo-thumbnail-small" onclick="event.stopPropagation(); document.getElementById('adMainPhoto').src='${photoUrl}'">
-                            <img src="${photoUrl}" alt="Photo ${photoIndex + 1}" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div class="ad-photo-thumbnail-small" onclick="event.stopPropagation(); document.getElementById('adMainPhoto').src='${getPhotoUrl(photoUrl)}'">
+                            <img src="${getPhotoUrl(photoUrl)}" alt="Photo ${photoIndex + 1}" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                     `).join('')}
                 </div>
@@ -15669,13 +15684,14 @@ async function addAdPhoto() {
             const photoData = await uploadPhotoToTelegram(fileToUpload, userId);
             console.log('✅ [addAdPhoto] Получен ответ:', photoData);
             
-            // Сохраняем file_id и URL в formData
+            // Сохраняем file_id от Telegram (не защищённый URL)
+            // file_id используется для сохранения в БД и преобразования в защищённый URL на фронтенде
             formData.adPhotoFileId = photoData.file_id;
-            formData.adPhotoUrl = photoData.photo_url;
+            formData.adPhotoUrl = photoData.photo_url;  // Защищённый URL для превью
             
             console.log('💾 [addAdPhoto] Сохранено в formData:', {
                 fileId: formData.adPhotoFileId,
-                url: formData.adPhotoUrl
+                url_for_preview: formData.adPhotoUrl?.substring(0, 60) + '...'
             });
             
             // Показываем превью

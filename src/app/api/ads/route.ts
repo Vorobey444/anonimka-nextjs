@@ -530,15 +530,18 @@ export async function POST(req: NextRequest) {
     // Если есть фото - пытаемся добавить в INSERT (если колонка существует)
     let result: any;
     
+    // Для photo_urls используем file_id если есть, иначе photoUrl (это может быть защищённый URL)
+    const photoForDatabase = photoFileId || photoUrl;
+    
     console.log('[ADS API] 📸 Данные для INSERT:', {
       hasPhotoUrl: !!photoUrl,
-      photoUrl: photoUrl?.substring(0, 50) + '...',
-      photoFileId: !!photoFileId,
+      hasPhotoFileId: !!photoFileId,
+      photoForDatabase: photoForDatabase?.substring(0, 80),
     });
     
     try {
-      if (photoUrl && typeof photoUrl === 'string') {
-        console.log('[ADS API] 📸 CREATE: Вставляем с фото_urls');
+      if (photoForDatabase && typeof photoForDatabase === 'string') {
+        console.log('[ADS API] 📸 CREATE: Вставляем с фото_urls (file_id)');
         result = await sql`
           INSERT INTO ads (
             gender, target, goal, age_from, age_to, my_age, 
@@ -551,7 +554,7 @@ export async function POST(req: NextRequest) {
             ${parseOptionalInt(myAge)},
             ${bodyType || null}, ${orientation || null}, ${text}, ${finalNickname},
             ${country || 'Россия'}, ${region || ''}, ${city}, 
-            ${numericTgId}, ${finalUserToken}, ARRAY[${photoUrl}]::TEXT[], CURRENT_TIMESTAMP
+            ${numericTgId}, ${finalUserToken}, ARRAY[${photoForDatabase}]::TEXT[], CURRENT_TIMESTAMP
           )
           RETURNING id, display_nickname, user_token, created_at, city, country, region, gender, target, goal, age_from, age_to, my_age, body_type, orientation, text, photo_urls
         `;
