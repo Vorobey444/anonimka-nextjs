@@ -255,8 +255,8 @@ export async function POST(req: NextRequest) {
       if (numericTgId !== null) {
         const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET;
         
-        if (!secret) {
-          console.error('[ADS API] КРИТИЧЕСКАЯ ОШИБКА: USER_TOKEN_SECRET не задан в переменных окружения!');
+        if (!secret || secret.trim().length === 0) {
+          console.error('[ADS API] КРИТИЧЕСКАЯ ОШИБКА: USER_TOKEN_SECRET не задан или пустой!');
           return NextResponse.json(
             { success: false, error: 'Ошибка конфигурации сервера' },
             { status: 500 }

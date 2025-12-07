@@ -310,17 +310,10 @@ export async function PATCH(request: NextRequest) {
 
       console.log(`[REPORTS] Блокировка пользователя ${reportedUserId}, причина: ${banReason}`);
 
-      // Баним пользователя
-      await sql`
-        INSERT INTO banned_users (user_id, banned_by, reason, related_report_id)
-        VALUES (${reportedUserId}, ${adminId}, ${banReason}, ${reportId})
-        ON CONFLICT (user_id) DO NOTHING
-      `;
-
-      // Удаляем все анкеты забаненного пользователя
+      // Удаляем все анкеты забаненного пользователя (по tg_id)
       await sql`
         DELETE FROM ads 
-        WHERE user_id = ${reportedUserId}
+        WHERE tg_id = ${reportedUserId}
       `;
 
       console.log(`[REPORTS] Удалены все анкеты пользователя ${reportedUserId}`);
