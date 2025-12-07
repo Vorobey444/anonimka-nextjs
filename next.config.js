@@ -2,10 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  generateBuildId: async () => {
-    // Уникальный Build ID для каждого деплоя (предотвращает проблемы с кэшем)
-    return `build-${Date.now()}`;
-  },
+  // Removed custom generateBuildId - let Next.js use default hash-based ID
+  // This prevents "Failed to find Server Action" errors when clients have cached old code
   async headers() {
     return [
       {
