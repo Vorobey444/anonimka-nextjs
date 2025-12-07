@@ -15859,7 +15859,7 @@ async function loadMyPhotosForStep9() {
             
             photoDiv.addEventListener('click', () => {
                 console.log(`📸 [loadMyPhotosForStep9] Выбрано фото ${index + 1}`);
-                selectPhotoFromGallery(photo.photo_url, photo.id);
+                selectPhotoFromGallery(photo.photo_url, photo.file_id);
             });
             
             gridDiv.appendChild(photoDiv);
@@ -15874,13 +15874,18 @@ async function loadMyPhotosForStep9() {
 }
 
 // Выбрать фото из существующей галереи
-async function selectPhotoFromGallery(photoUrl, photoId) {
+async function selectPhotoFromGallery(photoUrl, fileId) {
     try {
-        console.log(`📸 [selectPhotoFromGallery] Выбираем фото ID ${photoId}`);
+        console.log(`📸 [selectPhotoFromGallery] Выбираем фото file_id ${fileId}`);
         
         // Сохраняем URL в formData
         formData.adPhotoUrl = photoUrl;
-        formData.adPhotoFileId = `gallery_${photoId}`;
+        formData.adPhotoFileId = fileId;  // Прямо сохраняем file_id от Telegram
+        
+        console.log('💾 [selectPhotoFromGallery] Сохранено в formData:', {
+            fileId: formData.adPhotoFileId,
+            url: formData.adPhotoUrl?.substring(0, 60) + '...'
+        });
         
         // Показываем превью
         const preview = document.getElementById('adPhotoPreview');
@@ -15890,7 +15895,7 @@ async function selectPhotoFromGallery(photoUrl, photoId) {
         if (preview && img) {
             img.src = photoUrl;
             preview.style.display = 'block';
-            console.log('✅ [selectPhotoFromGallery] Превью показано');
+            console.log('👁️ [selectPhotoFromGallery] Превью показано');
         }
         
         if (btn) {
