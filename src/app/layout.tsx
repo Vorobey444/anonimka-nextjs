@@ -1,7 +1,5 @@
-import './globals.css'
-
 export const metadata = {
-  title: 'Anonimka',
+  title: 'Anonimka - Анонимное общение',
   description: 'Анонимные знакомства без регистрации',
 }
 

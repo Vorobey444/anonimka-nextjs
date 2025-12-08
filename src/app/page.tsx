@@ -7,8 +7,8 @@ export default function HomePage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Перенаправляем на welcome страницу
-    router.push('/welcome')
+    // Перенаправляем на главное меню
+    router.push('/menu')
   }, [router])
 
   return null
