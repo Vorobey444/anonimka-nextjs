@@ -1,0 +1,4 @@
+#Thu Dec 04 21:50:06 QYZT 2025
+base.0=E\:\\my project\\app chat\\anonimka-nextjs\\android\\app\\build\\intermediates\\dex\\release\\minifyReleaseWithR8\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex
