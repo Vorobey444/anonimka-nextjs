@@ -59,7 +59,7 @@ export default function MenuPage() {
               <span className="icon">👁️</span>
               Смотреть анкеты
             </button>
-            <button className="neon-button chat-button" onClick={() => (window as any).showMyAds()}>
+            <button className="neon-button chat-button" onClick={() => window.location.href = '/my-ads'}>
               <span className="icon">📋</span>
               Мои анкеты
             </button>
@@ -70,7 +70,7 @@ export default function MenuPage() {
               </button>
               <span id="chatBadge" className="chat-badge" style={{display: 'none'}}></span>
             </div>
-            <button className="neon-button world-chat-button" onClick={() => (window as any).showWorldChat()} style={{width: '100%'}}>
+            <button className="neon-button world-chat-button" onClick={() => window.location.href = '/world-chat'} style={{width: '100%'}}>
               <span className="icon">🌍</span>
               <div className="world-chat-content">
                 <div className="world-chat-title">Мир чат</div>
@@ -78,7 +78,7 @@ export default function MenuPage() {
               </div>
             </button>
             
-            <button className="neon-button" onClick={() => (window as any).showPolls()} style={{width: '100%'}}>
+            <button className="neon-button" onClick={() => window.location.href = '/polls'} style={{width: '100%'}}>
               <span className="icon">📊</span>
               Опросы
             </button>
