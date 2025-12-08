@@ -56,13 +56,7 @@ const nextConfig = {
     ]
   },
   async rewrites() {
-    return [
-      // Корневая страница отдаёт legacy SPA из /webapp/
-      {
-        source: '/',
-        destination: '/webapp/index.html'
-      }
-    ]
+    return []
   }
 }
 
