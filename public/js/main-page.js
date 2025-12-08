@@ -2,6 +2,7 @@
 
 // Показать главное меню
 function showMainMenu() {
+    // Модальные окна авторизации нужны только на /welcome
     const telegramModal = document.getElementById('telegramAuthModal');
     const emailModal = document.getElementById('emailAuthModal');
     if (telegramModal) telegramModal.style.display = 'none';
@@ -18,6 +19,7 @@ function showMainMenu() {
     showScreen('mainMenu');
     updateChatBadge();
     loadPremiumStatus();
+    loadWorldChatPreview();
     hideEmailUserFeatures();
 }
 
@@ -120,10 +122,40 @@ function goToHome() {
     showMainMenu();
 }
 
+// Загрузить превью последнего сообщения мир-чата
+async function loadWorldChatPreview() {
+    try {
+        const response = await fetch('/api/world-chat/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                tab: 'world',
+                limit: 1
+            })
+        });
+        
+        if (!response.ok) return; // Игнорируем ошибки
+        
+        const data = await response.json();
+        
+        if (data.success && data.messages?.length > 0) {
+            const preview = document.getElementById('worldChatPreview');
+            if (!preview) return;
+            
+            const msg = data.messages[0];
+            const cleanMessage = msg.text.replace(/^[@&\/]\s*/, '');
+            preview.textContent = `${msg.nickname}: ${cleanMessage}`;
+        }
+    } catch (error) {
+        console.log('Превью мир-чата недоступно');
+    }
+}
+
 // Экспорт функций
 window.showMainMenu = showMainMenu;
 window.updateChatBadge = updateChatBadge;
 window.loadPremiumStatus = loadPremiumStatus;
+window.loadWorldChatPreview = loadWorldChatPreview;
 window.toggleHamburgerMenu = toggleHamburgerMenu;
 window.closeHamburgerMenu = closeHamburgerMenu;
 window.goToHome = goToHome;
