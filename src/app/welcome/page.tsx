@@ -34,36 +34,33 @@ export default function WelcomePage() {
         <div className="logo-container">
           <div className="neon-logo">
             <div className="logo-circle">
-              <img src="/logo.png" alt="Anonimka Logo" className="logo-icon" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%'}} />
+              <img src="/logo.png" alt="Anonimka Logo" className="logo-icon" />
             </div>
           </div>
+          <h1 className="app-title">ANONIMKA</h1>
+          <p className="app-subtitle">Анонимное общение без границ</p>
         </div>
-
-        <h1 className="app-title">ANONIMKA</h1>
-        <p className="app-subtitle">Анонимное общение без границ</p>
 
         <div className="auth-buttons">
           <button className="auth-btn email-btn" onClick={handleEmailAuth}>
-            <span className="btn-icon">📧</span>
-            <span className="btn-text">
-              <span className="btn-title">ВХОД ЧЕРЕЗ</span>
-              <span className="btn-subtitle">ПОЧТУ</span>
-            </span>
+            <div className="btn-content">
+              <div className="btn-icon">📧</div>
+              <div className="btn-text">Вход через почту</div>
+            </div>
           </button>
 
           <button className="auth-btn telegram-btn" onClick={handleTelegramAuth}>
-            <span className="btn-icon">✈️</span>
-            <span className="btn-text">
-              <span className="btn-title">ВХОД ЧЕРЕЗ</span>
-              <span className="btn-subtitle">TELEGRAM</span>
-            </span>
+            <div className="btn-content">
+              <div className="btn-icon">✈️</div>
+              <div className="btn-text">Вход через Telegram</div>
+            </div>
           </button>
         </div>
 
         <p className="auth-hint">Выберите способ входа для продолжения</p>
 
         <div className="footer-links">
-          <button className="footer-link" onClick={showChildSafety}>🛡️ Стандарты безопасности детей</button>
+          <button className="footer-link safety" onClick={showChildSafety}>🛡️ Стандарты безопасности детей</button>
           <button className="footer-link" onClick={showDeleteAccount}>Удалить аккаунт</button>
           <button className="footer-link" onClick={showPrivacyPolicy}>Политика конфиденциальности</button>
         </div>

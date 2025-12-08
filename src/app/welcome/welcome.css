@@ -1,233 +1,297 @@
 .welcome-screen {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  background: #0a0a0f;
   position: relative;
   overflow: hidden;
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 .welcome-screen::before {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255, 0, 110, 0.1) 0%, transparent 70%);
-  animation: rotate 20s linear infinite;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 20% 50%, rgba(255, 0, 100, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 80% 50%, rgba(0, 100, 255, 0.15) 0%, transparent 50%),
+              linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+  animation: bgPulse 8s ease-in-out infinite;
 }
 
-@keyframes rotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+@keyframes bgPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
 }
 
 .welcome-content {
   position: relative;
   z-index: 1;
   text-align: center;
-  max-width: 500px;
-  width: 100%;
+  padding: 2rem;
+  max-width: 900px;
 }
 
 .logo-container {
-  margin-bottom: 2rem;
-  display: flex;
-  justify-content: center;
+  margin-bottom: 4rem;
 }
 
 .neon-logo {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 2rem;
   position: relative;
-  animation: pulse 3s ease-in-out infinite;
-}
-
-.logo-circle {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ff006e, #8338ec);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 
-    0 0 30px rgba(255, 0, 110, 0.5),
-    0 0 60px rgba(131, 56, 236, 0.3),
-    inset 0 0 20px rgba(255, 255, 255, 0.1);
-  position: relative;
+  animation: neonPulse 2s ease-in-out infinite;
 }
 
-.logo-circle::before {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: -5px;
-  right: -5px;
-  bottom: -5px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ff006e, #8338ec);
-  filter: blur(10px);
-  opacity: 0.7;
-  z-index: -1;
+.logo-circle {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo-icon {
-  font-size: 4rem;
-  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 40px rgba(255, 0, 100, 0.8)) 
+          drop-shadow(0 0 60px rgba(0, 100, 255, 0.6)) 
+          drop-shadow(0 0 80px rgba(131, 56, 236, 0.4));
+  box-shadow: 0 0 100px 30px rgba(255, 0, 100, 0.3),
+              0 0 150px 50px rgba(0, 100, 255, 0.2);
 }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+@keyframes neonPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 40px rgba(255, 0, 100, 0.8)) 
+            drop-shadow(0 0 60px rgba(0, 100, 255, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 50px rgba(255, 0, 100, 1)) 
+            drop-shadow(0 0 70px rgba(0, 100, 255, 0.8));
+  }
 }
 
 .app-title {
-  font-size: 3rem;
+  font-size: 4rem;
   font-weight: 900;
-  background: linear-gradient(135deg, #00d9ff, #ff006e, #8338ec);
+  background: linear-gradient(135deg, #00d4ff 0%, #8338ec 50%, #ff006e 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin: 0 0 0.5rem 0;
-  text-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
-  letter-spacing: 3px;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  animation: textGlow 3s ease-in-out infinite;
+}
+
+@keyframes textGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 30px rgba(131, 56, 236, 0.8));
+  }
 }
 
 .app-subtitle {
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0 0 3rem 0;
-  font-weight: 300;
+  color: #8338ec;
+  font-size: 1.2rem;
+  margin-top: 0.5rem;
+  opacity: 0.9;
 }
 
 .auth-buttons {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  gap: 2rem;
+  justify-content: center;
+  align-items: center;
+  margin: 3rem 0;
+  flex-wrap: wrap;
 }
 
 .auth-btn {
-  flex: 1;
-  padding: 1.5rem 1rem;
-  border: 2px solid;
-  border-radius: 15px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
   position: relative;
+  width: 320px;
+  height: 80px;
+  background: linear-gradient(135deg, rgba(20, 20, 35, 0.9) 0%, rgba(30, 30, 45, 0.8) 100%);
+  border: 2px solid;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.email-btn {
+  border-color: #ff006e;
+  --glow-color-1: #ff006e;
+  --glow-color-2: #ff4d94;
+}
+
+.telegram-btn {
+  border-color: #00d4ff;
+  --glow-color-1: #00d4ff;
+  --glow-color-2: #4de2ff;
 }
 
 .auth-btn::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transition: left 0.5s ease;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.auth-btn::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 16px;
+  padding: 2px;
+  background: linear-gradient(135deg, var(--glow-color-1), var(--glow-color-2));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.auth-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -10px var(--glow-color-1);
 }
 
 .auth-btn:hover::before {
-  left: 100%;
+  opacity: 1;
 }
 
-.email-btn {
-  border-color: #ff006e;
-  box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+.auth-btn:hover::after {
+  opacity: 1;
 }
 
-.email-btn:hover {
-  background: rgba(255, 0, 110, 0.1);
-  box-shadow: 0 0 30px rgba(255, 0, 110, 0.5);
-  transform: translateY(-3px);
+.auth-btn:hover .btn-icon {
+  transform: scale(1.1) rotate(5deg);
 }
 
-.telegram-btn {
-  border-color: #00d9ff;
-  box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+.auth-btn:active {
+  transform: translateY(-2px);
 }
 
-.telegram-btn:hover {
-  background: rgba(0, 217, 255, 0.1);
-  box-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
-  transform: translateY(-3px);
+.btn-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 2rem;
+  height: 100%;
 }
 
 .btn-icon {
-  font-size: 2rem;
-  filter: drop-shadow(0 0 5px currentColor);
+  font-size: 2.5rem;
+  transition: transform 0.3s;
 }
 
 .btn-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.email-btn .btn-text {
+  color: #ff006e;
+}
+
+.telegram-btn .btn-text {
+  color: #00d4ff;
 }
 
 .btn-title {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
-  font-weight: 600;
-  letter-spacing: 1px;
+  /* Не используется в production - оставляем для совместимости */
+  display: none;
 }
 
 .btn-subtitle {
-  font-size: 1.1rem;
-  color: white;
-  font-weight: 700;
-  letter-spacing: 1px;
+  /* Не используется в production - оставляем для совместимости */
+  display: none;
 }
 
 .auth-hint {
   color: rgba(255, 255, 255, 0.5);
-  font-size: 0.9rem;
-  margin-bottom: 3rem;
+  font-size: 1rem;
+  margin-top: 2rem;
 }
 
 .footer-links {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 3rem;
   padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .footer-link {
   background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
-  transition: color 0.3s ease;
-  padding: 0.5rem;
+  font-family: inherit;
 }
 
 .footer-link:hover {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 /* Адаптивность */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  .auth-buttons {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .auth-btn {
+    width: 240px;
+    height: 160px;
+  }
+
   .app-title {
     font-size: 2.5rem;
   }
 
-  .logo-circle {
-    width: 120px;
-    height: 120px;
+  .neon-logo {
+    width: 150px;
+    height: 150px;
   }
 
-  .logo-icon {
-    font-size: 3rem;
+  .footer-links {
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 2rem;
+  }
+
+  .footer-link {
+    font-size: 0.85rem;
   }
 
   .auth-buttons {
