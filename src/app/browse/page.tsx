@@ -5,7 +5,8 @@ export default function BrowseAdsPage() {
     <>
       <link rel="stylesheet" href="/style.css" />
       <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
-      <script src="/app.js" defer></script>
+      <script src="/js/core.js" defer></script>
+      <script src="/js/browse.js" defer></script>
       
       <div className="app-container">
         <div id="browseAds" className="screen" style={{display: 'block'}}>
