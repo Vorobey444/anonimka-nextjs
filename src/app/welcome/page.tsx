@@ -20,7 +20,7 @@ export default function WelcomePage() {
         <div className="logo-container">
           <div className="neon-logo">
             <div className="logo-circle">
-              <div className="logo-icon">🦊</div>
+              <img src="/logo.png" alt="Anonimka Logo" className="logo-icon" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%'}} />
             </div>
           </div>
         </div>
