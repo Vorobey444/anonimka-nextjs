@@ -280,7 +280,7 @@ export async function GET(req: NextRequest) {
     const ads = result.rows;
 
     // 🔄 Подтягиваем активные фото из user_photos (до 3) если в анкете нет photo_urls
-    const userTokens = Array.from(new Set(ads.map((a: any) => a.user_token).filter(Boolean)));
+    const userTokens = Array.from(new Set(ads.map((a: any) => a.user_token).filter(Boolean))) as string[];
     if (userTokens.length > 0) {
       try {
         // Используем отдельные запросы для каждого токена и объединяем результаты
@@ -292,7 +292,7 @@ export async function GET(req: NextRequest) {
               SELECT user_token, photo_url, position, id,
                      ROW_NUMBER() OVER (PARTITION BY user_token ORDER BY position ASC, id ASC) AS rn
               FROM user_photos
-              WHERE user_token = ${token} AND is_active = TRUE
+              WHERE user_token = ${token as string} AND is_active = TRUE
             ) t
             WHERE rn <= 3
           `;
