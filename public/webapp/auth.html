@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация Telegram</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0f, #1a1a2e);
+            color: #e0e0ff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            padding: 40px;
+            background: rgba(26, 26, 46, 0.8);
+            border: 2px solid #8338ec;
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(131, 56, 236, 0.3);
+        }
+        h1 {
+            color: #8338ec;
+            margin-bottom: 20px;
+        }
+        .loading {
+            font-size: 3rem;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .success {
+            color: #00ff88;
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="loading">⏳</div>
+        <h1>Авторизация...</h1>
+        <p id="status">Обработка данных авторизации...</p>
+    </div>
+
+    <script>
+        // Получаем параметры из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Извлекаем данные пользователя
+        const userData = {
+            id: urlParams.get('id'),
+            first_name: urlParams.get('first_name'),
+            last_name: urlParams.get('last_name'),
+            username: urlParams.get('username'),
+            photo_url: urlParams.get('photo_url'),
+            auth_date: urlParams.get('auth_date'),
+            hash: urlParams.get('hash')
+        };
+
+        console.log('Получены данные пользователя:', userData);
+
+        // Проверяем наличие ID
+        if (userData.id) {
+            // Сохраняем в localStorage
+            localStorage.setItem('telegram_user', JSON.stringify(userData));
+            
+            // Обновляем UI
+            document.querySelector('.loading').style.display = 'none';
+            document.querySelector('.container').innerHTML = `
+                <div class="success">✅</div>
+                <h1>Авторизация успешна!</h1>
+                <p>Добро пожаловать, ${userData.first_name}!</p>
+                <p>Возвращаемся на главную страницу...</p>
+            `;
+
+            // Вызываем callback в родительском окне
+            if (window.opener && typeof window.opener.onTelegramAuth === 'function') {
+                window.opener.onTelegramAuth(userData);
+            }
+
+            // Закрываем окно через 2 секунды
+            setTimeout(() => {
+                window.close();
+                
+                // Если окно не закрылось (блокировщик), перенаправляем
+                if (!window.closed) {
+                    window.location.href = '/webapp/index.html';
+                }
+            }, 2000);
+        } else {
+            document.getElementById('status').textContent = '❌ Ошибка авторизации. Попробуйте снова.';
+            setTimeout(() => {
+                window.close();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
