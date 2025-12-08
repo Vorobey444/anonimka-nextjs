@@ -1,6 +1,10 @@
 export const metadata = {
   title: 'Anonimka - Анонимное общение',
   description: 'Анонимные знакомства без регистрации',
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 }
 
 export default function RootLayout({
