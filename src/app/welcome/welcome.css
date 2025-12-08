@@ -1,0 +1,130 @@
+.welcome-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.welcome-card {
+  background: white;
+  border-radius: 20px;
+  padding: 40px 30px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.welcome-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #667eea;
+  margin: 0 0 10px 0;
+}
+
+.welcome-subtitle {
+  font-size: 1rem;
+  color: #666;
+  margin: 0 0 40px 0;
+}
+
+.auth-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.auth-button {
+  padding: 15px 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.telegram-button {
+  background: #0088cc;
+  color: white;
+}
+
+.telegram-button:hover {
+  background: #006699;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 136, 204, 0.4);
+}
+
+.email-button {
+  background: #667eea;
+  color: white;
+}
+
+.email-button:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.auth-button.secondary {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.auth-button.secondary:hover {
+  background: #d0d0d0;
+}
+
+.auth-input {
+  padding: 15px;
+  font-size: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.auth-input:focus {
+  border-color: #667eea;
+}
+
+.code-info {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.welcome-footer {
+  margin-top: 30px;
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.welcome-footer a {
+  color: #667eea;
+  text-decoration: none;
+}
+
+.welcome-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+  .welcome-card {
+    padding: 30px 20px;
+  }
+
+  .welcome-title {
+    font-size: 2rem;
+  }
+}
