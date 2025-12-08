@@ -17,8 +17,8 @@ export default function MenuPage() {
               <span className="hamburger-line"></span>
             </button>
             <div className="logo">
-              <div className="neon-icon" style={{fontSize: '3rem'}}>
-                🦊
+              <div className="neon-icon">
+                <img src="/logo.png" alt="Anonimka Logo" style={{width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)'}} />
               </div>
               <h1 style={{lineHeight: '1.2', fontSize: '1.4rem'}}>Anonimka<br/><span style={{fontSize: '0.7em'}}>Анонимное общение</span></h1>
               <div className="user-location" onClick={() => (window as any).showScreen('locationSetup')}>
