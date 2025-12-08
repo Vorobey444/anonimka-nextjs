@@ -78,7 +78,7 @@ export default function Home() {
         <div className="logo-container">
           <div className="neon-cat">
             <img
-              src="/logo.png"
+              src="/webapp/logo.png"
               alt="Anonimka Logo"
               className="logo-image"
             />
