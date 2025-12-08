@@ -21,7 +21,7 @@ export default function MenuPage() {
                 <img src="/logo.png" alt="Anonimka Logo" style={{width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)'}} />
               </div>
               <h1 style={{lineHeight: '1.2', fontSize: '1.4rem'}}>Anonimka<br/><span style={{fontSize: '0.7em'}}>Анонимное общение</span></h1>
-              <div className="user-location" onClick={() => (window as any).showScreen('locationSetup')}>
+              <div className="user-location">
                 <span className="location-info" id="userLocationDisplay"></span>
               </div>
               <div className="site-stats" id="adminStats" style={{display: 'none'}}>
