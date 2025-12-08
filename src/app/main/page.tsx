@@ -1,14 +1,43 @@
 'use client';
 
 import './main.css';
+import { useEffect } from 'react';
 
 export default function MenuPage() {
+  useEffect(() => {
+    // Toggle Hamburger Menu
+    (window as any).toggleHamburgerMenu = () => {
+      const overlay = document.getElementById('hamburgerOverlay');
+      if (overlay) {
+        overlay.classList.toggle('active');
+      }
+    };
+
+    // Close menu when clicking overlay
+    const overlay = document.getElementById('hamburgerOverlay');
+    if (overlay) {
+      const handleOverlayClick = (e: MouseEvent) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('active');
+        }
+      };
+      overlay.addEventListener('click', handleOverlayClick);
+      return () => overlay.removeEventListener('click', handleOverlayClick);
+    }
+  }, []);
+
   return (
     <>
       <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
       <script src="/js/core.js" defer></script>
       <script src="/js/main-page.js" defer></script>
       
+      {/* Premium Toggle (показывается на всех страницах) */}
+      <div className="premium-toggle" id="premiumToggle" style={{display: 'flex'}}>
+        <button className="premium-btn" id="freeBtn" onClick={() => (window as any).showPremiumModal?.()}>FREE</button>
+        <button className="premium-btn active pro" id="proBtn" onClick={() => (window as any).showPremiumModal?.()} title="PRO до ...">PRO</button>
+      </div>
+
       <div className="app-container">
         <div id="mainMenu" className="screen" style={{display: 'block'}}>
           <div className="header">
@@ -90,6 +119,66 @@ export default function MenuPage() {
               Пригласи друга - месяц PRO!
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Hamburger Menu Overlay */}
+      <div className="hamburger-overlay" id="hamburgerOverlay">
+        <div className="hamburger-menu-content">
+          <div className="hamburger-header">
+            <h2>Меню</h2>
+            <button className="hamburger-close" onClick={() => (window as any).toggleHamburgerMenu()}>×</button>
+          </div>
+          <nav className="hamburger-nav">
+            <a href="/main" className="hamburger-item active">
+              <span className="hamburger-icon">🏠</span>
+              Главная
+            </a>
+            <a href="/browse" className="hamburger-item">
+              <span className="hamburger-icon">👁️</span>
+              Смотреть анкеты
+            </a>
+            <a href="/create" className="hamburger-item">
+              <span className="hamburger-icon">📝</span>
+              Создать анкету
+            </a>
+            <a href="/my-ads" className="hamburger-item">
+              <span className="hamburger-icon">📋</span>
+              Мои анкеты
+            </a>
+            <a href="/chats" className="hamburger-item">
+              <span className="hamburger-icon">💬</span>
+              Мои чаты
+            </a>
+            <a href="/world-chat" className="hamburger-item">
+              <span className="hamburger-icon">🌍</span>
+              Мир чат
+            </a>
+            <a href="/polls" className="hamburger-item">
+              <span className="hamburger-icon">📊</span>
+              Опросы
+            </a>
+            <a href="/location-setup" className="hamburger-item">
+              <span className="hamburger-icon">📍</span>
+              Изменить локацию
+            </a>
+            <a href="#" className="hamburger-item" onClick={(e) => { e.preventDefault(); (window as any).showContactModal?.(); }}>
+              <span className="hamburger-icon">📧</span>
+              Контакты
+            </a>
+            <a href="#" className="hamburger-item" onClick={(e) => { e.preventDefault(); (window as any).showRulesModal?.(); }}>
+              <span className="hamburger-icon">📜</span>
+              Правила
+            </a>
+            <a href="#" className="hamburger-item" onClick={(e) => { e.preventDefault(); (window as any).showPrivacyModal?.(); }}>
+              <span className="hamburger-icon">🔒</span>
+              Конфиденциальность
+            </a>
+            <a href="#" className="hamburger-item logout-item" onClick={(e) => { e.preventDefault(); (window as any).logout?.(); }}>
+              <span className="hamburger-icon">🚪</span>
+              Выход
+            </a>
+          </nav>
         </div>
       </div>
     </>
