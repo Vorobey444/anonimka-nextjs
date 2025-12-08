@@ -7,11 +7,25 @@ export default function WelcomePage() {
   const handleEmailAuth = () => {
     console.log('Email auth clicked')
     // TODO: Здесь будет логика email авторизации
+    window.location.href = '/main'
   }
 
   const handleTelegramAuth = () => {
     console.log('Telegram auth clicked')
     // TODO: Здесь будет логика Telegram авторизации
+    window.location.href = '/main'
+  }
+
+  const showChildSafety = () => {
+    window.location.href = '/child-safety'
+  }
+
+  const showDeleteAccount = () => {
+    window.location.href = '/delete-account'
+  }
+
+  const showPrivacyPolicy = () => {
+    window.location.href = '/privacy'
   }
 
   return (
@@ -49,9 +63,9 @@ export default function WelcomePage() {
         <p className="auth-hint">Выберите способ входа для продолжения</p>
 
         <div className="footer-links">
-          <button className="footer-link">🛡️ Стандарты безопасности детей</button>
-          <button className="footer-link">Удалить аккаунт</button>
-          <button className="footer-link">Политика конфиденциальности</button>
+          <button className="footer-link" onClick={showChildSafety}>🛡️ Стандарты безопасности детей</button>
+          <button className="footer-link" onClick={showDeleteAccount}>Удалить аккаунт</button>
+          <button className="footer-link" onClick={showPrivacyPolicy}>Политика конфиденциальности</button>
         </div>
       </div>
     </div>
