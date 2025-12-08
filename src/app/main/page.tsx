@@ -5,7 +5,8 @@ export default function MenuPage() {
     <>
       <link rel="stylesheet" href="/style.css" />
       <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
-      <script src="/app.js" defer></script>
+      <script src="/js/core.js" defer></script>
+      <script src="/js/main-page.js" defer></script>
       
       <div className="app-container">
         <div id="mainMenu" className="screen" style={{display: 'block'}}>
