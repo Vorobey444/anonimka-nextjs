@@ -179,6 +179,10 @@ async function submitAd() {
 
 // Обработчики для кнопок выбора
 document.addEventListener('DOMContentLoaded', () => {
+    // Инициализация формы
+    console.log('✅ Create-ad.js loaded');
+    updateStepVisibility();
+    
     // Пол
     document.querySelectorAll('.gender-btn').forEach(btn => {
         btn.addEventListener('click', () => {
