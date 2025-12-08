@@ -32,12 +32,59 @@ export default function LocationSetupPage() {
               <h3>Страна</h3>
               <div className="country-buttons">
                 <button type="button" className="country-btn setup-country" data-country="russia">
+                  <span className="country-code">RU</span>
                   <span className="flag">🇷🇺</span>
                   Россия
                 </button>
                 <button type="button" className="country-btn setup-country" data-country="kazakhstan">
+                  <span className="country-code">KZ</span>
                   <span className="flag">🇰🇿</span>
                   Казахстан
+                </button>
+                <button type="button" className="country-btn setup-country" data-country="belarus">
+                  <span className="country-code">BY</span>
+                  <span className="flag">🇧🇾</span>
+                  Беларусь
+                </button>
+                <button type="button" className="country-btn setup-country" data-country="ukraine">
+                  <span className="country-code">UA</span>
+                  <span className="flag">🇺🇦</span>
+                  Украина
+                </button>
+                <button type="button" className="country-btn setup-country" data-country="kyrgyzstan">
+                  <span className="country-code">KG</span>
+                  <span className="flag">🇰🇬</span>
+                  Кыргызстан
+                </button>
+                <button type="button" className="country-btn setup-country" data-country="tajikistan">
+                  <span className="country-code">TJ</span>
+                  <span className="flag">🇹🇯</span>
+                  Таджикистан
+                </button>
+                <button type="button" className="country-btn setup-country" data-country="uzbekistan">
+                  <span className="country-code">UZ</span>
+                  <span className="flag">🇺🇿</span>
+                  Узбекистан
+                </button>
+                <button type="button" className="country-btn setup-country" data-country="armenia">
+                  <span className="country-code">AM</span>
+                  <span className="flag">🇦🇲</span>
+                  Армения
+                </button>
+                <button type="button" className="country-btn setup-country" data-country="azerbaijan">
+                  <span className="country-code">AZ</span>
+                  <span className="flag">🇦🇿</span>
+                  Азербайджан
+                </button>
+                <button type="button" className="country-btn setup-country" data-country="moldova">
+                  <span className="country-code">MD</span>
+                  <span className="flag">🇲🇩</span>
+                  Молдова
+                </button>
+                <button type="button" className="country-btn setup-country" data-country="georgia">
+                  <span className="country-code">GE</span>
+                  <span className="flag">🇬🇪</span>
+                  Грузия
                 </button>
               </div>
             </div>
