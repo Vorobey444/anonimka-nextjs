@@ -1,0 +1,254 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { sql } from '@vercel/postgres';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+// Логирование ошибок в БД для отладки
+async function logErrorToDatabase(errorData: {
+  userToken?: string;
+  photoId?: string;
+  action: string;
+  error: string;
+  stack?: string;
+  statusCode?: number;
+}) {
+  try {
+    // Проверяем, есть ли таблица для логов ошибок
+    await sql`
+      INSERT INTO error_logs (user_token, photo_id, action, error_message, error_stack, status_code, created_at)
+      VALUES (
+        ${errorData.userToken || null},
+        ${errorData.photoId || null},
+        ${errorData.action},
+        ${errorData.error},
+        ${errorData.stack || null},
+        ${errorData.statusCode || 500},
+        NOW()
+      )
+    `;
+    console.log('✅ Error logged to database');
+  } catch (logErr) {
+    // Если таблицы нет, просто логируем в консоль
+    console.log('⚠️ Could not log to database, but error is logged in console');
+  }
+}
+
+// Helper to enforce free vs pro limits
+async function enforceLimits(userToken: string) {
+  // get user premium
+  const userRes = await sql`
+    SELECT is_premium FROM users WHERE user_token = ${userToken} LIMIT 1
+  `;
+  const isPremium = userRes.rows[0]?.is_premium === true;
+
+  // order photos
+  const photosRes = await sql`
+    SELECT id FROM user_photos WHERE user_token = ${userToken} ORDER BY position ASC, id ASC
+  `;
+  const ids = photosRes.rows.map((r: any) => r.id);
+  if (ids.length === 0) return isPremium;
+
+  const allowed = isPremium ? 3 : 1;
+
+  // Activate first N photos, deactivate the rest
+  for (let i = 0; i < ids.length; i++) {
+    const shouldBeActive = i < allowed;
+    await sql`
+      UPDATE user_photos 
+      SET is_active = ${shouldBeActive} 
+      WHERE id = ${ids[i]} AND user_token = ${userToken}
+    `;
+  }
+
+  return isPremium;
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const userToken = searchParams.get('userToken');
+    console.log('[user-photos][GET] userToken:', userToken?.substring(0, 16) + '...');
+    
+    if (!userToken) {
+      return NextResponse.json({ error: { message: 'userToken required' } }, { status: 400 });
+    }
+
+    console.log('[user-photos][GET] Enforcing limits...');
+    await enforceLimits(userToken);
+
+    console.log('[user-photos][GET] Fetching photos from DB...');
+    const photos = await sql`
+      SELECT id, file_id, photo_url, caption, position, is_active, created_at, updated_at
+      FROM user_photos
+      WHERE user_token = ${userToken}
+      ORDER BY position ASC, id ASC
+    `;
+
+    console.log('[user-photos][GET] Found', photos.rows.length, 'photos');
+    return NextResponse.json({ data: photos.rows, error: null });
+  } catch (err: any) {
+    console.error('[user-photos][GET] error:', err);
+    return NextResponse.json({ error: { message: err?.message || 'Server error' } }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { userToken, tgId, fileId, photoUrl, caption } = body || {};
+    if (!userToken || !fileId || !photoUrl) {
+      return NextResponse.json({ error: { message: 'userToken, fileId, photoUrl required' } }, { status: 400 });
+    }
+
+    // Determine next position
+    const posRes = await sql`
+      SELECT COALESCE(MAX(position), 0) + 1 AS next_pos FROM user_photos WHERE user_token = ${userToken}
+    `;
+    const nextPos = posRes.rows[0]?.next_pos || 1;
+
+    await sql`
+      INSERT INTO user_photos (user_token, tg_id, file_id, photo_url, caption, position)
+      VALUES (${userToken}, ${tgId || null}, ${fileId}, ${photoUrl}, ${caption || null}, ${nextPos})
+    `;
+
+    const isPremium = await enforceLimits(userToken);
+
+    const photos = await sql`
+      SELECT id, file_id, photo_url, caption, position, is_active, created_at, updated_at
+      FROM user_photos
+      WHERE user_token = ${userToken}
+      ORDER BY position ASC, id ASC
+    `;
+
+    const activeCount = photos.rows.filter((p: any) => p.is_active).length;
+    const limit = isPremium ? 3 : 1;
+    const overLimit = activeCount > limit;
+
+    return NextResponse.json({ data: photos.rows, overLimit, limit, error: null });
+  } catch (err: any) {
+    console.error('[user-photos][POST] error:', err);
+    return NextResponse.json({ error: { message: err?.message || 'Server error' } }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { userToken, order, updates, action, photoId1, photoId2 } = body || {};
+    if (!userToken) return NextResponse.json({ error: { message: 'userToken required' } }, { status: 400 });
+
+    // Обмен позициями двух фото (drag & drop)
+    if (action === 'swap' && photoId1 && photoId2) {
+      console.log(`[user-photos][PATCH] Swapping positions: ${photoId1} <-> ${photoId2}`);
+      
+      // Получаем текущие позиции
+      const photo1 = await sql`SELECT position FROM user_photos WHERE id = ${photoId1} AND user_token = ${userToken}`;
+      const photo2 = await sql`SELECT position FROM user_photos WHERE id = ${photoId2} AND user_token = ${userToken}`;
+      
+      if (photo1.rows.length === 0 || photo2.rows.length === 0) {
+        return NextResponse.json({ error: { message: 'Photos not found' } }, { status: 404 });
+      }
+      
+      const pos1 = photo1.rows[0].position;
+      const pos2 = photo2.rows[0].position;
+      
+      // Меняем позиции местами
+      await sql`UPDATE user_photos SET position = ${pos2} WHERE id = ${photoId1} AND user_token = ${userToken}`;
+      await sql`UPDATE user_photos SET position = ${pos1} WHERE id = ${photoId2} AND user_token = ${userToken}`;
+      
+      console.log(`[user-photos][PATCH] Swapped: photo ${photoId1} (${pos1}->${pos2}), photo ${photoId2} (${pos2}->${pos1})`);
+    }
+
+    if (Array.isArray(order)) {
+      // reorder
+      for (let i = 0; i < order.length; i++) {
+        const id = order[i];
+        await sql`UPDATE user_photos SET position = ${i + 1} WHERE id = ${id} AND user_token = ${userToken}`;
+      }
+    }
+
+    if (updates && Array.isArray(updates)) {
+      for (const upd of updates) {
+        if (!upd.id) continue;
+        await sql`
+          UPDATE user_photos
+          SET caption = COALESCE(${upd.caption}, caption),
+              is_active = COALESCE(${upd.is_active}, is_active),
+              updated_at = NOW()
+          WHERE id = ${upd.id} AND user_token = ${userToken}
+        `;
+      }
+    }
+
+    await enforceLimits(userToken);
+
+    const photos = await sql`
+      SELECT id, file_id, photo_url, caption, position, is_active, created_at, updated_at
+      FROM user_photos
+      WHERE user_token = ${userToken}
+      ORDER BY position ASC, id ASC
+    `;
+
+    return NextResponse.json({ data: photos.rows, error: null });
+  } catch (err: any) {
+    console.error('[user-photos][PATCH] error:', err);
+    return NextResponse.json({ error: { message: err?.message || 'Server error' } }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  let userToken = req.headers.get('authorization')?.replace('Bearer ', '') || 
+                  new URL(req.url).searchParams.get('userToken');
+  let id = new URL(req.url).searchParams.get('id') || new URL(req.url).searchParams.get('photoId');
+
+  // Поддерживаем JSON body (как отправляет фронт)
+  if ((!id || !userToken) && req.headers.get('content-type')?.includes('application/json')) {
+    const body = await req.json().catch(() => ({}));
+    userToken = userToken || body.userToken;
+    id = id || body.photoId || body.id;
+  }
+  
+  try {
+    if (!id || !userToken) {
+      return NextResponse.json({ error: { message: 'id and userToken required' } }, { status: 400 });
+    }
+
+    console.log(`[user-photos][DELETE] Deleting photo ${id} for user ${userToken?.substring(0, 16)}...`);
+
+    await sql`DELETE FROM user_photos WHERE id = ${id} AND user_token = ${userToken}`;
+    await enforceLimits(userToken);
+
+    const photos = await sql`
+      SELECT id, file_id, photo_url, caption, position, is_active, created_at, updated_at
+      FROM user_photos
+      WHERE user_token = ${userToken}
+      ORDER BY position ASC, id ASC
+    `;
+
+    console.log(`[user-photos][DELETE] Successfully deleted photo ${id}`);
+    return NextResponse.json({ data: photos.rows, error: null });
+  } catch (err: any) {
+    const errorMsg = err?.message || 'Server error';
+    const errorStack = err?.stack || '';
+    
+    console.error('[user-photos][DELETE] error:', err);
+    
+    // Логируем ошибку в БД для отладки
+    await logErrorToDatabase({
+      userToken: userToken || undefined,
+      photoId: id || undefined,
+      action: 'DELETE_PHOTO',
+      error: errorMsg,
+      stack: errorStack,
+      statusCode: 500
+    });
+
+    return NextResponse.json({ 
+      error: { 
+        message: errorMsg,
+        details: process.env.NODE_ENV === 'development' ? errorStack : undefined
+      } 
+    }, { status: 500 });
+  }
+}
