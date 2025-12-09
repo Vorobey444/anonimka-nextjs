@@ -1,17 +1,31 @@
 'use client';
 
+import { useEffect } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useRouter } from 'next/navigation'
 
 function PollsPageContent() {
   const router = useRouter();
   
+  useEffect(() => {
+    const loadScripts = async () => {
+      const scripts = ['https://telegram.org/js/telegram-web-app.js', '/js/core.js', '/js/polls.js'];
+      for (const src of scripts) {
+        await new Promise<void>((resolve) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.async = false;
+          script.onload = () => resolve();
+          document.head.appendChild(script);
+        });
+      }
+    };
+    loadScripts();
+  }, []);
+  
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
-      <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
-      <script src="/js/core.js" defer></script>
-      <script src="/js/polls.js" defer></script>
       
       <div className="app-container">
         <div id="pollsScreen" className="screen" style={{display: 'block'}}>
