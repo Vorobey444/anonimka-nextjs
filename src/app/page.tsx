@@ -106,7 +106,7 @@ function HomeContent() {
           </div>
           
           <button
-            onClick={() => router.push('/menu')}
+            onClick={() => router.push('/welcome')}
             style={{
               background: 'linear-gradient(135deg, rgba(131, 56, 236, 0.8) 0%, rgba(255, 0, 100, 0.6) 100%)',
               border: 'none',
