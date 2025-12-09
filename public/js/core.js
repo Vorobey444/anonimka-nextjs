@@ -3,18 +3,24 @@
 
 console.log('✅ core.js loading...');
 
-// Инициализация Telegram Web App
-let tg = window.Telegram?.WebApp || {
-    expand: () => {},
-    setHeaderColor: () => {},
-    setBackgroundColor: () => {},
-    MainButton: { setText: () => {}, onClick: () => {}, show: () => {}, hide: () => {} },
-    BackButton: { onClick: () => {}, show: () => {}, hide: () => {} },
-    initDataUnsafe: { user: null },
-    ready: () => {},
-    close: () => {},
-    showAlert: (message) => alert(message)
-};
+// Инициализация Telegram Web App (проверяем чтобы не объявлять дважды)
+if (typeof (window as any).tg === 'undefined') {
+    (window as any).tg = window.Telegram?.WebApp || {
+        expand: () => {},
+        setHeaderColor: () => {},
+        setBackgroundColor: () => {},
+        MainButton: { setText: () => {}, onClick: () => {}, show: () => {}, hide: () => {} },
+        BackButton: { onClick: () => {}, show: () => {}, hide: () => {} },
+        initDataUnsafe: { user: null },
+        ready: () => {},
+        close: () => {},
+        showAlert: (message) => alert(message),
+        showConfirm: (message, callback) => {
+            if (confirm(message)) callback(true);
+            else callback(false);
+        }
+    };
+}
 
 // Функция переключения экранов
 function showScreen(screenId) {
@@ -60,8 +66,7 @@ async function apiRequest(endpoint, options = {}) {
 }
 
 // Экспортируем функции в глобальную область
-window.showScreen = showScreen;
-window.apiRequest = apiRequest;
-window.tg = tg;
+(window as any).showScreen = showScreen;
+(window as any).apiRequest = apiRequest;
 
 console.log('✅ core.js loaded successfully');
