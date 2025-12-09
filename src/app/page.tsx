@@ -7,6 +7,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 function HomeContent() {
   const router = useRouter()
   const [shouldRender, setShouldRender] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
 
   return (
     <div style={{
@@ -58,12 +59,79 @@ function HomeContent() {
         marginTop: '20px',
         color: '#aaaaaa',
         fontSize: '16px',
-        maxWidth: '500px'
+        maxWidth: '500px',
+        marginBottom: '20px'
       }}>
         Приносим извинения за неудобства. Мы работаем над улучшением сервиса.
         <br />
         Скоро всё заработает!
       </div>
+
+      {/* Кнопка "Подробнее" */}
+      <button
+        onClick={() => setShowDetails(!showDetails)}
+        style={{
+          background: 'transparent',
+          border: '1px solid #666',
+          borderRadius: '8px',
+          color: '#aaaaaa',
+          padding: '8px 16px',
+          fontSize: '14px',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease'
+        }}
+      >
+        {showDetails ? '▲ Скрыть' : '▼ Подробнее'}
+      </button>
+
+      {/* Скрытая секция */}
+      {showDetails && (
+        <div style={{
+          marginTop: '20px',
+          padding: '20px',
+          background: 'rgba(131, 56, 236, 0.1)',
+          borderRadius: '12px',
+          border: '1px solid rgba(131, 56, 236, 0.3)',
+          maxWidth: '500px'
+        }}>
+          <div style={{
+            color: '#aaaaaa',
+            fontSize: '14px',
+            marginBottom: '15px',
+            lineHeight: '1.6'
+          }}>
+            Идет обновление системы авторизации через Telegram.
+            <br />
+            Некоторые функции могут работать нестабильно.
+          </div>
+          
+          <button
+            onClick={() => router.push('/menu')}
+            style={{
+              background: 'linear-gradient(135deg, rgba(131, 56, 236, 0.8) 0%, rgba(255, 0, 100, 0.6) 100%)',
+              border: 'none',
+              borderRadius: '10px',
+              color: '#ffffff',
+              padding: '12px 24px',
+              fontSize: '15px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              boxShadow: '0 0 20px rgba(131, 56, 236, 0.4)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.boxShadow = '0 0 30px rgba(131, 56, 236, 0.6)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = '0 0 20px rgba(131, 56, 236, 0.4)'
+            }}
+          >
+            🚀 Все равно продолжить
+          </button>
+        </div>
+      )}
     </div>
   )
 
