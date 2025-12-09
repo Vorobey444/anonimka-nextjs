@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json({
         success: true,
-        messages: messages.reverse() // От старых к новым
+        data: messages.reverse() // От старых к новым
       });
       
     } else if (action === 'send-message') {
