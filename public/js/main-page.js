@@ -1,5 +1,7 @@
 // ============= MAIN-PAGE.JS - Главное меню =============
 
+console.log('✅ main-page.js loading...');
+
 // Показать главное меню
 function showMainMenu() {
     // Модальные окна авторизации нужны только на /welcome
@@ -151,6 +153,67 @@ async function loadWorldChatPreview() {
     }
 }
 
+// ============= НАВИГАЦИЯ NEXT.JS =============
+// В отличие от WORK (SPA с showScreen), здесь используем навигацию между страницами
+
+function showCreateAd() {
+    console.log('🎯 [showCreateAd] Навигация на /create');
+    
+    // Проверка никнейма
+    const nickname = localStorage.getItem('userNickname');
+    if (!nickname || nickname.trim() === '') {
+        console.warn('⚠️ Попытка создать объявление без никнейма');
+        alert('Сначала выберите никнейм');
+        window.location.href = '/onboarding';
+        return;
+    }
+    
+    // Проверка локации
+    const location = localStorage.getItem('userCity');
+    if (!location) {
+        alert('Сначала выберите ваш город');
+        window.location.href = '/location-setup';
+        return;
+    }
+    
+    window.location.href = '/create';
+}
+
+function showBrowseAds() {
+    console.log('🎯 [showBrowseAds] Навигация на /browse');
+    window.location.href = '/browse';
+}
+
+function showMyAds() {
+    console.log('🎯 [showMyAds] Навигация на /my-ads');
+    window.location.href = '/my-ads';
+}
+
+function showMyChats() {
+    console.log('🎯 [showMyChats] Навигация на /chats');
+    window.location.href = '/chats';
+}
+
+function showPolls() {
+    console.log('🎯 [showPolls] Навигация на /polls');
+    window.location.href = '/polls';
+}
+
+function showContacts() {
+    console.log('🎯 [showContacts] Открытие модалки контактов');
+    alert('Контакты:\nTelegram: @support\nEmail: support@anonimka.com');
+}
+
+function showReferralModal() {
+    console.log('🎯 [showReferralModal] Открытие реферальной модалки');
+    alert('Реферальная программа скоро будет доступна!');
+}
+
+function showPremiumModal() {
+    console.log('🎯 [showPremiumModal] Открытие модалки Premium');
+    alert('Премиум функции скоро будут доступны!');
+}
+
 // Экспорт функций
 window.showMainMenu = showMainMenu;
 window.updateChatBadge = updateChatBadge;
@@ -159,3 +222,15 @@ window.loadWorldChatPreview = loadWorldChatPreview;
 window.toggleHamburgerMenu = toggleHamburgerMenu;
 window.closeHamburgerMenu = closeHamburgerMenu;
 window.goToHome = goToHome;
+
+// Экспорт навигационных функций
+window.showCreateAd = showCreateAd;
+window.showBrowseAds = showBrowseAds;
+window.showMyAds = showMyAds;
+window.showMyChats = showMyChats;
+window.showPolls = showPolls;
+window.showContacts = showContacts;
+window.showReferralModal = showReferralModal;
+window.showPremiumModal = showPremiumModal;
+
+console.log('✅ main-page.js loaded with navigation functions');

@@ -1,6 +1,8 @@
 // ============= CORE.JS - Базовые функции =============
 // Этот файл содержит общие функции которые используются на всех страницах
 
+console.log('✅ core.js loading...');
+
 // Инициализация Telegram Web App
 let tg = window.Telegram?.WebApp || {
     expand: () => {},
@@ -61,3 +63,5 @@ async function apiRequest(endpoint, options = {}) {
 window.showScreen = showScreen;
 window.apiRequest = apiRequest;
 window.tg = tg;
+
+console.log('✅ core.js loaded successfully');

@@ -6,16 +6,43 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 function MenuPageContent() {
   useEffect(() => {
-    // Инициализация при загрузке
+    // Динамическая загрузка скриптов в правильном порядке
+    const loadScripts = async () => {
+      const scripts = [
+        'https://telegram.org/js/telegram-web-app.js',
+        '/js/location.js',
+        '/js/core.js',
+        '/js/main-page.js'
+      ];
+
+      for (const src of scripts) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.async = false; // Загружать последовательно
+          script.onload = () => {
+            console.log(`✅ Loaded: ${src}`);
+            resolve();
+          };
+          script.onerror = () => {
+            console.error(`❌ Failed to load: ${src}`);
+            reject();
+          };
+          document.head.appendChild(script);
+        });
+      }
+      
+      console.log('🎉 All scripts loaded, checking functions...');
+      console.log('showCreateAd:', typeof (window as any).showCreateAd);
+      console.log('toggleHamburgerMenu:', typeof (window as any).toggleHamburgerMenu);
+    };
+
+    loadScripts();
   }, []);
 
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
-      <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
-      <script src="/js/location.js" defer></script>
-      <script src="/js/core.js" defer></script>
-      <script src="/js/main-page.js" defer></script>
       
       {/* Premium Toggle */}
       <div className="premium-toggle" id="premiumToggle" style={{display: 'flex'}}>
