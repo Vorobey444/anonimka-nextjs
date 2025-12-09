@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       if (tab === 'world') {
         // Мировой чат - все сообщения типа 'world'
         messages = await sql`
-          SELECT id, user_token, nickname, message, type, 
+          SELECT id, user_token, display_nickname as nickname, message, type, 
                  location_city, is_premium, created_at
           FROM world_chat_messages
           WHERE type = 'world'
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       } else if (tab === 'city') {
         // Городской чат - сообщения типа 'city' из этого города
         messages = await sql`
-          SELECT id, user_token, nickname, message, type, 
+          SELECT id, user_token, display_nickname as nickname, message, type, 
                  location_city, is_premium, created_at
           FROM world_chat_messages
           WHERE type = 'city' 
@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
       } else if (tab === 'private') {
         // Личные сообщения - где пользователь отправитель или получатель
         messages = await sql`
-          SELECT id, user_token, nickname, message, type, 
-                 target_user_token, target_nickname,
+          SELECT id, user_token, display_nickname as nickname, message, type, 
+                 target_user_token, target_display_nickname as target_nickname,
                  location_city, is_premium, created_at
           FROM world_chat_messages
           WHERE type = 'private'
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       // Вставка сообщения в БД
       const result = await sql`
         INSERT INTO world_chat_messages 
-          (user_token, nickname, message, type, target_user_token, target_nickname, 
+          (user_token, display_nickname, message, type, target_user_token, target_display_nickname, 
            location_city, is_premium, created_at)
         VALUES 
           (${userToken}, ${nickname}, ${message}, ${tab}, 
