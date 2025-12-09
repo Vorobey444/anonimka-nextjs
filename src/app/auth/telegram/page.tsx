@@ -182,7 +182,6 @@ function TelegramAuthPageContent() {
           border: 2px solid rgba(0, 212, 255, 0.3);
           border-radius: 15px;
           padding: 20px;
-          display: inline-block;
           margin-bottom: 1.5rem;
           min-height: 280px;
           min-width: 280px;
