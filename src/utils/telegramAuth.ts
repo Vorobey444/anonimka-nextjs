@@ -12,13 +12,17 @@ export function getBotUsername(): string {
   if (typeof window === 'undefined') return BOT_USERNAME_PROD; // SSR fallback
 
   const hostname = window.location.hostname;
-  const isLocalhost =
+  
+  // Development: localhost, 127.0.0.1, локальная сеть, или Vercel preview
+  const isDevelopment =
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
-    hostname.startsWith('192.168');
+    hostname.startsWith('192.168') ||
+    hostname.includes('-alekseis-projects-') || // Vercel preview URLs
+    hostname.includes('.vercel.app') && !hostname.startsWith('anonimka-nextjs.vercel.app'); // Any preview, not production
 
-  const bot = isLocalhost ? BOT_USERNAME_DEV : BOT_USERNAME_PROD;
-  console.log(`🔍 Bot selection - hostname: "${hostname}", isLocalhost: ${isLocalhost}, bot: ${bot}`);
+  const bot = isDevelopment ? BOT_USERNAME_DEV : BOT_USERNAME_PROD;
+  console.log(`🔍 Bot selection - hostname: "${hostname}", isDevelopment: ${isDevelopment}, bot: ${bot}`);
   return bot;
 }
 
