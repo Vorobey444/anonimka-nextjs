@@ -214,6 +214,11 @@ function showPremiumModal() {
     alert('Премиум функции скоро будут доступны!');
 }
 
+function showLocationSetup() {
+    console.log('🎯 [showLocationSetup] Навигация на /location-setup');
+    window.location.href = '/location-setup';
+}
+
 // Экспорт функций
 window.showMainMenu = showMainMenu;
 window.updateChatBadge = updateChatBadge;
@@ -232,5 +237,6 @@ window.showPolls = showPolls;
 window.showContacts = showContacts;
 window.showReferralModal = showReferralModal;
 window.showPremiumModal = showPremiumModal;
+window.showLocationSetup = showLocationSetup;
 
 console.log('✅ main-page.js loaded with navigation functions');
