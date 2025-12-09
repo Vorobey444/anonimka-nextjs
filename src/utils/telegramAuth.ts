@@ -7,10 +7,19 @@
 const BOT_USERNAME_DEV = 'anonimka_kz_dev_bot';
 const BOT_USERNAME_PROD = 'anonimka_kz_bot';
 
-export const BOT_USERNAME = 
-  typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? BOT_USERNAME_DEV  // Локально используем dev бота
-    : BOT_USERNAME_PROD; // В production используем основного бота
+// Функция для определения окружения
+function getEnvironmentBot(): string {
+  if (typeof window === 'undefined') return BOT_USERNAME_PROD;
+  
+  const hostname = window.location.hostname;
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168');
+  
+  console.log(`🔍 Bot selection - hostname: "${hostname}", isLocalhost: ${isLocalhost}`);
+  
+  return isLocalhost ? BOT_USERNAME_DEV : BOT_USERNAME_PROD;
+}
+
+export const BOT_USERNAME = getEnvironmentBot();
 
 /**
  * Генерирует QR-код для авторизации через Telegram
