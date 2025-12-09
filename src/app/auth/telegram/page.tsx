@@ -53,6 +53,8 @@ function TelegramAuthPageContent() {
 
     generateQRCode()
   }, [])
+
+  return (
     <>
       <link rel="stylesheet" href="/style.css" />
       <script src="/webapp/app.js" defer></script>
