@@ -1,12 +1,58 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 function TelegramAuthPageContent() {
   const router = useRouter()
 
-  return (
+  useEffect(() => {
+    // Генерируем QR код при загрузке
+    const generateQRCode = async () => {
+      try {
+        // Загружаем QRCode.js библиотеку если её нет
+        if (typeof (window as any).QRCode === 'undefined') {
+          const script = document.createElement('script')
+          script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'
+          script.onload = () => {
+            generateQR()
+          }
+          document.head.appendChild(script)
+        } else {
+          generateQR()
+        }
+      } catch (err) {
+        console.error('Ошибка при загрузке QRCode:', err)
+      }
+    }
+
+    const generateQR = () => {
+      const qrContainer = document.getElementById('qrcode')
+      if (qrContainer && qrContainer.children.length === 0) {
+        try {
+          const qrData = `https://${window.location.host}/api/telegram-login`
+          new (window as any).QRCode(qrContainer, {
+            text: qrData,
+            width: 256,
+            height: 256,
+            colorDark: '#8338ec',
+            colorLight: '#ffffff',
+            correctLevel: (window as any).QRCode.CorrectLevel.H,
+          })
+          // Скрываем loading после генерации
+          const qrLoading = document.getElementById('qrLoading')
+          if (qrLoading) {
+            qrLoading.style.display = 'none'
+          }
+        } catch (err) {
+          console.error('Ошибка при генерации QR:', err)
+        }
+      }
+    }
+
+    generateQRCode()
+  }, [])
     <>
       <link rel="stylesheet" href="/style.css" />
       <script src="/webapp/app.js" defer></script>
