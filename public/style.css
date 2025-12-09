@@ -1836,4 +1836,504 @@ h3 {
     font-size: 0.9rem;
     opacity: 0.6;
     margin-top: 2rem;
+}/* ==================== WORLD CHAT STYLES ==================== */
+
+/* Кнопка Мир чат в главном меню */
+.world-chat-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    padding: 12px 16px;
 }
+
+.world-chat-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.world-chat-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.world-chat-preview {
+    font-size: 13px;
+    color: var(--text-gray);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Фиксированный футер Мир чата */
+.world-chat-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 100;
+}
+
+/* Вкладки Мир чата - компактные над полем ввода */
+.world-chat-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px 4px 12px;
+    background: transparent;
+}
+
+.world-chat-tab {
+    flex: 1;
+    padding: 6px 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-gray);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.world-chat-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.world-chat-tab.active {
+    background: var(--neon-cyan);
+    color: var(--bg-dark);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+}
+
+/* Кнопка размера шрифта */
+.world-chat-font-size-btn {
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-gray);
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 5px;
+    min-width: 35px;
+}
+
+.world-chat-font-size-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--neon-cyan);
+}
+
+.world-chat-font-size-btn:active {
+    transform: scale(0.95);
+}
+
+/* Контейнер сообщений */
+.world-chat-messages-container {
+    position: fixed;
+    top: 60px; /* Высота header */
+    bottom: 0; /* До самого низа */
+    left: 0;
+    right: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px;
+    padding-bottom: 100px; /* Увеличенный отступ снизу для вкладок и инпута */
+    background: rgba(0, 0, 0, 0.2);
+    scroll-behavior: smooth;
+}
+
+.world-chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 100%;
+}
+
+/* Сообщение в чате */
+.world-chat-message {
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-left: 3px solid;
+    overflow: visible;
+    white-space: normal;
+}
+
+.world-chat-message.world-type {
+    border-left-color: #FFD700;
+}
+
+.world-chat-message.city-type {
+    border-left-color: #00D9FF;
+}
+
+.world-chat-message.private-type {
+    border-left-color: #FF006E;
+}
+
+/* Заголовок сообщения (никнейм + время) */
+.world-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+    gap: 8px;
+}
+
+/* Никнейм в сообщении */
+.world-chat-nickname {
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    user-select: none;
+    -webkit-user-select: none;
+    flex-shrink: 1;
+}
+
+.world-chat-nickname:hover {
+    opacity: 0.8;
+}
+
+/* Цвета никнеймов */
+.world-chat-nickname.world-type {
+    color: #FFD700;
+}
+
+.world-chat-nickname.world-type.premium {
+    color: #FFA500; /* Оранжевый для PRO */
+}
+
+.world-chat-nickname.city-type {
+    color: #00D9FF;
+}
+
+.world-chat-nickname.city-type.premium {
+    color: #00FF64; /* Зеленый для PRO */
+}
+
+.world-chat-nickname.private-type {
+    color: #FF006E;
+}
+
+/* Звездочка PRO */
+.world-chat-pro-badge {
+    color: #FFD700;
+    font-size: 12px;
+}
+
+/* Текст сообщения */
+.world-chat-text {
+    font-size: 13px;
+    line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Размеры шрифта */
+.world-chat-messages.font-small .world-chat-text {
+    font-size: 11px;
+}
+
+.world-chat-messages.font-small .world-chat-nickname {
+    font-size: 11px;
+}
+
+.world-chat-messages.font-medium .world-chat-text {
+    font-size: 13px;
+}
+
+.world-chat-messages.font-medium .world-chat-nickname {
+    font-size: 13px;
+}
+
+.world-chat-messages.font-large .world-chat-text {
+    font-size: 16px;
+}
+
+.world-chat-messages.font-large .world-chat-nickname {
+    font-size: 15px;
+}
+
+/* Цвета текста по типу */
+.world-chat-message.world-type .world-chat-text {
+    color: #FFD700;
+}
+
+.world-chat-message.city-type .world-chat-text {
+    color: #00D9FF;
+}
+
+.world-chat-message.private-type .world-chat-text {
+    color: #FF006E;
+}
+
+/* Время сообщения */
+.world-chat-time {
+    font-size: 10px;
+    color: var(--text-gray);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Инпут для сообщений */
+.world-chat-input-container {
+    display: flex;
+    gap: 8px;
+    padding: 8px 10px;
+    background: transparent;
+}
+
+.world-chat-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--neon-cyan);
+    border-radius: 10px;
+    padding: 8px 10px;
+    position: relative;
+    min-width: 0;
+}
+
+.world-chat-prefix {
+    font-weight: bold;
+    font-size: 15px;
+    color: var(--neon-cyan);
+    min-width: 14px;
+    flex-shrink: 0;
+}
+
+.world-chat-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-light);
+    font-size: 14px;
+    min-width: 0;
+}
+
+.world-chat-char-counter {
+    font-size: 10px;
+    color: var(--text-gray);
+    min-width: 38px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.world-chat-send-btn {
+    min-width: 42px;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.world-chat-send-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px var(--neon-cyan);
+}
+
+.world-chat-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Адаптивность для узких экранов (Z Fold 5 и подобные) */
+@media (max-width: 380px) {
+    .world-chat-tabs {
+        gap: 4px;
+        padding: 6px 8px 4px 8px;
+    }
+    
+    .world-chat-tab {
+        padding: 5px 6px;
+        font-size: 12px;
+    }
+    
+    .world-chat-font-size-btn {
+        padding: 5px 8px;
+        font-size: 13px;
+        min-width: 30px;
+        margin-left: 3px;
+    }
+    
+    .world-chat-messages-container {
+        padding: 8px;
+        padding-bottom: 110px; /* Увеличенное пространство для iPhone и узких экранов */
+    }
+    
+    .world-chat-message {
+        padding: 6px 8px;
+    }
+    
+    .world-chat-nickname {
+        font-size: 12px;
+    }
+    
+    .world-chat-text {
+        font-size: 12px;
+    }
+    
+    .world-chat-input-container {
+        gap: 6px;
+        padding: 6px 8px;
+    }
+    
+    .world-chat-input-wrapper {
+        gap: 4px;
+        padding: 6px 8px;
+    }
+    
+    .world-chat-prefix {
+        font-size: 14px;
+        min-width: 12px;
+    }
+    
+    .world-chat-input {
+        font-size: 13px;
+    }
+    
+    .world-chat-char-counter {
+        font-size: 9px;
+        min-width: 32px;
+    }
+    
+    .world-chat-send-btn {
+        min-width: 38px;
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+    }
+}
+
+/* Адаптивная верстка для экрана выбора локации */
+/* Узкие экраны (сложенный Z Fold5, узкие телефоны) */
+@media (max-width: 400px) {
+    .header {
+        margin-bottom: 15px;
+        padding-top: 5px;
+    }
+    
+    .back-btn {
+        padding: 4px 8px;
+        font-size: 12px;
+        left: 5px;
+        top: 5px;
+    }
+    
+    .logo {
+        padding-top: 40px;
+    }
+    
+    .logo h1 {
+        font-size: 18px;
+    }
+    
+    .logo p {
+        font-size: 12px;
+        margin-top: 5px;
+    }
+    
+    .neon-icon {
+        font-size: 32px;
+        margin-bottom: 5px;
+    }
+    
+    .location-setup-container {
+        padding: 0.5rem 1rem 1rem 1rem;
+    }
+    
+    .setup-country-selection h3,
+    .setup-region-selection h3,
+    .setup-city-selection h3 {
+        font-size: 1rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .auto-location-section {
+        margin-bottom: 15px;
+    }
+    
+    .or-divider {
+        margin: 10px 0;
+        font-size: 0.8rem;
+    }
+    
+    .setup-country-selection, 
+    .setup-region-selection, 
+    .setup-city-selection {
+        margin: 1rem 0;
+    }
+    
+    .country-btn {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    
+    .neon-button {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+}
+
+/* Средние экраны (обычные смартфоны) */
+@media (min-width: 401px) and (max-width: 768px) {
+    .header {
+        margin-bottom: 20px;
+    }
+    
+    .logo {
+        padding-top: 45px;
+    }
+    
+    .location-setup-container {
+        padding: 0.75rem 1.5rem 1.5rem 1.5rem;
+    }
+}
+
+/* Широкие экраны (планшеты, развернутый Z Fold5) */
+@media (min-width: 769px) {
+    .header {
+        margin-bottom: 30px;
+    }
+    
+    .logo {
+        padding-top: 50px;
+    }
+    
+    .location-setup-container {
+        padding: 1rem 2rem 2rem 2rem;
+        max-width: 600px;
