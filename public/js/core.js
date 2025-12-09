@@ -4,8 +4,8 @@
 console.log('✅ core.js loading...');
 
 // Инициализация Telegram Web App (проверяем чтобы не объявлять дважды)
-if (typeof (window as any).tg === 'undefined') {
-    (window as any).tg = window.Telegram?.WebApp || {
+if (typeof window.tg === 'undefined') {
+    window.tg = window.Telegram?.WebApp || {
         expand: () => {},
         setHeaderColor: () => {},
         setBackgroundColor: () => {},
@@ -66,7 +66,7 @@ async function apiRequest(endpoint, options = {}) {
 }
 
 // Экспортируем функции в глобальную область
-(window as any).showScreen = showScreen;
-(window as any).apiRequest = apiRequest;
+window.showScreen = showScreen;
+window.apiRequest = apiRequest;
 
 console.log('✅ core.js loaded successfully');
