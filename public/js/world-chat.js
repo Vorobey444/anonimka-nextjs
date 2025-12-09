@@ -799,11 +799,28 @@ function showDeleteMessageMenu(event, messageId) {
 
 // Закрыть меню удаления
 
+// Показать FAQ Мир чата
+function showWorldChatFAQ() {
+    const modal = document.getElementById('worldChatFAQModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// Закрыть FAQ Мир чата
+function closeWorldChatFAQ() {
+    const modal = document.getElementById('worldChatFAQModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 // Экспортируем функции в window для доступа из React
 window.showWorldChat = showWorldChat;
 window.switchWorldChatTab = switchWorldChatTab;
 window.sendWorldChatMessage = sendWorldChatMessage;
 window.toggleFontSize = toggleFontSize;
 window.showWorldChatFAQ = showWorldChatFAQ;
+window.closeWorldChatFAQ = closeWorldChatFAQ;
 window.updateWorldChatCharCount = updateWorldChatCharCount;
 
