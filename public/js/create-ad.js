@@ -271,6 +271,13 @@ function handleCreateAdBack() {
     }
 }
 
+// Функция добавления фото в анкету
+function addAdPhoto() {
+    console.log('📸 [addAdPhoto] Запрос на добавление фото');
+    alert('Функция добавления фото скоро будет доступна!');
+    // TODO: Реализовать загрузку фото через Telegram или локальный файл
+}
+
 // Экспорт
 window.showCreateAd = showCreateAd;
 window.nextStep = nextStep;
@@ -281,3 +288,6 @@ window.updateCharacterCount = updateCharacterCount;
 window.increaseAge = increaseAge;
 window.decreaseAge = decreaseAge;
 window.handleCreateAdBack = handleCreateAdBack;
+window.addAdPhoto = addAdPhoto;
+
+console.log('✅ create-ad.js loaded');
