@@ -8,6 +8,65 @@ function HomeContent() {
   const router = useRouter()
   const [shouldRender, setShouldRender] = useState(false)
 
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%)',
+      padding: '20px',
+      textAlign: 'center'
+    }}>
+      {/* Уведомление о ремонте */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        background: 'linear-gradient(135deg, #ff006e 0%, #ff0080 100%)',
+        color: '#ffffff',
+        padding: '15px 20px',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        boxShadow: '0 0 30px rgba(255, 0, 100, 0.5)',
+        zIndex: 9999,
+        animation: 'pulse 2s ease-in-out infinite'
+      }}>
+        ⚠️ ВНИМАНИЕ! ВЕДУТСЯ РЕМОНТНЫЕ РАБОТЫ, СЕРВИС ВРЕМЕННО НЕДОСТУПЕН
+      </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+      `}</style>
+
+      <div style={{
+        marginTop: '80px',
+        color: '#8338ec',
+        fontSize: '24px',
+        fontWeight: 'bold'
+      }}>
+        🔧 Идут технические работы
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        color: '#aaaaaa',
+        fontSize: '16px',
+        maxWidth: '500px'
+      }}>
+        Приносим извинения за неудобства. Мы работаем над улучшением сервиса.
+        <br />
+        Скоро всё заработает!
+      </div>
+    </div>
+  )
+
   useEffect(() => {
     // КРИТИЧНО: Сразу проверяем Telegram WebApp БЕЗ задержки
     const checkAuth = () => {
