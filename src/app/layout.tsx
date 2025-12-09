@@ -16,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" style={{ margin: 0, padding: 0, background: '#0a0a0f' }}>
-      <body style={{ margin: 0, padding: 0, background: '#0a0a0f', color: '#ffffff', minHeight: '100vh', width: '100%', overflow: 'hidden' }}>
+      <body style={{ margin: 0, padding: 0, background: '#0a0a0f', color: '#ffffff', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
         <ErrorLogger />
         {children}
       </body>
