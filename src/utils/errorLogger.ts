@@ -88,13 +88,13 @@ export async function logErrorToServer(
 
     // Очищаем старые записи из кеша (оптимизация памяти)
     if (errorLogCache.size > 50) {
-      const keysToDelete: string[] = [];
-      for (const [key, time] of errorLogCache.entries()) {
+      const keysToDelete: string[] = []
+      Array.from(errorLogCache.entries()).forEach(([key, time]) => {
         if (now - time > ERROR_CACHE_TTL) {
-          keysToDelete.push(key);
+          keysToDelete.push(key)
         }
-      }
-      keysToDelete.forEach((key) => errorLogCache.delete(key));
+      })
+      keysToDelete.forEach((key) => errorLogCache.delete(key))
     }
 
     // Определяем критичность ошибки
@@ -205,13 +205,13 @@ export function clearErrorCache(): void {
 }
 
 export function getErrorCacheInfo(): void {
-  console.log('[ERROR LOG] Размер кеша:', errorLogCache.size);
-  const now = Date.now();
-  console.log('[ERROR LOG] Записи в кеше:');
-  for (const [key, time] of errorLogCache.entries()) {
-    const age = Math.ceil((now - time) / 1000);
-    console.log(`  - ${key.substring(0, 60)}... (${age} сек назад)`);
-  }
+  console.log('[ERROR LOG] Размер кеша:', errorLogCache.size)
+  const now = Date.now()
+  console.log('[ERROR LOG] Записи в кеше:')
+  Array.from(errorLogCache.entries()).forEach(([key, time]) => {
+    const age = Math.ceil((now - time) / 1000)
+    console.log(`  - ${key.substring(0, 60)}... (${age} сек назад)`)
+  })
 }
 
 export function getActionHistory(): void {
