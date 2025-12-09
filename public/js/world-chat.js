@@ -451,17 +451,37 @@ async function sendWorldChatMessage() {
         const isPremium = userPremiumStatus.isPremium || false;
         const city = localStorage.getItem('userCity') || 'Алматы';
         
+        // Определяем тип сообщения по префиксу
+        let tab = currentWorldChatTab;
+        let targetUserToken = null;
+        let targetNickname = null;
+        
+        // Для личных сообщений (префикс /) извлекаем адресата из сообщения
+        if (prefix === '/') {
+            tab = 'private';
+            // Формат: /nickname сообщение
+            const parts = message.substring(1).split(' ');
+            if (parts.length > 1) {
+                targetNickname = parts[0];
+                // TODO: получить targetUserToken по nickname из БД
+                // Пока оставим null, но функционал будет ограничен
+            }
+        }
+        
         const response = await fetch('/api/world-chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'send-message',
                 params: {
+                    tab: tab,
+                    message: message,
                     userToken: userToken,
                     nickname: nickname,
-                    message: message,
+                    userCity: city,
                     isPremium: isPremium,
-                    city: city
+                    targetUserToken: targetUserToken,
+                    targetNickname: targetNickname
                 }
             })
         });

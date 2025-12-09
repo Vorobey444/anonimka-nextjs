@@ -1,51 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { neon } from '@neondatabase/serverless';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+export const dynamic = 'force-dynamic';
+
+const getSql = () => neon(process.env.DATABASE_URL!);
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action } = body;
+    const { action, params } = body;
     
     if (action === 'get-messages') {
-      // Проксируем запрос на бэкенд для получения сообщений
-      const response = await fetch(`${API_URL}/api/world-chat/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
+      // Получение сообщений из БД
+      const { tab, userToken, userCity } = params;
+      const sql = getSql();
+      
+      let messages;
+      
+      if (tab === 'world') {
+        // Мировой чат - все сообщения типа 'world'
+        messages = await sql`
+          SELECT id, user_token, nickname, message, type, 
+                 location_city, is_premium, created_at
+          FROM world_chat_messages
+          WHERE type = 'world'
+          ORDER BY created_at DESC
+          LIMIT 100
+        `;
+      } else if (tab === 'city') {
+        // Городской чат - сообщения типа 'city' из этого города
+        messages = await sql`
+          SELECT id, user_token, nickname, message, type, 
+                 location_city, is_premium, created_at
+          FROM world_chat_messages
+          WHERE type = 'city' 
+            AND location_city = ${userCity}
+          ORDER BY created_at DESC
+          LIMIT 100
+        `;
+      } else if (tab === 'private') {
+        // Личные сообщения - где пользователь отправитель или получатель
+        messages = await sql`
+          SELECT id, user_token, nickname, message, type, 
+                 target_user_token, target_nickname,
+                 location_city, is_premium, created_at
+          FROM world_chat_messages
+          WHERE type = 'private'
+            AND (user_token = ${userToken} OR target_user_token = ${userToken})
+          ORDER BY created_at DESC
+          LIMIT 100
+        `;
+      } else {
         return NextResponse.json(
-          { success: false, error: 'Backend service unavailable' },
-          { status: response.status }
+          { success: false, error: 'Invalid tab' },
+          { status: 400 }
         );
       }
-
-      const data = await response.json();
-      return NextResponse.json(data);
+      
+      return NextResponse.json({
+        success: true,
+        messages: messages.reverse() // От старых к новым
+      });
       
     } else if (action === 'send-message') {
-      // Проксируем запрос на бэкенд для отправки сообщения
-      const response = await fetch(`${API_URL}/api/world-chat/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+      // Отправка сообщения
+      const { tab, message, userToken, nickname, userCity, isPremium, targetUserToken, targetNickname } = params;
+      const sql = getSql();
+      
+      // Вставка сообщения в БД
+      const result = await sql`
+        INSERT INTO world_chat_messages 
+          (user_token, nickname, message, type, target_user_token, target_nickname, 
+           location_city, is_premium, created_at)
+        VALUES 
+          (${userToken}, ${nickname}, ${message}, ${tab}, 
+           ${targetUserToken || null}, ${targetNickname || null}, 
+           ${userCity}, ${isPremium || false}, NOW())
+        RETURNING id, created_at
+      `;
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Message sent',
+        messageId: result[0].id
       });
-
-      if (!response.ok) {
-        return NextResponse.json(
-          { success: false, error: 'Backend service unavailable' },
-          { status: response.status }
-        );
-      }
-
-      const data = await response.json();
-      return NextResponse.json(data);
       
     } else {
       return NextResponse.json(
