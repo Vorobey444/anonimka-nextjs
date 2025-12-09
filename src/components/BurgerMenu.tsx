@@ -60,7 +60,7 @@ export default function BurgerMenu({ isOpen, onClose }: BurgerMenuProps) {
           <nav className="hamburger-nav">
             <a
               href="#"
-              className="hamburger-item"
+              className="hamburger-item active"
               onClick={(e) => {
                 e.preventDefault();
                 handleNavigation('/main');
@@ -68,78 +68,6 @@ export default function BurgerMenu({ isOpen, onClose }: BurgerMenuProps) {
             >
               <span className="hamburger-icon">🏠</span>
               Главная
-            </a>
-
-            <a
-              href="#"
-              className="hamburger-item"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavigation('/browse');
-              }}
-            >
-              <span className="hamburger-icon">👁️</span>
-              Смотреть анкеты
-            </a>
-
-            <a
-              href="#"
-              className="hamburger-item"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavigation('/create');
-              }}
-            >
-              <span className="hamburger-icon">📝</span>
-              Создать анкету
-            </a>
-
-            <a
-              href="#"
-              className="hamburger-item"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavigation('/my-ads');
-              }}
-            >
-              <span className="hamburger-icon">📋</span>
-              Мои анкеты
-            </a>
-
-            <a
-              href="#"
-              className="hamburger-item"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavigation('/chats');
-              }}
-            >
-              <span className="hamburger-icon">💬</span>
-              Мои чаты
-            </a>
-
-            <a
-              href="#"
-              className="hamburger-item"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavigation('/world-chat');
-              }}
-            >
-              <span className="hamburger-icon">🌍</span>
-              Мир чат
-            </a>
-
-            <a
-              href="#"
-              className="hamburger-item"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavigation('/polls');
-              }}
-            >
-              <span className="hamburger-icon">📊</span>
-              Опросы
             </a>
 
             <a
@@ -175,7 +103,7 @@ export default function BurgerMenu({ isOpen, onClose }: BurgerMenuProps) {
               }}
             >
               <span className="hamburger-icon">📍</span>
-              Изменить локацию
+              Сменить город
             </a>
 
             <a
@@ -226,7 +154,7 @@ export default function BurgerMenu({ isOpen, onClose }: BurgerMenuProps) {
               }}
             >
               <span className="hamburger-icon">📋</span>
-              Правила
+              Правила использования
             </a>
 
             <a
@@ -238,7 +166,7 @@ export default function BurgerMenu({ isOpen, onClose }: BurgerMenuProps) {
               }}
             >
               <span className="hamburger-icon">🔒</span>
-              Конфиденциальность
+              Политика конфиденциальности
             </a>
 
             <a
