@@ -1,6 +1,8 @@
 'use client';
 
-export default function ChildSafetyPage() {
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+function ChildSafetyPageContent() {
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -87,4 +89,12 @@ export default function ChildSafetyPage() {
       </div>
     </>
   );
+}
+
+export default function ChildSafetyPage() {
+  return (
+    <ErrorBoundary>
+      <ChildSafetyPageContent />
+    </ErrorBoundary>
+  )
 }

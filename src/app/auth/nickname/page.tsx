@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-export default function NicknamePage() {
+function NicknamePageContent() {
   const router = useRouter()
   const [nickname, setNickname] = useState('')
   const [loading, setLoading] = useState(false)
@@ -366,5 +367,13 @@ export default function NicknamePage() {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function NicknamePage() {
+  return (
+    <ErrorBoundary>
+      <NicknamePageContent />
+    </ErrorBoundary>
   )
 }

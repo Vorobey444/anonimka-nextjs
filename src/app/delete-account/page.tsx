@@ -1,6 +1,8 @@
 'use client';
 
-export default function DeleteAccountPage() {
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+function DeleteAccountPageContent() {
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -111,4 +113,12 @@ export default function DeleteAccountPage() {
       </div>
     </>
   );
+}
+
+export default function DeleteAccountPage() {
+  return (
+    <ErrorBoundary>
+      <DeleteAccountPageContent />
+    </ErrorBoundary>
+  )
 }

@@ -1,6 +1,8 @@
 'use client';
 
-export default function ChatsPage() {
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+function ChatsPageContent() {
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -51,4 +53,12 @@ export default function ChatsPage() {
       </div>
     </>
   );
+}
+
+export default function ChatsPage() {
+  return (
+    <ErrorBoundary>
+      <ChatsPageContent />
+    </ErrorBoundary>
+  )
 }

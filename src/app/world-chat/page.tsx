@@ -1,6 +1,8 @@
 'use client';
 
-export default function WorldChatPage() {
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+function WorldChatPageContent() {
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -57,4 +59,12 @@ export default function WorldChatPage() {
       </div>
     </>
   );
+}
+
+export default function WorldChatPage() {
+  return (
+    <ErrorBoundary>
+      <WorldChatPageContent />
+    </ErrorBoundary>
+  )
 }

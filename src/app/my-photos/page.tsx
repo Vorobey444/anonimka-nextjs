@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-export default function MyPhotosPage() {
+function MyPhotosPageContent() {
   const router = useRouter()
   const [photos, setPhotos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -265,5 +266,13 @@ export default function MyPhotosPage() {
         }
       `}</style>
     </>
+  )
+}
+
+export default function MyPhotosPage() {
+  return (
+    <ErrorBoundary>
+      <MyPhotosPageContent />
+    </ErrorBoundary>
   )
 }

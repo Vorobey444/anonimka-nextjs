@@ -1,6 +1,8 @@
 'use client';
 
-export default function MyAdsPage() {
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+function MyAdsPageContent() {
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -22,4 +24,13 @@ export default function MyAdsPage() {
       </div>
     </>
   );
+}
+
+export default function MyAdsPage() {
+  return (
+    <ErrorBoundary>
+      <MyAdsPageContent />
+    </ErrorBoundary>
+  )
+}
 }

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-export default function LocationSetupPage() {
+function LocationSetupPageContent() {
   const router = useRouter()
   const [country, setCountry] = useState('')
   const [region, setRegion] = useState('')
@@ -172,5 +173,13 @@ export default function LocationSetupPage() {
         }
       `}</style>
     </>
+  )
+}
+
+export default function LocationSetupPage() {
+  return (
+    <ErrorBoundary>
+      <LocationSetupPageContent />
+    </ErrorBoundary>
   )
 }

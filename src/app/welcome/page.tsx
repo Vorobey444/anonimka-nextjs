@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import './welcome.css'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-export default function WelcomePage() {
+function WelcomePageContent() {
   const handleEmailAuth = () => {
     console.log('Email auth clicked')
     // TODO: Здесь будет логика email авторизации
@@ -66,5 +67,13 @@ export default function WelcomePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function WelcomePage() {
+  return (
+    <ErrorBoundary>
+      <WelcomePageContent />
+    </ErrorBoundary>
   )
 }

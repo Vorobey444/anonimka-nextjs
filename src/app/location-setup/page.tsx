@@ -1,6 +1,8 @@
 'use client';
 
-export default function LocationSetupPage() {
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+function LocationSetupPageContent() {
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -122,4 +124,12 @@ export default function LocationSetupPage() {
       </div>
     </>
   );
+}
+
+export default function LocationSetupPage() {
+  return (
+    <ErrorBoundary>
+      <LocationSetupPageContent />
+    </ErrorBoundary>
+  )
 }

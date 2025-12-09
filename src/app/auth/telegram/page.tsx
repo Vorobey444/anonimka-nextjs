@@ -1,8 +1,9 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-export default function TelegramAuthPage() {
+function TelegramAuthPageContent() {
   const router = useRouter()
 
   return (
@@ -84,5 +85,13 @@ export default function TelegramAuthPage() {
         </div>
       </div>
     </>
+  )
+}
+
+export default function TelegramAuthPage() {
+  return (
+    <ErrorBoundary>
+      <TelegramAuthPageContent />
+    </ErrorBoundary>
   )
 }

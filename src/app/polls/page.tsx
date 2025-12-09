@@ -1,6 +1,8 @@
 'use client';
 
-export default function PollsPage() {
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+function PollsPageContent() {
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -68,4 +70,12 @@ export default function PollsPage() {
       </div>
     </>
   );
+}
+
+export default function PollsPage() {
+  return (
+    <ErrorBoundary>
+      <PollsPageContent />
+    </ErrorBoundary>
+  )
 }

@@ -1,8 +1,9 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-export default function LocationChoicePage() {
+function LocationChoicePageContent() {
   const router = useRouter()
 
   return (
@@ -46,5 +47,13 @@ export default function LocationChoicePage() {
         </div>
       </div>
     </>
+  )
+}
+
+export default function LocationChoicePage() {
+  return (
+    <ErrorBoundary>
+      <LocationChoicePageContent />
+    </ErrorBoundary>
   )
 }

@@ -1,6 +1,8 @@
 'use client';
 
-export default function PrivacyPage() {
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+function PrivacyPageContent() {
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -130,4 +132,12 @@ export default function PrivacyPage() {
       </div>
     </>
   );
+}
+
+export default function PrivacyPage() {
+  return (
+    <ErrorBoundary>
+      <PrivacyPageContent />
+    </ErrorBoundary>
+  )
 }

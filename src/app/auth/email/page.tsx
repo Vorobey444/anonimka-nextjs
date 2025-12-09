@@ -1,8 +1,9 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-export default function EmailAuthPage() {
+function EmailAuthPageContent() {
   const router = useRouter()
 
   return (
@@ -141,5 +142,13 @@ export default function EmailAuthPage() {
         </div>
       </div>
     </>
+  )
+}
+
+export default function EmailAuthPage() {
+  return (
+    <ErrorBoundary>
+      <EmailAuthPageContent />
+    </ErrorBoundary>
   )
 }

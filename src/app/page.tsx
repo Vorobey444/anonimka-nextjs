@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter()
   const [shouldRender, setShouldRender] = useState(false)
 
@@ -419,5 +420,13 @@ export default function Home() {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <ErrorBoundary>
+      <HomeContent />
+    </ErrorBoundary>
   )
 }

@@ -1,6 +1,8 @@
 'use client';
 
-export default function CreateAdPage() {
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+function CreateAdPageContent() {
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -75,4 +77,13 @@ export default function CreateAdPage() {
       </div>
     </>
   );
+}
+
+export default function CreateAdPage() {
+  return (
+    <ErrorBoundary>
+      <CreateAdPageContent />
+    </ErrorBoundary>
+  )
+}
 }

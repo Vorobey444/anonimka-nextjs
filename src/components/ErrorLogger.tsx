@@ -2,38 +2,27 @@
 
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import { initErrorHandlers, logUserAction } from '@/utils/errorLogger'
 
+/**
+ * Компонент для инициализации системы логирования ошибок
+ * Портировано из WORK/public/webapp/app.js
+ */
 export default function ErrorLogger() {
   const pathname = usePathname()
 
   useEffect(() => {
+    // Инициализируем глобальные обработчики ошибок (только один раз)
+    initErrorHandlers()
+
     // Логирование загрузки страницы
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.log(`📄 Page loaded: ${pathname}`)
     console.log(`⏰ Time: ${new Date().toLocaleString('ru-RU')}`)
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
-    // Глобальный обработчик ошибок JavaScript
-    const handleError = (event: ErrorEvent) => {
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.error('❌ JavaScript Error on page:', pathname)
-      console.error('📝 Message:', event.message)
-      console.error('📍 File:', event.filename)
-      console.error('🔢 Line:', event.lineno, 'Col:', event.colno)
-      console.error('📚 Stack:', event.error?.stack)
-      console.error('⏰ Time:', new Date().toLocaleString('ru-RU'))
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    }
-
-    // Глобальный обработчик необработанных промисов
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.error('❌ Unhandled Promise Rejection on page:', pathname)
-      console.error('📝 Reason:', event.reason)
-      console.error('📚 Stack:', event.reason?.stack)
-      console.error('⏰ Time:', new Date().toLocaleString('ru-RU'))
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    }
+    // Логируем действие пользователя
+    logUserAction('page_load', { pathname })
 
     // Логирование 404 ошибок (неудачные загрузки ресурсов)
     const handleResourceError = (event: Event) => {
@@ -45,12 +34,16 @@ export default function ErrorLogger() {
         console.error('🔗 URL:', (target as any).src || (target as any).href)
         console.error('⏰ Time:', new Date().toLocaleString('ru-RU'))
         console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        
+        // Логируем в систему
+        logUserAction('resource_load_error', {
+          type: target.tagName,
+          url: (target as any).src || (target as any).href,
+          pathname
+        })
       }
     }
 
-    // Добавляем слушатели
-    window.addEventListener('error', handleError)
-    window.addEventListener('unhandledrejection', handleUnhandledRejection)
     window.addEventListener('error', handleResourceError, true) // capture phase для ресурсов
 
     // Логирование навигации
@@ -58,8 +51,6 @@ export default function ErrorLogger() {
 
     // Cleanup
     return () => {
-      window.removeEventListener('error', handleError)
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
       window.removeEventListener('error', handleResourceError, true)
     }
   }, [pathname])

@@ -2,8 +2,9 @@
 
 import './main.css';
 import { useEffect } from 'react';
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-export default function MenuPage() {
+function MenuPageContent() {
   useEffect(() => {
     // Toggle Hamburger Menu
     (window as any).toggleHamburgerMenu = () => {
@@ -183,4 +184,12 @@ export default function MenuPage() {
       </div>
     </>
   );
+}
+
+export default function MenuPage() {
+  return (
+    <ErrorBoundary>
+      <MenuPageContent />
+    </ErrorBoundary>
+  )
 }

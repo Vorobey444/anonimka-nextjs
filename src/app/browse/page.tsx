@@ -1,6 +1,8 @@
 'use client';
 
-export default function BrowseAdsPage() {
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+function BrowseAdsPageContent() {
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -88,4 +90,12 @@ export default function BrowseAdsPage() {
       </div>
     </>
   );
+}
+
+export default function BrowseAdsPage() {
+  return (
+    <ErrorBoundary>
+      <BrowseAdsPageContent />
+    </ErrorBoundary>
+  )
 }
