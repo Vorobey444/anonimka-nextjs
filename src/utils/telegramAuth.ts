@@ -3,27 +3,13 @@
  * Портировано из WORK/public/webapp/app.js
  */
 
-// Определяем какого бота использовать (dev или prod)
-const BOT_USERNAME_DEV = 'anonimka_kz_dev_bot';
-const BOT_USERNAME_PROD = 'anonimka_kz_bot';
+// Бот для авторизации
+const BOT_USERNAME = 'anonimka_kz_bot';
 
-// Функция для определения окружения (всегда вызывается на клиенте)
+// Функция для получения имени бота
 export function getBotUsername(): string {
-  if (typeof window === 'undefined') return BOT_USERNAME_PROD; // SSR fallback
-
-  const hostname = window.location.hostname;
-  
-  // Development: localhost, 127.0.0.1, локальная сеть, или Vercel preview
-  const isDevelopment =
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname.startsWith('192.168') ||
-    hostname.includes('-alekseis-projects-') || // Vercel preview URLs
-    hostname.includes('.vercel.app') && !hostname.startsWith('anonimka-nextjs.vercel.app'); // Any preview, not production
-
-  const bot = isDevelopment ? BOT_USERNAME_DEV : BOT_USERNAME_PROD;
-  console.log(`🔍 Bot selection - hostname: "${hostname}", isDevelopment: ${isDevelopment}, bot: ${bot}`);
-  return bot;
+  console.log(`🔍 Using bot: ${BOT_USERNAME}`);
+  return BOT_USERNAME;
 }
 
 /**
