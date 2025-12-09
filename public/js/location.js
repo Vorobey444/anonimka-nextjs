@@ -1,5 +1,10 @@
+console.log('✅ location.js loading...');
+
 // Геолокация пользователя
-let currentUserLocation = null;
+if (typeof window.currentUserLocation === 'undefined') {
+    window.currentUserLocation = null;
+}
+let currentUserLocation = window.currentUserLocation;
 
 // Получить локацию пользователя из localStorage
 function getUserLocation() {
@@ -173,7 +178,7 @@ async function detectLocationByIP() {
 
 // Сохранение локации пользователя
 async function saveUserLocation(country, region, city) {
-    currentUserLocation = {
+    currentUserLocation = window.currentUserLocation = {
         country: country,
         region: region,
         city: city,
@@ -238,3 +243,5 @@ if (typeof window !== 'undefined') {
     window.detectLocationByIP = detectLocationByIP;
     window.saveUserLocation = saveUserLocation;
 }
+
+console.log('✅ location.js loaded successfully');
