@@ -4,6 +4,12 @@ let worldChatAutoRefreshInterval = null;
 let worldChatLastMessageTime = null;
 let worldChatLoadingController = null; // Для отмены предыдущих запросов
 
+// Форматирование времени сообщения
+function formatMessageTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+
 // Показать экран Мир чата
 async function showWorldChat() {
     console.log('🌍 Открытие Мир чата');
