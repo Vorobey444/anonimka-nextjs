@@ -7,19 +7,20 @@
 const BOT_USERNAME_DEV = 'anonimka_kz_dev_bot';
 const BOT_USERNAME_PROD = 'anonimka_kz_bot';
 
-// Функция для определения окружения
-function getEnvironmentBot(): string {
-  if (typeof window === 'undefined') return BOT_USERNAME_PROD;
-  
-  const hostname = window.location.hostname;
-  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168');
-  
-  console.log(`🔍 Bot selection - hostname: "${hostname}", isLocalhost: ${isLocalhost}`);
-  
-  return isLocalhost ? BOT_USERNAME_DEV : BOT_USERNAME_PROD;
-}
+// Функция для определения окружения (всегда вызывается на клиенте)
+export function getBotUsername(): string {
+  if (typeof window === 'undefined') return BOT_USERNAME_PROD; // SSR fallback
 
-export const BOT_USERNAME = getEnvironmentBot();
+  const hostname = window.location.hostname;
+  const isLocalhost =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.startsWith('192.168');
+
+  const bot = isLocalhost ? BOT_USERNAME_DEV : BOT_USERNAME_PROD;
+  console.log(`🔍 Bot selection - hostname: "${hostname}", isLocalhost: ${isLocalhost}, bot: ${bot}`);
+  return bot;
+}
 
 /**
  * Генерирует QR-код для авторизации через Telegram
@@ -43,7 +44,8 @@ export async function generateTelegramQR(authToken: string) {
   }
 
   // Создаем deep link для Telegram бота
-  const telegramDeepLink = `https://t.me/${BOT_USERNAME}?start=${authToken}`;
+  const botUsername = getBotUsername();
+  const telegramDeepLink = `https://t.me/${botUsername}?start=${authToken}`;
 
   console.log('🔍 Генерация QR-кода для:', telegramDeepLink);
 
@@ -111,7 +113,8 @@ export function setupTelegramDeepLink(authToken: string) {
   const startParam = isAndroidApp ? `${authToken}_app` : authToken;
 
   // Используем tg://resolve для открытия приложения Telegram сразу
-  const telegramDeepLink = `tg://resolve?domain=${BOT_USERNAME}&start=${startParam}`;
+  const botUsername = getBotUsername();
+  const telegramDeepLink = `tg://resolve?domain=${botUsername}&start=${startParam}`;
 
   console.log('🔗 Deep link установлен:', telegramDeepLink);
 
@@ -233,17 +236,18 @@ export function initTelegramLoginWidget() {
   container.innerHTML = '';
 
   // Создаём script для Telegram Login Widget
+  const botUsername = getBotUsername();
   const script = document.createElement('script');
   script.async = true;
   script.src = 'https://telegram.org/js/telegram-widget.js?22';
-  script.setAttribute('data-telegram-login', BOT_USERNAME);
+  script.setAttribute('data-telegram-login', botUsername);
   script.setAttribute('data-size', 'large');
   script.setAttribute('data-auth-url', window.location.origin + '/webapp/auth.html');
   script.setAttribute('data-request-access', 'write');
 
   container.appendChild(script);
 
-  console.log('🔐 Telegram Login Widget инициализирован для бота:', BOT_USERNAME);
+  console.log('🔐 Telegram Login Widget инициализирован для бота:', botUsername);
 }
 
 /**
