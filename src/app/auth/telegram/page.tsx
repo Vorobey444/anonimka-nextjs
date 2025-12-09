@@ -51,252 +51,281 @@ function TelegramAuthPageContent() {
   }, [router])
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-      fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif'
-    }}>
+    <div className="welcome-container">
       <style>{`
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        
-        .auth-container {
-          width: 100%;
-          max-width: 500px;
-          animation: slideUp 0.6s ease-out;
-        }
-        
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .auth-card {
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(10px);
-          border-radius: 20px;
-          padding: 40px;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .auth-header {
-          text-align: center;
-          margin-bottom: 30px;
-        }
-        
-        .auth-header h1 {
-          font-size: 28px;
-          font-weight: 700;
-          color: #1a1a2e;
-          margin-bottom: 10px;
+        .welcome-container {
+          min-height: 100vh;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 10px;
+          background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+          position: relative;
+          overflow: hidden;
+          padding: 20px;
+          font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         }
-        
-        .auth-header p {
-          color: #666;
-          font-size: 14px;
-          line-height: 1.6;
+
+        .neon-bg {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background:
+            radial-gradient(circle at 20% 50%, rgba(255, 0, 100, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 80% 50%, rgba(0, 100, 255, 0.15) 0%, transparent 50%);
+          animation: bgPulse 8s ease-in-out infinite;
+          pointer-events: none;
         }
-        
+
+        @keyframes bgPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+
+        .content {
+          position: relative;
+          z-index: 1;
+          text-align: center;
+          padding: 2rem;
+          max-width: 500px;
+          width: 100%;
+        }
+
+        .logo-container {
+          margin-bottom: 2rem;
+        }
+
+        .logo-text {
+          font-size: 2.5rem;
+          font-weight: 900;
+          background: linear-gradient(135deg, #00d4ff 0%, #8338ec 50%, #ff006e 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          margin: 0;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          animation: textGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes textGlow {
+          0%, 100% { filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.6)); }
+          50% { filter: drop-shadow(0 0 30px rgba(131, 56, 236, 0.8)); }
+        }
+
+        .logo-subtitle {
+          color: #8338ec;
+          font-size: 1rem;
+          margin-top: 0.5rem;
+          opacity: 0.9;
+        }
+
+        .telegram-card {
+          position: relative;
+          background: linear-gradient(135deg, rgba(20, 20, 35, 0.95) 0%, rgba(30, 30, 45, 0.9) 100%);
+          border: 2px solid;
+          border-image: linear-gradient(135deg, #00d4ff, #8338ec, #ff006e) 1;
+          border-radius: 20px;
+          padding: 2rem;
+          margin-top: 2rem;
+          box-shadow: 
+            0 0 20px rgba(0, 212, 255, 0.3),
+            0 0 40px rgba(131, 56, 236, 0.2),
+            0 0 60px rgba(255, 0, 100, 0.1);
+          animation: cardGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes cardGlow {
+          0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.3), 0 0 40px rgba(131, 56, 236, 0.2); }
+          50% { box-shadow: 0 0 30px rgba(131, 56, 236, 0.4), 0 0 50px rgba(255, 0, 100, 0.2); }
+        }
+
         .close-btn {
           position: absolute;
-          top: 20px;
-          right: 20px;
+          top: 1rem;
+          right: 1rem;
           width: 40px;
           height: 40px;
           border-radius: 50%;
-          border: none;
-          background: rgba(0, 0, 0, 0.1);
+          border: 2px solid #8338ec;
+          background: transparent;
+          color: #8338ec;
           font-size: 20px;
           cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
           transition: all 0.3s ease;
         }
-        
+
         .close-btn:hover {
-          background: rgba(0, 0, 0, 0.2);
-          transform: scale(1.1);
+          background: rgba(131, 56, 236, 0.2);
+          box-shadow: 0 0 20px rgba(131, 56, 236, 0.5);
         }
-        
-        .benefits {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          border-radius: 15px;
-          padding: 20px;
-          margin-bottom: 30px;
-          color: white;
+
+        .qr-title {
+          font-size: 1.5rem;
+          color: #00d4ff;
+          margin-bottom: 1rem;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
         }
-        
-        .benefits h3 {
-          font-size: 16px;
-          margin-bottom: 12px;
-          font-weight: 600;
+
+        .qr-instruction {
+          color: #aaaaaa;
+          font-size: 0.9rem;
+          line-height: 1.8;
+          margin-bottom: 1.5rem;
         }
-        
-        .benefits ul {
-          list-style: none;
-        }
-        
-        .benefits li {
-          font-size: 14px;
-          margin-bottom: 8px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .qr-section {
-          text-align: center;
-          margin-bottom: 30px;
-        }
-        
-        .qr-section h3 {
-          font-size: 18px;
-          color: #1a1a2e;
-          margin-bottom: 15px;
-          font-weight: 600;
-        }
-        
+
         .qr-wrapper {
-          background: white;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(131, 56, 236, 0.05) 100%);
+          border: 2px solid rgba(0, 212, 255, 0.3);
           border-radius: 15px;
           padding: 20px;
           display: inline-block;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-          margin-bottom: 15px;
+          margin-bottom: 1.5rem;
           min-height: 280px;
           min-width: 280px;
           display: flex;
           align-items: center;
           justify-content: center;
-          position: relative;
+          box-shadow: 
+            0 0 20px rgba(0, 212, 255, 0.2),
+            inset 0 0 20px rgba(131, 56, 236, 0.1);
         }
-        
+
         #qrcode {
           display: flex;
           align-items: center;
           justify-content: center;
         }
-        
+
         .qr-loading {
           text-align: center;
-          color: #666;
+          color: #8338ec;
         }
-        
-        .qr-loading p {
-          margin-top: 10px;
-          font-size: 14px;
-        }
-        
+
         .spinner {
           width: 40px;
           height: 40px;
-          border: 4px solid #f3f3f3;
-          border-top: 4px solid #667eea;
+          border: 3px solid rgba(0, 212, 255, 0.3);
+          border-top: 3px solid #00d4ff;
           border-radius: 50%;
           animation: spin 1s linear infinite;
+          margin: 0 auto 10px;
         }
-        
+
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-        
-        .qr-instruction {
-          font-size: 13px;
-          color: #666;
-          line-height: 1.8;
-          margin-bottom: 15px;
-        }
-        
+
         .button-group {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 1rem;
+          margin-top: 1.5rem;
         }
-        
+
         .btn {
           padding: 12px 20px;
-          border-radius: 10px;
-          border: none;
+          border-radius: 12px;
+          border: 2px solid;
           font-size: 15px;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          text-decoration: none;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          text-decoration: none;
         }
-        
+
         .btn-primary {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
+          background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(131, 56, 236, 0.2) 100%);
+          border-color: #00d4ff;
+          color: #00d4ff;
+          box-shadow: 0 0 20px rgba(0, 212, 255, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.1);
         }
-        
+
         .btn-primary:hover {
+          background: linear-gradient(135deg, rgba(0, 212, 255, 0.4) 0%, rgba(131, 56, 236, 0.3) 100%);
+          box-shadow: 0 0 30px rgba(0, 212, 255, 0.6), inset 0 0 30px rgba(0, 212, 255, 0.2);
           transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
-        
+
         .btn-secondary {
-          background: white;
-          color: #667eea;
-          border: 2px solid #667eea;
+          background: linear-gradient(135deg, rgba(255, 0, 100, 0.2) 0%, rgba(131, 56, 236, 0.2) 100%);
+          border-color: #ff006e;
+          color: #ff006e;
+          box-shadow: 0 0 20px rgba(255, 0, 100, 0.3), inset 0 0 20px rgba(255, 0, 100, 0.1);
         }
-        
+
         .btn-secondary:hover {
-          background: #667eea;
-          color: white;
+          background: linear-gradient(135deg, rgba(255, 0, 100, 0.4) 0%, rgba(131, 56, 236, 0.3) 100%);
+          box-shadow: 0 0 30px rgba(255, 0, 100, 0.6), inset 0 0 30px rgba(255, 0, 100, 0.2);
+          transform: translateY(-2px);
         }
-        
+
         .divider {
-          text-align: center;
-          margin: 20px 0;
-          color: #ccc;
-          font-size: 14px;
+          color: #666;
+          margin: 1rem 0;
+          font-size: 0.9rem;
         }
-        
-        .divider::before,
-        .divider::after {
-          content: '';
-          display: inline-block;
-          width: 40%;
-          height: 1px;
-          background: #ccc;
-          vertical-align: middle;
-          margin: 0 10px;
+
+        .benefits {
+          background: linear-gradient(135deg, rgba(131, 56, 236, 0.1) 0%, rgba(255, 0, 100, 0.05) 100%);
+          border: 1px solid rgba(131, 56, 236, 0.3);
+          border-radius: 12px;
+          padding: 1rem;
+          margin-bottom: 1.5rem;
+          color: #aaaaaa;
+        }
+
+        .benefits h3 {
+          color: #8338ec;
+          font-size: 1rem;
+          margin-bottom: 0.8rem;
+        }
+
+        .benefits ul {
+          list-style: none;
+          padding: 0;
+        }
+
+        .benefits li {
+          font-size: 0.9rem;
+          margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 480px) {
+          .logo-text {
+            font-size: 1.8rem;
+          }
+
+          .telegram-card {
+            padding: 1.5rem;
+          }
+
+          .qr-wrapper {
+            min-height: 240px;
+            min-width: 240px;
+          }
         }
       `}</style>
-      
-      <div className="auth-container">
-        <button className="close-btn" onClick={() => router.push('/')}>✕</button>
-        
-        <div className="auth-card">
-          <div className="auth-header">
-            <h1>🔐 Вход через Telegram</h1>
-            <p>Безопасная авторизация за несколько секунд</p>
-          </div>
-          
+
+      <div className="neon-bg"></div>
+
+      <div className="content">
+        <div className="logo-container">
+          <h1 className="logo-text">🔐 ANONIMKA</h1>
+          <p className="logo-subtitle">Вход через Telegram</p>
+        </div>
+
+        <div className="telegram-card">
+          <button className="close-btn" onClick={() => router.push('/')}>✕</button>
+
           <div className="benefits">
             <h3>✨ С авторизацией ты получишь:</h3>
             <ul>
@@ -305,23 +334,22 @@ function TelegramAuthPageContent() {
               <li>✅ Начать приватный чат с кем угодно</li>
             </ul>
           </div>
-          
-          <div className="qr-section">
-            <h3>📱 Отсканируй QR-код</h3>
-            <p className="qr-instruction">
-              Используй приложение Telegram на телефоне:<br/>
-              Камера → Наведи на QR → Открыть сайт
-            </p>
-            
-            <div className="qr-wrapper">
-              <div id="qrcode"></div>
-              <div className="qr-loading" id="qrLoading" style={{ display: 'none' }}>
-                <div className="spinner"></div>
-                <p>Генерируем QR-код...</p>
-              </div>
+
+          <h3 className="qr-title">📱 Отсканируй QR-код</h3>
+
+          <p className="qr-instruction">
+            Используй приложение Telegram на телефоне:<br/>
+            Камера → Наведи на QR → Открыть сайт
+          </p>
+
+          <div className="qr-wrapper">
+            <div id="qrcode"></div>
+            <div className="qr-loading" id="qrLoading" style={{ display: 'none' }}>
+              <div className="spinner"></div>
+              <p>Генерируем QR-код...</p>
             </div>
           </div>
-          
+
           <div className="button-group">
             <button
               id="telegramDeepLink"
@@ -330,9 +358,9 @@ function TelegramAuthPageContent() {
             >
               🚀 Открыть бота в Telegram
             </button>
-            
+
             <div className="divider">или</div>
-            
+
             <button
               onClick={() => router.push('/auth/email')}
               className="btn btn-secondary"
