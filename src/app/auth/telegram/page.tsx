@@ -13,8 +13,15 @@ import {
 function TelegramAuthPageContent() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isMounted) return
+
     const initAuth = async () => {
       try {
         const authToken = 'auth_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
@@ -48,7 +55,22 @@ function TelegramAuthPageContent() {
     }
 
     initAuth()
-  }, [router])
+  }, [router, isMounted])
+
+  if (!isMounted) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%)',
+        color: '#8338ec'
+      }}>
+        <div>Загрузка...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="welcome-container">
