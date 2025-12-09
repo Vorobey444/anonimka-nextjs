@@ -17,17 +17,17 @@ function LocationSetupPageContent() {
             <div className="logo">
               <div className="neon-icon">🌍</div>
               <h1>Выберите вашу страну</h1>
-              <p>Это поможет показывать релевантные объявления</p>
+              <p>Это поможет находить людей рядом</p>
             </div>
           </div>
           
           <div className="location-setup-container">
             {/* Кнопка автоопределения */}
-            <div className="auto-detect-section" style={{marginBottom: '1.5rem'}}>
-              <button type="button" className="neon-button secondary full-width" id="autoDetectBtn">
+            <div className="auto-location-section">
+              <button className="neon-button primary full-width" id="autoDetectBtn">
                 📍 Определить автоматически
               </button>
-              <p style={{textAlign: 'center', margin: '1rem 0', opacity: 0.7, fontSize: '0.9rem'}}>или выберите вручную</p>
+              <p className="or-divider">или выберите вручную</p>
             </div>
             
             {/* Выбор страны */}
@@ -92,15 +92,6 @@ function LocationSetupPageContent() {
               </div>
             </div>
 
-            {/* Выбор региона */}
-            <div className="setup-region-selection" style={{display: 'none'}}>
-              <h3>Регион/область</h3>
-              <div className="search-container">
-                <input type="text" className="setup-region-input" placeholder="Начните вводить название..." />
-                <div className="suggestions-list setup-region-suggestions"></div>
-              </div>
-            </div>
-
             {/* Выбор города */}
             <div className="setup-city-selection" style={{display: 'none'}}>
               <h3>Город</h3>
@@ -116,7 +107,7 @@ function LocationSetupPageContent() {
                 <span className="setup-location-text"></span>
                 <button type="button" className="reset-setup-location">🔄 Изменить</button>
               </div>
-              <button type="button" className="neon-button primary full-width confirm-setup-location">
+              <button className="neon-button primary full-width" id="saveLocationAndContinue">
                 ✅ Подтвердить и продолжить
               </button>
             </div>
