@@ -79,7 +79,7 @@ function createQRCode(
  * Настраивает Deep Link для авторизации через Telegram
  */
 export function setupTelegramDeepLink(authToken: string) {
-  const deepLinkButton = document.getElementById('telegramDeepLink');
+  const deepLinkButton = document.getElementById('telegramDeepLink') as HTMLAnchorElement | null;
   const loginWidgetContainer = document.getElementById('loginWidgetContainer');
   const loginWidgetDivider = document.getElementById('loginWidgetDivider');
 
