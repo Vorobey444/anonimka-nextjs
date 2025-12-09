@@ -15,36 +15,27 @@ function TelegramAuthPageContent() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Генерируем QR код при загрузке
     const initAuth = async () => {
       try {
-        // Генерируем уникальный auth token для этой сессии
         const authToken = 'auth_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
         localStorage.setItem('telegram_auth_token', authToken)
 
         console.log('🔑 Auth token сгенерирован:', authToken)
 
-        // Генерируем QR-код
         await generateTelegramQR(authToken)
-
-        // Настраиваем Deep Link
         setupTelegramDeepLink(authToken)
 
-        // Запускаем проверку авторизации
         startAuthCheckPolling(
           authToken,
           (user) => {
-            // Успешная авторизация
             handleTelegramAuthSuccess(user, (userData) => {
               console.log('✅ Авторизация успешна!', userData)
-              // Закрываем модаль и перенаправляем
               setTimeout(() => {
                 router.push('/main')
               }, 1000)
             })
           },
           () => {
-            // Timeout
             console.log('⏰ Время ожидания авторизации истекло')
           }
         )
@@ -60,252 +51,298 @@ function TelegramAuthPageContent() {
   }, [router])
 
   return (
-    <>
-      <link rel="stylesheet" href="/style.css" />
-      <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
-
-      <div className="app-container">
-        <div id="telegramAuthModal" className="modal" style={{ display: 'block' }}>
-          <div className="modal-overlay"></div>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>🔐 Авторизация через Telegram</h2>
-              <button className="modal-close" onClick={() => router.push('/')}>
-                ✕
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="auth-warning">
-                <div className="warning-icon">⚠️</div>
-                <h3>Требуется авторизация</h3>
-                <p>Для продолжения использования сайта необходимо авторизоваться через Telegram.</p>
-                <p>Это позволит:</p>
-                <ul>
-                  <li>✅ Создавать анкеты</li>
-                  <li>✅ Получать уведомления о сообщениях</li>
-                  <li>✅ Создавать приватные чаты</li>
-                </ul>
-              </div>
-
-              <div className="telegram-login-container">
-                <h4>📱 Отсканируйте QR-код</h4>
-                <p className="qr-instruction">
-                  1. Откройте камеру в мобильном приложении Telegram
-                  <br />
-                  2. Наведите на QR-код ниже
-                  <br />
-                  3. Нажмите "Открыть сайт" в боте
-                  <br />
-                  4. Авторизация завершится автоматически!
-                </p>
-
-                <div className="qr-code-wrapper">
-                  <div id="qrcode"></div>
-                  <div className="qr-loading" id="qrLoading">
-                    <div className="spinner"></div>
-                    <p>Генерация QR-кода...</p>
-                  </div>
-                </div>
-
-                <div className="or-divider" id="loginWidgetDivider" style={{ display: 'none' }}>
-                  <span>или</span>
-                </div>
-
-                <div id="loginWidgetContainer" style={{ display: 'none' }}>
-                  <a
-                    id="telegramDeepLink"
-                    href="#"
-                    className="telegram-login-button"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z" />
-                    </svg>
-                    Войти через Telegram
-                  </a>
-                  <p className="login-hint">Откроется приложение Telegram на вашем устройстве</p>
-                </div>
-
-                <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-                  <button
-                    onClick={() => router.push('/auth/email')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#ff006e',
-                      textDecoration: 'underline',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      padding: '0.5rem 1rem',
-                    }}
-                  >
-                    📧 Войти через Email
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <style jsx>{`
-        .auth-warning {
-          background: rgba(255, 100, 100, 0.1);
-          border: 1px solid rgba(255, 100, 100, 0.3);
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 30px;
-        }
-
-        .warning-icon {
-          font-size: 3rem;
-          margin-bottom: 10px;
-        }
-
-        .auth-warning h3 {
-          color: #ff6464;
-          margin: 10px 0;
-          font-size: 1.4rem;
-        }
-
-        .auth-warning p {
-          color: var(--text-gray);
-          margin: 5px 0;
-        }
-
-        .auth-warning ul {
-          list-style: none;
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif'
+    }}>
+      <style>{`
+        * {
+          margin: 0;
           padding: 0;
-          margin: 10px 0;
-          text-align: left;
+          box-sizing: border-box;
         }
-
-        .auth-warning li {
-          color: var(--text-gray);
-          margin: 5px 0;
+        
+        .auth-container {
+          width: 100%;
+          max-width: 500px;
+          animation: slideUp 0.6s ease-out;
         }
-
-        .telegram-login-container {
-          text-align: center;
-        }
-
-        .telegram-login-container h4 {
-          color: #8338ec;
-          margin: 20px 0 10px 0;
-          font-size: 1.2rem;
-        }
-
-        .qr-instruction {
-          color: var(--text-gray);
-          font-size: 0.9rem;
-          margin-bottom: 20px;
-          line-height: 1.6;
-        }
-
-        .qr-code-wrapper {
-          display: flex;
-          justify-content: center;
-          margin: 30px 0;
-          min-height: 280px;
-          align-items: center;
-        }
-
-        .qr-code-wrapper div {
-          background: white;
-          padding: 10px;
-          border-radius: 12px;
-          box-shadow: 0 0 20px rgba(131, 56, 236, 0.3);
-        }
-
-        .qr-loading {
-          text-align: center;
-        }
-
-        .spinner {
-          width: 40px;
-          height: 40px;
-          margin: 0 auto 15px;
-          border: 3px solid rgba(131, 56, 236, 0.3);
-          border-top-color: #8338ec;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
+        
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
           to {
-            transform: rotate(360deg);
+            opacity: 1;
+            transform: translateY(0);
           }
         }
-
-        .or-divider {
-          color: var(--text-gray);
-          margin: 20px 0;
-          position: relative;
+        
+        .auth-card {
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+          border-radius: 20px;
+          padding: 40px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
-        .or-divider span {
-          background: #0a0a0f;
-          padding: 0 10px;
+        
+        .auth-header {
+          text-align: center;
+          margin-bottom: 30px;
         }
-
-        .or-divider::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: rgba(255, 255, 255, 0.2);
-          z-index: -1;
-        }
-
-        .telegram-login-button {
+        
+        .auth-header h1 {
+          font-size: 28px;
+          font-weight: 700;
+          color: #1a1a2e;
+          margin-bottom: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
-          width: 100%;
-          padding: 15px;
-          background: linear-gradient(135deg, #0088cc, #0077b6);
+        }
+        
+        .auth-header p {
+          color: #666;
+          font-size: 14px;
+          line-height: 1.6;
+        }
+        
+        .close-btn {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
           border: none;
-          border-radius: 12px;
+          background: rgba(0, 0, 0, 0.1);
+          font-size: 20px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s ease;
+        }
+        
+        .close-btn:hover {
+          background: rgba(0, 0, 0, 0.2);
+          transform: scale(1.1);
+        }
+        
+        .benefits {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 15px;
+          padding: 20px;
+          margin-bottom: 30px;
           color: white;
-          font-size: 1rem;
+        }
+        
+        .benefits h3 {
+          font-size: 16px;
+          margin-bottom: 12px;
+          font-weight: 600;
+        }
+        
+        .benefits ul {
+          list-style: none;
+        }
+        
+        .benefits li {
+          font-size: 14px;
+          margin-bottom: 8px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .qr-section {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+        
+        .qr-section h3 {
+          font-size: 18px;
+          color: #1a1a2e;
+          margin-bottom: 15px;
+          font-weight: 600;
+        }
+        
+        .qr-wrapper {
+          background: white;
+          border-radius: 15px;
+          padding: 20px;
+          display: inline-block;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+          margin-bottom: 15px;
+          min-height: 280px;
+          min-width: 280px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+        }
+        
+        #qrcode {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .qr-loading {
+          text-align: center;
+          color: #666;
+        }
+        
+        .qr-loading p {
+          margin-top: 10px;
+          font-size: 14px;
+        }
+        
+        .spinner {
+          width: 40px;
+          height: 40px;
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #667eea;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .qr-instruction {
+          font-size: 13px;
+          color: #666;
+          line-height: 1.8;
+          margin-bottom: 15px;
+        }
+        
+        .button-group {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        
+        .btn {
+          padding: 12px 20px;
+          border-radius: 10px;
+          border: none;
+          font-size: 15px;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
           text-decoration: none;
-          margin-bottom: 10px;
         }
-
-        .telegram-login-button:hover {
-          background: linear-gradient(135deg, #0099dd, #0088cc);
+        
+        .btn-primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+        }
+        
+        .btn-primary:hover {
           transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(0, 136, 204, 0.3);
+          box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
-
-        .login-hint {
-          color: var(--text-gray);
-          font-size: 0.85rem;
-          margin-top: 10px;
+        
+        .btn-secondary {
+          background: white;
+          color: #667eea;
+          border: 2px solid #667eea;
         }
-
-        @media (max-width: 480px) {
-          .qr-code-wrapper {
-            min-height: 200px;
-          }
-
-          .qr-instruction {
-            font-size: 0.85rem;
-          }
-
-          .telegram-login-container h4 {
-            font-size: 1rem;
-          }
+        
+        .btn-secondary:hover {
+          background: #667eea;
+          color: white;
+        }
+        
+        .divider {
+          text-align: center;
+          margin: 20px 0;
+          color: #ccc;
+          font-size: 14px;
+        }
+        
+        .divider::before,
+        .divider::after {
+          content: '';
+          display: inline-block;
+          width: 40%;
+          height: 1px;
+          background: #ccc;
+          vertical-align: middle;
+          margin: 0 10px;
         }
       `}</style>
-    </>
+      
+      <div className="auth-container">
+        <button className="close-btn" onClick={() => router.push('/')}>✕</button>
+        
+        <div className="auth-card">
+          <div className="auth-header">
+            <h1>🔐 Вход через Telegram</h1>
+            <p>Безопасная авторизация за несколько секунд</p>
+          </div>
+          
+          <div className="benefits">
+            <h3>✨ С авторизацией ты получишь:</h3>
+            <ul>
+              <li>✅ Создавать и редактировать свою анкету</li>
+              <li>✅ Видеть все сообщения и уведомления</li>
+              <li>✅ Начать приватный чат с кем угодно</li>
+            </ul>
+          </div>
+          
+          <div className="qr-section">
+            <h3>📱 Отсканируй QR-код</h3>
+            <p className="qr-instruction">
+              Используй приложение Telegram на телефоне:<br/>
+              Камера → Наведи на QR → Открыть сайт
+            </p>
+            
+            <div className="qr-wrapper">
+              <div id="qrcode"></div>
+              <div className="qr-loading" id="qrLoading" style={{ display: 'none' }}>
+                <div className="spinner"></div>
+                <p>Генерируем QR-код...</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="button-group">
+            <button
+              id="telegramDeepLink"
+              className="btn btn-primary"
+              style={{ cursor: 'pointer' }}
+            >
+              🚀 Открыть бота в Telegram
+            </button>
+            
+            <div className="divider">или</div>
+            
+            <button
+              onClick={() => router.push('/auth/email')}
+              className="btn btn-secondary"
+            >
+              📧 Войти через Email
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
