@@ -1,8 +1,11 @@
 'use client';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { useRouter } from 'next/navigation'
 
 function ChatsPageContent() {
+  const router = useRouter();
+  
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -13,7 +16,7 @@ function ChatsPageContent() {
       <div className="app-container">
         <div id="myChats" className="screen" style={{display: 'block'}}>
           <div className="header">
-            <button className="back-btn" onClick={() => (window as any).showMainMenu()}>← Назад</button>
+            <button className="back-btn" onClick={() => router.push('/main')}>← Назад</button>
             <h2>💬 Мои чаты</h2>
           </div>
 

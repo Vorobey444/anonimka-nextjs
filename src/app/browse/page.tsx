@@ -1,8 +1,11 @@
 'use client';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { useRouter } from 'next/navigation'
 
 function BrowseAdsPageContent() {
+  const router = useRouter();
+  
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -13,7 +16,7 @@ function BrowseAdsPageContent() {
       <div className="app-container">
         <div id="browseAds" className="screen" style={{display: 'block'}}>
           <div className="header">
-            <button className="back-btn" onClick={() => (window as any).showMainMenu()}>← Назад</button>
+            <button className="back-btn" onClick={() => router.push('/main')}>← Назад</button>
             <h2>Анкеты</h2>
           </div>
           

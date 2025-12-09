@@ -1,8 +1,11 @@
 'use client';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { useRouter } from 'next/navigation'
 
 function WorldChatPageContent() {
+  const router = useRouter();
+  
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -13,7 +16,7 @@ function WorldChatPageContent() {
       <div className="app-container">
         <div id="worldChatScreen" className="screen" style={{display: 'block'}}>
           <div className="header">
-            <button className="back-btn" onClick={() => (window as any).showMainMenu()}>← Назад</button>
+            <button className="back-btn" onClick={() => router.push('/main')}>← Назад</button>
             <h2>🌍 Мир чат</h2>
             <button className="world-chat-faq-btn" onClick={() => (window as any).showWorldChatFAQ()} title="Инструкция">?</button>
           </div>

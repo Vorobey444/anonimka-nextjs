@@ -1,8 +1,11 @@
 'use client';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { useRouter } from 'next/navigation'
 
 function PollsPageContent() {
+  const router = useRouter();
+  
   return (
     <>
       <link rel="stylesheet" href="/style.css" />
@@ -13,7 +16,7 @@ function PollsPageContent() {
       <div className="app-container">
         <div id="pollsScreen" className="screen" style={{display: 'block'}}>
           <div className="header">
-            <button className="back-btn" onClick={() => (window as any).showMainMenu()}>← Назад</button>
+            <button className="back-btn" onClick={() => router.push('/main')}>← Назад</button>
             <h2>📊 Опросы</h2>
           </div>
           
