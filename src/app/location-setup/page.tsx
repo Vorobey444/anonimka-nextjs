@@ -11,16 +11,17 @@ function LocationSetupPageContent() {
       <script src="/js/core.js" defer></script>
       
       <div className="app-container">
+        {/* Выбор локации при первом запуске */}
         <div id="locationSetup" className="screen" style={{display: 'block'}}>
           <div className="header">
-            <button className="back-btn" id="locationSetupBackBtn" onClick={() => window.history.back()}>← Назад</button>
+            <button className="back-btn" style={{display: 'none'}} id="locationBackBtn" onClick={() => window.history.back()}>← Назад</button>
             <div className="logo">
               <div className="neon-icon">🌍</div>
               <h1>Выберите вашу страну</h1>
               <p>Это поможет находить людей рядом</p>
             </div>
           </div>
-          
+
           <div className="location-setup-container">
             {/* Кнопка автоопределения */}
             <div className="auto-location-section">
@@ -29,7 +30,7 @@ function LocationSetupPageContent() {
               </button>
               <p className="or-divider">или выберите вручную</p>
             </div>
-            
+
             {/* Выбор страны */}
             <div className="setup-country-selection">
               <h3>Страна</h3>
