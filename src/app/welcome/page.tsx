@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import './welcome.css'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import BurgerButton from '@/components/BurgerButton'
 
 function WelcomePageContent() {
   const handleEmailAuth = () => {
@@ -31,6 +32,7 @@ function WelcomePageContent() {
 
   return (
     <div className="welcome-screen">
+      <BurgerButton />
       <div className="welcome-content">
         <div className="logo-container">
           <div className="neon-logo">
