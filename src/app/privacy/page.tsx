@@ -1,8 +1,19 @@
 'use client';
 
+import { useEffect } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 function PrivacyPageContent() {
+  useEffect(() => {
+    const loadScript = async () => {
+      const script = document.createElement('script');
+      script.src = '/js/menu.js';
+      script.async = false;
+      document.head.appendChild(script);
+    };
+    loadScript();
+  }, []);
+
   return (
     <>
       <link rel="stylesheet" href="/style.css" />

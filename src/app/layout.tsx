@@ -1,4 +1,5 @@
 import ErrorLogger from '@/components/ErrorLogger'
+import HamburgerMenu from '@/components/HamburgerMenu'
 
 export const metadata = {
   title: 'Anonimka - Анонимное общение',
@@ -18,6 +19,7 @@ export default function RootLayout({
     <html lang="ru" style={{ margin: 0, padding: 0, background: '#0a0a0f' }}>
       <body style={{ margin: 0, padding: 0, background: '#0a0a0f', color: '#ffffff', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
         <ErrorLogger />
+        <HamburgerMenu />
         {children}
       </body>
     </html>
