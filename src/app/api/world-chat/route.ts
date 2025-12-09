@@ -10,9 +10,26 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, params } = body;
     
+    console.log('World chat API request:', { action, params });
+    
+    if (!params) {
+      return NextResponse.json(
+        { success: false, error: 'Missing params' },
+        { status: 400 }
+      );
+    }
+    
     if (action === 'get-messages') {
       // Получение сообщений из БД
       const { tab, userToken, userCity } = params;
+      
+      if (!tab) {
+        return NextResponse.json(
+          { success: false, error: 'Missing tab parameter' },
+          { status: 400 }
+        );
+      }
+      
       const sql = getSql();
       
       let messages;
