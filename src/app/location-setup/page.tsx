@@ -7,6 +7,7 @@ function LocationSetupPageContent() {
     <>
       <link rel="stylesheet" href="/style.css" />
       <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+      <script src="/js/location.js" defer></script>
       <script src="/js/core.js" defer></script>
       
       <div className="app-container">
