@@ -1,10 +1,24 @@
 'use client';
 
+import React from 'react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useRouter } from 'next/navigation'
 
 function WorldChatPageContent() {
   const router = useRouter();
+  
+  // Initialize world chat when component mounts
+  React.useEffect(() => {
+    const initWorldChat = () => {
+      if (typeof window !== 'undefined' && (window as any).showWorldChat) {
+        (window as any).showWorldChat();
+      } else {
+        // Retry if script not loaded yet
+        setTimeout(initWorldChat, 100);
+      }
+    };
+    initWorldChat();
+  }, []);
   
   return (
     <>
@@ -48,6 +62,7 @@ function WorldChatPageContent() {
                   placeholder="Введите сообщение..." 
                   maxLength={120}
                   onKeyPress={(e) => {if(e.key === 'Enter') (window as any).sendWorldChatMessage()}}
+                  onInput={() => (window as any).updateWorldChatCharCount?.()}
                 />
                 <div className="world-chat-char-counter">
                   <span id="worldChatCharCount">0</span>/120
