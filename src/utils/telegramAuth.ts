@@ -3,7 +3,14 @@
  * Портировано из WORK/public/webapp/app.js
  */
 
-export const BOT_USERNAME = 'anonimka_kz_bot';
+// Определяем какого бота использовать (dev или prod)
+const BOT_USERNAME_DEV = 'anonimka_kz_dev_bot';
+const BOT_USERNAME_PROD = 'anonimka_kz_bot';
+
+export const BOT_USERNAME = 
+  typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? BOT_USERNAME_DEV  // Локально используем dev бота
+    : BOT_USERNAME_PROD; // В production используем основного бота
 
 /**
  * Генерирует QR-код для авторизации через Telegram
