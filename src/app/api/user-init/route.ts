@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
           // Создаём нового пользователя
           try {
             await sql`
-              INSERT INTO users (id, nickname, user_token, created_at, updated_at, last_active)
-              VALUES (${tg_id}, ${tg_first_name || 'Аноним'}, ${userToken}, NOW(), NOW(), NOW())
-              ON CONFLICT (id) DO UPDATE SET last_active = NOW(), updated_at = NOW()
+              INSERT INTO users (id, display_nickname, user_token, created_at, updated_at)
+              VALUES (${tg_id}, ${tg_first_name || 'Аноним'}, ${userToken}, NOW(), NOW())
+              ON CONFLICT (id) DO UPDATE SET updated_at = NOW()
             `;
           } catch (insertError) {
             // Игнорируем ошибки дублирования
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         } else {
           // Обновляем активность
           await sql`
-            UPDATE users SET last_active = NOW(), updated_at = NOW() WHERE id = ${tg_id}
+            UPDATE users SET updated_at = NOW() WHERE id = ${tg_id}
           `;
         }
       } else {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       if (user_token) {
         try {
           await sql`
-            UPDATE users SET last_active = NOW() WHERE user_token = ${user_token}
+            UPDATE users SET updated_at = NOW() WHERE user_token = ${user_token}
           `;
         } catch (e) {
           // Игнорируем ошибки - пользователь может не существовать
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       
       try {
         await sql`
-          UPDATE users SET nickname = ${nickname}, updated_at = NOW() WHERE user_token = ${user_token}
+          UPDATE users SET display_nickname = ${nickname}, updated_at = NOW() WHERE user_token = ${user_token}
         `;
         return NextResponse.json({ success: true });
       } catch (e: any) {
