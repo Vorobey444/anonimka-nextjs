@@ -13,7 +13,7 @@ console.log('📋 [MENU] Инициализация модуля навигац�
  * Скрытые/видимые экраны
  */
 const screens = {
-    homeScreen: 'homeScreen',
+    homeScreen: 'browseAds',           // Главный экран = просмотр анкет
     myProfileScreen: 'myProfileScreen',
     myAdsScreen: 'myAdsScreen',
     chatsScreen: 'chatsScreen',
@@ -21,7 +21,7 @@ const screens = {
     settingsScreen: 'settingsScreen'
 };
 
-let currentScreen = screens.homeScreen;
+let currentScreen = 'browseAds';
 
 /**
  * ===== УПРАВЛЕНИЕ ЭКРАНАМИ =====
