@@ -117,6 +117,34 @@ function prevFormStep() {
 }
 
 /**
+ * Обработка кнопки "Назад" в форме создания анкеты
+ */
+function handleCreateAdBack() {
+    if (currentStep > 1) {
+        prevFormStep();
+    } else {
+        // На первом шаге - спрашиваем подтверждение
+        if (window.confirm && window.confirm('Вы уверены? Все введённые данные будут потеряны.')) {
+            showMainMenu();
+        }
+    }
+}
+
+/**
+ * Следующий шаг (алиас для HTML)
+ */
+function nextStep() {
+    nextFormStep();
+}
+
+/**
+ * Предыдущий шаг (алиас для HTML)
+ */
+function previousStep() {
+    prevFormStep();
+}
+
+/**
  * Отправить анкету на сервер
  */
 async function submitAd() {

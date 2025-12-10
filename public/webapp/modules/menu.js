@@ -177,6 +177,28 @@ function toggleBurgerMenu() {
 }
 
 /**
+ * Переключить hamburger меню (альтернативное имя)
+ */
+function toggleHamburgerMenu() {
+    toggleBurgerMenu();
+}
+
+/**
+ * Закрыть hamburger меню (альтернативное имя)
+ */
+function closeHamburgerMenu() {
+    closeBurgerMenu();
+}
+
+/**
+ * Закрыть hamburger меню и перейти на главный экран
+ */
+function closeHamburgerAndGoHome() {
+    closeBurgerMenu();
+    showMainMenu();
+}
+
+/**
  * Открыть бургер-меню
  */
 function openBurgerMenu() {
@@ -223,6 +245,47 @@ function closeBurgerMenu() {
  */
 function goToHome() {
     showScreen(screens.homeScreen);
+}
+
+/**
+ * Показать главное меню (синоним goToHome для HTML)
+ */
+function showMainMenu() {
+    console.log('🏠 [MENU] Переход в главное меню');
+    
+    // Скрываем все экраны
+    const allScreens = document.querySelectorAll('.screen');
+    allScreens.forEach(screen => {
+        screen.classList.remove('active');
+        screen.style.display = 'none';
+    });
+    
+    // Показываем главный экран
+    const homeScreen = document.getElementById('homeScreen');
+    if (homeScreen) {
+        homeScreen.classList.add('active');
+        homeScreen.style.display = 'flex';
+    }
+    
+    // Обновляем Telegram кнопки
+    if (typeof updateTelegramButtons === 'function') {
+        updateTelegramButtons('homeScreen');
+    }
+    
+    // Убираем Back Button в Telegram
+    if (window.Telegram?.WebApp?.BackButton) {
+        window.Telegram.WebApp.BackButton.hide();
+    }
+    
+    currentScreen = 'homeScreen';
+}
+
+/**
+ * Обработчик кнопки "Назад"
+ */
+function handleBackButton() {
+    console.log('⬅️ [MENU] Кнопка "Назад" нажата');
+    showMainMenu();
 }
 
 /**
@@ -276,6 +339,27 @@ function showRulesScreen() {
 }
 
 /**
+ * Показать правила (алиас)
+ */
+function showRules() {
+    showRulesScreen();
+}
+
+/**
+ * Показать модальное окно правил
+ */
+function showRulesModal() {
+    document.getElementById('rulesModal').style.display = 'flex';
+}
+
+/**
+ * Закрыть модальное окно правил
+ */
+function closeRulesModal() {
+    document.getElementById('rulesModal').style.display = 'none';
+}
+
+/**
  * Показать экран приватности
  */
 function showPrivacyScreen() {
@@ -287,6 +371,27 @@ function showPrivacyScreen() {
 }
 
 /**
+ * Показать приватность (алиас)
+ */
+function showPrivacy() {
+    showPrivacyScreen();
+}
+
+/**
+ * Показать модальное окно приватности
+ */
+function showPrivacyModal() {
+    document.getElementById('privacyModal').style.display = 'flex';
+}
+
+/**
+ * Закрыть модальное окно приватности
+ */
+function closePrivacyModal() {
+    document.getElementById('privacyModal').style.display = 'none';
+}
+
+/**
  * Показать экран контактов
  */
 function showContactsScreen() {
@@ -295,6 +400,172 @@ function showContactsScreen() {
         modal.style.display = 'flex';
     }
     closeBurgerMenu();
+}
+
+/**
+ * Показать контакты
+ */
+function showContacts() {
+    const contactsScreen = document.getElementById('contactsScreen');
+    if (contactsScreen) {
+        // Скрываем все экраны
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(s => {
+            s.classList.remove('active');
+            s.style.display = 'none';
+        });
+        
+        contactsScreen.classList.add('active');
+        contactsScreen.style.display = 'flex';
+    }
+    closeBurgerMenu();
+}
+
+/**
+ * Показать "О приложении"
+ */
+function showAbout() {
+    const aboutScreen = document.getElementById('aboutScreen');
+    if (aboutScreen) {
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(s => {
+            s.classList.remove('active');
+            s.style.display = 'none';
+        });
+        
+        aboutScreen.classList.add('active');
+        aboutScreen.style.display = 'flex';
+    }
+    closeBurgerMenu();
+}
+
+/**
+ * Показать редактор никнейма
+ */
+function showNicknameEditor() {
+    showNicknameEditorScreen();
+}
+
+/**
+ * Показать экран редактирования никнейма
+ */
+function showNicknameEditorScreen() {
+    const screens = document.querySelectorAll('.screen');
+    screens.forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+    });
+    
+    const nicknameScreen = document.getElementById('nicknameEditScreen');
+    if (nicknameScreen) {
+        nicknameScreen.classList.add('active');
+        nicknameScreen.style.display = 'flex';
+        
+        // Заполняем текущий никнейм
+        const input = nicknameScreen.querySelector('#nicknamePageInput');
+        if (input) {
+            const currentNickname = localStorage.getItem('user_nickname') || localStorage.getItem('userNickname') || '';
+            input.value = currentNickname;
+        }
+    }
+    closeBurgerMenu();
+}
+
+/**
+ * Показать заблокированных пользователей
+ */
+function showBlockedUsers() {
+    const blockedScreen = document.getElementById('blockedUsersScreen');
+    if (blockedScreen) {
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(s => {
+            s.classList.remove('active');
+            s.style.display = 'none';
+        });
+        
+        blockedScreen.classList.add('active');
+        blockedScreen.style.display = 'flex';
+        
+        // Загружаем список заблокированных
+        if (typeof loadBlockedUsers === 'function') {
+            loadBlockedUsers();
+        }
+    }
+    closeBurgerMenu();
+}
+
+/**
+ * Показать админ-панель
+ */
+function showAdminPanel() {
+    const adminScreen = document.getElementById('adminScreen');
+    if (adminScreen) {
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(s => {
+            s.classList.remove('active');
+            s.style.display = 'none';
+        });
+        
+        adminScreen.classList.add('active');
+        adminScreen.style.display = 'flex';
+    }
+    closeBurgerMenu();
+}
+
+/**
+ * Показать информацию об аффилиате
+ */
+function showAffiliateInfo() {
+    const affiliateScreen = document.getElementById('affiliateInfoScreen');
+    if (affiliateScreen) {
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(s => {
+            s.classList.remove('active');
+            s.style.display = 'none';
+        });
+        
+        affiliateScreen.classList.add('active');
+        affiliateScreen.style.display = 'flex';
+    }
+    closeBurgerMenu();
+}
+
+/**
+ * Показать опросы
+ */
+function showPolls() {
+    const pollsScreen = document.getElementById('pollsScreen');
+    if (pollsScreen) {
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(s => {
+            s.classList.remove('active');
+            s.style.display = 'none';
+        });
+        
+        pollsScreen.classList.add('active');
+        pollsScreen.style.display = 'flex';
+    }
+    closeBurgerMenu();
+}
+
+/**
+ * Показать FAQ Мирового чата
+ */
+function showWorldChatFAQ() {
+    const modal = document.getElementById('worldChatFAQModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+/**
+ * Закрыть FAQ Мирового чата
+ */
+function closeWorldChatFAQ() {
+    const modal = document.getElementById('worldChatFAQModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 /**

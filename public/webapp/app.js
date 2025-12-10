@@ -33,14 +33,17 @@ const modules = [
     'modules/ui-dialogs.js',            // 3. Диалоги и уведомления
     'modules/utils.js',                 // 4. Вспомогательные функции
     'modules/auth.js',                  // 5. Аутентификация
-    'modules/location-data.js',         // 6. Данные локаций
-    'modules/location.js',              // 7. Работа с локациями
-    'modules/ads.js',                   // 8. Объявления
-    'modules/chats.js',                 // 9. Чаты
-    'modules/premium.js',               // 10. Премиум функции
-    'modules/referral.js',              // 11. Рефералка
-    'modules/onboarding.js',            // 12. Онбординг
-    'modules/menu.js'                   // 13. Навигация
+    'modules/auth-modals.js',           // 6. Модальные окна авторизации
+    'modules/location-data.js',         // 7. Данные локаций
+    'modules/location.js',              // 8. Работа с локациями
+    'modules/ads.js',                   // 9. Объявления
+    'modules/chats.js',                 // 10. Чаты
+    'modules/world-chat.js',            // 11. Мировой чат
+    'modules/photos.js',                // 12. Управление фотографиями
+    'modules/premium.js',               // 13. Премиум функции
+    'modules/referral.js',              // 14. Рефералка
+    'modules/onboarding.js',            // 15. Онбординг
+    'modules/menu.js'                   // 16. Навигация
 ];
 
 /**

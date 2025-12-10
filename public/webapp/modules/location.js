@@ -455,4 +455,80 @@ function hideOtherSuggestions(currentContainerId) {
         });
 }
 
+/**
+ * Показать экран выбора локации (ручной или авто)
+ */
+function showLocationChoiceScreen() {
+    const screens = document.querySelectorAll('.screen');
+    screens.forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+    });
+    
+    const locationChoiceScreen = document.getElementById('locationChoiceScreen');
+    if (locationChoiceScreen) {
+        locationChoiceScreen.classList.add('active');
+        locationChoiceScreen.style.display = 'flex';
+    }
+    
+    // Закрываем бургер-меню если открыто
+    if (typeof closeBurgerMenu === 'function') {
+        closeBurgerMenu();
+    }
+}
+
+/**
+ * Показать настройку локации (ручной ввод)
+ */
+function showManualLocationSetup() {
+    const screens = document.querySelectorAll('.screen');
+    screens.forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+    });
+    
+    const manualLocationScreen = document.getElementById('manualLocationScreen');
+    if (manualLocationScreen) {
+        manualLocationScreen.classList.add('active');
+        manualLocationScreen.style.display = 'flex';
+    }
+}
+
+/**
+ * Показать настройку локации (общий экран)
+ */
+function showLocationSetup() {
+    showLocationChoiceScreen();
+}
+
+/**
+ * Сохранить локацию и продолжить
+ */
+function saveLocationAndContinue() {
+    if (!selectedCountry || !selectedCity) {
+        if (typeof tg !== 'undefined' && tg.showAlert) {
+            tg.showAlert('Пожалуйста, выберите страну и город');
+        } else {
+            alert('Пожалуйста, выберите страну и город');
+        }
+        return;
+    }
+    
+    // Сохраняем локацию
+    const locationData = {
+        country: selectedCountry,
+        region: selectedRegion || '',
+        city: selectedCity,
+        timestamp: Date.now()
+    };
+    
+    localStorage.setItem('userLocation', JSON.stringify(locationData));
+    console.log('📍 [LOCATION] Локация сохранена:', locationData);
+    
+    // Переходим на главный экран
+    if (typeof showMainMenu === 'function') {
+        showMainMenu();
+    }
+}
+
 console.log('✅ [LOCATION] Модуль локации инициализирован');

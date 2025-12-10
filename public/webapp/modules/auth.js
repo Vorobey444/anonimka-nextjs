@@ -381,4 +381,107 @@ function getCurrentUserInfo() {
     };
 }
 
+/**
+ * Обработка выхода из аккаунта
+ */
+function handleLogout() {
+    const isAndroid = navigator.userAgent.includes('Android');
+    const authMethod = localStorage.getItem('auth_method');
+    
+    let confirmText = 'Вы уверены, что хотите выйти из аккаунта?';
+    if (isAndroid || authMethod === 'email') {
+        confirmText += '\n\nВам потребуется заново авторизоваться через email.';
+    } else {
+        confirmText += '\n\nВам потребуется заново авторизоваться через Telegram.';
+    }
+    
+    if (!confirm(confirmText)) {
+        return;
+    }
+    
+    console.log('🚪 Выход из аккаунта...');
+    
+    // Очищаем все данные авторизации
+    localStorage.removeItem('telegram_user');
+    localStorage.removeItem('telegram_auth_time');
+    localStorage.removeItem('telegram_auth_token');
+    localStorage.removeItem('user_nickname');
+    localStorage.removeItem('userNickname');
+    localStorage.removeItem('user_token');
+    localStorage.removeItem('auth_method');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('auth_time');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('is_premium');
+    localStorage.removeItem('onboarding_completed');
+    localStorage.removeItem('onboarding_step');
+    localStorage.removeItem('user_data');
+    localStorage.removeItem('user_tg_id');
+    localStorage.removeItem('last_fetch_time');
+    localStorage.removeItem('chat_messages');
+    
+    // Очищаем все ключи связанные с опросами
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('poll_voted_')) {
+            localStorage.removeItem(key);
+        }
+    });
+    
+    // Закрываем гамбургер меню
+    if (typeof closeHamburgerMenu === 'function') {
+        closeHamburgerMenu();
+    }
+    
+    // Для Android - перезагружаем (MainActivity проверит отсутствие user_token)
+    if (isAndroid) {
+        console.log('📱 Android: reloading to trigger native auth flow...');
+        window.location.reload();
+    } else {
+        // Для браузера - показываем нужное модальное окно авторизации
+        setTimeout(() => {
+            if (authMethod === 'email' || localStorage.getItem('user_email')) {
+                if (typeof showEmailAuthModal === 'function') {
+                    showEmailAuthModal();
+                }
+            } else {
+                if (typeof showTelegramAuthModal === 'function') {
+                    showTelegramAuthModal();
+                }
+            }
+            console.log('✅ Выход выполнен, показано модальное окно авторизации');
+        }, 300);
+    }
+}
+
+/**
+ * Алиас для logout
+ */
+function logout() {
+    handleLogout();
+}
+
+/**
+ * Обновить отображение кнопки выхода
+ */
+function updateLogoutButtonVisibility() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    
+    // Проверяем реальную Telegram авторизацию (через WebApp)
+    const hasRealTelegramAuth = !!(window.Telegram?.WebApp?.initDataUnsafe?.user?.id);
+    const authMethod = localStorage.getItem('auth_method');
+    const hasEmailAuth = authMethod === 'email' || !!localStorage.getItem('user_email');
+    const hasLoginWidget = !!localStorage.getItem('telegram_user');
+    const hasUserToken = !!localStorage.getItem('user_token');
+    const isAndroid = navigator.userAgent.includes('Android');
+
+    // Показываем кнопку для браузерной авторизации (email или login widget)
+    if ((isAndroid && hasEmailAuth) || (!hasRealTelegramAuth && (hasEmailAuth || hasLoginWidget || hasUserToken))) {
+        logoutBtn.style.display = 'flex';
+    } else {
+        // В Telegram WebApp кнопка выхода не нужна (встроенная авторизация)
+        logoutBtn.style.display = 'none';
+    }
+}
+
 console.log('✅ [AUTH] Модуль авторизации инициализирован');

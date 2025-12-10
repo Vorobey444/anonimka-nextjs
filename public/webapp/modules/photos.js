@@ -1,0 +1,426 @@
+/**
+ * Модуль работы с фото (photos.js)
+ * 
+ * Функции:
+ * - Управление галереей "Мои фото"
+ * - Добавление фото к анкете
+ * - Редактирование, удаление, изменение порядка фото
+ */
+
+console.log('📸 [PHOTOS] Инициализация модуля фото');
+
+/**
+ * Показать страницу "Мои фото"
+ */
+function showMyPhotos() {
+    const userToken = localStorage.getItem('user_token');
+    if (!userToken) {
+        tg.showAlert('❌ Требуется авторизация');
+        return;
+    }
+    
+    const url = window.location.origin + '/my-photo?userToken=' + userToken;
+    window.location.href = url;
+    
+    if (typeof closeHamburgerMenu === 'function') {
+        closeHamburgerMenu();
+    } else if (typeof closeBurgerMenu === 'function') {
+        closeBurgerMenu();
+    }
+}
+
+/**
+ * Загрузить фото пользователя
+ */
+async function loadMyPhotos() {
+    console.log('📸 loadMyPhotos() начало работы');
+    const gallery = document.getElementById('photosGallery');
+    const limitText = document.getElementById('photosLimitText');
+    
+    const userToken = localStorage.getItem('user_token');
+    
+    if (!userToken) {
+        if (gallery) {
+            gallery.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; color: #888;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🔐</div>
+                    <p>Требуется авторизация</p>
+                </div>`;
+        }
+        return;
+    }
+    
+    try {
+        if (gallery) {
+            gallery.innerHTML = `<p style="color: #888; text-align: center; padding: 20px;">⏳ Загрузка...</p>`;
+        }
+        
+        const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
+        
+        if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+        }
+        
+        const result = await resp.json();
+        
+        if (result.error) {
+            throw new Error(result.error.message);
+        }
+        
+        const photos = result.data || [];
+        const isPremium = typeof userPremiumStatus !== 'undefined' ? userPremiumStatus.isPremium : false;
+        const limit = isPremium ? 3 : 1;
+        const active = photos.filter((p) => p.is_active).length;
+        
+        if (limitText) {
+            limitText.innerHTML = `Активных: <strong>${active}/${limit}</strong>`;
+        }
+        
+        if (!gallery) return;
+        
+        if (photos.length === 0) {
+            gallery.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px;">
+                    <div style="font-size: 5rem; margin-bottom: 20px; opacity: 0.5;">📸</div>
+                    <h3 style="color: #e0e0e0; margin: 0 0 15px 0;">Нет фото</h3>
+                    <p style="color: #888; margin: 0;">Нажмите "Добавить фото"</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let gridHTML = `<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">`;
+        
+        photos.forEach((photo, idx) => {
+            const isActive = photo.is_active;
+            const opacity = isActive ? '1' : '0.5';
+            const isFirst = idx === 0;
+            const isLast = idx === photos.length - 1;
+            
+            gridHTML += `
+                <div style="border-radius: 12px; overflow: hidden; background: rgba(26, 26, 46, 0.6); border: 2px solid ${isActive ? 'rgba(0, 217, 255, 0.3)' : 'rgba(255, 59, 48, 0.3)'}; opacity: ${opacity};">
+                    <div onclick="window.open('${photo.photo_url}', '_blank')" style="width: 100%; height: 150px; background-image: url('${photo.photo_url}'); background-size: cover; background-position: center; cursor: pointer; position: relative;">
+                        ${!isActive ? '<div style="position: absolute; top: 0; right: 0; background: rgba(255, 59, 48, 0.9); color: white; padding: 4px 8px; font-size: 0.7rem; border-radius: 0 0 0 8px;">❌ Отключено</div>' : ''}
+                    </div>
+                    <div style="padding: 10px; font-size: 0.85rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <div style="color: #888; font-size: 0.75rem;">Позиция: <strong>${photo.position}</strong></div>
+                            <div style="display: flex; gap: 4px;">
+                                ${!isFirst ? `<button onclick="movePhotoUp(${photo.id}); event.stopPropagation();" style="padding: 4px 8px; background: rgba(0, 217, 255, 0.2); border: 1px solid rgba(0, 217, 255, 0.5); color: #00d9ff; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">↑</button>` : ''}
+                                ${!isLast ? `<button onclick="movePhotoDown(${photo.id}); event.stopPropagation();" style="padding: 4px 8px; background: rgba(0, 217, 255, 0.2); border: 1px solid rgba(0, 217, 255, 0.5); color: #00d9ff; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">↓</button>` : ''}
+                            </div>
+                        </div>
+                        ${photo.caption ? `<div style="color: #e0e0e0; margin-bottom: 10px; font-size: 0.8rem; max-height: 30px; overflow: hidden;">${photo.caption}</div>` : ''}
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                            <button onclick="editPhotoCaption(${photo.id}, '${(photo.caption || '').replace(/'/g, "\\'")}'); event.stopPropagation();" style="flex: 1; min-width: 60px; padding: 8px 6px; background: rgba(131, 56, 236, 0.2); border: 1px solid rgba(131, 56, 236, 0.5); color: #8338ec; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">✏️ Подпись</button>
+                            <button onclick="togglePhotoActive(${photo.id}, ${!isActive}); event.stopPropagation();" style="flex: 1; min-width: 60px; padding: 8px 6px; background: ${isActive ? 'rgba(0, 217, 255, 0.2)' : 'rgba(131, 56, 236, 0.2)'}; border: 1px solid ${isActive ? 'rgba(0, 217, 255, 0.5)' : 'rgba(131, 56, 236, 0.5)'}; color: ${isActive ? '#00d9ff' : '#8338ec'}; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">
+                                ${isActive ? '👁️ Видимо' : '🚫 Скрыто'}
+                            </button>
+                            <button onclick="deletePhoto(${photo.id}); event.stopPropagation();" style="flex: 1; min-width: 60px; padding: 8px 6px; background: rgba(255, 59, 48, 0.2); border: 1px solid rgba(255, 59, 48, 0.5); color: #ff3b30; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">🗑️ Удалить</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        gridHTML += `</div>`;
+        gallery.innerHTML = gridHTML;
+        
+    } catch (error) {
+        console.error('❌ Ошибка загрузки фото:', error);
+        if (gallery) {
+            gallery.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; color: #ff3b30;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">⚠️</div>
+                    <p style="margin-bottom: 15px;">${error.message}</p>
+                    <button onclick="loadMyPhotos()" class="neon-button">🔄 Повторить</button>
+                </div>
+            `;
+        }
+    }
+}
+
+/**
+ * Редактировать подпись к фото
+ */
+async function editPhotoCaption(photoId, oldCaption) {
+    const userToken = localStorage.getItem('user_token');
+    const newCaption = prompt('Введите подпись к фото:', oldCaption || '');
+    
+    if (newCaption === null) return;
+    
+    try {
+        const resp = await fetch('/api/user-photos', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userToken,
+                updates: [{ id: photoId, caption: newCaption || null }]
+            })
+        });
+        
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error.message);
+        await loadMyPhotos();
+    } catch (error) {
+        tg.showAlert('❌ Ошибка: ' + error.message);
+    }
+}
+
+/**
+ * Переключить видимость фото
+ */
+async function togglePhotoActive(photoId, newState) {
+    const userToken = localStorage.getItem('user_token');
+    
+    try {
+        const resp = await fetch('/api/user-photos', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userToken,
+                updates: [{ id: photoId, is_active: newState }]
+            })
+        });
+        
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error.message);
+        await loadMyPhotos();
+    } catch (error) {
+        tg.showAlert('❌ Ошибка: ' + error.message);
+    }
+}
+
+/**
+ * Удалить фото
+ */
+async function deletePhoto(photoId) {
+    if (!confirm('Удалить фото?')) return;
+    
+    const userToken = localStorage.getItem('user_token');
+    
+    try {
+        const resp = await fetch(`/api/user-photos?id=${photoId}&userToken=${userToken}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error.message);
+        await loadMyPhotos();
+    } catch (error) {
+        tg.showAlert('❌ Ошибка: ' + error.message);
+    }
+}
+
+/**
+ * Переместить фото вверх
+ */
+async function movePhotoUp(photoId) {
+    const userToken = localStorage.getItem('user_token');
+    try {
+        const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error.message);
+        
+        const photos = result.data || [];
+        const idx = photos.findIndex(p => p.id === photoId);
+        if (idx <= 0) return;
+        
+        const newOrder = photos.map(p => p.id);
+        [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
+        
+        const patchResp = await fetch('/api/user-photos', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userToken, order: newOrder })
+        });
+        
+        const patchResult = await patchResp.json();
+        if (patchResult.error) throw new Error(patchResult.error.message);
+        await loadMyPhotos();
+    } catch (error) {
+        tg.showAlert('❌ Ошибка: ' + error.message);
+    }
+}
+
+/**
+ * Переместить фото вниз
+ */
+async function movePhotoDown(photoId) {
+    const userToken = localStorage.getItem('user_token');
+    try {
+        const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error.message);
+        
+        const photos = result.data || [];
+        const idx = photos.findIndex(p => p.id === photoId);
+        if (idx < 0 || idx >= photos.length - 1) return;
+        
+        const newOrder = photos.map(p => p.id);
+        [newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]];
+        
+        const patchResp = await fetch('/api/user-photos', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userToken, order: newOrder })
+        });
+        
+        const patchResult = await patchResp.json();
+        if (patchResult.error) throw new Error(patchResult.error.message);
+        await loadMyPhotos();
+    } catch (error) {
+        tg.showAlert('❌ Ошибка: ' + error.message);
+    }
+}
+
+/**
+ * Добавить фото при создании анкеты (шаг 9)
+ */
+async function addAdPhoto() {
+    console.log('📸 [addAdPhoto] Начало загрузки фото для анкеты');
+    
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        console.log('📸 [addAdPhoto] Выбран файл:', file.name);
+        
+        try {
+            const addBtn = document.getElementById('addAdPhotoBtn');
+            if (addBtn) {
+                addBtn.disabled = true;
+                addBtn.innerHTML = '<span>⏳ Загрузка...</span>';
+            }
+            
+            let fileToUpload = file;
+            
+            // Сжимаем если больше 4MB
+            if (file.size > 4 * 1024 * 1024 && typeof compressImage === 'function') {
+                console.log('🗜️ Сжимаем файл...');
+                fileToUpload = await compressImage(file, 4);
+            }
+            
+            const userId = localStorage.getItem('user_token');
+            if (!userId) {
+                throw new Error('Требуется авторизация');
+            }
+            
+            const photoData = await uploadPhotoToTelegram(fileToUpload, userId);
+            
+            // Сохраняем в formData
+            if (typeof formData !== 'undefined') {
+                formData.adPhotoFileId = photoData.file_id;
+                formData.adPhotoUrl = photoData.photo_url;
+            }
+            
+            // Показываем превью
+            const preview = document.getElementById('adPhotoPreview');
+            const img = document.getElementById('adPhotoImage');
+            const btn = document.getElementById('addAdPhotoBtn');
+            
+            if (preview && img && btn) {
+                img.src = photoData.photo_url;
+                preview.style.display = 'block';
+                btn.style.display = 'none';
+            }
+            
+            tg.showAlert('✅ Фото загружено!');
+            
+        } catch (error) {
+            console.error('❌ Ошибка загрузки фото:', error);
+            tg.showAlert('❌ ' + (error.message || 'Ошибка загрузки'));
+        } finally {
+            const addBtn = document.getElementById('addAdPhotoBtn');
+            if (addBtn) {
+                addBtn.disabled = false;
+                addBtn.innerHTML = '<span>📷 Выбрать фото</span>';
+            }
+        }
+    };
+    
+    input.click();
+}
+
+/**
+ * Удалить фото из анкеты
+ */
+function removeAdPhoto() {
+    if (typeof formData !== 'undefined') {
+        delete formData.adPhotoFileId;
+        delete formData.adPhotoUrl;
+    }
+    
+    const preview = document.getElementById('adPhotoPreview');
+    const btn = document.getElementById('addAdPhotoBtn');
+    
+    if (preview) preview.style.display = 'none';
+    if (btn) btn.style.display = 'block';
+    
+    console.log('🗑️ Фото удалено из анкеты');
+}
+
+/**
+ * Загрузить существующие фото на шаге 9
+ */
+async function loadMyPhotosForStep9() {
+    try {
+        const userToken = localStorage.getItem('user_token');
+        if (!userToken) return;
+        
+        const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
+        const result = await resp.json();
+        
+        if (result.error) return;
+        
+        const photos = result.data || [];
+        const container = document.getElementById('step9PhotosGrid');
+        
+        if (!container) return;
+        
+        if (photos.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #888;">
+                    <p>У вас нет загруженных фото</p>
+                    <p style="font-size: 0.8rem;">Добавьте фото ниже</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = photos.map(photo => `
+            <div class="step9-photo-item ${photo.is_active ? 'active' : ''}" onclick="selectStep9Photo(${photo.id}, '${photo.photo_url}')">
+                <img src="${photo.photo_url}" alt="Фото">
+                ${photo.is_active ? '<div class="step9-photo-badge">✓</div>' : ''}
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Ошибка загрузки фото для шага 9:', error);
+    }
+}
+
+/**
+ * Выбрать фото на шаге 9
+ */
+function selectStep9Photo(photoId, photoUrl) {
+    if (typeof formData !== 'undefined') {
+        formData.selectedPhotoId = photoId;
+        formData.adPhotoUrl = photoUrl;
+    }
+    
+    // Обновляем UI - отмечаем выбранное фото
+    document.querySelectorAll('.step9-photo-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+    
+    event.currentTarget.classList.add('selected');
+    
+    console.log('📸 Выбрано фото:', photoId);
+}
+
+console.log('✅ [PHOTOS] Модуль фото инициализирован');
