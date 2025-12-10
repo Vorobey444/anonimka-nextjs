@@ -4,9 +4,22 @@ import sharp from 'sharp';
 import { ENV } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs'; // Ensure Node.js runtime for env vars
+export const runtime = 'nodejs';
+export const maxDuration = 60; // Лимит 60 секунд вместо 300
+
+// Утилита для таймаута промисов
+function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error(errorMessage)), ms)
+    )
+  ]);
+}
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
     const formData = await request.formData();
     const photo = formData.get('photo') as File;
@@ -68,35 +81,53 @@ export async function POST(request: NextRequest) {
     // Fallback: конвертация HEIC/HEIF → JPEG сервер-сайд, если клиент не сконвертировал
     const lowerName = (fileName || '').toLowerCase();
     const isHeic = mimeType === 'image/heic' || mimeType === 'image/heif' || lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
+    
+    // Лимит размера для серверной конвертации (5MB)
+    const MAX_HEIC_SIZE = 5 * 1024 * 1024;
+    
     if (isHeic) {
+      // Проверяем размер — слишком большие файлы отклоняем
+      if (buffer.length > MAX_HEIC_SIZE) {
+        console.error('❌ HEIC файл слишком большой:', buffer.length);
+        return NextResponse.json(
+          { error: { message: 'Файл слишком большой. Максимум 5MB для HEIC. Сконвертируйте в JPG или сожмите.' } },
+          { status: 413 }
+        );
+      }
+      
       const targetName = lowerName ? lowerName.replace(/\.(heic|heif)$/i, '.jpg') : 'photo.jpg';
       let converted = false;
+      
+      // Пробуем sharp с таймаутом 15 секунд
       try {
-        const convertedBuf = await sharp(buffer).rotate().jpeg({ quality: 92 }).toBuffer();
+        const sharpPromise = sharp(buffer).rotate().jpeg({ quality: 92 }).toBuffer();
+        const convertedBuf = await withTimeout(sharpPromise, 15000, 'Sharp HEIC timeout');
         buffer = convertedBuf;
         mimeType = 'image/jpeg';
         fileName = targetName;
-        isVideo = false; // после конвертации это точно фото
+        isVideo = false;
         converted = true;
-        console.log('🔄 HEIC/HEIF converted to JPEG on server (sharp)', { size: buffer.length });
+        console.log('🔄 HEIC/HEIF converted to JPEG on server (sharp)', { size: buffer.length, time: Date.now() - startTime });
       } catch (heicErr: any) {
-        console.warn('⚠️ sharp HEIC convert failed, fallback to heic-convert:', heicErr?.message || heicErr);
+        console.warn('⚠️ sharp HEIC convert failed:', heicErr?.message || heicErr);
       }
 
+      // Fallback: heic-convert с таймаутом 30 секунд
       if (!converted) {
         try {
           const heicConvert = (await import('heic-convert')).default;
-          const output = await heicConvert({ buffer, format: 'JPEG', quality: 0.92 });
+          const heicPromise = heicConvert({ buffer, format: 'JPEG', quality: 0.92 });
+          const output = await withTimeout(heicPromise, 30000, 'HEIC convert timeout');
           buffer = Buffer.from(output);
           mimeType = 'image/jpeg';
           fileName = targetName;
           isVideo = false;
           converted = true;
-          console.log('🔄 HEIC/HEIF converted via heic-convert fallback', { size: buffer.length });
+          console.log('🔄 HEIC/HEIF converted via heic-convert fallback', { size: buffer.length, time: Date.now() - startTime });
         } catch (fallbackErr: any) {
-          console.error('❌ HEIC→JPEG convert failed (fallback):', fallbackErr?.message || fallbackErr);
+          console.error('❌ HEIC→JPEG convert failed:', fallbackErr?.message || fallbackErr);
           return NextResponse.json(
-            { error: { message: 'Не удалось обработать HEIC/HEIF. Попробуйте другое фото или сохраните как JPG/PNG.' } },
+            { error: { message: 'Не удалось обработать HEIC. Попробуйте сконвертировать в JPG на устройстве.' } },
             { status: 415 }
           );
         }
