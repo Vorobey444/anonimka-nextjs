@@ -105,6 +105,11 @@ async function initializeApplication() {
     try {
         console.log('⚙️ [APP] Инициализация приложения...');
         
+        // Проверяем параметры URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const authParam = urlParams.get('auth');
+        console.log('🔗 [APP] URL параметр auth:', authParam);
+        
         // 1. Инициализируем Telegram WebApp
         if (typeof initializeTelegramWebApp === 'function') {
             initializeTelegramWebApp();
@@ -115,6 +120,27 @@ async function initializeApplication() {
         let isAuthorized = false;
         if (typeof checkTelegramAuth === 'function') {
             isAuthorized = await checkTelegramAuth();
+        }
+        
+        // Если пришли с параметром auth=telegram, показываем модалку авторизации
+        if (authParam === 'telegram') {
+            console.log('📱 [APP] Параметр auth=telegram - показываем модальное окно');
+            if (typeof showTelegramAuthModal === 'function') {
+                showTelegramAuthModal();
+            }
+            // Убираем параметр из URL чтобы не показывать повторно при обновлении
+            window.history.replaceState({}, '', window.location.pathname);
+            return; // Выходим - дождемся авторизации
+        }
+        
+        // Если пришли с параметром auth=email
+        if (authParam === 'email') {
+            console.log('📧 [APP] Параметр auth=email - показываем модальное окно');
+            if (typeof showEmailAuthModal === 'function') {
+                showEmailAuthModal();
+            }
+            window.history.replaceState({}, '', window.location.pathname);
+            return;
         }
         
         if (!isAuthorized) {
