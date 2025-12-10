@@ -112,20 +112,32 @@ async function initializeApplication() {
         }
         
         // 2. Проверяем авторизацию
+        let isAuthorized = false;
         if (typeof checkTelegramAuth === 'function') {
-            const isAuthorized = await checkTelegramAuth();
-            
-            if (!isAuthorized) {
-                console.warn('⚠️ [APP] Пользователь не авторизирован в Telegram');
-                if (typeof tg !== 'undefined' && tg?.showAlert) {
-                    tg.showAlert('Пожалуйста, откройте приложение из Telegram');
-                }
-                return;
-            }
+            isAuthorized = await checkTelegramAuth();
         }
         
-        // 3. Инициализируем пользователя в БД
-        if (typeof initializeUserInDatabase === 'function') {
+        if (!isAuthorized) {
+            console.warn('⚠️ [APP] Пользователь не авторизирован');
+            
+            // Показываем модальное окно авторизации вместо остановки
+            if (typeof showTelegramAuthModal === 'function') {
+                console.log('📱 [APP] Показываем окно авторизации...');
+                showTelegramAuthModal();
+            } else if (typeof showEmailAuthModal === 'function') {
+                console.log('📧 [APP] Показываем окно email авторизации...');
+                showEmailAuthModal();
+            } else {
+                console.error('❌ [APP] Функции авторизации не найдены!');
+                if (typeof tg !== 'undefined' && tg?.showAlert) {
+                    tg.showAlert('Пожалуйста, откройте приложение из Telegram или обновите страницу');
+                }
+            }
+            // Не прерываем выполнение - позволяем пользователю авторизоваться
+        }
+        
+        // 3. Инициализируем пользователя в БД (если авторизован)
+        if (isAuthorized && typeof initializeUserInDatabase === 'function') {
             await initializeUserInDatabase();
             console.log('✅ [APP] Пользователь инициализирован в БД');
         }
