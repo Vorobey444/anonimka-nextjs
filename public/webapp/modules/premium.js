@@ -355,6 +355,6 @@ function isEmailUser() {
 window.showPremiumModal = showPremiumModal;
 window.closePremiumModal = closePremiumModal;
 window.loadPremiumStatus = loadPremiumStatus;
-window.updatePremiumToggle = updatePremiumToggle;
+window.updatePremiumUI = updatePremiumUI;
 
 console.log('✅ [PREMIUM] Модуль Premium инициализирован');
