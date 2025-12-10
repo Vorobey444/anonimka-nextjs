@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 import crypto from 'crypto';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -11,35 +13,42 @@ export async function POST(request: NextRequest) {
       // Инициализация нового пользователя
       const { tg_id, tg_username, tg_first_name } = params || {};
       
-      // Генерируем уникальный токен
-      const userToken = crypto.randomBytes(16).toString('hex');
+      let userToken: string;
       
-      // Проверяем существующего пользователя по tg_id
       if (tg_id) {
+        // Для Telegram пользователей - генерируем детерминированный токен
+        const secret = process.env.USER_TOKEN_SECRET || process.env.TOKEN_SECRET || 'fallback-secret';
+        const hmac = crypto.createHmac('sha256', secret);
+        hmac.update(String(tg_id));
+        hmac.update(':v1');
+        userToken = hmac.digest('hex');
+        
+        // Проверяем существующего пользователя
         const existing = await sql`
-          SELECT user_token FROM users WHERE tg_id = ${tg_id} LIMIT 1
+          SELECT id FROM users WHERE id = ${tg_id} LIMIT 1
         `;
         
-        if (existing.rows.length > 0) {
-          // Пользователь уже существует
-          return NextResponse.json({
-            success: true,
-            data: { user_token: existing.rows[0].user_token }
-          });
+        if (existing.rows.length === 0) {
+          // Создаём нового пользователя
+          try {
+            await sql`
+              INSERT INTO users (id, nickname, user_token, created_at, updated_at, last_active)
+              VALUES (${tg_id}, ${tg_first_name || 'Аноним'}, ${userToken}, NOW(), NOW(), NOW())
+              ON CONFLICT (id) DO UPDATE SET last_active = NOW(), updated_at = NOW()
+            `;
+          } catch (insertError) {
+            // Игнорируем ошибки дублирования
+            console.log('[API/user-init] User may already exist, updating activity');
+          }
+        } else {
+          // Обновляем активность
+          await sql`
+            UPDATE users SET last_active = NOW(), updated_at = NOW() WHERE id = ${tg_id}
+          `;
         }
-        
-        // Создаём нового пользователя
-        await sql`
-          INSERT INTO users (user_token, tg_id, nickname, created_at, last_active)
-          VALUES (${userToken}, ${tg_id}, ${tg_first_name || 'Аноним'}, NOW(), NOW())
-          ON CONFLICT (tg_id) DO UPDATE SET last_active = NOW()
-        `;
       } else {
-        // Веб-пользователь без Telegram
-        await sql`
-          INSERT INTO users (user_token, nickname, created_at, last_active)
-          VALUES (${userToken}, 'Аноним', NOW(), NOW())
-        `;
+        // Веб-пользователь без Telegram - генерируем случайный токен
+        userToken = crypto.randomBytes(16).toString('hex');
       }
       
       return NextResponse.json({
@@ -52,9 +61,13 @@ export async function POST(request: NextRequest) {
       const { user_token } = params || {};
       
       if (user_token) {
-        await sql`
-          UPDATE users SET last_active = NOW() WHERE user_token = ${user_token}
-        `;
+        try {
+          await sql`
+            UPDATE users SET last_active = NOW() WHERE user_token = ${user_token}
+          `;
+        } catch (e) {
+          // Игнорируем ошибки - пользователь может не существовать
+        }
       }
       
       return NextResponse.json({ success: true });
