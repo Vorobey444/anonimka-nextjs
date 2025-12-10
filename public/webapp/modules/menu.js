@@ -13,7 +13,7 @@ console.log('📋 [MENU] Инициализация модуля навигац�
  * Скрытые/видимые экраны
  */
 const screens = {
-    homeScreen: 'browseAds',           // Главный экран = просмотр анкет
+    homeScreen: 'mainMenu',            // Главный экран = главное меню с кнопками
     myProfileScreen: 'myProfileScreen',
     myAdsScreen: 'myAdsScreen',
     chatsScreen: 'chatsScreen',
@@ -21,7 +21,7 @@ const screens = {
     settingsScreen: 'settingsScreen'
 };
 
-let currentScreen = 'browseAds';
+let currentScreen = 'mainMenu';
 
 /**
  * ===== УПРАВЛЕНИЕ ЭКРАНАМИ =====
@@ -67,9 +67,13 @@ function showScreen(screenId) {
 function initializeScreenContent(screenId) {
     switch(screenId) {
         case screens.homeScreen:
-            // Главный экран - загружаем объявления
-            console.log('🏠 [MENU] Инициализация главного экрана');
-            // Вызываем loadAds напрямую, НЕ showBrowseAds (чтобы избежать цикла)
+            // Главный экран - mainMenu, ничего дополнительно загружать не нужно
+            console.log('🏠 [MENU] Инициализация главного экрана (mainMenu)');
+            break;
+            
+        case 'browseAds':
+            // Экран просмотра анкет - загружаем объявления
+            console.log('👁️ [MENU] Инициализация экрана просмотра анкет');
             if (typeof loadAds === 'function') {
                 loadAds();
             }

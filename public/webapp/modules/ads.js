@@ -335,7 +335,8 @@ async function loadAds(filters = {}) {
         }
         
         currentAds = result.ads || [];
-        totalAdsCount = result.total || 0;
+        // Получаем total из pagination если есть, иначе берём длину массива
+        totalAdsCount = result.pagination?.total || result.total || currentAds.length;
         
         console.log(`✅ [ADS] Загружено ${currentAds.length} анкет, всего: ${totalAdsCount}`);
         
