@@ -232,4 +232,122 @@ String.prototype.hashCode = function() {
     return Math.abs(hash);
 };
 
+/**
+ * Конвертация HEIC в JPEG на клиенте через Canvas
+ */
+async function convertHeicToJpeg(file) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        
+        img.onload = () => {
+            try {
+                // Создаём canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                // Конвертируем в JPEG Blob
+                canvas.toBlob((blob) => {
+                    URL.revokeObjectURL(url);
+                    
+                    if (!blob) {
+                        reject(new Error('Не удалось конвертировать изображение'));
+                        return;
+                    }
+                    
+                    // Создаём новый File объект
+                    const newFile = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    
+                    resolve(newFile);
+                }, 'image/jpeg', 0.85);
+            } catch (err) {
+                URL.revokeObjectURL(url);
+                reject(err);
+            }
+        };
+        
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('Не удалось загрузить изображение для конвертации'));
+        };
+        
+        img.src = url;
+    });
+}
+
+/**
+ * Загрузка фото в Telegram и получение file_id
+ */
+async function uploadPhotoToTelegram(file, userId) {
+    try {
+        let fileToUpload = file;
+        
+        // HEIC нужно конвертировать на клиенте, т.к. некоторые файлы проблемные
+        const isHeic = file.type === 'image/heic' || 
+                       file.type === 'image/heif' || 
+                       (file.type === 'application/octet-stream' && file.name.toLowerCase().endsWith('.heic')) ||
+                       file.name.toLowerCase().endsWith('.heic') ||
+                       file.name.toLowerCase().endsWith('.heif');
+        
+        if (isHeic) {
+            console.log('🔄 HEIC обнаружен, конвертируем в JPEG на клиенте...');
+            try {
+                fileToUpload = await convertHeicToJpeg(file);
+                console.log('✅ HEIC → JPEG:', fileToUpload.size, 'bytes');
+            } catch (heicError) {
+                console.error('❌ Ошибка конвертации HEIC на клиенте:', heicError);
+                // Продолжаем отправку на сервер - там есть fallback
+                console.log('🔄 Отправляем HEIC на сервер для конвертации...');
+            }
+        }
+        
+        const formData = new FormData();
+        formData.append('photo', fileToUpload);
+        formData.append('userId', userId);
+        
+        console.log('📤 Отправка файла:', {
+            name: fileToUpload.name,
+            type: fileToUpload.type,
+            size: fileToUpload.size,
+            wasHeic: isHeic
+        });
+        
+        const response = await fetch('/api/upload-photo', {
+            method: 'POST',
+            body: formData
+        });
+        
+        console.log('📨 Response status:', response.status);
+        
+        // Проверяем что ответ валидный JSON
+        const contentType = response.headers.get('content-type');
+        console.log('📨 Content-Type:', contentType);
+        
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('❌ Не JSON ответ от upload-photo:', text.substring(0, 500));
+            throw new Error('Ошибка загрузки. Попробуйте другое фото или уменьшите размер.');
+        }
+        
+        const result = await response.json();
+        console.log('📨 Upload result:', result);
+        
+        if (result.error) {
+            throw new Error(result.error.message);
+        }
+        
+        return result.data;
+    } catch (error) {
+        console.error('Ошибка загрузки фото:', error);
+        throw error;
+    }
+}
+
 console.log('✅ Модуль утилит инициализирован');

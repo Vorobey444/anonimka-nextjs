@@ -105,6 +105,50 @@ function MyPhotoContent() {
 
   const handleBack = () => router.back();
 
+  // Конвертация HEIC в JPEG на клиенте
+  const convertHeicToJpeg = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0);
+          
+          canvas.toBlob(
+            (blob) => {
+              URL.revokeObjectURL(url);
+              if (blob) {
+                const newFileName = file.name.replace(/\.(heic|heif)$/i, ".jpg");
+                const converted = new File([blob], newFileName, { type: "image/jpeg", lastModified: Date.now() });
+                resolve(converted);
+              } else {
+                reject(new Error("Не удалось конвертировать HEIC"));
+              }
+            },
+            "image/jpeg",
+            0.92
+          );
+        } catch (err) {
+          URL.revokeObjectURL(url);
+          reject(err);
+        }
+      };
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("Не удалось загрузить HEIC изображение"));
+      };
+      
+      img.src = url;
+    });
+  };
+
   const compressImage = async (file: File, maxSizeMB: number): Promise<File> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -131,7 +175,7 @@ function MyPhotoContent() {
           canvas.toBlob(
             (blob) => {
               if (blob) {
-                const compressed = new File([blob], file.name, { type: "image/jpeg" });
+                const compressed = new File([blob], file.name.replace(/\.(heic|heif)$/i, ".jpg"), { type: "image/jpeg" });
                 resolve(compressed);
               } else {
                 reject(new Error("Не удалось сжать изображение"));
@@ -162,10 +206,27 @@ function MyPhotoContent() {
       try {
         let fileToUpload = file;
         
+        // Проверяем на HEIC/HEIF и конвертируем
+        const isHeic = file.type === "image/heic" || 
+                       file.type === "image/heif" || 
+                       file.name.toLowerCase().endsWith(".heic") ||
+                       file.name.toLowerCase().endsWith(".heif");
+        
+        if (isHeic) {
+          console.log("🔄 HEIC обнаружен, конвертируем в JPEG...");
+          try {
+            fileToUpload = await convertHeicToJpeg(file);
+            console.log(`✅ HEIC → JPEG: ${fileToUpload.size} bytes`);
+          } catch (heicErr) {
+            console.warn("⚠️ Не удалось конвертировать HEIC на клиенте, пробуем на сервере...", heicErr);
+            // Продолжаем — сервер имеет fallback
+          }
+        }
+        
         // Сжимаем если больше 4MB
-        if (file.size > 4 * 1024 * 1024) {
+        if (fileToUpload.size > 4 * 1024 * 1024) {
           console.log("🗜️ Файл больше 4MB, сжимаем...");
-          fileToUpload = await compressImage(file, 4);
+          fileToUpload = await compressImage(fileToUpload, 4);
           console.log(`✅ Сжато: ${file.size} → ${fileToUpload.size} bytes`);
         }
         
@@ -174,6 +235,15 @@ function MyPhotoContent() {
         formData.append("userId", userToken);
 
         const uploadResp = await fetch("/api/upload-photo", { method: "POST", body: formData });
+        
+        // Проверяем что ответ — JSON
+        const contentType = uploadResp.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await uploadResp.text();
+          console.error("❌ Не JSON ответ от upload-photo:", text.substring(0, 500));
+          throw new Error("Ошибка сервера при загрузке. Попробуйте другое фото.");
+        }
+        
         const uploadResult = await uploadResp.json();
         if (uploadResult.error) throw new Error(uploadResult.error.message || uploadResult.error);
 
