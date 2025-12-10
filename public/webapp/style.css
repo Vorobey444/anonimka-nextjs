@@ -674,6 +674,14 @@ h3 {
     margin: 0 auto;
     position: relative;
     padding-bottom: 10px;
+    width: 100%;
+}
+
+/* Адаптивные стили для широких экранов (desktop) */
+@media (min-width: 600px) {
+    .menu-buttons {
+        max-width: 320px;
+    }
 }
 
 /* Форма */
@@ -6525,7 +6533,8 @@ body.emoji-flags-supported .country-code {
     align-items: center;
     gap: 12px;
     text-align: left;
-    padding: 12px 16px;
+    padding: 8px 12px;
+    justify-content: flex-start;
 }
 
 .world-chat-content {
@@ -7024,6 +7033,16 @@ body.emoji-flags-supported .country-code {
     .setup-region-selection h3,
     .setup-city-selection h3 {
         font-size: 1.3rem;
+    }
+    
+    /* Центрирование главного меню на широких экранах */
+    #mainMenu {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .menu-buttons {
+        max-width: 360px;
     }
 }
 

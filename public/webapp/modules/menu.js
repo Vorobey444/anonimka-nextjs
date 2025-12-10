@@ -67,8 +67,12 @@ function showScreen(screenId) {
 function initializeScreenContent(screenId) {
     switch(screenId) {
         case screens.homeScreen:
-            // Главный экран - mainMenu, ничего дополнительно загружать не нужно
+            // Главный экран - mainMenu
             console.log('🏠 [MENU] Инициализация главного экрана (mainMenu)');
+            // Загружаем превью последнего сообщения для кнопки Мир чат
+            if (typeof loadWorldChatPreview === 'function') {
+                loadWorldChatPreview();
+            }
             break;
             
         case 'browseAds':
