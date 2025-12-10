@@ -88,18 +88,27 @@ body {
 }
 
 .screen.active {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
 }
 
 /* Главное меню - всегда вертикальный layout */
 #mainMenu.screen.active {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
     max-width: 500px;
     margin: 0 auto;
+    width: 100%;
+}
+
+#mainMenu .header,
+#mainMenu .menu-buttons {
+    width: 100% !important;
+    max-width: 400px !important;
+    flex-shrink: 0 !important;
 }
 
 /* Убираем скролл если контент влезает */
