@@ -88,7 +88,18 @@ body {
 }
 
 .screen.active {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Главное меню - всегда вертикальный layout */
+#mainMenu.screen.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 500px;
+    margin: 0 auto;
 }
 
 /* Убираем скролл если контент влезает */
@@ -6535,6 +6546,9 @@ body.emoji-flags-supported .country-code {
     text-align: left;
     padding: 8px 12px;
     justify-content: flex-start;
+    /* Наследуем стиль от neon-button */
+    background: linear-gradient(45deg, var(--bg-card), #2a2a3e) !important;
+    border: 2px solid var(--neon-pink) !important;
 }
 
 .world-chat-content {
