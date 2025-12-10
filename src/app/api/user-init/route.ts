@@ -72,6 +72,30 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json({ success: true });
       
+    } else if (action === 'update-nickname') {
+      // Обновляем никнейм пользователя
+      const { user_token, nickname } = params || {};
+      
+      if (!user_token || !nickname) {
+        return NextResponse.json(
+          { error: 'user_token and nickname are required' },
+          { status: 400 }
+        );
+      }
+      
+      try {
+        await sql`
+          UPDATE users SET nickname = ${nickname}, updated_at = NOW() WHERE user_token = ${user_token}
+        `;
+        return NextResponse.json({ success: true });
+      } catch (e: any) {
+        console.error('[API/user-init] Error updating nickname:', e);
+        return NextResponse.json(
+          { error: 'Failed to update nickname' },
+          { status: 500 }
+        );
+      }
+      
     } else {
       return NextResponse.json(
         { error: 'Unknown action' },
