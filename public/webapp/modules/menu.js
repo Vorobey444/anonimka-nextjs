@@ -69,8 +69,9 @@ function initializeScreenContent(screenId) {
         case screens.homeScreen:
             // Главный экран - загружаем объявления
             console.log('🏠 [MENU] Инициализация главного экрана');
-            if (typeof showBrowseAds === 'function') {
-                showBrowseAds();
+            // Вызываем loadAds напрямую, НЕ showBrowseAds (чтобы избежать цикла)
+            if (typeof loadAds === 'function') {
+                loadAds();
             }
             break;
             

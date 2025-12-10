@@ -243,28 +243,63 @@ async function submitAd() {
  * ===== ПРОСМОТР И ФИЛЬТРАЦИЯ АНКЕТ =====
  */
 
+// Флаг для предотвращения повторной загрузки
+let isLoadingAds = false;
+
 /**
  * Показать раздел просмотра анкет
  */
 async function showBrowseAds() {
+    // Предотвращаем бесконечный цикл
+    if (isLoadingAds) {
+        console.log('⚠️ [ADS] Загрузка уже в процессе, пропускаем');
+        return;
+    }
+    
     console.log('🔍 [ADS] Открытие просмотра анкет');
     
-    showScreen('browseAds');
-    currentAdsPage = 1;
+    isLoadingAds = true;
     
-    // Применяем фильтры и загружаем анкеты
-    await loadAds();
-    
-    // Устанавливаем UI фильтра на базе локации пользователя
-    if (typeof setFilterLocationUI === 'function') {
-        setFilterLocationUI();
+    try {
+        // НЕ вызываем showScreen здесь - это вызовет цикл!
+        // showScreen вызывается из menu.js, который потом вызывает нас
+        // Просто показываем экран напрямую если нужно
+        const screen = document.getElementById('browseAds');
+        if (screen && screen.style.display === 'none') {
+            // Скрываем все экраны
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            screen.style.display = 'block';
+        }
+        
+        currentAdsPage = 1;
+        
+        // Применяем фильтры и загружаем анкеты
+        await loadAds();
+        
+        // Устанавливаем UI фильтра на базе локации пользователя
+        if (typeof setFilterLocationUI === 'function') {
+            setFilterLocationUI();
+        }
+    } finally {
+        isLoadingAds = false;
     }
 }
+
+// Флаг загрузки для loadAds
+let isLoadingAdsRequest = false;
 
 /**
  * Загрузить анкеты с фильтрами
  */
 async function loadAds(filters = {}) {
+    // Предотвращаем множественные одновременные запросы
+    if (isLoadingAdsRequest) {
+        console.log('⚠️ [ADS] Запрос уже выполняется, пропускаем');
+        return;
+    }
+    
+    isLoadingAdsRequest = true;
+    
     try {
         console.log('📥 [ADS] Загрузка анкет с фильтрами:', { ...adsFilters, ...filters });
         
@@ -309,6 +344,8 @@ async function loadAds(filters = {}) {
         
     } catch (error) {
         console.error('❌ [ADS] Ошибка при загрузке анкет:', error);
+    } finally {
+        isLoadingAdsRequest = false;
     }
 }
 
