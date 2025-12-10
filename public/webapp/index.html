@@ -2155,11 +2155,11 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '1.0.3'; // Инкрементируем при критических исправлениях
+        const bugFixVersion = '2.0.0'; // MAJOR: Модульная архитектура
         const lastVersion = localStorage.getItem('app_version');
         
         if (lastVersion !== bugFixVersion) {
-            console.log('[CACHE] Обнаружена новая версия, очищаем кеш...');
+            console.log('[CACHE] Обнаружена новая версия 2.0.0 (модульная), очищаем кеш...');
             localStorage.setItem('app_version', bugFixVersion);
             
             // Удаляем все зарегистрированные Service Workers
