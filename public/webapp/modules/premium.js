@@ -351,4 +351,10 @@ function isEmailUser() {
     return false;
 }
 
+// Экспортируем функции в глобальную область для вызова из HTML onclick
+window.showPremiumModal = showPremiumModal;
+window.closePremiumModal = closePremiumModal;
+window.loadPremiumStatus = loadPremiumStatus;
+window.updatePremiumToggle = updatePremiumToggle;
+
 console.log('✅ [PREMIUM] Модуль Premium инициализирован');
