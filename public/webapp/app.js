@@ -197,8 +197,8 @@ async function initializeApplication() {
 /**
  * Точка входа при загрузке DOM
  */
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('📄 [APP] DOMContentLoaded');
+async function startApplication() {
+    console.log('📄 [APP] Запуск приложения...');
     
     try {
         // Загружаем все модули
@@ -216,7 +216,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             logErrorToServer('Critical Startup Error', error);
         }
     }
-});
+}
+
+// Проверяем статус DOM - если уже загружен, запускаем сразу
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startApplication);
+} else {
+    // DOM уже готов, запускаем сразу
+    startApplication();
+}
 
 /**
  * Глобальный обработчик ошибок
