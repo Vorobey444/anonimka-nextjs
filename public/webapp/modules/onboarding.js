@@ -479,17 +479,30 @@ async function completeOnboarding() {
  * Проверить, нужен ли онбординг
  */
 function checkOnboarding() {
+    // Проверяем localStorage
     const isCompleted = localStorage.getItem('onboardingCompleted') === 'true';
     
-    if (!isCompleted) {
-        console.log('📱 [ONBOARDING] Онбординг требуется');
-        onboardingStep = 1;
-        showOnboardingScreen();
-        return true;
-    } else {
-        console.log('✅ [ONBOARDING] Онбординг уже пройден');
+    // Также проверяем наличие никнейма - если есть, значит уже зарегистрирован
+    const hasNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname');
+    const hasUserToken = localStorage.getItem('user_token');
+    
+    // Если есть никнейм и токен - онбординг не нужен
+    if (hasNickname && hasUserToken && hasNickname !== 'null' && hasNickname !== 'undefined') {
+        console.log('✅ [ONBOARDING] Никнейм найден, онбординг не нужен:', hasNickname);
+        // Синхронизируем флаг
+        localStorage.setItem('onboardingCompleted', 'true');
         return false;
     }
+    
+    if (isCompleted) {
+        console.log('✅ [ONBOARDING] Онбординг уже пройден (по флагу)');
+        return false;
+    }
+    
+    console.log('📱 [ONBOARDING] Онбординг требуется');
+    onboardingStep = 1;
+    showOnboardingScreen();
+    return true;
 }
 
 console.log('✅ [ONBOARDING] Модуль онбординга загружен');
