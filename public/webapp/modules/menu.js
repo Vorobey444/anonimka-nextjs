@@ -214,6 +214,82 @@ function closeHamburgerAndGoHome() {
 }
 
 /**
+ * Обновить активный пункт меню
+ */
+function updateActiveMenuItem(activeId) {
+    // Убираем активный класс со всех элементов
+    document.querySelectorAll('.hamburger-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Добавляем активный класс к нужному элементу
+    const activeItem = document.querySelector(`.hamburger-item[onclick*="${activeId}"], .hamburger-item[onclick="goToHome()"]`);
+    if (activeItem) {
+        activeItem.classList.add('active');
+    }
+}
+
+/**
+ * Обновить кнопки Telegram в зависимости от экрана
+ */
+function updateTelegramButtons(screenId) {
+    if (typeof tg === 'undefined' || !tg) return;
+    
+    switch(screenId) {
+        case 'mainMenu':
+        case 'homeScreen':
+            if (tg.BackButton) tg.BackButton.hide();
+            if (tg.MainButton) tg.MainButton.hide();
+            break;
+        case 'createAd':
+        case 'browseAds':
+        case 'adDetails':
+        case 'chatScreen':
+        case 'chatsScreen':
+        case 'worldChatScreen':
+        case 'locationSetup':
+        case 'locationChoice':
+        case 'autoLocationDetection':
+        case 'referralScreen':
+            if (tg.BackButton) tg.BackButton.show();
+            if (tg.MainButton) tg.MainButton.hide();
+            break;
+        default:
+            if (tg.BackButton) tg.BackButton.show();
+            if (tg.MainButton) tg.MainButton.hide();
+            break;
+    }
+}
+
+/**
+ * Обработчик кнопки назад в Telegram
+ */
+function handleBackButton() {
+    const activeScreen = document.querySelector('.screen.active')?.id;
+    
+    switch(activeScreen) {
+        case 'createAd':
+        case 'browseAds':
+        case 'chatsScreen':
+        case 'worldChatScreen':
+        case 'locationSetup':
+        case 'locationChoice':
+        case 'autoLocationDetection':
+        case 'referralScreen':
+            showMainMenu();
+            break;
+        case 'adDetails':
+            if (typeof showBrowseAds === 'function') showBrowseAds();
+            break;
+        case 'chatScreen':
+            if (typeof showScreen === 'function') showScreen('chatsScreen');
+            break;
+        default:
+            showMainMenu();
+    }
+}
+
+/**
  * Открыть бургер-меню
  */
 function openBurgerMenu() {
@@ -695,6 +771,9 @@ window.showAffiliateProgram = showAffiliateProgram;
 window.showAffiliateInfo = showAffiliateInfo;
 window.initializeMenuModule = initializeMenuModule;
 window.closeHamburgerAndGoHome = closeHamburgerAndGoHome;
+window.updateActiveMenuItem = updateActiveMenuItem;
+window.updateTelegramButtons = updateTelegramButtons;
+window.handleBackButton = handleBackButton;
 window.goToHome = goToHome;
 window.goToProfile = goToProfile;
 window.goToMyAds = goToMyAds;

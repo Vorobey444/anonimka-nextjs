@@ -1152,4 +1152,71 @@ window.addReaction = addReaction;
 window.showReactionOnMessage = showReactionOnMessage;
 window.removeReactionFromMessage = removeReactionFromMessage;
 
+/**
+ * Закрыть меню удаления сообщения
+ */
+function closeDeleteMessageMenu() {
+    const menu = document.querySelector('.delete-message-modal');
+    const overlay = document.querySelector('.delete-message-overlay');
+    if (menu) menu.remove();
+    if (overlay) overlay.remove();
+}
+
+/**
+ * Удалить сообщение
+ */
+async function deleteMessage(messageId) {
+    try {
+        const userToken = localStorage.getItem('user_token');
+        if (!userToken) {
+            if (typeof tg !== 'undefined' && tg?.showAlert) {
+                tg.showAlert('⚠️ Ошибка авторизации');
+            }
+            return;
+        }
+        
+        console.log('🗑️ [CHATS] Удаление сообщения:', messageId);
+        
+        const response = await fetch('/api/neon-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'delete-message',
+                messageId: messageId,
+                userToken: userToken
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            if (typeof tg !== 'undefined' && tg?.showAlert) {
+                tg.showAlert('❌ ' + data.error);
+            }
+            return;
+        }
+        
+        console.log('✅ [CHATS] Сообщение удалено');
+        closeDeleteMessageMenu();
+        
+        // Перезагружаем сообщения
+        if (currentChatId && typeof loadChatMessages === 'function') {
+            await loadChatMessages(currentChatId);
+        }
+        
+        if (typeof tg !== 'undefined' && tg?.showAlert) {
+            tg.showAlert('✅ Сообщение удалено');
+        }
+        
+    } catch (error) {
+        console.error('❌ [CHATS] Ошибка удаления:', error);
+        if (typeof tg !== 'undefined' && tg?.showAlert) {
+            tg.showAlert('❌ Ошибка при удалении сообщения');
+        }
+    }
+}
+
+window.closeDeleteMessageMenu = closeDeleteMessageMenu;
+window.deleteMessage = deleteMessage;
+
 console.log('✅ [CHATS] Модуль чатов инициализирован');

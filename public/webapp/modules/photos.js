@@ -772,6 +772,101 @@ async function addPhotoFromGallery() {
     setTimeout(() => input.remove(), 1000);
 }
 
+/**
+ * Сделать снимок с камеры
+ */
+function capturePhoto() {
+    const video = document.getElementById('cameraPreview');
+    const canvas = document.getElementById('cameraCanvas');
+    
+    if (!video || !canvas) {
+        console.error('❌ [PHOTOS] Элементы камеры не найдены');
+        return;
+    }
+    
+    // Устанавливаем размер canvas равный видео
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Рисуем кадр с видео на canvas
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    
+    // Конвертируем canvas в blob
+    canvas.toBlob((blob) => {
+        // Создаем File из blob
+        const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+        
+        // Закрываем камеру
+        closeCameraModal();
+        
+        // Обрабатываем как обычное фото
+        window.selectedPhoto = file;
+        
+        // Показываем превью
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const preview = document.getElementById('photoPreview');
+            const img = document.getElementById('photoPreviewImage');
+            if (img) img.src = e.target.result;
+            if (preview) preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+        
+    }, 'image/jpeg', 0.9);
+}
+
+/**
+ * Закрыть модальное окно камеры
+ */
+function closeCameraModal() {
+    // Останавливаем поток камеры
+    if (window.currentCameraStream) {
+        window.currentCameraStream.getTracks().forEach(track => track.stop());
+        window.currentCameraStream = null;
+    }
+    
+    // Удаляем модальное окно
+    const modal = document.getElementById('cameraModal');
+    if (modal) modal.remove();
+}
+
+/**
+ * Переключить камеру (селфи/задняя)
+ */
+async function switchCamera() {
+    try {
+        // Останавливаем текущий поток
+        if (window.currentCameraStream) {
+            window.currentCameraStream.getTracks().forEach(track => track.stop());
+        }
+        
+        // Переключаем режим
+        window.currentFacingMode = window.currentFacingMode === 'user' ? 'environment' : 'user';
+        
+        // Запускаем камеру с новым режимом
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: window.currentFacingMode
+            } 
+        });
+        
+        const video = document.getElementById('cameraPreview');
+        if (video) {
+            video.srcObject = stream;
+            window.currentCameraStream = stream;
+        }
+        
+        console.log('📷 [PHOTOS] Камера переключена:', window.currentFacingMode === 'user' ? 'Селфи' : 'Задняя');
+        
+    } catch (error) {
+        console.error('❌ [PHOTOS] Ошибка переключения камеры:', error);
+        if (typeof tg !== 'undefined' && tg?.showAlert) {
+            tg.showAlert('Не удалось переключить камеру');
+        }
+    }
+}
+
 // Экспорт функций в глобальную область
 window.showMyPhotos = showMyPhotos;
 window.loadMyPhotos = loadMyPhotos;
@@ -794,5 +889,8 @@ window.closePhotoModal = closePhotoModal;
 window.addPhotoFromGallery = addPhotoFromGallery;
 window.getPhotoUrl = getPhotoUrl;
 window.compressImage = compressImage;
+window.capturePhoto = capturePhoto;
+window.closeCameraModal = closeCameraModal;
+window.switchCamera = switchCamera;
 
 console.log('✅ [PHOTOS] Модуль фото инициализирован');
