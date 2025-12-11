@@ -122,34 +122,23 @@ async function initializeApplication() {
         if (!isAuthorized) {
             console.warn('⚠️ [APP] Пользователь не авторизирован');
             
-            // Проверяем, это Android/iOS приложение (Capacitor)?
-            const isNativeApp = typeof window.Capacitor !== 'undefined' || 
-                               navigator.userAgent.includes('AnonimkaApp') ||
-                               window.location.href.includes('localhost') ||
-                               document.referrer.includes('capacitor');
+            // Проверяем, это Android устройство?
+            const isAndroid = navigator.userAgent.includes('Android');
             
-            if (isNativeApp) {
-                // В нативном приложении НЕ показываем модалку - просто работаем
-                console.log('📱 [APP] Нативное приложение - пропускаем авторизацию');
-                // Создаём временный user_token для нативного приложения
-                if (!localStorage.getItem('user_token')) {
-                    const nativeToken = 'native_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
-                    localStorage.setItem('user_token', nativeToken);
-                    console.log('📱 [APP] Создан native токен:', nativeToken);
+            if (isAndroid) {
+                // В Android показываем Email авторизацию (не Telegram!)
+                console.log('📱 [APP] Android устройство - показываем Email авторизацию');
+                if (typeof showEmailAuthModal === 'function') {
+                    showEmailAuthModal();
                 }
-                isAuthorized = true;
-            } else if (typeof showTelegramAuthModal === 'function') {
-                console.log('📱 [APP] Показываем окно авторизации...');
-                showTelegramAuthModal();
-            } else if (typeof showEmailAuthModal === 'function') {
-                console.log('📧 [APP] Показываем окно email авторизации...');
-                showEmailAuthModal();
             } else {
-                console.error('❌ [APP] Функции авторизации не найдены!');
-                if (typeof tg !== 'undefined' && tg?.showAlert) {
-                    tg.showAlert('Пожалуйста, откройте приложение из Telegram или обновите страницу');
+                // В браузере/iOS показываем Telegram авторизацию
+                console.log('🌐 [APP] Браузер - показываем Telegram авторизацию');
+                if (typeof showTelegramAuthModal === 'function') {
+                    showTelegramAuthModal();
                 }
             }
+            // НЕ прерываем инициализацию - продолжаем загрузку
         }
         
         // 3. Инициализируем пользователя в БД (если авторизован)

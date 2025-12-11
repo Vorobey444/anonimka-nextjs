@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-11T19:05:17.844Z
+ * Автоматически сгенерирован: 2025-12-11T19:10:25.125Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -1476,7 +1476,7 @@ console.log('✅ Модуль утилит инициализирован');
 } catch(e) { console.error('❌ Ошибка в модуле utils.js:', e); }
 })();
 
-// ========== auth.js (25.6 KB) ==========
+// ========== auth.js (27.0 KB) ==========
 (function() {
 try {
 /**
@@ -1529,63 +1529,94 @@ function getCurrentUserId() {
 }
 
 /**
- * Проверка авторизации в Telegram
+ * Проверка авторизации через Telegram
+ * Логика из монолита - автоматическая авторизация в Telegram, email для Android
  */
-async function checkTelegramAuth() {
-    console.log('🔐 [AUTH] Начало проверки Telegram авторизации');
+function checkTelegramAuth() {
+    console.log('🔐 Проверка авторизации...');
     
-    try {
-        // Проверяем есть ли данные от Telegram WebApp
-        const tgUser = tg?.initDataUnsafe?.user;
-        
-        if (tgUser && tgUser.id) {
-            console.log('✅ [AUTH] Telegram пользователь найден:', {
-                id: tgUser.id,
-                firstName: tgUser.first_name,
-                username: tgUser.username
-            });
-            
-            // Сохраняем данные в localStorage
-            localStorage.setItem('telegram_user', JSON.stringify(tgUser));
-            localStorage.setItem('user_id', tgUser.id.toString());
-            localStorage.setItem('telegram_auth_time', Date.now().toString());
-            
-            // Скрываем модальное окно авторизации
-            const modal = document.getElementById('telegramAuthModal');
-            if (modal) modal.style.display = 'none';
-            
-            return true;
-        }
-        
-        // Проверяем сохранённые данные авторизации
-        const savedUser = localStorage.getItem('telegram_user');
-        if (savedUser) {
-            console.log('✅ [AUTH] Telegram пользователь восстановлен из localStorage');
-            return true;
-        }
-        
-        // Проверяем user_token (включая native_ токены для Android/iOS)
+    // Проверяем если это Android устройство - используем email авторизацию
+    const isAndroid = navigator.userAgent.includes('Android');
+    const isWebView = navigator.userAgent.includes('wv') || navigator.userAgent.includes('WebView');
+    const hasAndroidInterface = typeof AndroidAuth !== 'undefined';
+    const isAndroidWebView = isAndroid && (isWebView || hasAndroidInterface);
+    
+    console.log('📱 [AUTH CHECK] Android detection:', {
+        isAndroid,
+        isWebView,
+        hasAndroidInterface,
+        isAndroidWebView
+    });
+    
+    if (isAndroid) {
+        console.log('📱 Android device - email auth only (no Telegram modal)');
+        // Проверяем сохранённый user_token для email авторизации
         const userToken = localStorage.getItem('user_token');
+        const authMethod = localStorage.getItem('auth_method');
+        
         if (userToken && userToken !== 'null' && userToken !== 'undefined') {
-            console.log('✅ [AUTH] Пользователь авторизован по токену:', userToken.substring(0, 10) + '...');
-            return true;
+            console.log('✅ user_token found, user authenticated via email');
+            console.log('   Auth method:', authMethod);
+            return true; // Пользователь уже авторизован
         }
         
-        // Проверяем это нативное приложение (Capacitor)?
-        const isNativeApp = typeof window.Capacitor !== 'undefined' || 
-                           navigator.userAgent.includes('AnonimkaApp');
-        if (isNativeApp) {
-            console.log('✅ [AUTH] Нативное приложение - авторизация не требуется');
-            return true;
-        }
-        
-        console.log('⚠️ [AUTH] Авторизация не найдена');
-        return false;
-        
-    } catch (error) {
-        console.error('❌ [AUTH] Ошибка проверки авторизации:', error);
-        return false;
+        console.log('⚠️ user_token not found - waiting for native app auth...');
+        return false; // Требуется авторизация в EmailAuthActivity
     }
+    
+    // Если запущено через Telegram WebApp, авторизация автоматическая
+    const isTelegramWebApp = typeof tg !== 'undefined' && tg && tg.initDataUnsafe?.user?.id;
+    
+    if (isTelegramWebApp) {
+        const userData = {
+            id: tg.initDataUnsafe.user.id,
+            first_name: tg.initDataUnsafe.user.first_name,
+            last_name: tg.initDataUnsafe.user.last_name,
+            username: tg.initDataUnsafe.user.username,
+            photo_url: tg.initDataUnsafe.user.photo_url
+        };
+        
+        console.log('✅ Данные пользователя получены из Telegram');
+        
+        // Сохраняем в localStorage
+        localStorage.setItem('telegram_user', JSON.stringify(userData));
+        localStorage.setItem('telegram_auth_time', Date.now().toString());
+        localStorage.setItem('user_id', userData.id.toString());
+        console.log('✅ Авторизован через Telegram WebApp, user_id:', userData.id);
+        
+        // Закрываем все модальные окна авторизации
+        const modal = document.getElementById('telegramAuthModal');
+        const emailModal = document.getElementById('emailAuthModal');
+        
+        if (modal) {
+            modal.style.display = 'none';
+            console.log('✅ Модальное окно Telegram авторизации закрыто');
+        }
+        
+        if (emailModal) {
+            emailModal.style.display = 'none';
+            console.log('✅ Модальное окно Email авторизации закрыто');
+        }
+        
+        return true;
+    }
+    
+    // Проверяем сохранённые данные авторизации (для web)
+    const savedUser = localStorage.getItem('telegram_user');
+    const userToken = localStorage.getItem('user_token');
+    
+    if (savedUser) {
+        console.log('✅ Telegram пользователь восстановлен из localStorage');
+        return true;
+    }
+    
+    if (userToken && userToken !== 'null' && userToken !== 'undefined') {
+        console.log('✅ Пользователь авторизован по токену');
+        return true;
+    }
+    
+    console.log('⚠️ Авторизация не найдена');
+    return false;
 }
 
 /**
