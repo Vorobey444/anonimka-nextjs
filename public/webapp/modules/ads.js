@@ -60,7 +60,7 @@ function showCreateAd() {
     currentStep = 1;
     
     // Показываем первый шаг
-    showScreen('createAdForm');
+    showScreen('createAd');
     updateFormStep(1);
 }
 

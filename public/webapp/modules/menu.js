@@ -14,11 +14,11 @@ console.log('📋 [MENU] Инициализация модуля навигац�
  */
 const screens = {
     homeScreen: 'mainMenu',            // Главный экран = главное меню с кнопками
-    myProfileScreen: 'myProfileScreen',
-    myAdsScreen: 'myAdsScreen',
-    chatsScreen: 'chatsScreen',
-    referralScreen: 'referralScreen',
-    settingsScreen: 'settingsScreen'
+    myProfileScreen: 'mainMenu',       // Пока нет отдельного экрана профиля
+    myAdsScreen: 'myAds',
+    chatsScreen: 'myChats',
+    referralScreen: 'mainMenu',        // Пока нет отдельного экрана реферала
+    settingsScreen: 'mainMenu'         // Пока нет отдельного экрана настроек
 };
 
 let currentScreen = 'mainMenu';
