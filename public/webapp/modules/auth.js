@@ -13,7 +13,7 @@ console.log('🔐 [AUTH] Инициализация модуля авториз�
 /**
  * ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
  */
-let currentUserLocation = null;
+// currentUserLocation определена в location.js
 let currentUserNickname = null;
 
 /**
