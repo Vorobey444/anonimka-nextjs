@@ -408,6 +408,27 @@ function toggleOnboardingLanguage(language) {
  */
 
 /**
+ * Проверка доступности никнейма
+ */
+async function checkNicknameAvailability(nickname) {
+    try {
+        const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
+        const data = await response.json();
+        
+        if (data.available) {
+            showNicknameStatus('available', '✅ Доступен');
+        } else {
+            showNicknameStatus('taken', '❌ Уже занят');
+        }
+        
+        updateContinueButton();
+    } catch (error) {
+        console.error('Ошибка проверки никнейма:', error);
+        showNicknameStatus('', '');
+    }
+}
+
+/**
  * Показать статус проверки никнейма
  */
 function showNicknameStatus(type, message) {
@@ -782,6 +803,7 @@ window.showOnboardingStep6 = showOnboardingStep6;
 window.toggleOnboardingLanguage = toggleOnboardingLanguage;
 window.completeOnboarding = completeOnboarding;
 window.checkOnboarding = checkOnboarding;
+window.checkNicknameAvailability = checkNicknameAvailability;
 window.showNicknameStatus = showNicknameStatus;
 window.updateContinueButton = updateContinueButton;
 window.showNicknameEditorScreen = showNicknameEditorScreen;

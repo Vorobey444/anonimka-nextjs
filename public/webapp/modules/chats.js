@@ -1219,4 +1219,81 @@ async function deleteMessage(messageId) {
 window.closeDeleteMessageMenu = closeDeleteMessageMenu;
 window.deleteMessage = deleteMessage;
 
+/**
+ * ==================== ОТВЕТ НА СООБЩЕНИЕ ====================
+ */
+
+/**
+ * Ответить на сообщение
+ */
+function replyToMsg(messageId, nickname, messageText) {
+    replyToMessage = { id: messageId, nickname, text: messageText };
+    
+    // Показываем превью
+    const replyPreview = document.getElementById('replyPreview');
+    const replyToNickname = document.getElementById('replyToNickname');
+    const replyToText = document.getElementById('replyToText');
+    
+    if (replyToNickname) {
+        replyToNickname.textContent = nickname;
+    }
+    if (replyToText) {
+        replyToText.textContent = messageText.length > 50 ? messageText.substring(0, 50) + '...' : messageText;
+    }
+    if (replyPreview) {
+        replyPreview.style.display = 'flex';
+    }
+    
+    // Фокусируем поле ввода
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) messageInput.focus();
+}
+
+/**
+ * Скролл к сообщению и подсветка
+ */
+function scrollToMessage(messageId) {
+    const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageEl) return;
+    
+    // Скроллим к сообщению
+    messageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Добавляем класс для подсветки
+    messageEl.classList.add('highlight');
+    
+    // Убираем подсветку через 1 секунду
+    setTimeout(() => {
+        messageEl.classList.remove('highlight');
+    }, 1000);
+}
+
+/**
+ * Применить сохраненный размер шрифта при загрузке чата
+ */
+function applyChatFontSize() {
+    const savedSize = localStorage.getItem('chatFontSize') || 'medium';
+    const messagesContainer = document.querySelector('.chat-messages');
+    if (messagesContainer) {
+        messagesContainer.classList.remove('font-small', 'font-medium', 'font-large');
+        messagesContainer.classList.add(`font-${savedSize}`);
+    }
+    
+    // Обновляем кнопку
+    const btn = document.getElementById('chatFontSizeBtn');
+    if (btn) {
+        if (savedSize === 'small') {
+            btn.style.fontSize = '14px';
+        } else if (savedSize === 'medium') {
+            btn.style.fontSize = '18px';
+        } else {
+            btn.style.fontSize = '22px';
+        }
+    }
+}
+
+window.replyToMsg = replyToMsg;
+window.scrollToMessage = scrollToMessage;
+window.applyChatFontSize = applyChatFontSize;
+
 console.log('✅ [CHATS] Модуль чатов инициализирован');

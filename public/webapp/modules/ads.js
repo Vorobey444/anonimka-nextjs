@@ -515,10 +515,243 @@ function updateCharacterCount() {
 }
 
 /**
+ * Показать определённый шаг формы (из backup)
+ */
+function showStep(step) {
+    console.log(`📍 Показываем шаг ${step} из ${totalSteps}`);
+    
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    const stepElement = document.getElementById(`step${step}`);
+    
+    if (!stepElement) {
+        console.error(`❌ Элемент step${step} не найден!`);
+        return;
+    }
+    
+    stepElement.classList.add('active');
+    currentStep = step;
+    
+    // Показываем/скрываем контейнер textarea на шаге 8
+    const textareaContainer = document.getElementById('textareaContainer');
+    if (textareaContainer) {
+        if (step === 8) {
+            textareaContainer.style.display = 'block';
+        } else {
+            textareaContainer.style.display = 'none';
+        }
+    }
+    
+    // Инициализируем кнопки ориентации для шага 7
+    if (step === 7) {
+        const orientationBtns = document.querySelectorAll('#step7 [data-orientation]');
+        orientationBtns.forEach(btn => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', function() {
+                selectOrientation(this.dataset.orientation);
+            });
+        });
+    }
+    
+    // Загружаем существующие фото на шаге 9
+    if (step === 9 && typeof loadMyPhotosForStep9 === 'function') {
+        loadMyPhotosForStep9();
+    }
+    
+    // Обновляем кнопки навигации
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (prevBtn) prevBtn.style.display = step > 1 ? 'block' : 'none';
+    if (nextBtn) nextBtn.style.display = step < totalSteps ? 'block' : 'none';
+    if (submitBtn) submitBtn.style.display = step === totalSteps ? 'block' : 'none';
+}
+
+/**
+ * Сброс формы создания анкеты
+ */
+function resetForm() {
+    formData = {};
+    currentStep = 1;
+    
+    // Сброс всех выборов
+    document.querySelectorAll('.selected').forEach(el => {
+        el.classList.remove('selected');
+    });
+    
+    // Очистка полей
+    const customCity = document.getElementById('customCity');
+    const ageFrom = document.getElementById('ageFrom');
+    const ageTo = document.getElementById('ageTo');
+    const myAge = document.getElementById('myAge');
+    const adText = document.getElementById('adText');
+    
+    if (customCity) customCity.value = '';
+    if (ageFrom) ageFrom.value = '';
+    if (ageTo) ageTo.value = '';
+    if (myAge) myAge.value = '';
+    if (adText) adText.value = '';
+    
+    showStep(1);
+}
+
+/**
+ * Валидация текущего шага формы
+ */
+function validateCurrentStep() {
+    console.log(`🔍 Валидация шага ${currentStep}`, formData);
+    
+    switch(currentStep) {
+        case 1: // Пол
+            if (!formData.gender) {
+                tg.showAlert('Выберите ваш пол');
+                return false;
+            }
+            return true;
+        case 2: // Кого ищет
+            if (!formData.target) {
+                tg.showAlert('Выберите кого ищете');
+                return false;
+            }
+            return true;
+        case 3: // Цель
+            if (!formData.goals || formData.goals.length === 0) {
+                tg.showAlert('Выберите хотя бы одну цель общения');
+                return false;
+            }
+            formData.goal = formData.goals.join(', ');
+            return true;
+        case 4: // Возраст партнера
+            const ageFrom = document.getElementById('ageFrom')?.value;
+            const ageTo = document.getElementById('ageTo')?.value;
+            
+            if (!ageFrom || !ageTo) {
+                tg.showAlert('Укажите возраст партнера');
+                return false;
+            }
+            
+            const ageFromNum = parseInt(ageFrom);
+            const ageToNum = parseInt(ageTo);
+            
+            if (ageFromNum < 18 || ageToNum > 99) {
+                tg.showAlert('Возраст должен быть от 18 до 99 лет');
+                return false;
+            }
+            
+            if (ageFromNum > ageToNum) {
+                tg.showAlert('Возраст "от" не может быть больше возраста "до"');
+                return false;
+            }
+            
+            formData.ageFrom = ageFrom;
+            formData.ageTo = ageTo;
+            return true;
+        case 5: // Мой возраст
+            const myAge = document.getElementById('myAge')?.value;
+            const myAgeNum = parseInt(myAge);
+            if (!myAge || isNaN(myAgeNum) || myAgeNum < 18 || myAgeNum > 99) {
+                tg.showAlert('Укажите ваш возраст (18-99)');
+                return false;
+            }
+            formData.myAge = myAge;
+            return true;
+        case 6: // Телосложение
+            if (!formData.body) {
+                tg.showAlert('Выберите телосложение');
+                return false;
+            }
+            return true;
+        case 7: // Ориентация
+            if (!formData.orientation) {
+                tg.showAlert('Выберите ориентацию');
+                return false;
+            }
+            return true;
+        case 8: // Текст анкеты
+            const adText = document.getElementById('adText')?.value?.trim();
+            if (!adText || adText.length < 10) {
+                tg.showAlert(`Введите текст анкеты (минимум 10 символов)${adText ? `\\nСейчас: ${adText.length}` : ''}`);
+                return false;
+            }
+            formData.text = adText;
+            return true;
+        case 9: // Фото (опционально)
+            return true;
+    }
+    return false;
+}
+
+/**
+ * Закрепить/открепить анкету
+ */
+async function pinMyAd(adId, shouldPin) {
+    try {
+        // Если закрепляем - проверяем лимит
+        if (shouldPin && typeof userPremiumStatus !== 'undefined') {
+            if (userPremiumStatus.limits && userPremiumStatus.limits.pin) {
+                const pinLimit = userPremiumStatus.limits.pin;
+                if (!pinLimit.canUse) {
+                    if (userPremiumStatus.isPremium) {
+                        tg.showAlert('Вы уже использовали 3 закрепления сегодня');
+                    } else {
+                        tg.showConfirm(
+                            'Закрепление доступно раз в 3 дня для FREE.\\nОформите PRO для 3 закреплений в день!',
+                            (confirmed) => {
+                                if (confirmed && typeof showPremiumModal === 'function') showPremiumModal();
+                            }
+                        );
+                    }
+                    return;
+                }
+            }
+        }
+        
+        const userToken = localStorage.getItem('user_token');
+        if (!userToken) {
+            tg.showAlert('Требуется авторизация');
+            return;
+        }
+        
+        const pinnedUntil = shouldPin ? new Date(Date.now() + 60 * 60 * 1000).toISOString() : null;
+        
+        const response = await fetch('/api/ads', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: adId,
+                user_token: userToken,
+                is_pinned: shouldPin,
+                pinned_until: pinnedUntil
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            throw new Error(result.error);
+        }
+        
+        if (result.success) {
+            if (shouldPin) {
+                if (typeof loadPremiumStatus === 'function') await loadPremiumStatus();
+                tg.showAlert('✅ Анкета закреплена на 1 час!');
+            } else {
+                tg.showAlert('✅ Анкета откреплена');
+            }
+            if (typeof loadMyAds === 'function') loadMyAds();
+        }
+    } catch (error) {
+        console.error('Ошибка закрепления:', error);
+        tg.showAlert('❌ Ошибка: ' + (error.message || 'Не удалось изменить закрепление'));
+    }
+}
+
+/**
  * Перейти к следующему шагу формы
  */
 function nextFormStep() {
-    if (currentStep < totalSteps) {
+    if (validateCurrentStep() && currentStep < totalSteps) {
         updateFormStep(currentStep + 1);
         window.scrollTo(0, 0);
     }
@@ -1935,6 +2168,10 @@ window.showBrowseAds = showBrowseAds;
 window.showMyAds = showMyAds;
 window.nextStep = nextStep;
 window.previousStep = previousStep;
+window.showStep = showStep;
+window.resetForm = resetForm;
+window.validateCurrentStep = validateCurrentStep;
+window.pinMyAd = pinMyAd;
 window.submitAd = submitAd;
 window.closeAdModal = closeAdModal;
 window.showAdModal = showAdModal;
