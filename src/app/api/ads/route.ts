@@ -198,7 +198,7 @@ export async function GET(req: NextRequest) {
           AND (ads.country = ${cv1} OR ads.country = ${cv2} OR ads.country = ${cv3} OR ads.country = ${cv4} OR LOWER(ads.country) = LOWER(${cv1}))
           AND NOT (
             COALESCE(ads.is_blocked, false) = true
-            AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW()))
+            AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW())
           )
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
