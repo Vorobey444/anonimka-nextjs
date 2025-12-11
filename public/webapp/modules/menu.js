@@ -662,9 +662,13 @@ function initializeMenuModule() {
     console.log('✅ [MENU] Модуль навигации инициализирован');
 }
 
-// Алиас для совместимости
+// Алиасы для совместимости
 function showNicknameChange() {
     showNicknameEditor();
+}
+
+function showAffiliateProgram() {
+    showAffiliateInfo();
 }
 
 // Экспорт функций в глобальную область
@@ -688,6 +692,7 @@ window.showNicknameEditor = showNicknameEditor;
 window.showBlockedUsers = showBlockedUsers;
 window.showAdminPanel = showAdminPanel;
 window.showAffiliateProgram = showAffiliateProgram;
+window.showAffiliateInfo = showAffiliateInfo;
 window.initializeMenuModule = initializeMenuModule;
 
 console.log('✅ [MENU] Модуль навигации загружен');
