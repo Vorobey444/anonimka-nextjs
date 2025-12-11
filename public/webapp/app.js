@@ -122,7 +122,23 @@ async function initializeApplication() {
         if (!isAuthorized) {
             console.warn('⚠️ [APP] Пользователь не авторизирован');
             
-            if (typeof showTelegramAuthModal === 'function') {
+            // Проверяем, это Android/iOS приложение (Capacitor)?
+            const isNativeApp = typeof window.Capacitor !== 'undefined' || 
+                               navigator.userAgent.includes('AnonimkaApp') ||
+                               window.location.href.includes('localhost') ||
+                               document.referrer.includes('capacitor');
+            
+            if (isNativeApp) {
+                // В нативном приложении НЕ показываем модалку - просто работаем
+                console.log('📱 [APP] Нативное приложение - пропускаем авторизацию');
+                // Создаём временный user_token для нативного приложения
+                if (!localStorage.getItem('user_token')) {
+                    const nativeToken = 'native_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
+                    localStorage.setItem('user_token', nativeToken);
+                    console.log('📱 [APP] Создан native токен:', nativeToken);
+                }
+                isAuthorized = true;
+            } else if (typeof showTelegramAuthModal === 'function') {
                 console.log('📱 [APP] Показываем окно авторизации...');
                 showTelegramAuthModal();
             } else if (typeof showEmailAuthModal === 'function') {

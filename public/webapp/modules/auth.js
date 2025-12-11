@@ -83,10 +83,18 @@ async function checkTelegramAuth() {
             return true;
         }
         
-        // Проверяем email пользователя
+        // Проверяем user_token (включая native_ токены для Android/iOS)
         const userToken = localStorage.getItem('user_token');
-        if (userToken && userToken !== 'null') {
-            console.log('✅ [AUTH] Email пользователь авторизован (токен найден)');
+        if (userToken && userToken !== 'null' && userToken !== 'undefined') {
+            console.log('✅ [AUTH] Пользователь авторизован по токену:', userToken.substring(0, 10) + '...');
+            return true;
+        }
+        
+        // Проверяем это нативное приложение (Capacitor)?
+        const isNativeApp = typeof window.Capacitor !== 'undefined' || 
+                           navigator.userAgent.includes('AnonimkaApp');
+        if (isNativeApp) {
+            console.log('✅ [AUTH] Нативное приложение - авторизация не требуется');
             return true;
         }
         
