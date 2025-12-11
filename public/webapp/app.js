@@ -41,13 +41,16 @@ const dependentModules = [
     '/webapp/modules/menu.js'               // Зависит от всех (загружается последним)
 ];
 
+// Версия для cache busting
+const moduleVersion = '2.0.1';
+
 /**
  * Загрузить один модуль
  */
 function loadModule(moduleUrl) {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = moduleUrl;
+        script.src = `${moduleUrl}?v=${moduleVersion}.${Date.now()}`;
         script.type = 'text/javascript';
         
         script.onload = () => {
