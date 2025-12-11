@@ -182,17 +182,71 @@ async function initializeNickname() {
     try {
         console.log('👤 [AUTH] Инициализация никнейма');
         
-        // Проверяем сохранённый никнейм
-        const savedNickname = localStorage.getItem('userNickname');
-        if (savedNickname && savedNickname.trim() !== '') {
-            console.log('✅ [AUTH] Никнейм найден в localStorage:', savedNickname);
-            currentUserNickname = savedNickname;
-            return true;
+        // Проверяем сохранённый никнейм в localStorage
+        const savedNickname = localStorage.getItem('user_nickname') || localStorage.getItem('userNickname');
+        console.log('🔍 [AUTH] savedNickname:', savedNickname);
+        
+        // Проверяем реальный никнейм в БД через API
+        const tgId = tg?.initDataUnsafe?.user?.id;
+        const userToken = localStorage.getItem('user_token');
+        console.log('🔍 [AUTH] tgId:', tgId, 'userToken:', userToken ? 'есть' : 'нет');
+        let realNickname = null;
+        
+        // Если есть tgId или userToken - проверяем никнейм в БД
+        if (tgId || userToken) {
+            try {
+                let url = '/api/users?';
+                if (tgId) {
+                    url += `tgId=${tgId}`;
+                    console.log('🔍 [AUTH] Ищем по tgId:', tgId);
+                } else if (userToken) {
+                    url += `userToken=${userToken}`;
+                    console.log('🔍 [AUTH] Ищем по userToken:', userToken.substring(0, 16) + '...');
+                }
+                
+                console.log('🔍 [AUTH] Запрос никнейма:', url);
+                const response = await fetch(url);
+                console.log('🔍 [AUTH] Response status:', response.status);
+                
+                // Если пользователь не найден в БД - очищаем localStorage и редирект
+                if (response.status === 404) {
+                    console.error('❌ [AUTH] Пользователь не найден в БД, очищаем localStorage');
+                    localStorage.clear();
+                    alert('Ваша сессия устарела. Пожалуйста, авторизуйтесь заново.');
+                    window.location.href = '/';
+                    return false;
+                }
+                
+                const result = await response.json();
+                console.log('🔍 [AUTH] Ответ API:', JSON.stringify(result));
+                
+                if (result.success && result.displayNickname) {
+                    realNickname = result.displayNickname;
+                    // Синхронизируем с localStorage
+                    localStorage.setItem('user_nickname', realNickname);
+                    localStorage.setItem('userNickname', realNickname);
+                    currentUserNickname = realNickname;
+                    console.log('✅ [AUTH] Никнейм загружен из БД:', realNickname);
+                } else {
+                    console.warn('⚠️ [AUTH] API не вернул никнейм');
+                }
+            } catch (error) {
+                console.error('❌ [AUTH] Ошибка загрузки никнейма из БД:', error);
+            }
+        } else {
+            console.warn('⚠️ [AUTH] Нет ни tgId, ни userToken для проверки никнейма');
+            return false;
         }
         
-        // Если никнейма нет, показываем модальное окно для выбора
-        console.log('⚠️ [AUTH] Никнейм не найден, показываем форму выбора');
-        await showRequiredNicknameModal();
+        // Если никнейма нет ни в БД, ни в localStorage - показываем модальное окно
+        console.log('🔍 [AUTH] Проверка: realNickname=', realNickname, 'savedNickname=', savedNickname);
+        if (!realNickname && (!savedNickname || savedNickname === 'Аноним')) {
+            console.log('⚠️ [AUTH] Никнейм не установлен - показываем модальное окно');
+            await showRequiredNicknameModal();
+        } else {
+            console.log('✅ [AUTH] Никнейм уже установлен:', realNickname || savedNickname);
+            currentUserNickname = realNickname || savedNickname;
+        }
         
         return true;
         
