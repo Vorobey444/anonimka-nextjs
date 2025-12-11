@@ -101,66 +101,323 @@ async function saveUserLocation(country, region, city) {
 /**
  * Автоматическое определение локации пользователя
  */
-async function autoDetectLocation() {
+function autoDetectLocation() {
+    console.log('autoDetectLocation вызвана - запускаем автоопределение');
+    autoDetectLocationAsync();
+}
+
+/**
+ * Автоматическое определение локации (async версия)
+ */
+async function autoDetectLocationAsync() {
     try {
-        console.log('🌍 [LOCATION] Начало автоопределения локации');
+        console.log('🌍 Автоопределение локации...');
         
-        // Сначала проверяем GPS
-        if (navigator.geolocation) {
-            console.log('📡 [LOCATION] Попытка получить GPS...');
-            
-            try {
-                const position = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        timeout: 5000,
-                        enableHighAccuracy: false
-                    });
-                });
-                
-                console.log('✅ [LOCATION] GPS получен:', {
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude
-                });
-                
-                // Используем GPS координаты для определения города через обратное геокодирование
-                // (если есть API для этого на сервере)
-                return;
-            } catch (e) {
-                console.warn('⚠️ [LOCATION] GPS недоступен:', e.message);
-            }
-        }
+        let locationResult = null;
         
-        // Fallback: определяем по IP
-        console.log('🌐 [LOCATION] Определение по IP...');
-        
+        // Пробуем ipinfo.io
         try {
-            const response = await fetch('/api/detect-location');
+            const response = await fetch('https://ipinfo.io/json');
             const data = await response.json();
-            
-            if (data.error) {
-                console.warn('⚠️ [LOCATION] Ошибка определения по IP:', data.error);
-                return;
-            }
-            
-            const { country, region, city, timezone } = data.data || {};
-            
-            if (country) {
-                console.log('✅ [LOCATION] Локация определена по IP:', { country, region, city });
-                
-                // Сохраняем определённую локацию
-                await saveUserLocation(country, region || '', city || '');
-                return true;
+            if (data && data.country) {
+                locationResult = {
+                    country_code: data.country,
+                    country_name: data.country,
+                    region: data.region,
+                    city: data.city,
+                    source: 'ipinfo.io'
+                };
+                console.log('✅ Локация получена от ipinfo.io:', locationResult);
             }
         } catch (e) {
-            console.error('❌ [LOCATION] Ошибка определения по IP:', e);
+            console.log('⚠️ ipinfo.io недоступен');
         }
         
-        return false;
+        // Если не сработало, пробуем ip-api.com
+        if (!locationResult) {
+            try {
+                const response = await fetch('http://ip-api.com/json/?fields=status,country,countryCode,region,regionName,city');
+                const data = await response.json();
+                if (data && data.status === 'success') {
+                    locationResult = {
+                        country_code: data.countryCode,
+                        country_name: data.country,
+                        region: data.regionName,
+                        city: data.city,
+                        source: 'ip-api.com'
+                    };
+                    console.log('✅ Локация получена от ip-api.com:', locationResult);
+                }
+            } catch (e) {
+                console.log('⚠️ ip-api.com недоступен');
+            }
+        }
         
+        // Если не сработало, определяем по часовому поясу
+        if (!locationResult) {
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            locationResult = guessLocationByTimezone(timezone);
+            if (locationResult) {
+                locationResult.source = 'timezone';
+                console.log('✅ Локация определена по часовому поясу:', locationResult);
+            }
+        }
+        
+        // Показываем экран подтверждения если удалось определить
+        if (locationResult && locationResult.country_code) {
+            const detectedLocation = processIPLocation(locationResult);
+            if (detectedLocation) {
+                // Устанавливаем выбранную локацию
+                setupSelectedCountry = detectedLocation.country;
+                setupSelectedRegion = detectedLocation.region;
+                setupSelectedCity = detectedLocation.city;
+                
+                // Показываем экран подтверждения
+                showDetectedLocationResult(detectedLocation);
+                console.log('✅ Локация определена, показан экран подтверждения:', detectedLocation);
+            }
+        } else {
+            console.log('⚠️ Не удалось автоматически определить локацию');
+            showPopularLocations();
+        }
     } catch (error) {
-        console.error('❌ [LOCATION] Критическая ошибка автоопределения локации:', error);
-        return false;
+        console.error('❌ Ошибка автоопределения локации:', error);
+        showPopularLocations();
     }
+}
+
+/**
+ * Определение локации по часовому поясу
+ */
+function guessLocationByTimezone(timezone) {
+    console.log('Определяем по часовому поясу:', timezone);
+    
+    const timezoneMap = {
+        'Europe/Moscow': { country_code: 'RU', country_name: 'Россия', region: 'Москва', city: 'Москва' },
+        'Europe/Samara': { country_code: 'RU', country_name: 'Россия', region: 'Самарская область', city: 'Самара' },
+        'Asia/Yekaterinburg': { country_code: 'RU', country_name: 'Россия', region: 'Свердловская область', city: 'Екатеринбург' },
+        'Asia/Novosibirsk': { country_code: 'RU', country_name: 'Россия', region: 'Новосибирская область', city: 'Новосибирск' },
+        'Asia/Krasnoyarsk': { country_code: 'RU', country_name: 'Россия', region: 'Красноярский край', city: 'Красноярск' },
+        'Asia/Irkutsk': { country_code: 'RU', country_name: 'Россия', region: 'Иркутская область', city: 'Иркутск' },
+        'Asia/Vladivostok': { country_code: 'RU', country_name: 'Россия', region: 'Приморский край', city: 'Владивосток' },
+        'Asia/Almaty': { country_code: 'KZ', country_name: 'Казахстан', region: 'Алматинская область', city: 'Алматы' },
+        'Asia/Qyzylorda': { country_code: 'KZ', country_name: 'Казахстан', region: 'Кызылординская область', city: 'Кызылорда' },
+        'Asia/Aqtobe': { country_code: 'KZ', country_name: 'Казахстан', region: 'Актюбинская область', city: 'Актобе' },
+        'Asia/Oral': { country_code: 'KZ', country_name: 'Казахстан', region: 'Западно-Казахстанская область', city: 'Уральск' },
+        'Europe/Minsk': { country_code: 'BY', country_name: 'Беларусь', region: 'Минск', city: 'Минск' },
+        'Europe/Kiev': { country_code: 'UA', country_name: 'Украина', region: 'Киев', city: 'Киев' },
+        'Europe/Kyiv': { country_code: 'UA', country_name: 'Украина', region: 'Киев', city: 'Киев' },
+        'Asia/Bishkek': { country_code: 'KG', country_name: 'Кыргызстан', region: 'Бишкек', city: 'Бишкек' },
+        'Asia/Dushanbe': { country_code: 'TJ', country_name: 'Таджикистан', region: 'Душанбе', city: 'Душанбе' },
+        'Asia/Tashkent': { country_code: 'UZ', country_name: 'Узбекистан', region: 'Ташкент', city: 'Ташкент' },
+        'Asia/Yerevan': { country_code: 'AM', country_name: 'Армения', region: 'Ереван', city: 'Ереван' },
+        'Asia/Baku': { country_code: 'AZ', country_name: 'Азербайджан', region: 'Баку', city: 'Баку' },
+        'Europe/Chisinau': { country_code: 'MD', country_name: 'Молдова', region: 'Кишинёв', city: 'Кишинёв' },
+        'Asia/Tbilisi': { country_code: 'GE', country_name: 'Грузия', region: 'Тбилиси', city: 'Тбилиси' }
+    };
+    
+    return timezoneMap[timezone] || null;
+}
+
+/**
+ * Обработка данных IP геолокации
+ */
+function processIPLocation(data) {
+    const countryCode = (data.country_code || data.country || '').toUpperCase();
+    let regionName = data.region;
+    let cityName = data.city;
+    
+    // Маппинг кодов стран на наши ключи
+    const countryMap = {
+        'RU': 'russia',
+        'KZ': 'kazakhstan', 
+        'BY': 'belarus',
+        'UA': 'ukraine',
+        'KG': 'kyrgyzstan',
+        'TJ': 'tajikistan',
+        'UZ': 'uzbekistan',
+        'AM': 'armenia',
+        'AZ': 'azerbaijan',
+        'MD': 'moldova',
+        'GE': 'georgia'
+    };
+    
+    const mappedCountry = countryMap[countryCode];
+    
+    if (!mappedCountry || !locationData[mappedCountry]) {
+        console.log('❌ Неподдерживаемая страна:', countryCode);
+        return null;
+    }
+    
+    const countryData = locationData[mappedCountry];
+    
+    // Ищем регион и город
+    let foundRegion = null;
+    let foundCity = null;
+    
+    // Ищем по названию города во всех регионах
+    if (cityName) {
+        for (const region in countryData.regions) {
+            const cities = countryData.regions[region];
+            const city = cities.find(c => 
+                c.toLowerCase() === cityName.toLowerCase() ||
+                c.toLowerCase().includes(cityName.toLowerCase()) ||
+                cityName.toLowerCase().includes(c.toLowerCase())
+            );
+            
+            if (city) {
+                foundRegion = region;
+                foundCity = city;
+                break;
+            }
+        }
+    }
+    
+    // Если не нашли, берём первый регион и город
+    if (!foundRegion) {
+        foundRegion = Object.keys(countryData.regions)[0];
+        foundCity = countryData.regions[foundRegion][0];
+    }
+    
+    return {
+        country: mappedCountry,
+        region: foundRegion,
+        city: foundCity,
+        detected: {
+            country: data.country_name,
+            region: regionName,
+            city: cityName
+        }
+    };
+}
+
+/**
+ * Показать результат определения локации
+ */
+function showDetectedLocationResult(detectedLocation) {
+    const selectedDiv = document.querySelector('.setup-selected-location');
+    const citySelection = document.querySelector('.setup-city-selection');
+    
+    if (!selectedDiv || !locationData[detectedLocation.country]) return;
+    
+    const countryData = locationData[detectedLocation.country];
+    const flag = countryData.flag;
+    
+    // Скрываем выбор города
+    if (citySelection) citySelection.style.display = 'none';
+    
+    // Формируем текст локации
+    const locationText = detectedLocation.region === detectedLocation.city 
+        ? detectedLocation.city 
+        : `${detectedLocation.region}, ${detectedLocation.city}`;
+    
+    selectedDiv.innerHTML = `
+        <div class="detected-location" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">✨</div>
+            <h3 style="color: var(--neon-cyan); margin-bottom: 15px;">Мы определили вашу локацию</h3>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">
+                <span style="font-size: 1.5rem;">${flag}</span>
+                <span style="font-size: 1.1rem; color: #fff;">${locationText}</span>
+            </div>
+            <p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 20px;">⚠️ Если неверно, выберите вручную ниже</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="neon-button primary" onclick="confirmDetectedLocation('${detectedLocation.country}', '${detectedLocation.region}', '${detectedLocation.city}')">
+                    ✅ Да, всё верно
+                </button>
+                <button class="neon-button secondary" onclick="showManualLocationSetup()">
+                    🎯 Выбрать вручную
+                </button>
+            </div>
+        </div>
+    `;
+    
+    selectedDiv.style.display = 'block';
+}
+
+/**
+ * Показать популярные локации при неудаче автоопределения
+ */
+function showPopularLocations() {
+    const selectedDiv = document.querySelector('.setup-selected-location');
+    const citySelection = document.querySelector('.setup-city-selection');
+    
+    if (!selectedDiv) return;
+    
+    if (citySelection) citySelection.style.display = 'none';
+    
+    selectedDiv.innerHTML = `
+        <div class="popular-locations" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">🌍</div>
+            <h3 style="color: var(--neon-cyan); margin-bottom: 15px;">Выберите ваш город</h3>
+            <p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 15px;">Не удалось определить автоматически</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <button class="neon-button secondary" onclick="selectPopularLocation('russia', 'Москва', 'Москва')" style="font-size: 0.9rem;">
+                    🇷🇺 Москва
+                </button>
+                <button class="neon-button secondary" onclick="selectPopularLocation('russia', 'Санкт-Петербург', 'Санкт-Петербург')" style="font-size: 0.9rem;">
+                    🇷🇺 СПб
+                </button>
+                <button class="neon-button secondary" onclick="selectPopularLocation('kazakhstan', 'Алматинская область', 'Алматы')" style="font-size: 0.9rem;">
+                    🇰🇿 Алматы
+                </button>
+                <button class="neon-button secondary" onclick="selectPopularLocation('kazakhstan', 'Астана', 'Астана')" style="font-size: 0.9rem;">
+                    🇰🇿 Астана
+                </button>
+            </div>
+            
+            <button class="neon-button primary" onclick="showManualLocationSetup()" style="width: 100%;">
+                🎯 Выбрать другой город
+            </button>
+        </div>
+    `;
+    
+    selectedDiv.style.display = 'block';
+}
+
+/**
+ * Выбор популярной локации
+ */
+function selectPopularLocation(country, region, city) {
+    console.log('Выбрана популярная локация:', {country, region, city});
+    confirmDetectedLocation(country, region, city);
+}
+
+/**
+ * Подтвердить определённую локацию
+ */
+async function confirmDetectedLocation(country, region, city) {
+    console.log('📍 Подтверждение локации:', { country, region, city });
+    
+    setupSelectedCountry = country;
+    setupSelectedRegion = region;
+    setupSelectedCity = city;
+    
+    await saveUserLocation(country, region, city);
+    updateLocationDisplay();
+    
+    if (typeof showMainMenu === 'function') {
+        showMainMenu();
+    }
+}
+
+/**
+ * Показать ручной выбор локации
+ */
+function showManualLocationSetup() {
+    const selectedDiv = document.querySelector('.setup-selected-location');
+    if (selectedDiv) selectedDiv.style.display = 'none';
+    
+    // Сбрасываем выбор
+    setupSelectedCountry = null;
+    setupSelectedRegion = null;
+    setupSelectedCity = null;
+    
+    document.querySelectorAll('.setup-country').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    console.log('📍 Показан ручной выбор локации');
 }
 
 /**
@@ -897,6 +1154,13 @@ window.selectSetupCity = selectSetupCity;
 window.showAllSetupCities = showAllSetupCities;
 window.saveSetupLocation = saveSetupLocation;
 window.autoDetectLocation = autoDetectLocation;
+window.autoDetectLocationAsync = autoDetectLocationAsync;
+window.guessLocationByTimezone = guessLocationByTimezone;
+window.processIPLocation = processIPLocation;
+window.showDetectedLocationResult = showDetectedLocationResult;
+window.showPopularLocations = showPopularLocations;
+window.selectPopularLocation = selectPopularLocation;
+window.confirmDetectedLocation = confirmDetectedLocation;
 window.updateLocationDisplay = updateLocationDisplay;
 window.showAutoLocationDetection = showAutoLocationDetection;
 window.showManualLocationSetup = showManualLocationSetup;

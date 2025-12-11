@@ -34,6 +34,28 @@ const isTelegramWebApp = !!(
     typeof window.Telegram.WebApp.ready === 'function'
 );
 
+// Проверка поддержки emoji флагов
+function checkEmojiFlagSupport() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 20;
+    canvas.height = 20;
+    ctx.fillText('🇷🇺', 0, 15);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    
+    for (let i = 0; i < imageData.length; i += 4) {
+        if (imageData[i] !== 0 || imageData[i + 1] !== 0 || imageData[i + 2] !== 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Применяем класс если флаги поддерживаются
+if (checkEmojiFlagSupport()) {
+    document.body.classList.add('emoji-flags-supported');
+}
+
 /**
  * Инициализация Telegram WebApp
  */
