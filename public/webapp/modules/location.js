@@ -1204,6 +1204,73 @@ function showFilterSelectedLocation() {
 }
 
 /**
+ * Установка UI фильтра на основе локации пользователя
+ */
+function setFilterLocationUI() {
+    if (!userLocation) {
+        console.log('setFilterLocationUI: локация пользователя не установлена');
+        return;
+    }
+    
+    console.log('setFilterLocationUI: устанавливаем UI для локации', userLocation);
+    
+    // Устанавливаем активную кнопку страны
+    const countryButtons = document.querySelectorAll('.filter-country');
+    console.log('Найдено кнопок стран для фильтра:', countryButtons.length);
+    
+    countryButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.country === userLocation.country) {
+            btn.classList.add('active');
+            console.log('Активирована кнопка страны:', btn.dataset.country);
+        }
+    });
+    
+    // Заполняем поля ввода
+    const regionInput = document.querySelector('.filter-region-input');
+    const cityInput = document.querySelector('.filter-city-input');
+    
+    console.log('regionInput найден:', !!regionInput);
+    console.log('cityInput найден:', !!cityInput);
+    
+    if (regionInput) regionInput.value = userLocation.region;
+    if (cityInput) cityInput.value = userLocation.city;
+    
+    // Показываем все секции как заполненные
+    const regionSection = document.querySelector('.filter-region-selection');
+    const citySection = document.querySelector('.filter-city-selection');
+    const selectedLocationDiv = document.querySelector('.filter-selected-location');
+    const locationTextEl = document.querySelector('.filter-location-text');
+    
+    console.log('Секции найдены:', {
+        regionSection: !!regionSection,
+        citySection: !!citySection,
+        selectedLocationDiv: !!selectedLocationDiv,
+        locationText: !!locationTextEl
+    });
+    
+    if (regionSection) {
+        regionSection.style.display = 'block';
+        regionSection.style.opacity = '1';
+    }
+    
+    if (citySection) {
+        citySection.style.display = 'block';
+        citySection.style.opacity = '1';
+    }
+    
+    if (selectedLocationDiv && locationTextEl && locationData) {
+        const fullLocation = `${locationData[userLocation.country].flag} ${userLocation.region}, ${userLocation.city}`;
+        locationTextEl.textContent = fullLocation;
+        selectedLocationDiv.style.display = 'block';
+        selectedLocationDiv.style.opacity = '1';
+        console.log('Установлен текст локации:', fullLocation);
+    }
+    
+    console.log('UI фильтра установлен на локацию пользователя:', userLocation);
+}
+
+/**
  * Сброс выбора локации для фильтра
  */
 function resetFilterLocationSelection() {
@@ -1749,6 +1816,7 @@ window.showAllFilterCities = showAllFilterCities;
 window.showFilterCitySuggestions = showFilterCitySuggestions;
 window.selectFilterCity = selectFilterCity;
 window.showFilterSelectedLocation = showFilterSelectedLocation;
+window.setFilterLocationUI = setFilterLocationUI;
 window.handleNoLocation = handleNoLocation;
 window.detectLocationByGPS = detectLocationByGPS;
 window.detectLocationByIP = detectLocationByIP;

@@ -358,6 +358,42 @@ async function movePhotoDown(photoId) {
 }
 
 /**
+ * Поменять местами позиции двух фото (drag & drop)
+ */
+async function swapPhotoPositions(photoId1, photoId2) {
+    try {
+        const userToken = localStorage.getItem('user_token');
+        if (!userToken) return;
+        
+        console.log(`🔄 Меняем местами фото ${photoId1} и ${photoId2}`);
+        
+        const response = await fetch('/api/user-photos', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                userToken, 
+                photoId1: parseInt(photoId1),
+                photoId2: parseInt(photoId2),
+                action: 'swap'
+            })
+        });
+        
+        if (response.ok) {
+            console.log('✅ Позиции фото обменены');
+            // Обновляем галерею через небольшую задержку
+            setTimeout(() => {
+                loadMyPhotos();
+            }, 500);
+        } else {
+            throw new Error('Ошибка обмена позиций');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка обмена позиций:', error);
+        tg.showAlert('Ошибка при изменении порядка');
+    }
+}
+
+/**
  * Добавить фото при создании анкеты (шаг 9)
  */
 async function addAdPhoto() {
@@ -595,23 +631,89 @@ function selectStep9Photo(photoId, photoUrl, fileId) {
 }
 
 /**
- * Удалить фото на шаге 9
+ * Удалить фото на шаге 9 (удаляет из галереи и всех анкет)
  */
 async function deleteStep9Photo(photoId) {
+    let errorMessage = '';
     try {
         const userToken = localStorage.getItem('user_token');
-        const resp = await fetch('/api/user-photos', {
+        if (!userToken) {
+            errorMessage = 'User token not found';
+            throw new Error(errorMessage);
+        }
+        
+        console.log('🗑️ Удаляем фото ID:', photoId);
+        
+        const response = await fetch('/api/user-photos', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ photoId, userToken })
+            body: JSON.stringify({ userToken, photoId })
         });
         
-        if (resp.ok) {
-            tg.showAlert('✅ Фото удалено');
-            loadMyPhotosForStep9(); // Перезагружаем галерею
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            errorMessage = `HTTP ${response.status}: ${errorData.error || response.statusText}`;
+            throw new Error(errorMessage);
         }
+        
+        console.log('✅ Фото удалено');
+        
+        // Просто удаляем элемент из DOM без перезагрузки экрана
+        const photoElement = document.querySelector(`[data-photo-id="${photoId}"]`);
+        if (photoElement && photoElement.parentElement) {
+            photoElement.parentElement.remove();
+        }
+        
+        // Проверяем, остались ли фото
+        const gridDiv = document.getElementById('step9PhotoGrid');
+        if (gridDiv && gridDiv.children.length === 0) {
+            const galleryContainer = document.getElementById('step9PhotoGallery');
+            if (galleryContainer) {
+                galleryContainer.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                        <p style="margin: 0;">📷 У вас пока нет фото в галерее</p>
+                        <p style="margin: 8px 0 0 0; font-size: 14px;">Добавьте фото ниже</p>
+                    </div>
+                `;
+            }
+        }
+        
     } catch (error) {
-        console.error('Ошибка удаления фото:', error);
+        const errorDetails = {
+            photoId,
+            message: error.message || String(error),
+            stack: error.stack || '',
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+        };
+        
+        console.error('❌ Photo deletion error:', errorDetails);
+        
+        // Отправляем ошибку на сервер для логирования
+        try {
+            await fetch('/api/log-error', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'DELETE_PHOTO_STEP9',
+                    error: errorDetails.message,
+                    stack: errorDetails.stack,
+                    photoId: photoId,
+                    userAgent: errorDetails.userAgent,
+                    timestamp: errorDetails.timestamp
+                })
+            }).catch(err => console.log('⚠️ Could not send error to server:', err.message));
+        } catch (logErr) {
+            console.log('⚠️ Error logging failed:', logErr);
+        }
+        
+        // Показываем alert с информацией об ошибке
+        const fullError = `❌ Ошибка удаления фото:\n\nID: ${photoId}\n${errorDetails.message}`;
+        if (typeof tg !== 'undefined' && tg.showAlert) {
+            tg.showAlert(fullError);
+        } else {
+            alert(fullError);
+        }
     }
 }
 
@@ -954,5 +1056,6 @@ window.compressImage = compressImage;
 window.capturePhoto = capturePhoto;
 window.closeCameraModal = closeCameraModal;
 window.switchCamera = switchCamera;
+window.swapPhotoPositions = swapPhotoPositions;
 
 console.log('✅ [PHOTOS] Модуль фото инициализирован');
