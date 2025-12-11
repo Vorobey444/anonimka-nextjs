@@ -282,6 +282,11 @@ function showMainMenu() {
         homeScreen.style.display = 'flex';
     }
     
+    // Обновляем отображение локации
+    if (typeof updateLocationDisplay === 'function') {
+        updateLocationDisplay();
+    }
+    
     // Обновляем Telegram кнопки
     if (typeof updateTelegramButtons === 'function') {
         updateTelegramButtons('homeScreen');

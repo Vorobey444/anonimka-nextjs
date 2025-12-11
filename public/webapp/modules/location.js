@@ -14,6 +14,9 @@ console.log('📍 [LOCATION] Инициализация модуля локац�
  * ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ДЛЯ ВЫБОРА ЛОКАЦИИ
  */
 
+// Текущая локация пользователя
+let currentUserLocation = null;
+
 // Переменные для основной формы создания анкеты
 let selectedCountry = null;
 let selectedRegion = null;
@@ -897,5 +900,26 @@ window.autoDetectLocation = autoDetectLocation;
 window.updateLocationDisplay = updateLocationDisplay;
 window.showAutoLocationDetection = showAutoLocationDetection;
 window.showManualLocationSetup = showManualLocationSetup;
+
+// Инициализация при загрузке модуля
+(function initLocationOnLoad() {
+    // Загружаем сохранённую локацию из localStorage
+    const savedLocation = localStorage.getItem('userLocation');
+    if (savedLocation) {
+        try {
+            currentUserLocation = JSON.parse(savedLocation);
+            console.log('📍 [LOCATION] Загружена сохранённая локация:', currentUserLocation);
+        } catch (e) {
+            console.warn('⚠️ [LOCATION] Ошибка загрузки сохранённой локации');
+        }
+    }
+    
+    // Обновляем отображение после загрузки DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateLocationDisplay);
+    } else {
+        setTimeout(updateLocationDisplay, 100);
+    }
+})();
 
 console.log('✅ [LOCATION] Модуль локации инициализирован');
