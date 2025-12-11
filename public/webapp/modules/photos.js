@@ -312,6 +312,8 @@ async function addAdPhoto() {
             
             const photoData = await uploadPhotoToTelegram(fileToUpload, userId);
             
+            console.log('📸 [addAdPhoto] photoData received:', photoData);
+            
             // Сохраняем в formData
             if (typeof formData !== 'undefined') {
                 formData.adPhotoFileId = photoData.file_id;
@@ -322,6 +324,9 @@ async function addAdPhoto() {
             const preview = document.getElementById('adPhotoPreview');
             const img = document.getElementById('adPhotoImage');
             const btn = document.getElementById('addAdPhotoBtn');
+            
+            console.log('📸 [addAdPhoto] Elements found:', { preview: !!preview, img: !!img, btn: !!btn });
+            console.log('📸 [addAdPhoto] Setting img.src to:', photoData.photo_url);
             
             if (preview && img && btn) {
                 img.src = photoData.photo_url;
