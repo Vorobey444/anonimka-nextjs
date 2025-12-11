@@ -704,36 +704,58 @@ function showBrowseAds() {
     }, 100);
 }
 
-// Флаг загрузки для loadAds
-let isLoadingAdsRequest = false;
+// Глобальные переменные для пагинации
+window.loadingAds = false;
+window.allLoadedAds = [];
+window.currentFilters = {};
+window.totalAds = 0;
+window.hasMoreAds = true;
+window.currentAdsPage = 1;
 
 /**
  * Загрузить анкеты с фильтрами
  */
-async function loadAds(filters = {}) {
+async function loadAds(filters = {}, append = false) {
     // Предотвращаем множественные одновременные запросы
-    if (isLoadingAdsRequest) {
+    if (window.loadingAds) {
         console.log('⚠️ [ADS] Запрос уже выполняется, пропускаем');
         return;
     }
     
-    isLoadingAdsRequest = true;
+    if (!append) {
+        window.currentAdsPage = 1;
+        window.allLoadedAds = [];
+        window.hasMoreAds = true;
+        window.currentFilters = filters;
+    }
+    
+    window.loadingAds = true;
     
     try {
-        console.log('📥 [ADS] Загрузка анкет с фильтрами:', { ...adsFilters, ...filters });
+        console.log('📥 [ADS] Загрузка анкет:', { page: window.currentAdsPage, filters, append });
+        
+        // По умолчанию включаем компактный режим
+        if (window.localStorage.getItem('ads_compact') === null) {
+            window.localStorage.setItem('ads_compact', '1');
+        }
+        
+        const adsList = document.getElementById('adsList');
+        if (adsList && !append) {
+            const compact = window.localStorage.getItem('ads_compact') === '1';
+            adsList.classList.toggle('compact', compact);
+            adsList.innerHTML = `
+                <div class="loading-spinner"></div>
+                <p>Загружаем анкеты${compact ? ' (компактно)' : ''}...</p>
+            `;
+        }
         
         // Объединяем фильтры
         const finalFilters = { ...adsFilters, ...filters };
         
-        // Формируем параметры запроса
+        // Формируем параметры запроса - 20 анкет за раз
         const params = new URLSearchParams({
-            page: currentAdsPage,
-            limit: 10,
-            gender: finalFilters.gender !== 'all' ? finalFilters.gender : '',
-            target: finalFilters.target !== 'all' ? finalFilters.target : '',
-            orientation: finalFilters.orientation !== 'all' ? finalFilters.orientation : '',
-            age_from: finalFilters.ageFrom,
-            age_to: finalFilters.ageTo
+            page: window.currentAdsPage.toString(),
+            limit: '20'
         });
         
         // Если есть фильтр по стране/городу, добавляем
@@ -744,28 +766,63 @@ async function loadAds(filters = {}) {
             params.append('city', finalFilters.city);
         }
         
-        const response = await fetch(`/api/ads?${params.toString()}`);
-        const result = await response.json();
+        const apiUrl = `/api/ads?${params.toString()}`;
+        console.log('🌐 API запрос:', apiUrl);
         
-        if (result.error) {
-            console.error('❌ [ADS] Ошибка загрузки анкет:', result.error);
-            tg.showAlert('Ошибка загрузки анкет');
-            return;
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        currentAds = result.ads || [];
-        // Получаем total из pagination если есть, иначе берём длину массива
-        totalAdsCount = result.pagination?.total || result.total || currentAds.length;
+        const result = await response.json();
+        const ads = result.ads || [];
+        const pagination = result.pagination;
         
-        console.log(`✅ [ADS] Загружено ${currentAds.length} анкет, всего: ${totalAdsCount}`);
+        console.log('✅ Получено анкет:', ads.length, 'Пагинация:', pagination);
         
-        // Отображаем анкеты
-        displayAds(currentAds);
+        if (append) {
+            window.allLoadedAds.push(...ads);
+        } else {
+            window.allLoadedAds = ads;
+        }
+        
+        // Сохраняем общее количество анкет
+        if (pagination && pagination.total) {
+            window.totalAds = pagination.total;
+        }
+        
+        // Если пагинации нет, считаем что это все анкеты
+        window.hasMoreAds = pagination ? (pagination.hasMore || false) : false;
+        
+        console.log('🔢 Состояние:', { 
+            totalLoaded: window.allLoadedAds.length, 
+            hasMore: window.hasMoreAds,
+            currentPage: window.currentAdsPage
+        });
         
     } catch (error) {
         console.error('❌ [ADS] Ошибка при загрузке анкет:', error);
+        const adsList = document.getElementById('adsList');
+        if (adsList && !append) {
+            adsList.innerHTML = `
+                <div class="no-ads">
+                    <div class="neon-icon">⚠️</div>
+                    <h3>Ошибка загрузки</h3>
+                    <p>${error.message}</p>
+                    <button class="neon-button" onclick="loadAds()">🔄 Повторить</button>
+                </div>
+            `;
+        }
     } finally {
-        isLoadingAdsRequest = false;
+        window.loadingAds = false;
+        
+        // Отображаем анкеты ПОСЛЕ сброса loadingAds
+        const cityFilter = filters.city || (window.currentFilters && window.currentFilters.city);
+        displayAds(window.allLoadedAds, cityFilter);
     }
 }
 
