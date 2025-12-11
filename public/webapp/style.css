@@ -132,6 +132,20 @@ body {
     width: 100% !important;
 }
 
+/* Экран настройки локации - строго вертикальный */
+#locationSetup.screen.active {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+#locationSetup .header {
+    width: 100% !important;
+    max-width: 400px !important;
+    text-align: center !important;
+}
+
 /* Убираем скролл если контент влезает */
 .screen:not(.force-scroll) {
     overflow-y: auto;
@@ -1708,6 +1722,10 @@ body.emoji-flags-supported .country-code {
     margin: 0 auto;
     padding: 1rem 2rem 2rem 2rem;
     position: relative;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
 }
 
 .setup-country-selection, 
@@ -1715,6 +1733,8 @@ body.emoji-flags-supported .country-code {
 .setup-city-selection {
     margin: 1.5rem 0;
     animation: fadeIn 0.5s ease;
+    width: 100% !important;
+    max-width: 400px !important;
 }
 
 .setup-country-selection h3,
@@ -4088,6 +4108,8 @@ body.emoji-flags-supported .country-code {
 .auto-location-section {
     margin-bottom: 20px;
     text-align: center;
+    width: 100% !important;
+    max-width: 400px !important;
 }
 
 .or-divider {

@@ -550,15 +550,19 @@ function initLocationHandlers() {
             setupSelectedCountry = country;
             selectedCountry = country;
             
-            // Показываем выбор региона
-            const regionSection = document.querySelector('.setup-region-selection');
-            if (regionSection) {
-                regionSection.style.display = 'block';
+            // Показываем выбор города (не региона!)
+            const citySection = document.querySelector('.setup-city-selection');
+            if (citySection) {
+                citySection.style.display = 'block';
+                console.log('📍 [LOCATION] Показана секция выбора города');
+            } else {
+                console.warn('⚠️ [LOCATION] Секция .setup-city-selection не найдена');
             }
             
-            // Загружаем регионы для страны
-            if (typeof loadRegionsForCountry === 'function') {
-                loadRegionsForCountry(country, 'setup');
+            // Фокус на поле ввода города
+            const cityInput = document.querySelector('.setup-city-input');
+            if (cityInput) {
+                setTimeout(() => cityInput.focus(), 100);
             }
         });
     });
