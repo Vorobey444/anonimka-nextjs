@@ -656,15 +656,50 @@ async function checkBlockStatus(chatId) {
     try {
         console.log('🔍 [CHATS] Проверка статуса блокировки');
         
-        const userId = getCurrentUserId();
         const userToken = localStorage.getItem('user_token');
         
+        if (!userToken || !chatId) {
+            console.warn('⚠️ [CHATS] Нет userToken или chatId для проверки блокировки');
+            return;
+        }
+        
+        // Сначала получаем информацию о чате чтобы узнать токен оппонента
+        const chatResponse = await fetch('/api/neon-chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get-chat-info',
+                params: { chatId }
+            })
+        });
+        
+        const chatResult = await chatResponse.json();
+        
+        if (chatResult.error || !chatResult.data) {
+            console.warn('⚠️ [CHATS] Не удалось получить информацию о чате');
+            return;
+        }
+        
+        const chat = chatResult.data;
+        
+        // Определяем токен оппонента
+        const opponentToken = chat.user_token_1 === userToken ? chat.user_token_2 : chat.user_token_1;
+        
+        if (!opponentToken) {
+            console.warn('⚠️ [CHATS] Не удалось определить токен оппонента');
+            return;
+        }
+        
+        // Проверяем блокировку между двумя пользователями
         const response = await fetch('/api/blocks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'check-block-status',
-                params: { chatId, userId: userToken || userId }
+                params: { 
+                    user1_token: userToken, 
+                    user2_token: opponentToken 
+                }
             })
         });
         
@@ -673,6 +708,9 @@ async function checkBlockStatus(chatId) {
         if (result.data?.isBlocked) {
             isUserBlocked = result.data.blockedByCurrentUser;
             showBlockWarning(true, isUserBlocked ? 'self' : 'other');
+        } else {
+            isUserBlocked = false;
+            showBlockWarning(false);
         }
         
     } catch (error) {

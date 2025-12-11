@@ -259,6 +259,21 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ data: { count: parseInt(result.rows[0].count) }, error: null });
       }
 
+      case 'get-chat-info': {
+        const { chatId } = params;
+        if (!chatId) {
+          return NextResponse.json({ data: null, error: { message: 'chatId required' } }, { status: 400 });
+        }
+        const result = await sql`
+          SELECT id, ad_id, user_token_1, user_token_2, status, created_at, 
+                 blocked_by, blocked_by_token, last_message_at
+          FROM private_chats
+          WHERE id = ${chatId}
+          LIMIT 1
+        `;
+        return NextResponse.json({ data: result.rows[0] || null, error: null });
+      }
+
       case 'get-ad-from-chat': {
         const { adId } = params;
         const result = await sql`
