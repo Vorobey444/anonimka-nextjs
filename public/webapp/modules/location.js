@@ -221,6 +221,7 @@ function guessLocationByTimezone(timezone) {
 
 /**
  * Обработка данных IP геолокации
+ * С полной нормализацией английских названий в русские
  */
 function processIPLocation(data) {
     const countryCode = (data.country_code || data.country || '').toUpperCase();
@@ -228,6 +229,185 @@ function processIPLocation(data) {
     let cityName = data.city;
     
     console.log('🔄 [LOCATION] processIPLocation:', { countryCode, regionName, cityName });
+    
+    // ============ НОРМАЛИЗАЦИЯ РЕГИОНОВ (английские → русские) ============
+    const regionNormalization = {
+        // Россия - области
+        'Moscow Oblast': 'Московская область',
+        'Moscow': 'Москва',
+        'Leningrad Oblast': 'Ленинградская область',
+        'Novosibirsk Oblast': 'Новосибирская область',
+        'Sverdlovsk Oblast': 'Свердловская область',
+        'Rostov Oblast': 'Ростовская область',
+        'Chelyabinsk Oblast': 'Челябинская область',
+        'Nizhny Novgorod Oblast': 'Нижегородская область',
+        'Samara Oblast': 'Самарская область',
+        'Omsk Oblast': 'Омская область',
+        'Voronezh Oblast': 'Воронежская область',
+        'Volgograd Oblast': 'Волгоградская область',
+        'Perm Krai': 'Пермский край',
+        'Saratov Oblast': 'Саратовская область',
+        'Tyumen Oblast': 'Тюменская область',
+        'Kemerovo Oblast': 'Кемеровская область',
+        'Krasnodar Krai': 'Краснодарский край',
+        'Krasnoyarsk Krai': 'Красноярский край',
+        'Primorsky Krai': 'Приморский край',
+        'Stavropol Krai': 'Ставропольский край',
+        'Tatarstan': 'Татарстан',
+        'Bashkortostan': 'Башкортостан',
+        'Dagestan': 'Дагестан',
+        // Казахстан - области
+        'Almaty': 'Алматинская область',
+        'Almaty Region': 'Алматинская область',
+        'Astana': 'Астана',
+        'Shymkent': 'Шымкент',
+        'Karaganda Region': 'Карагандинская область',
+        'Aktobe Region': 'Актюбинская область',
+        'East Kazakhstan Region': 'Восточно-Казахстанская область',
+        'Pavlodar Region': 'Павлодарская область',
+        'North Kazakhstan Region': 'Северо-Казахстанская область',
+        'West Kazakhstan Region': 'Западно-Казахстанская область',
+        'Atyrau Region': 'Атырауская область',
+        'Mangystau Region': 'Мангистауская область',
+        'Kostanay Region': 'Костанайская область',
+        'Kyzylorda Region': 'Кызылординская область',
+        'Zhambyl Region': 'Жамбылская область',
+        'Turkistan Region': 'Туркестанская область',
+        'Akmola Region': 'Акмолинская область'
+    };
+    
+    // ============ НОРМАЛИЗАЦИЯ ГОРОДОВ (английские → русские) ============
+    const cityNormalization = {
+        // Казахстан
+        'Alma-Ata': 'Алматы',
+        'Almaty': 'Алматы',
+        'Алма-Ата': 'Алматы',
+        'Astana': 'Астана',
+        'Nur-Sultan': 'Астана',
+        'Nursultan': 'Астана',
+        'Нур-Султан': 'Астана',
+        'Akmola': 'Астана',
+        'Акмола': 'Астана',
+        'Shymkent': 'Шымкент',
+        'Chimkent': 'Шымкент',
+        'Чимкент': 'Шымкент',
+        'Karaganda': 'Караганда',
+        'Qaraghandy': 'Караганда',
+        'Aktobe': 'Актобе',
+        'Aqtobe': 'Актобе',
+        'Aktau': 'Актау',
+        'Aqtau': 'Актау',
+        'Atyrau': 'Атырау',
+        'Pavlodar': 'Павлодар',
+        'Semey': 'Семей',
+        'Semipalatinsk': 'Семей',
+        'Семипалатинск': 'Семей',
+        'Ust-Kamenogorsk': 'Усть-Каменогорск',
+        'Oskemen': 'Усть-Каменогорск',
+        'Petropavl': 'Петропавловск',
+        'Petropavlovsk': 'Петропавловск',
+        'Kostanay': 'Костанай',
+        'Qostanay': 'Костанай',
+        'Kyzylorda': 'Кызылорда',
+        'Qyzylorda': 'Кызылорда',
+        'Uralsk': 'Уральск',
+        'Oral': 'Уральск',
+        'Taraz': 'Тараз',
+        'Zhambyl': 'Тараз',
+        'Жамбыл': 'Тараз',
+        'Taldykorgan': 'Талдыкорган',
+        'Turkestan': 'Туркестан',
+        'Kokshetau': 'Кокшетау',
+        'Kokschetau': 'Кокшетау',
+        
+        // Россия
+        'Moscow': 'Москва',
+        'Moskva': 'Москва',
+        'Sankt-Peterburg': 'Санкт-Петербург',
+        'Saint Petersburg': 'Санкт-Петербург',
+        'St. Petersburg': 'Санкт-Петербург',
+        'Petersburg': 'Санкт-Петербург',
+        'Piter': 'Санкт-Петербург',
+        'Leningrad': 'Санкт-Петербург',
+        'Ленинград': 'Санкт-Петербург',
+        'Yekaterinburg': 'Екатеринбург',
+        'Ekaterinburg': 'Екатеринбург',
+        'Sverdlovsk': 'Екатеринбург',
+        'Свердловск': 'Екатеринбург',
+        'Novosibirsk': 'Новосибирск',
+        'Nizhniy Novgorod': 'Нижний Новгород',
+        'Nizhny Novgorod': 'Нижний Новгород',
+        'Gorky': 'Нижний Новгород',
+        'Горький': 'Нижний Новгород',
+        'Kazan': 'Казань',
+        'Samara': 'Самара',
+        'Kuybyshev': 'Самара',
+        'Куйбышев': 'Самара',
+        'Chelyabinsk': 'Челябинск',
+        'Omsk': 'Омск',
+        'Rostov-on-Don': 'Ростов-на-Дону',
+        'Rostov': 'Ростов-на-Дону',
+        'Ufa': 'Уфа',
+        'Krasnoyarsk': 'Красноярск',
+        'Voronezh': 'Воронеж',
+        'Perm': 'Пермь',
+        'Volgograd': 'Волгоград',
+        'Stalingrad': 'Волгоград',
+        'Сталинград': 'Волгоград',
+        'Krasnodar': 'Краснодар',
+        'Saratov': 'Саратов',
+        'Tyumen': 'Тюмень',
+        'Tolyatti': 'Тольятти',
+        'Togliatti': 'Тольятти',
+        'Stavropol': 'Ставрополь',
+        'Sochi': 'Сочи',
+        'Vladivostok': 'Владивосток',
+        'Irkutsk': 'Иркутск',
+        'Khabarovsk': 'Хабаровск',
+        'Yaroslavl': 'Ярославль',
+        'Barnaul': 'Барнаул',
+        'Kaliningrad': 'Калининград',
+        'Orenburg': 'Оренбург',
+        'Kemerovo': 'Кемерово',
+        'Tomsk': 'Томск',
+        'Tula': 'Тула',
+        'Kursk': 'Курск',
+        'Ryazan': 'Рязань',
+        'Penza': 'Пенза',
+        'Lipetsk': 'Липецк',
+        'Astrakhan': 'Астрахань',
+        'Kirov': 'Киров',
+        'Cheboksary': 'Чебоксары',
+        'Izhevsk': 'Ижевск',
+        'Ulyanovsk': 'Ульяновск',
+        'Bryansk': 'Брянск',
+        'Ivanovo': 'Иваново',
+        'Tver': 'Тверь',
+        'Belgorod': 'Белгород',
+        'Vladimir': 'Владимир',
+        'Murmansk': 'Мурманск',
+        'Arkhangelsk': 'Архангельск',
+        'Yakutsk': 'Якутск',
+        'Grozny': 'Грозный',
+        'Makhachkala': 'Махачкала',
+        'Nalchik': 'Нальчик',
+        'Petrozavodsk': 'Петрозаводск',
+        'Syktyvkar': 'Сыктывкар',
+        'Saransk': 'Саранск',
+        'Yoshkar-Ola': 'Йошкар-Ола'
+    };
+    
+    // Нормализуем регион если он в английском формате
+    if (regionName && regionNormalization[regionName]) {
+        console.log(`🔄 Нормализация региона: "${regionName}" → "${regionNormalization[regionName]}"`);
+        regionName = regionNormalization[regionName];
+    }
+    
+    // Нормализуем город если он в английском формате
+    if (cityName && cityNormalization[cityName]) {
+        console.log(`🔄 Нормализация города: "${cityName}" → "${cityNormalization[cityName]}"`);
+        cityName = cityNormalization[cityName];
+    }
     
     // Проверяем есть ли страна в данных (ключи в locationData - это коды стран: KZ, RU, BY и т.д.)
     if (!locationData[countryCode]) {
@@ -241,42 +421,103 @@ function processIPLocation(data) {
     let foundRegion = null;
     let foundCity = null;
     
-    // Ищем по названию города во всех регионах
-    if (cityName) {
+    // Поиск региона
+    if (regionName) {
+        console.log('🔍 Ищем регион:', regionName);
+        
+        // Сначала пробуем точное совпадение
+        for (const region in countryData.regions) {
+            if (region.toLowerCase() === regionName.toLowerCase()) {
+                foundRegion = region;
+                console.log('✅ Найден регион (точное совпадение):', foundRegion);
+                break;
+            }
+        }
+        
+        // Если не нашли точное, пробуем fuzzy search
+        if (!foundRegion) {
+            for (const region in countryData.regions) {
+                if (region.toLowerCase().includes(regionName.toLowerCase()) || 
+                    regionName.toLowerCase().includes(region.toLowerCase())) {
+                    foundRegion = region;
+                    console.log('✅ Найден регион (частичное совпадение):', foundRegion);
+                    break;
+                }
+            }
+        }
+        
+        if (!foundRegion) {
+            console.log('❌ Регион не найден в базе:', regionName);
+        }
+    }
+    
+    // Поиск города в найденном регионе
+    if (cityName && foundRegion) {
+        console.log('🔍 Ищем город:', cityName, 'в регионе:', foundRegion);
+        const cities = countryData.regions[foundRegion];
+        
+        // Сначала точное совпадение
+        foundCity = cities.find(city => city.toLowerCase() === cityName.toLowerCase());
+        
+        // Потом fuzzy search
+        if (!foundCity) {
+            foundCity = cities.find(city => 
+                city.toLowerCase().includes(cityName.toLowerCase()) ||
+                cityName.toLowerCase().includes(city.toLowerCase())
+            );
+        }
+        
+        if (foundCity) {
+            console.log('✅ Найден город в регионе:', foundCity);
+        } else {
+            console.log('❌ Город не найден в регионе:', foundRegion);
+        }
+    }
+    
+    // Если город не найден в определенном регионе, ищем по всем регионам
+    if (cityName && !foundCity) {
+        console.log('🔍 Ищем город по всем регионам:', cityName);
         for (const region in countryData.regions) {
             const cities = countryData.regions[region];
-            const city = cities.find(c => 
-                c.toLowerCase() === cityName.toLowerCase() ||
-                c.toLowerCase().includes(cityName.toLowerCase()) ||
-                cityName.toLowerCase().includes(c.toLowerCase())
-            );
+            
+            // Сначала точное совпадение
+            let city = cities.find(c => c.toLowerCase() === cityName.toLowerCase());
+            
+            // Потом fuzzy search
+            if (!city) {
+                city = cities.find(c => 
+                    c.toLowerCase().includes(cityName.toLowerCase()) ||
+                    cityName.toLowerCase().includes(c.toLowerCase())
+                );
+            }
             
             if (city) {
                 foundRegion = region;
                 foundCity = city;
+                console.log('✅ Найден город в другом регионе:', city, '→', region);
                 break;
             }
         }
     }
     
-    // Если не нашли, берём первый регион и город
-    if (!foundRegion) {
-        foundRegion = Object.keys(countryData.regions)[0];
-        foundCity = countryData.regions[foundRegion][0];
-    }
-    
-    console.log('✅ [LOCATION] Результат processIPLocation:', { country: countryCode, region: foundRegion, city: foundCity });
-    
-    return {
+    // Возвращаем найденную локацию или базовую для страны
+    const result = {
         country: countryCode,
-        region: foundRegion,
-        city: foundCity,
+        region: foundRegion || Object.keys(countryData.regions)[0],
+        city: foundCity || countryData.regions[foundRegion || Object.keys(countryData.regions)[0]][0],
         detected: {
             country: data.country_name,
-            region: regionName,
-            city: cityName
+            region: data.region,
+            city: data.city
         }
     };
+    
+    console.log('📍 Итоговая локация:', result);
+    if (!foundRegion || !foundCity) {
+        console.warn('⚠️ Использованы значения по умолчанию!', { foundRegion, foundCity });
+    }
+    
+    return result;
 }
 
 /**
