@@ -1207,6 +1207,9 @@ function showFilterSelectedLocation() {
  * Установка UI фильтра на основе локации пользователя
  */
 function setFilterLocationUI() {
+    // Получаем локацию через функцию (не через глобальную переменную)
+    const userLocation = getUserLocation();
+    
     if (!userLocation) {
         console.log('setFilterLocationUI: локация пользователя не установлена');
         return;

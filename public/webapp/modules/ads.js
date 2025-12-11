@@ -1023,12 +1023,13 @@ function toggleAdsCompact() {
  */
 
 /**
- * Показать мои анкеты
+ * Показать мои анкеты (только загрузка данных, без переключения экрана)
  */
 async function showMyAds() {
-    console.log('📋 [ADS] Открытие моих анкет');
+    console.log('📋 [ADS] Загрузка моих анкет');
     
-    showScreen('myAds');
+    // НЕ вызываем showScreen здесь - это вызовет рекурсию!
+    // showScreen вызывается из меню, а showMyAds только загружает данные
     
     try {
         const userToken = localStorage.getItem('user_token');
@@ -1609,5 +1610,7 @@ window.loadAdsByLocation = loadAdsByLocation;
 window.loadMoreAds = loadMoreAds;
 window.setupInfiniteScroll = setupInfiniteScroll;
 window.sendContactMessage = sendContactMessage;
+window.showMyAds = showMyAds;
+window.loadMyAds = showMyAds; // Алиас для showMyAds
 
 console.log('✅ [ADS] Модуль анкет инициализирован');

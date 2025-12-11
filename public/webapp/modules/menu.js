@@ -87,6 +87,10 @@ function initializeScreenContent(screenId) {
             if (typeof loadAds === 'function') {
                 loadAds();
             }
+            // Устанавливаем UI фильтра локации
+            if (typeof setFilterLocationUI === 'function') {
+                setFilterLocationUI();
+            }
             break;
             
         case screens.myProfileScreen:
@@ -98,18 +102,18 @@ function initializeScreenContent(screenId) {
             break;
             
         case screens.myAdsScreen:
-            // Мои объявления
+            // Мои объявления - загружаем список
             console.log('📄 [MENU] Инициализация моих объявлений');
-            if (typeof showMyAds === 'function') {
-                showMyAds();
+            if (typeof loadMyAds === 'function') {
+                loadMyAds();
             }
             break;
             
         case screens.chatsScreen:
-            // Чаты
+            // Чаты - загружаем список чатов
             console.log('💬 [MENU] Инициализация чатов');
-            if (typeof showMyChats === 'function') {
-                showMyChats();
+            if (typeof loadMyChats === 'function') {
+                loadMyChats();
             }
             break;
             
