@@ -176,15 +176,12 @@ function updateFormStep(step) {
     
     currentStep = step;
     
-    // Скрываем все шаги
-    for (let i = 1; i <= totalSteps; i++) {
-        const stepEl = document.getElementById(`step${i}`);
-        if (stepEl) stepEl.style.display = 'none';
-    }
+    // Скрываем все шаги (убираем класс active)
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
     
-    // Показываем текущий шаг
+    // Показываем текущий шаг (добавляем класс active)
     const currentStepEl = document.getElementById(`step${step}`);
-    if (currentStepEl) currentStepEl.style.display = 'block';
+    if (currentStepEl) currentStepEl.classList.add('active');
     
     // Обновляем прогресс
     const progressBar = document.querySelector('.form-progress');
