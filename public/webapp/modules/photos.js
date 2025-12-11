@@ -921,7 +921,9 @@ async function addPhotoFromGallery() {
             await loadMyPhotos();
             
             if (result.overLimit) {
-                tg.showAlert(`⚠️ Достигнут лимит: ${result.limit} фото.\\n\\nЛишние фото деактивированы.`);
+                tg.showAlert(`⚠️ Достигнут лимит: ${result.limit} фото.
+
+Лишние фото деактивированы.`);
             }
         } catch (error) {
             console.error('❌ Error adding photo:', error);

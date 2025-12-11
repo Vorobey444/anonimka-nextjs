@@ -458,7 +458,7 @@ async function buyPremiumWithDuration() {
         const isTelegramWebApp = window.Telegram?.WebApp?.platform !== 'unknown' && !!window.Telegram?.WebApp?.initData;
         
         if (!isTelegramWebApp) {
-            tg.showAlert('💳 Покупка доступна только в Telegram!\\n\\nОткройте приложение через @anonimka_kz_bot');
+            tg.showAlert('💳 Покупка доступна только в Telegram!\n\nОткройте приложение через @anonimka_kz_bot');
             return;
         }
         
@@ -474,15 +474,15 @@ async function buyPremiumWithDuration() {
         const monthWord = selectedPremiumMonths === 1 ? 'месяц' : 
                          (selectedPremiumMonths >= 2 && selectedPremiumMonths <= 4) ? 'месяца' : 'месяцев';
         
-        let confirmText = `💳 Покупка PRO подписки\\n\\n` +
-                         `⏱️ Срок: ${selectedPremiumMonths} ${monthWord}\\n` +
+        let confirmText = `💳 Покупка PRO подписки\n\n` +
+                         `⏱️ Срок: ${selectedPremiumMonths} ${monthWord}\n` +
                          `💰 Стоимость: ${selectedPremiumPrice.stars} Stars`;
         
         if (selectedPremiumPrice.discount > 0) {
-            confirmText += `\\n🔥 Скидка: ${selectedPremiumPrice.discount}%`;
+            confirmText += `\n🔥 Скидка: ${selectedPremiumPrice.discount}%`;
         }
         
-        confirmText += '\\n\\n✨ Что входит:\\n• 3 анкеты/день\\n• Безлимит фото\\n• Закрепление 3×1ч/день\\n• Значок PRO\\n\\nОткрыть бота для оплаты?';
+        confirmText += '\n\n✨ Что входит:\n• 3 анкеты/день\n• Безлимит фото\n• Закрепление 3×1ч/день\n• Значок PRO\n\nОткрыть бота для оплаты?';
         
         tg.showConfirm(confirmText, (confirmed) => {
             if (confirmed) {
@@ -697,10 +697,10 @@ async function buyPremiumViaTelegram() {
  * Показать заглушку для оплаты долларом
  */
 function showDollarPaymentComingSoon() {
-    const message = '💵 Оплата за 1$ скоро будет доступна!\\n\\n' +
-                   '🔜 Мы подключаем платежную систему\\n' +
-                   '💳 Принимаем карты всех стран\\n' +
-                   '🌍 Быстрая оплата без комиссий\\n\\n' +
+    const message = '💵 Оплата за 1$ скоро будет доступна!\n\n' +
+                   '🔜 Мы подключаем платежную систему\n' +
+                   '💳 Принимаем карты всех стран\n' +
+                   '🌍 Быстрая оплата без комиссий\n\n' +
                    '⏰ Следите за обновлениями!';
     
     if (tg && tg.showAlert) {
@@ -719,16 +719,16 @@ function showTrialOffer() {
         return;
     }
     const pitch = '🎃 Могу дать Вам 7 часов PRO.' +
-                  '\\n📢 До 3 анкет' +
-                  '\\n📸 Безлимит фото' +
-                  '\\n📌 3 закрепления' +
-                  '\\n\\nВключить сейчас?';
+                  '\n📢 До 3 анкет' +
+                  '\n📸 Безлимит фото' +
+                  '\n📌 3 закрепления' +
+                  '\n\nВключить сейчас?';
     if (tg && tg.showConfirm) {
         tg.showConfirm(pitch, (ok) => {
             if (ok) activatePremiumTrial7h();
         });
     } else {
-        if (confirm(pitch.replace(/\\n/g,'\\n'))) activatePremiumTrial7h();
+        if (confirm(pitch.replace(/\n/g,'\n'))) activatePremiumTrial7h();
     }
 }
 
