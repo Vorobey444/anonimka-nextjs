@@ -87,11 +87,20 @@ body {
     box-sizing: border-box; /* Учитываем padding в высоте */
 }
 
+/* CSS Version 7.0 - Вертикальный layout везде */
 .screen.active {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     flex-wrap: nowrap !important;
+    width: 100% !important;
+}
+
+/* ВСЕ экраны - строго вертикальный layout */
+.screen.active > * {
+    width: 100% !important;
+    max-width: 400px !important;
+    flex-shrink: 0 !important;
 }
 
 /* Главное меню - всегда вертикальный layout */
@@ -99,9 +108,9 @@ body {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    max-width: 500px;
-    margin: 0 auto;
-    width: 100%;
+    max-width: 500px !important;
+    margin: 0 auto !important;
+    width: 100% !important;
 }
 
 #mainMenu .header,
@@ -109,6 +118,18 @@ body {
     width: 100% !important;
     max-width: 400px !important;
     flex-shrink: 0 !important;
+}
+
+/* Кнопки меню - строго вертикально */
+.menu-buttons {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    width: 100% !important;
+}
+
+.menu-buttons > * {
+    width: 100% !important;
 }
 
 /* Убираем скролл если контент влезает */
@@ -688,8 +709,9 @@ h3 {
 }
 
 .menu-buttons {
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
     gap: 2px;
     max-width: 360px;
     margin: 0 auto;
@@ -702,6 +724,8 @@ h3 {
 @media (min-width: 600px) {
     .menu-buttons {
         max-width: 320px;
+        display: flex !important;
+        flex-direction: column !important;
     }
 }
 

@@ -531,4 +531,101 @@ function saveLocationAndContinue() {
     }
 }
 
+// Инициализация обработчиков кликов для кнопок стран
+function initLocationHandlers() {
+    console.log('📍 [LOCATION] Инициализация обработчиков кнопок стран');
+    
+    // Обработчики для кнопок выбора страны (setup-country)
+    document.querySelectorAll('.setup-country').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const country = this.dataset.country;
+            console.log('📍 [LOCATION] Клик по стране:', country);
+            
+            // Убираем active с других кнопок
+            document.querySelectorAll('.setup-country').forEach(b => b.classList.remove('active'));
+            // Добавляем active на текущую
+            this.classList.add('active');
+            
+            // Сохраняем выбор
+            setupSelectedCountry = country;
+            selectedCountry = country;
+            
+            // Показываем выбор региона
+            const regionSection = document.querySelector('.setup-region-selection');
+            if (regionSection) {
+                regionSection.style.display = 'block';
+            }
+            
+            // Загружаем регионы для страны
+            if (typeof loadRegionsForCountry === 'function') {
+                loadRegionsForCountry(country, 'setup');
+            }
+        });
+    });
+    
+    // Обработчики для кнопок в форме создания анкеты
+    document.querySelectorAll('.form-country').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const country = this.dataset.country;
+            console.log('📍 [LOCATION] Клик по стране (форма):', country);
+            
+            document.querySelectorAll('.form-country').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            selectedCountry = country;
+            
+            const regionSection = document.querySelector('.region-selection');
+            if (regionSection) {
+                regionSection.style.display = 'block';
+            }
+            
+            if (typeof loadRegionsForCountry === 'function') {
+                loadRegionsForCountry(country, 'form');
+            }
+        });
+    });
+    
+    // Обработчики для кнопок в фильтре
+    document.querySelectorAll('.filter-country').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const country = this.dataset.country;
+            console.log('📍 [LOCATION] Клик по стране (фильтр):', country);
+            
+            document.querySelectorAll('.filter-country').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            filterSelectedCountry = country;
+            
+            const regionSection = document.querySelector('.filter-region-selection');
+            if (regionSection) {
+                regionSection.style.display = 'block';
+            }
+            
+            if (typeof loadRegionsForCountry === 'function') {
+                loadRegionsForCountry(country, 'filter');
+            }
+        });
+    });
+    
+    console.log('✅ [LOCATION] Обработчики кнопок стран инициализированы');
+}
+
+// Запускаем инициализацию при загрузке DOM
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLocationHandlers);
+} else {
+    initLocationHandlers();
+}
+
+// Экспортируем функции в глобальную область
+window.initLocationHandlers = initLocationHandlers;
+window.selectCountry = selectCountry;
+window.selectRegion = selectRegion;
+window.selectCity = selectCity;
+window.saveUserLocation = saveUserLocation;
+window.getUserLocation = getUserLocation;
+window.showLocationSetup = showLocationSetup;
+window.showLocationChoiceScreen = showLocationChoiceScreen;
+window.saveLocationAndContinue = saveLocationAndContinue;
+
 console.log('✅ [LOCATION] Модуль локации инициализирован');
