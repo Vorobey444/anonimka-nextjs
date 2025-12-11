@@ -813,4 +813,40 @@ window.showWorldChatFAQ = showWorldChatFAQ;
 window.closeWorldChatFAQ = closeWorldChatFAQ;
 window.clickWorldChatNickname = clickWorldChatNickname;
 
+// Пожаловаться на пользователя из Мир чата
+async function reportUserFromWorldChat(nickname, userToken) {
+    closeWorldChatContextMenu();
+    
+    try {
+        // Получаем user_id через user_token из API
+        const response = await fetch(`/api/users/by-token?token=${userToken}`);
+        const data = await response.json();
+        
+        if (!data.success || !data.userId) {
+            tg.showAlert('Не удалось определить пользователя');
+            return;
+        }
+        
+        if (typeof window.currentReportData !== 'undefined') {
+            window.currentReportData = {
+                reportedUserId: data.userId,
+                reportedNickname: nickname,
+                reportType: 'message',
+                relatedAdId: null,
+                reason: null
+            };
+        }
+        
+        const reportModal = document.getElementById('reportModal');
+        if (reportModal) {
+            reportModal.style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Ошибка получения user_id:', error);
+        tg.showAlert('Не удалось определить пользователя');
+    }
+}
+
+window.reportUserFromWorldChat = reportUserFromWorldChat;
+
 console.log('✅ [WORLD-CHAT] Модуль мирового чата инициализирован');

@@ -2353,4 +2353,63 @@ function validateAgeRangeWithMessage() {
     return true;
 }
 
+/**
+ * Настройка обработчиков событий для формы создания анкеты
+ */
+function setupEventListeners() {
+    // Инициализируем систему локации
+    if (typeof initLocationSelector === 'function') {
+        initLocationSelector();
+    }
+    
+    // Кнопки выбора пола
+    document.querySelectorAll('.gender-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (typeof selectGender === 'function') {
+                selectGender(btn.dataset.gender);
+            }
+        });
+    });
+
+    // Кнопки выбора цели поиска
+    document.querySelectorAll('.target-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (typeof selectTarget === 'function') {
+                selectTarget(btn.dataset.target);
+            }
+        });
+    });
+
+    // Кнопки выбора цели знакомства
+    document.querySelectorAll('.goal-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (typeof selectGoal === 'function') {
+                selectGoal(btn.dataset.goal);
+            }
+        });
+    });
+
+    // Кнопки выбора телосложения
+    document.querySelectorAll('.body-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (typeof selectBody === 'function') {
+                selectBody(btn.dataset.body);
+            }
+        });
+    });
+
+    // Фильтры в просмотре анкет
+    document.querySelectorAll('.city-btn.filter').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (typeof handleCityFilter === 'function') {
+                handleCityFilter(this.dataset.city);
+            }
+        });
+    });
+    
+    console.log('✅ [ADS] setupEventListeners выполнен');
+}
+
+window.setupEventListeners = setupEventListeners;
+
 console.log('✅ [ADS] Модуль анкет инициализирован');
