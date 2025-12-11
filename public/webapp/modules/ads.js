@@ -62,6 +62,110 @@ function showCreateAd() {
     // Показываем первый шаг
     showScreen('createAd');
     updateFormStep(1);
+    
+    // Инициализируем обработчики формы
+    initFormHandlers();
+}
+
+/**
+ * Инициализация обработчиков для кнопок выбора в форме
+ */
+function initFormHandlers() {
+    // Кнопки выбора пола
+    document.querySelectorAll('.gender-btn').forEach(btn => {
+        btn.onclick = () => selectGender(btn.dataset.gender);
+    });
+
+    // Кнопки выбора цели поиска
+    document.querySelectorAll('.target-btn').forEach(btn => {
+        btn.onclick = () => selectTarget(btn.dataset.target);
+    });
+
+    // Кнопки выбора цели знакомства
+    document.querySelectorAll('.goal-btn').forEach(btn => {
+        btn.onclick = () => selectGoal(btn.dataset.goal);
+    });
+
+    // Кнопки выбора телосложения
+    document.querySelectorAll('.body-btn').forEach(btn => {
+        btn.onclick = () => selectBody(btn.dataset.body);
+    });
+
+    // Кнопки выбора ориентации
+    document.querySelectorAll('[data-orientation]').forEach(btn => {
+        btn.onclick = () => selectOrientation(btn.dataset.orientation);
+    });
+    
+    console.log('✅ [ADS] Обработчики формы инициализированы');
+}
+
+/**
+ * Выбор пола
+ */
+function selectGender(gender) {
+    document.querySelectorAll('.gender-btn').forEach(btn => btn.classList.remove('selected'));
+    const selected = document.querySelector(`[data-gender="${gender}"]`);
+    if (selected) selected.classList.add('selected');
+    formData.gender = gender;
+    console.log('👤 [ADS] Выбран пол:', gender);
+}
+
+/**
+ * Выбор цели поиска (кого ищет)
+ */
+function selectTarget(target) {
+    document.querySelectorAll('.target-btn').forEach(btn => btn.classList.remove('selected'));
+    const selected = document.querySelector(`[data-target="${target}"]`);
+    if (selected) selected.classList.add('selected');
+    formData.target = target;
+    console.log('🔍 [ADS] Выбрана цель:', target);
+}
+
+/**
+ * Выбор цели знакомства (множественный выбор)
+ */
+function selectGoal(goal) {
+    const btn = document.querySelector(`[data-goal="${goal}"]`);
+    if (!btn) return;
+    
+    // Переключаем выбор (toggle)
+    if (btn.classList.contains('selected')) {
+        btn.classList.remove('selected');
+        formData.goals = (formData.goals || []).filter(g => g !== goal);
+    } else {
+        btn.classList.add('selected');
+        formData.goals = formData.goals || [];
+        formData.goals.push(goal);
+    }
+    
+    formData.goal = (formData.goals || []).join(', ');
+    console.log('🎯 [ADS] Выбранные цели:', formData.goals);
+}
+
+/**
+ * Выбор телосложения
+ */
+function selectBody(body) {
+    document.querySelectorAll('[data-body]').forEach(btn => btn.classList.remove('selected'));
+    const selected = document.querySelector(`[data-body="${body}"]`);
+    if (selected) {
+        selected.classList.add('selected');
+        formData.body = body;
+        console.log('💪 [ADS] Выбрано телосложение:', body);
+    }
+}
+
+/**
+ * Выбор ориентации
+ */
+function selectOrientation(orientation) {
+    document.querySelectorAll('[data-orientation]').forEach(btn => btn.classList.remove('selected'));
+    const selected = document.querySelector(`[data-orientation="${orientation}"]`);
+    if (selected) {
+        selected.classList.add('selected');
+        formData.orientation = orientation;
+        console.log('🌈 [ADS] Выбрана ориентация:', orientation);
+    }
 }
 
 /**
@@ -937,5 +1041,11 @@ window.reportAd = reportAd;
 window.closeReportModal = closeReportModal;
 window.selectReportReason = selectReportReason;
 window.submitReport = submitReport;
+window.initFormHandlers = initFormHandlers;
+window.selectGender = selectGender;
+window.selectTarget = selectTarget;
+window.selectGoal = selectGoal;
+window.selectBody = selectBody;
+window.selectOrientation = selectOrientation;
 
 console.log('✅ [ADS] Модуль анкет инициализирован');
