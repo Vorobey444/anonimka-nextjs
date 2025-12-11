@@ -34,6 +34,10 @@ const isTelegramWebApp = !!(
     typeof window.Telegram.WebApp.ready === 'function'
 );
 
+// Экспортируем tg и isTelegramWebApp глобально
+window.tg = tg;
+window.isTelegramWebApp = isTelegramWebApp;
+
 // Проверка поддержки emoji флагов
 function checkEmojiFlagSupport() {
     const canvas = document.createElement('canvas');

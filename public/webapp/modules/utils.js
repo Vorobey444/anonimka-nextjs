@@ -2,6 +2,222 @@
  * Модуль утилит и вспомогательных функций
  */
 
+// ============ КРИТИЧЕСКИЕ ОБЁРТКИ ДЛЯ tg.showAlert / tg.showConfirm ============
+// Сохраняем оригинальные методы ПЕРЕД переопределением
+const originalAlert = window.alert;
+const originalConfirm = window.confirm;
+const originalPrompt = window.prompt;
+
+// Проверяем наличие tg и сохраняем оригинальные методы
+const tgExists = typeof window !== 'undefined' && window.Telegram?.WebApp;
+const originalShowAlert = tgExists && window.Telegram.WebApp.showAlert ? 
+    window.Telegram.WebApp.showAlert.bind(window.Telegram.WebApp) : null;
+const originalShowPopup = tgExists && window.Telegram.WebApp.showPopup ? 
+    window.Telegram.WebApp.showPopup.bind(window.Telegram.WebApp) : null;
+const originalShowConfirm = tgExists && window.Telegram.WebApp.showConfirm ? 
+    window.Telegram.WebApp.showConfirm.bind(window.Telegram.WebApp) : null;
+
+/**
+ * Проверка - запущено ли приложение в реальном Telegram
+ */
+function isRealTelegramEnv() {
+    return !!(
+        window.Telegram?.WebApp?.platform && 
+        window.Telegram.WebApp.platform !== 'unknown' &&
+        window.Telegram.WebApp.initData
+    );
+}
+
+/**
+ * Показать кастомный alert (модальное окно)
+ */
+function showCustomAlert(message, callback) {
+    const modal = document.getElementById('customAlertModal');
+    const messageEl = document.getElementById('customAlertMessage');
+    const btn = document.getElementById('customAlertBtn');
+    
+    if (modal && messageEl && btn) {
+        messageEl.textContent = message;
+        modal.style.display = 'flex';
+        
+        // Удаляем предыдущие обработчики
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        // Добавляем новый обработчик
+        newBtn.onclick = function() {
+            modal.style.display = 'none';
+            if (callback) setTimeout(callback, 0);
+        };
+    } else {
+        // Используем оригинальный alert вместо переопределённого
+        originalAlert.call(window, message);
+        if (callback) setTimeout(callback, 0);
+    }
+}
+
+/**
+ * Показать кастомный confirm (модальное окно)
+ */
+function showCustomConfirm(message, callback) {
+    const modal = document.getElementById('customConfirmModal');
+    const messageEl = document.getElementById('customConfirmMessage');
+    const yesBtn = document.getElementById('customConfirmYes');
+    const noBtn = document.getElementById('customConfirmNo');
+    
+    if (modal && messageEl && yesBtn && noBtn) {
+        messageEl.textContent = message;
+        modal.style.display = 'flex';
+        
+        // Сохраняем callback
+        modal._confirmCallback = callback;
+        
+        // Удаляем предыдущие обработчики
+        const newYesBtn = yesBtn.cloneNode(true);
+        const newNoBtn = noBtn.cloneNode(true);
+        yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+        noBtn.parentNode.replaceChild(newNoBtn, noBtn);
+        
+        // Добавляем новые обработчики
+        newYesBtn.onclick = function() {
+            modal.style.display = 'none';
+            if (callback) setTimeout(() => callback(true), 0);
+        };
+        
+        newNoBtn.onclick = function() {
+            modal.style.display = 'none';
+            if (callback) setTimeout(() => callback(false), 0);
+        };
+    } else {
+        const result = confirm(message);
+        if (callback) setTimeout(() => callback(result), 0);
+    }
+}
+
+/**
+ * Показать кастомный prompt (модальное окно)
+ */
+function showCustomPrompt(message, callback) {
+    const modal = document.getElementById('customPromptModal');
+    const messageEl = document.getElementById('customPromptMessage');
+    const input = document.getElementById('customPromptInput');
+    const okBtn = document.getElementById('customPromptOk');
+    const cancelBtn = document.getElementById('customPromptCancel');
+    
+    if (modal && messageEl && input && okBtn && cancelBtn) {
+        messageEl.textContent = message;
+        input.value = '';
+        modal.style.display = 'flex';
+        setTimeout(() => input.focus(), 100);
+        
+        // Удаляем предыдущие обработчики
+        const newOkBtn = okBtn.cloneNode(true);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        
+        // Добавляем новые обработчики
+        newOkBtn.onclick = function() {
+            const value = input.value;
+            modal.style.display = 'none';
+            if (callback) setTimeout(() => callback(value), 0);
+        };
+        
+        newCancelBtn.onclick = function() {
+            modal.style.display = 'none';
+            if (callback) setTimeout(() => callback(null), 0);
+        };
+        
+        // Enter для отправки
+        input.onkeydown = function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                newOkBtn.click();
+            }
+        };
+    } else {
+        const result = prompt(message);
+        if (callback) setTimeout(() => callback(result), 0);
+    }
+}
+
+// ============ ПЕРЕОПРЕДЕЛЕНИЕ tg МЕТОДОВ ============
+// Расширяем объект tg если он существует, или создаём заглушку
+if (typeof window !== 'undefined') {
+    // Если tg не существует (не Telegram), создаём заглушку
+    if (typeof window.tg === 'undefined' && typeof tg === 'undefined') {
+        window.tg = window.Telegram?.WebApp || {
+            expand: () => {},
+            setHeaderColor: () => {},
+            setBackgroundColor: () => {},
+            MainButton: { setText: () => {}, onClick: () => {}, show: () => {}, hide: () => {} },
+            BackButton: { onClick: () => {}, show: () => {}, hide: () => {} },
+            initDataUnsafe: { user: null },
+            ready: () => {},
+            close: () => {},
+            showAlert: showCustomAlert,
+            showConfirm: showCustomConfirm,
+            showPopup: function(params, callback) {
+                const message = params.message || params.title || 'Уведомление';
+                showCustomAlert(message, callback);
+            }
+        };
+    }
+    
+    // Используем window.tg для переопределения методов
+    const tgRef = window.tg || tg;
+    
+    // Переопределяем tg.showAlert
+    if (tgRef) {
+        tgRef.showAlert = function(message, callback) {
+            if (isRealTelegramEnv() && originalShowAlert) {
+                try {
+                    originalShowAlert(message, callback);
+                    return;
+                } catch (e) {
+                    console.warn('showAlert failed:', e.message);
+                }
+            }
+            showCustomAlert(message, callback);
+        };
+        
+        // Переопределяем tg.showConfirm
+        tgRef.showConfirm = function(message, callback) {
+            if (isRealTelegramEnv() && originalShowConfirm) {
+                try {
+                    originalShowConfirm(message, callback);
+                    return;
+                } catch (e) {
+                    console.warn('showConfirm failed:', e.message);
+                }
+            }
+            showCustomConfirm(message, callback);
+        };
+        
+        // Переопределяем tg.showPopup
+        tgRef.showPopup = function(params, callback) {
+            const version = parseFloat(tgRef.version || '6.0');
+            if (isRealTelegramEnv() && version >= 6.2 && originalShowPopup) {
+                try {
+                    originalShowPopup(params, callback);
+                    return;
+                } catch (e) {
+                    console.warn('showPopup failed:', e.message);
+                }
+            }
+            const message = params.message || params.title || 'Уведомление';
+            showCustomAlert(message, callback);
+        };
+        
+        // Убеждаемся что window.tg указывает на наш объект
+        window.tg = tgRef;
+    }
+}
+
+console.log('🛠️ [UTILS] Обёртки tg.showAlert/showConfirm инициализированы');
+
+// ============ БАЗОВЫЕ УТИЛИТЫ ============
+
 /**
  * Функция для хеширования чувствительных данных в логах
  */
