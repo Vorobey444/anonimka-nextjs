@@ -1192,8 +1192,7 @@ async function sendAdminNotification() {
  * ===== АДМИНСКИЕ ФУНКЦИИ =====
  */
 
-// Переменные для статуса админа
-let isAdminUser = false;
+// Используем isAdminUser из admin.js через window.isAdminUser
 let adminCheckCompleted = false;
 
 /**
@@ -1222,7 +1221,7 @@ async function loadSiteStats() {
                 try {
                     const userStatusResponse = await fetch(`/api/users?action=check-admin&user_id=${userId}`);
                     const userStatusData = await userStatusResponse.json();
-                    isAdminUser = userStatusData.is_admin === true;
+                    window.isAdminUser = userStatusData.is_admin === true;
                 } catch (err) {
                     console.error('[ADMIN STATS] Ошибка проверки статуса админа:', err);
                 }
@@ -1230,7 +1229,7 @@ async function loadSiteStats() {
                 try {
                     const userStatusResponse = await fetch(`/api/users?action=check-admin&userToken=${userToken}`);
                     const userStatusData = await userStatusResponse.json();
-                    isAdminUser = userStatusData.is_admin === true;
+                    window.isAdminUser = userStatusData.is_admin === true;
                 } catch (err) {
                     console.error('[ADMIN STATS] Ошибка проверки статуса админа по токену:', err);
                 }
@@ -1241,16 +1240,16 @@ async function loadSiteStats() {
             // Скрываем/показываем элементы админа
             const adminStatsEl = document.getElementById('adminStats');
             if (adminStatsEl) {
-                adminStatsEl.style.display = isAdminUser ? 'flex' : 'none';
+                adminStatsEl.style.display = window.isAdminUser ? 'flex' : 'none';
             }
 
             const adminMenuItem = document.getElementById('adminMenuItem');
             if (adminMenuItem) {
-                adminMenuItem.style.display = isAdminUser ? 'flex' : 'none';
+                adminMenuItem.style.display = window.isAdminUser ? 'flex' : 'none';
             }
         }
         
-        if (!isAdminUser) return;
+        if (!window.isAdminUser) return;
         
         const response = await fetch('/api/analytics?metric=all');
         const data = await response.json();
@@ -1286,7 +1285,7 @@ async function loadSiteStats() {
 function startStatsAutoUpdate() {
     loadSiteStats();
     setInterval(() => {
-        if (isAdminUser) {
+        if (window.isAdminUser) {
             loadSiteStats();
         }
     }, 10000);
