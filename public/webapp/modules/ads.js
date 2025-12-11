@@ -106,6 +106,30 @@ function handleCityFilter(city) {
 }
 
 /**
+ * Загрузить анкеты по локации (страна, регион, город)
+ */
+function loadAdsByLocation(country, region, city) {
+    try {
+        console.log('🌍 Запрос анкет по локации:', {country, region, city});
+        
+        // Формируем фильтры для загрузки
+        const filters = {};
+        if (country) filters.country = country;
+        if (city) filters.city = city;
+        
+        console.log('🔍 Итоговые фильтры для API:', filters);
+        
+        // Загружаем через наш API
+        if (typeof loadAds === 'function') {
+            loadAds(filters);
+        }
+        
+    } catch (error) {
+        console.error('❌ Ошибка загрузки анкет по локации:', error);
+    }
+}
+
+/**
  * Загрузить еще анкеты (пагинация)
  */
 function loadMoreAds() {
@@ -1581,6 +1605,7 @@ window.toggleAdsCompact = toggleAdsCompact;
 window.normalizeCity = normalizeCity;
 window.updateFormLocationDisplay = updateFormLocationDisplay;
 window.handleCityFilter = handleCityFilter;
+window.loadAdsByLocation = loadAdsByLocation;
 window.loadMoreAds = loadMoreAds;
 window.setupInfiniteScroll = setupInfiniteScroll;
 window.sendContactMessage = sendContactMessage;

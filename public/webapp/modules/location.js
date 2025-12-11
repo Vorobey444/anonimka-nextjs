@@ -987,6 +987,44 @@ function showManualLocationSetup() {
 }
 
 /**
+ * Сброс выбора локации для фильтра
+ */
+function resetFilterLocationSelection() {
+    filterSelectedCountry = null;
+    filterSelectedRegion = null;
+    filterSelectedCity = null;
+    
+    // Сбрасываем кнопки стран
+    document.querySelectorAll('.filter-country').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Очищаем поля ввода
+    const regionInput = document.querySelector('.filter-region-input');
+    const cityInput = document.querySelector('.filter-city-input');
+    if (regionInput) regionInput.value = '';
+    if (cityInput) cityInput.value = '';
+    
+    // Скрываем все секции кроме выбора страны
+    const regionSection = document.querySelector('.filter-region-selection');
+    const citySection = document.querySelector('.filter-city-selection');
+    const selectedLocation = document.querySelector('.filter-selected-location');
+    
+    if (regionSection) regionSection.style.display = 'none';
+    if (citySection) citySection.style.display = 'none';
+    if (selectedLocation) selectedLocation.style.display = 'none';
+    
+    hideAllSuggestions();
+    
+    // Загружаем все анкеты
+    if (typeof loadAds === 'function') {
+        loadAds();
+    }
+    
+    console.log('📍 [LOCATION] Выбор локации фильтра сброшен');
+}
+
+/**
  * Показать настройку локации (общий экран)
  */
 function showLocationSetup() {
@@ -1026,6 +1064,91 @@ function saveLocationAndContinue() {
 /**
  * ===== ФУНКЦИИ ДЛЯ НАСТРОЙКИ ЛОКАЦИИ (SETUP) =====
  */
+
+/**
+ * Выбор страны в настройке
+ */
+function selectSetupCountry(countryCode) {
+    setupSelectedCountry = countryCode;
+    setupSelectedRegion = null;
+    setupSelectedCity = null;
+    
+    // Обновляем кнопки
+    document.querySelectorAll('.setup-country').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    const activeBtn = document.querySelector(`[data-country="${countryCode}"].setup-country`);
+    if (activeBtn) activeBtn.classList.add('active');
+    
+    // Пропускаем выбор региона, сразу показываем города
+    // Собираем все города из всех регионов страны
+    const allCities = [];
+    if (locationData && locationData[countryCode] && locationData[countryCode].regions) {
+        const regions = locationData[countryCode].regions;
+        Object.keys(regions).forEach(regionName => {
+            allCities.push(...regions[regionName]);
+        });
+    }
+    
+    // Показываем выбор города с анимацией
+    const citySection = document.querySelector('.setup-city-selection');
+    if (citySection) {
+        citySection.style.display = 'block';
+        setTimeout(() => {
+            citySection.style.opacity = '1';
+        }, 50);
+    }
+    
+    // Скрываем остальные секции
+    const selectedLocation = document.querySelector('.setup-selected-location');
+    if (selectedLocation) {
+        selectedLocation.style.display = 'none';
+    }
+    
+    // Очищаем поле города
+    const cityInput = document.querySelector('.setup-city-input');
+    if (cityInput) cityInput.value = '';
+    
+    // Сохраняем список всех городов для фильтрации
+    window.setupAllCities = allCities;
+    
+    console.log('📍 [LOCATION] Выбрана страна для настройки:', locationData[countryCode]?.name);
+    console.log('📍 [LOCATION] Доступно городов:', allCities.length);
+    
+    // Показываем все доступные города
+    setTimeout(() => {
+        showAllSetupCities();
+    }, 100);
+}
+
+/**
+ * Сброс настройки локации
+ */
+function resetSetupLocation() {
+    setupSelectedCountry = null;
+    setupSelectedRegion = null;
+    setupSelectedCity = null;
+    
+    // Сбрасываем кнопки стран
+    document.querySelectorAll('.setup-country').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Очищаем поля ввода (с проверкой на существование)
+    const cityInput = document.querySelector('.setup-city-input');
+    if (cityInput) cityInput.value = '';
+    
+    // Скрываем все секции кроме выбора страны (с проверкой на существование)
+    const citySection = document.querySelector('.setup-city-selection');
+    const selectedLocation = document.querySelector('.setup-selected-location');
+    
+    if (citySection) citySection.style.display = 'none';
+    if (selectedLocation) selectedLocation.style.display = 'none';
+    
+    hideAllSuggestions();
+    
+    console.log('📍 [LOCATION] Настройка локации сброшена');
+}
 
 /**
  * Обработка ввода города в настройке
@@ -1384,6 +1507,8 @@ window.handleSetupCityInput = handleSetupCityInput;
 window.showSetupCitySuggestions = showSetupCitySuggestions;
 window.selectSetupCity = selectSetupCity;
 window.showAllSetupCities = showAllSetupCities;
+window.selectSetupCountry = selectSetupCountry;
+window.resetSetupLocation = resetSetupLocation;
 window.saveSetupLocation = saveSetupLocation;
 window.autoDetectLocation = autoDetectLocation;
 window.autoDetectLocationAsync = autoDetectLocationAsync;
@@ -1396,6 +1521,7 @@ window.confirmDetectedLocation = confirmDetectedLocation;
 window.updateLocationDisplay = updateLocationDisplay;
 window.showAutoLocationDetection = showAutoLocationDetection;
 window.showManualLocationSetup = showManualLocationSetup;
+window.resetFilterLocationSelection = resetFilterLocationSelection;
 window.handleNoLocation = handleNoLocation;
 window.detectLocationByGPS = detectLocationByGPS;
 window.detectLocationByIP = detectLocationByIP;

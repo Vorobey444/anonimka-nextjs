@@ -350,6 +350,138 @@ async function uploadPhotoToTelegram(file, userId) {
     }
 }
 
+/**
+ * Загрузить Email Service
+ */
+async function loadEmailService() {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = './email-service.js';
+        script.onload = () => {
+            console.log('✅ Email Service загружен');
+            resolve();
+        };
+        script.onerror = () => {
+            console.error('❌ Ошибка загрузки Email Service');
+            reject(new Error('Failed to load Email Service'));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+/**
+ * Отправка письма на бэкенд
+ */
+async function sendEmailToBackend(emailData) {
+    try {
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        console.log('Текущий хост:', window.location.hostname);
+        console.log('Это localhost?', isLocalhost);
+        
+        // Для локального тестирования используем Yandex Email сервер
+        if (isLocalhost) {
+            const backendUrl = 'http://localhost:5000/send-email';
+            console.log('📧 Отправляем через Yandex SMTP сервер:', backendUrl);
+            
+            const response = await fetch(backendUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(emailData)
+            });
+            
+            if (!response.ok) {
+                console.error('❌ Ошибка HTTP:', response.status, response.statusText);
+                const errorText = await response.text();
+                console.error('Детали ошибки:', errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            
+            const result = await response.json();
+            console.log('✅ Успешная отправка через Yandex:', result);
+            return result;
+        }
+        
+        // Для продакшена используем простую отправку
+        console.log('📧 Продакшен: отправляем...');
+        
+        if (typeof window.sendEmailWhishStyle === 'undefined') {
+            console.log('Загружаем Email Service...');
+            await loadEmailService();
+        }
+
+        return window.sendEmailWhishStyle(emailData);
+    } catch (error) {
+        console.log('Бэкенд недоступен, используем альтернативный способ');
+        console.error('Ошибка при отправке на бэкенд:', error);
+        
+        return await sendEmailViaTelegram(emailData);
+    }
+}
+
+/**
+ * Альтернативная отправка через Telegram бота или mailto
+ */
+async function sendEmailViaTelegram(emailData) {
+    try {
+        if (typeof tg !== 'undefined' && tg && tg.sendData) {
+            console.log('Отправляем через Telegram Web App');
+            tg.sendData(JSON.stringify({
+                action: 'sendEmail',
+                data: {
+                    senderEmail: emailData.senderEmail,
+                    subject: emailData.subject,
+                    message: emailData.message
+                }
+            }));
+            
+            return {
+                success: true,
+                message: 'Сообщение отправлено через Telegram бота'
+            };
+        } else {
+            console.log('Telegram Web App недоступен, используем mailto');
+            return sendEmailViaMailto(emailData);
+        }
+    } catch (error) {
+        console.error('Ошибка Telegram отправки:', error);
+        return sendEmailViaMailto(emailData);
+    }
+}
+
+/**
+ * Отправка через стандартный mailto
+ */
+async function sendEmailViaMailto(emailData) {
+    try {
+        const subject = encodeURIComponent(`[anonimka.online] ${emailData.subject}`);
+        const body = encodeURIComponent(`От: ${emailData.senderEmail}
+Сообщение с сайта anonimka.online
+
+${emailData.message}
+
+---
+Пожалуйста, отвечайте на адрес: ${emailData.senderEmail}
+Время отправки: ${new Date().toLocaleString('ru-RU')}`);
+
+        const mailtoLink = `mailto:aleksey@vorobey444.ru?subject=${subject}&body=${body}`;
+        
+        window.open(mailtoLink, '_blank');
+        
+        return {
+            success: true,
+            message: 'Открыт почтовый клиент для отправки.'
+        };
+    } catch (error) {
+        console.error('Ошибка mailto:', error);
+        return {
+            success: false,
+            error: 'Не удалось открыть почтовый клиент.'
+        };
+    }
+}
+
 // Экспорт функций для onclick
 window.hashSensitiveData = hashSensitiveData;
 window.safeLog = safeLog;
@@ -365,5 +497,9 @@ window.formatSingleGoal = formatSingleGoal;
 window.formatOrientation = formatOrientation;
 window.convertHeicToJpeg = convertHeicToJpeg;
 window.uploadPhotoToTelegram = uploadPhotoToTelegram;
+window.loadEmailService = loadEmailService;
+window.sendEmailToBackend = sendEmailToBackend;
+window.sendEmailViaTelegram = sendEmailViaTelegram;
+window.sendEmailViaMailto = sendEmailViaMailto;
 
 console.log('✅ Модуль утилит инициализирован');

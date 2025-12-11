@@ -546,6 +546,222 @@ function checkOnboarding() {
     return true;
 }
 
+/**
+ * Показать экран редактирования никнейма
+ */
+function showNicknameEditorScreen() {
+    if (typeof closeHamburgerMenu === 'function') closeHamburgerMenu();
+    if (typeof showScreen === 'function') showScreen('nicknameEditScreen');
+    
+    const currentNicknameDisplay = document.getElementById('currentNicknameDisplay');
+    const nicknameInputPage = document.getElementById('nicknameInputPage');
+    const savedNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname') || 'Аноним';
+    
+    console.log('📝 [ONBOARDING] Показываем редактор никнейма, текущий:', savedNickname);
+    
+    if (currentNicknameDisplay) {
+        currentNicknameDisplay.textContent = savedNickname;
+    }
+    
+    if (nicknameInputPage) {
+        nicknameInputPage.value = savedNickname;
+        setTimeout(() => nicknameInputPage.focus(), 300);
+    }
+    
+    // Показываем подсказку для пользователей с автоматическим никнеймом
+    const anonymousUserHint = document.getElementById('anonymousUserHint');
+    if (anonymousUserHint) {
+        const isAnonymousNickname = savedNickname.startsWith('Аноним');
+        anonymousUserHint.style.display = isAnonymousNickname ? 'block' : 'none';
+    }
+    
+    updateTelegramNameButton();
+}
+
+/**
+ * Обновить текст кнопки с именем из Telegram
+ */
+function updateTelegramNameButton() {
+    let telegramName = 'Аноним';
+    
+    if (typeof isTelegramWebApp !== 'undefined' && isTelegramWebApp && tg?.initDataUnsafe?.user) {
+        const user = tg.initDataUnsafe.user;
+        telegramName = user.first_name || user.username || 'Аноним';
+    } else {
+        const savedUser = localStorage.getItem('telegram_user');
+        if (savedUser) {
+            try {
+                const user = JSON.parse(savedUser);
+                telegramName = user.first_name || user.username || 'Аноним';
+            } catch (e) {
+                console.error('Ошибка парсинга данных пользователя:', e);
+            }
+        }
+    }
+}
+
+/**
+ * Сохранить никнейм со страницы редактирования
+ */
+async function saveNicknamePage() {
+    const nicknameInputPage = document.getElementById('nicknameInputPage');
+    
+    if (!nicknameInputPage) return;
+    
+    let nickname = nicknameInputPage.value.trim();
+    
+    if (!nickname) {
+        if (typeof tg !== 'undefined' && tg?.showAlert) {
+            tg.showAlert('❌ Никнейм не может быть пустым');
+        } else {
+            alert('❌ Никнейм не может быть пустым');
+        }
+        return;
+    }
+    
+    // Получаем tgId или используем фиктивный для email пользователей
+    let tgIdAuth = null;
+    const userToken = localStorage.getItem('user_token');
+    const authMethod = localStorage.getItem('auth_method');
+    const isAndroid = navigator.userAgent.includes('Android');
+    
+    if (authMethod === 'email' || (isAndroid && userToken)) {
+        tgIdAuth = 99999999;
+        console.log('📱 [ONBOARDING] Email/Android user, using fake tgId');
+    } else if (typeof isTelegramWebApp !== 'undefined' && isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+        tgIdAuth = Number(window.Telegram.WebApp.initDataUnsafe.user.id);
+    } else {
+        const savedUserJson = localStorage.getItem('telegram_user');
+        if (savedUserJson) {
+            try {
+                const u = JSON.parse(savedUserJson);
+                if (u?.id) tgIdAuth = Number(u.id);
+            } catch (e) {}
+        }
+    }
+
+    if (!tgIdAuth) {
+        if (typeof tg !== 'undefined' && tg?.showAlert) {
+            tg.showAlert('❌ Не удалось получить данные авторизации');
+        } else {
+            alert('❌ Не удалось получить данные авторизации');
+        }
+        return;
+    }
+
+    try {
+        const payload = { 
+            tgId: tgIdAuth, 
+            nickname: nickname 
+        };
+        
+        if (userToken) {
+            payload.userToken = userToken;
+        }
+        
+        const response = await fetch('/api/nickname', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            let errorMessage = result.error || 'Неизвестная ошибка';
+            
+            if (result.code === 'NICKNAME_LOCKED_FREE') {
+                errorMessage = '🔒 Вы уже использовали бесплатную смену никнейма.\n\n💎 Обновитесь до PRO чтобы менять никнейм неограниченно (раз в сутки)!';
+            } else if (result.code === 'NICKNAME_COOLDOWN') {
+                const hours = result.hoursRemaining || 24;
+                errorMessage = `⏳ PRO пользователи могут менять никнейм раз в 24 часа.\n\nПопробуйте через ${hours} ч.`;
+            } else if (result.code === 'NICKNAME_TAKEN') {
+                errorMessage = '❌ Этот никнейм уже занят. Выберите другой.';
+            } else if (result.code === 'INVALID_NICKNAME') {
+                errorMessage = '❌ Никнейм может содержать только буквы (рус/eng), цифры, _ и -\n\nПробелы запрещены!';
+            }
+
+            if (typeof tg !== 'undefined' && tg?.showAlert) {
+                tg.showAlert(errorMessage);
+            } else {
+                alert(errorMessage);
+            }
+            return;
+        }
+
+        // Успешно сохранено
+        localStorage.setItem('user_nickname', nickname);
+        localStorage.setItem('userNickname', nickname);
+        console.log('✅ [ONBOARDING] Никнейм сохранён:', nickname);
+
+        // Обновляем nickname во всех анкетах
+        const userId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
+
+        if (userId || userToken || tgIdAuth) {
+            try {
+                const adsPayload = {
+                    action: 'update-all-nicknames',
+                    nickname: nickname
+                };
+                if (userToken && userToken !== 'null' && userToken !== 'undefined') {
+                    adsPayload.userToken = userToken;
+                }
+                if (typeof tgIdAuth === 'number' && Number.isFinite(tgIdAuth)) {
+                    adsPayload.tgId = tgIdAuth;
+                } else if (userId && !isNaN(Number(userId))) {
+                    adsPayload.tgId = Number(userId);
+                }
+
+                const adsResponse = await fetch('/api/ads', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(adsPayload)
+                });
+                const adsResult = await adsResponse.json();
+                if (adsResult.success) {
+                    console.log('✅ [ONBOARDING] Никнейм обновлен в анкетах:', adsResult.count);
+                }
+            } catch (error) {
+                console.error('[ONBOARDING] Ошибка обновления никнейма в анкетах:', error);
+            }
+        }
+        
+        // Показываем уведомление и возвращаемся на главную
+        if (typeof tg !== 'undefined' && tg?.showPopup) {
+            tg.showPopup({
+                title: '✅ Сохранено',
+                message: `Ваш ${result.isFirstTime ? '' : 'новый '}псевдоним: "${nickname}"`,
+                buttons: [{ type: 'ok' }]
+            });
+        }
+        
+        setTimeout(() => {
+            if (typeof showMainMenu === 'function') showMainMenu();
+        }, 300);
+    } catch (error) {
+        console.error('[ONBOARDING] Ошибка сохранения никнейма:', error);
+        if (typeof tg !== 'undefined' && tg?.showAlert) {
+            tg.showAlert('❌ Ошибка сохранения никнейма');
+        } else {
+            alert('❌ Ошибка сохранения никнейма');
+        }
+    }
+}
+
+/**
+ * Показать редактор никнейма (старая версия)
+ */
+function showNicknameEditor() {
+    showNicknameEditorScreen();
+}
+
+/**
+ * Сохранить никнейм (старая версия)
+ */
+function saveNickname() {
+    saveNicknamePage();
+}
+
 // Экспорт функций для onclick
 window.showOnboardingScreen = showOnboardingScreen;
 window.hideOnboardingScreen = hideOnboardingScreen;
@@ -568,5 +784,10 @@ window.completeOnboarding = completeOnboarding;
 window.checkOnboarding = checkOnboarding;
 window.showNicknameStatus = showNicknameStatus;
 window.updateContinueButton = updateContinueButton;
+window.showNicknameEditorScreen = showNicknameEditorScreen;
+window.updateTelegramNameButton = updateTelegramNameButton;
+window.saveNicknamePage = saveNicknamePage;
+window.showNicknameEditor = showNicknameEditor;
+window.saveNickname = saveNickname;
 
 console.log('✅ [ONBOARDING] Модуль онбординга загружен');
