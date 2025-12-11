@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-11T20:04:20.219Z
+ * Автоматически сгенерирован: 2025-12-11T20:07:45.566Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -7720,7 +7720,7 @@ console.log('✅ [ADMIN] Модуль админ-панели инициализ
 } catch(e) { console.error('❌ Ошибка в модуле admin.js:', e); }
 })();
 
-// ========== location.js (91.8 KB) ==========
+// ========== location.js (95.7 KB) ==========
 (function() {
 try {
 /**
@@ -8368,6 +8368,52 @@ function processIPLocation(data) {
  * Показать результат определения локации
  */
 function showDetectedLocationResult(detectedLocation) {
+    console.log('📍 [LOCATION] showDetectedLocationResult вызвана:', detectedLocation);
+    
+    // Проверяем какой экран активен
+    const autoDetectionScreen = document.getElementById('autoLocationDetection');
+    const isAutoDetectionActive = autoDetectionScreen && autoDetectionScreen.classList.contains('active');
+    
+    if (isAutoDetectionActive) {
+        // Показываем результат на экране автоопределения
+        const detectionAnimation = autoDetectionScreen.querySelector('.detection-animation');
+        const detectionResult = autoDetectionScreen.querySelector('.detection-result');
+        
+        if (detectionAnimation) detectionAnimation.style.display = 'none';
+        
+        if (detectionResult && locationData[detectedLocation.country]) {
+            const countryData = locationData[detectedLocation.country];
+            const flag = countryData.flag;
+            
+            const locationText = detectedLocation.region === detectedLocation.city 
+                ? detectedLocation.city 
+                : `${detectedLocation.region}, ${detectedLocation.city}`;
+            
+            detectionResult.innerHTML = `
+                <div class="detected-location" style="text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">✨</div>
+                    <h3 style="color: var(--neon-cyan); margin-bottom: 15px; font-size: 1.3rem;">Мы определили вашу локацию</h3>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">
+                        <span style="font-size: 2rem;">${flag}</span>
+                        <span style="font-size: 1.2rem; color: #fff;">${locationText}</span>
+                    </div>
+                    <p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 25px;">⚠️ Если неверно, выберите вручную ниже</p>
+                    <div style="display: flex; flex-direction: column; gap: 12px; max-width: 300px; margin: 0 auto;">
+                        <button class="neon-button primary" onclick="confirmDetectedLocation('${detectedLocation.country}', '${detectedLocation.region.replace(/'/g, "\\'")}', '${detectedLocation.city.replace(/'/g, "\\'")}')">
+                            ✅ Да, всё верно
+                        </button>
+                        <button class="neon-button secondary" onclick="showManualLocationSetup()">
+                            🎯 Выбрать вручную
+                        </button>
+                    </div>
+                </div>
+            `;
+            detectionResult.style.display = 'block';
+        }
+        return;
+    }
+    
+    // Fallback - показываем на экране locationSetup
     const selectedDiv = document.querySelector('.setup-selected-location');
     const citySelection = document.querySelector('.setup-city-selection');
     
@@ -8394,7 +8440,7 @@ function showDetectedLocationResult(detectedLocation) {
             </div>
             <p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 20px;">⚠️ Если неверно, выберите вручную ниже</p>
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="neon-button primary" onclick="confirmDetectedLocation('${detectedLocation.country}', '${detectedLocation.region}', '${detectedLocation.city}')">
+                <button class="neon-button primary" onclick="confirmDetectedLocation('${detectedLocation.country}', '${detectedLocation.region.replace(/'/g, "\\'")}', '${detectedLocation.city.replace(/'/g, "\\'")}')">
                     ✅ Да, всё верно
                 </button>
                 <button class="neon-button secondary" onclick="showManualLocationSetup()">
@@ -8411,40 +8457,59 @@ function showDetectedLocationResult(detectedLocation) {
  * Показать популярные локации при неудаче автоопределения
  */
 function showPopularLocations() {
+    console.log('📍 [LOCATION] showPopularLocations вызвана');
+    
+    const popularHTML = `
+        <div class="popular-locations" style="text-align: center;">
+            <div style="font-size: 2.5rem; margin-bottom: 15px;">😕</div>
+            <h3 style="color: var(--neon-cyan); margin-bottom: 15px; font-size: 1.2rem;">Выберите ваш город</h3>
+            <p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 20px;">Не удалось определить автоматически</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; max-width: 300px; margin-left: auto; margin-right: auto;">
+                <button class="neon-button secondary" onclick="selectPopularLocation('RU', 'Москва', 'Москва')" style="font-size: 0.9rem;">
+                    🇷🇺 Москва
+                </button>
+                <button class="neon-button secondary" onclick="selectPopularLocation('RU', 'Санкт-Петербург', 'Санкт-Петербург')" style="font-size: 0.9rem;">
+                    🇷🇺 СПб
+                </button>
+                <button class="neon-button secondary" onclick="selectPopularLocation('KZ', 'Алматинская область', 'Алматы')" style="font-size: 0.9rem;">
+                    🇰🇿 Алматы
+                </button>
+                <button class="neon-button secondary" onclick="selectPopularLocation('KZ', 'Астана', 'Астана')" style="font-size: 0.9rem;">
+                    🇰🇿 Астана
+                </button>
+            </div>
+            
+            <button class="neon-button primary" onclick="showManualLocationSetup()" style="width: 100%; max-width: 300px;">
+                🎯 Выбрать другой город
+            </button>
+        </div>
+    `;
+    
+    // Проверяем какой экран активен
+    const autoDetectionScreen = document.getElementById('autoLocationDetection');
+    const isAutoDetectionActive = autoDetectionScreen && autoDetectionScreen.classList.contains('active');
+    
+    if (isAutoDetectionActive) {
+        const detectionAnimation = autoDetectionScreen.querySelector('.detection-animation');
+        const detectionResult = autoDetectionScreen.querySelector('.detection-result');
+        
+        if (detectionAnimation) detectionAnimation.style.display = 'none';
+        if (detectionResult) {
+            detectionResult.innerHTML = popularHTML;
+            detectionResult.style.display = 'block';
+        }
+        return;
+    }
+    
+    // Fallback - показываем на экране locationSetup
     const selectedDiv = document.querySelector('.setup-selected-location');
     const citySelection = document.querySelector('.setup-city-selection');
     
     if (!selectedDiv) return;
     
     if (citySelection) citySelection.style.display = 'none';
-    
-    selectedDiv.innerHTML = `
-        <div class="popular-locations" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 10px;">🌍</div>
-            <h3 style="color: var(--neon-cyan); margin-bottom: 15px;">Выберите ваш город</h3>
-            <p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 15px;">Не удалось определить автоматически</p>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                <button class="neon-button secondary" onclick="selectPopularLocation('russia', 'Москва', 'Москва')" style="font-size: 0.9rem;">
-                    🇷🇺 Москва
-                </button>
-                <button class="neon-button secondary" onclick="selectPopularLocation('russia', 'Санкт-Петербург', 'Санкт-Петербург')" style="font-size: 0.9rem;">
-                    🇷🇺 СПб
-                </button>
-                <button class="neon-button secondary" onclick="selectPopularLocation('kazakhstan', 'Алматинская область', 'Алматы')" style="font-size: 0.9rem;">
-                    🇰🇿 Алматы
-                </button>
-                <button class="neon-button secondary" onclick="selectPopularLocation('kazakhstan', 'Астана', 'Астана')" style="font-size: 0.9rem;">
-                    🇰🇿 Астана
-                </button>
-            </div>
-            
-            <button class="neon-button primary" onclick="showManualLocationSetup()" style="width: 100%;">
-                🎯 Выбрать другой город
-            </button>
-        </div>
-    `;
-    
+    selectedDiv.innerHTML = popularHTML;
     selectedDiv.style.display = 'block';
 }
 
