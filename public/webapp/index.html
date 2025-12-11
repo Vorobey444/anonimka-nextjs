@@ -1016,6 +1016,14 @@
                     <!-- Галерея существующих фото -->
                     <div id="step9PhotoGallery" style="display: none; margin-bottom: 12px;"></div>
                     
+                    <!-- Превью загруженного фото -->
+                    <div id="adPhotoPreview" style="display: none; text-align: center; margin-bottom: 12px;">
+                        <img id="adPhotoImage" src="" alt="Фото анкеты" style="max-width: 200px; max-height: 200px; border-radius: 12px; border: 2px solid var(--neon-pink);">
+                        <button type="button" class="neon-button secondary" onclick="removeAdPhoto()" style="margin-top: 10px;">
+                            🗑️ Удалить фото
+                        </button>
+                    </div>
+                    
                     <button type="button" id="addAdPhotoBtn" class="neon-button primary full-width" onclick="addAdPhoto()" style="margin-bottom: 0;">
                         <span>📷 Выбрать фото</span>
                     </button>
