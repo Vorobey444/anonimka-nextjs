@@ -87,8 +87,8 @@
         </div>
 
         <!-- Выбор локации при первом запуске -->
-        <div id="locationSetup" class="screen">
-            <div class="header">
+        <div id="locationSetup" class="screen" style="display: none; flex-direction: column !important; align-items: center !important;">
+            <div class="header" style="width: 100%; max-width: 400px; text-align: center;">
                 <button class="back-btn" onclick="showMainMenu()" style="display: none;" id="locationBackBtn">← Назад</button>
                 <div class="logo">
                     <div class="neon-icon">🌍</div>
@@ -97,9 +97,9 @@
                 </div>
             </div>
             
-            <div class="location-setup-container">
+            <div class="location-setup-container" style="display: flex !important; flex-direction: column !important; align-items: center !important; width: 100%; max-width: 400px;">
                 <!-- Кнопка автоопределения -->
-                <div class="auto-location-section">
+                <div class="auto-location-section" style="width: 100%;">
                     <button class="neon-button primary full-width" onclick="autoDetectLocation()">
                         📍 Определить автоматически
                     </button>
@@ -107,7 +107,7 @@
                 </div>
 
                 <!-- Выбор страны -->
-                <div class="setup-country-selection">
+                <div class="setup-country-selection" style="width: 100%;">
                     <h3>Страна</h3>
                     <div class="country-buttons">
                         <button type="button" class="country-btn setup-country" data-country="russia">
@@ -191,8 +191,8 @@
         </div>
 
         <!-- Главное меню -->
-        <div id="mainMenu" class="screen">
-            <div class="header">
+        <div id="mainMenu" class="screen" style="display: none; flex-direction: column !important; align-items: center !important;">
+            <div class="header" style="width: 100%; max-width: 400px;">
                 <button class="hamburger-menu" onclick="toggleHamburgerMenu()">
                     <span class="hamburger-line"></span>
                     <span class="hamburger-line"></span>
@@ -231,8 +231,8 @@
                 </div>
             </div>
             
-            <div class="menu-buttons">
-                <div style="position: relative; display: inline-block; width: 100%;">
+            <div class="menu-buttons" style="display: flex !important; flex-direction: column !important; width: 100%; max-width: 400px;">
+                <div style="position: relative; width: 100%;">
                     <button class="neon-button primary" onclick="showCreateAd()" id="createAdBtn" style="width: 100%;">
                         <span class="icon">📝</span>
                         Создать анкету

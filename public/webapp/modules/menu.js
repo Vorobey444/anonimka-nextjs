@@ -36,13 +36,19 @@ function showScreen(screenId) {
     // Скрываем все экраны
     Object.values(screens).forEach(screen => {
         const el = document.getElementById(screen);
-        if (el) el.style.display = 'none';
+        if (el) {
+            el.style.display = 'none';
+            el.classList.remove('active');
+        }
     });
     
-    // Показываем нужный экран
+    // Показываем нужный экран с правильными стилями
     const screenEl = document.getElementById(screenId);
     if (screenEl) {
         screenEl.style.display = 'flex';
+        screenEl.style.flexDirection = 'column';
+        screenEl.style.alignItems = 'center';
+        screenEl.classList.add('active');
         currentScreen = screenId;
         
         // Логируем для дебага
