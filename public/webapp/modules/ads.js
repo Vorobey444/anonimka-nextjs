@@ -57,6 +57,90 @@ function normalizeCity(cityName) {
 }
 
 /**
+ * Форматирование пола для отображения
+ */
+function formatGender(gender) {
+    const genderMap = {
+        'male': 'Мужчина',
+        'female': 'Девушка',
+        'мужчина': 'Мужчина',
+        'девушка': 'Девушка',
+        'пара': 'Пара'
+    };
+    return genderMap[gender?.toLowerCase()] || gender || 'Не указан';
+}
+
+/**
+ * Форматирование цели поиска
+ */
+function formatTarget(target) {
+    const targetMap = {
+        'male': 'Мужчину',
+        'female': 'Девушку',
+        'any': 'Не важно',
+        'мужчину': 'Мужчину',
+        'девушку': 'Девушку',
+        'женщину': 'Девушку'
+    };
+    return targetMap[target?.toLowerCase()] || target || 'Не важно';
+}
+
+/**
+ * Форматирование целей общения (может быть несколько через запятую)
+ */
+function formatGoals(goals) {
+    if (!goals) return 'Не указано';
+    
+    const goalMap = {
+        'friendship': 'Дружба',
+        'relationship': 'Отношения',
+        'chat': 'Общение',
+        'other': 'Другое',
+        'дружба': 'Дружба',
+        'отношения': 'Отношения',
+        'общение': 'Общение',
+        'другое': 'Другое'
+    };
+    
+    // Если это массив
+    if (Array.isArray(goals)) {
+        return goals.map(g => goalMap[g?.toLowerCase()] || g).join(', ');
+    }
+    
+    // Если это строка с запятыми
+    if (typeof goals === 'string' && goals.includes(',')) {
+        return goals.split(',').map(g => {
+            g = g.trim();
+            return goalMap[g?.toLowerCase()] || g;
+        }).join(', ');
+    }
+    
+    // Одна цель
+    return goalMap[goals?.toLowerCase()] || goals;
+}
+
+/**
+ * Форматирование ориентации
+ */
+function formatOrientation(orientation) {
+    if (!orientation) return 'Не указано';
+    
+    const orientationMap = {
+        'hetero': 'Гетеро',
+        'gay': 'Гей / Лесбиянка',
+        'bi': 'Би',
+        'pan': 'Пансексуал',
+        'ace': 'Асексуал',
+        'demi': 'Демисексуал',
+        'queer': 'Квир',
+        'grey': 'Грейсексуал',
+        'sever': 'Север'
+    };
+    
+    return orientationMap[orientation?.toLowerCase()] || orientation;
+}
+
+/**
  * Обновить отображение локации в форме
  */
 function updateFormLocationDisplay() {
@@ -688,43 +772,247 @@ async function loadAds(filters = {}) {
 /**
  * Отобразить анкеты в UI
  */
-function displayAds(ads) {
-    const container = document.getElementById('adsList');
-    if (!container) return;
+function displayAds(ads, city = null) {
+    const adsList = document.getElementById('adsList');
+    if (!adsList) return;
     
-    if (ads.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="neon-icon">📭</div>
-                <h3>Нет анкет</h3>
-                <p>Попробуйте изменить фильтры или зайдите позже</p>
+    console.log('📊 [ADS] displayAds вызвана с', ads.length, 'анкетами');
+    
+    if (!ads || ads.length === 0) {
+        adsList.innerHTML = `
+            <div class="no-ads">
+                <div class="neon-icon">😔</div>
+                <h3>Пока нет анкет</h3>
+                <p>Будьте первым, кто разместит анкету!</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Нормализуем название города для фильтрации
+    const normalizedFilterCity = typeof normalizeCity === 'function' ? normalizeCity(city) : city;
+    
+    // Фильтруем по городу если задан
+    let filteredAds = normalizedFilterCity ? ads.filter(ad => {
+        const normalizedAdCity = typeof normalizeCity === 'function' ? normalizeCity(ad.city) : ad.city;
+        return normalizedAdCity === normalizedFilterCity;
+    }) : ads;
+    
+    // Применяем фильтры
+    filteredAds = filteredAds.filter(ad => {
+        // Фильтр по полу
+        if (adsFilters.gender !== 'all') {
+            const genderLower = ad.gender?.toLowerCase();
+            if (adsFilters.gender === 'male' && genderLower !== 'male' && genderLower !== 'мужчина') {
+                return false;
+            }
+            if (adsFilters.gender === 'female' && genderLower !== 'female' && genderLower !== 'девушка') {
+                return false;
+            }
+            if (adsFilters.gender === 'couple' && genderLower !== 'пара') {
+                return false;
+            }
+        }
+        
+        // Фильтр по цели поиска
+        if (adsFilters.target !== 'all') {
+            const targetLower = ad.target?.toLowerCase();
+            if (adsFilters.target === 'male' && targetLower !== 'male' && targetLower !== 'мужчину') {
+                return false;
+            }
+            if (adsFilters.target === 'female' && targetLower !== 'female' && targetLower !== 'женщину' && targetLower !== 'девушку') {
+                return false;
+            }
+            if (adsFilters.target === 'couple' && targetLower !== 'couple' && targetLower !== 'пару' && targetLower !== 'пара') {
+                return false;
+            }
+        }
+        
+        // Фильтр по ориентации
+        if (adsFilters.orientation !== 'all') {
+            const orientationLower = ad.orientation?.toLowerCase();
+            if (orientationLower !== adsFilters.orientation) {
+                return false;
+            }
+        }
+        
+        // Фильтр по возрасту
+        const age = parseInt(ad.my_age || ad.myAge);
+        if (!isNaN(age)) {
+            if (age < adsFilters.ageFrom || age > adsFilters.ageTo) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    // Если после фильтрации ничего не осталось
+    if (filteredAds.length === 0) {
+        adsList.innerHTML = `
+            <div class="no-ads">
+                <div class="neon-icon">🔍</div>
+                <h3>Ничего не найдено</h3>
+                <p>Попробуйте изменить фильтры</p>
+                <button class="neon-button" onclick="resetFilters()">Сбросить фильтры</button>
             </div>
         `;
         return;
     }
     
-    container.innerHTML = ads.map(ad => `
-        <div class="ad-card" onclick="showAdModal(${ad.id})">
-            <div class="ad-header">
-                <span class="ad-gender">${ad.gender === 'female' ? '♀️' : '♂️'}</span>
-                <span class="ad-age">${ad.my_age} лет</span>
-                <span class="ad-city">${ad.city}</span>
-            </div>
-            <div class="ad-preview">
-                <p>${ad.text.substring(0, 100)}...</p>
-            </div>
-            <div class="ad-footer">
-                <span class="ad-date">${formatCreatedAt(ad.created_at)}</span>
-            </div>
-        </div>
-    `).join('');
-    
-    // Обновляем информацию о странице
-    const pageInfo = document.getElementById('pageInfo');
-    if (pageInfo) {
-        const totalPages = Math.ceil(totalAdsCount / 10);
-        pageInfo.textContent = `Страница ${currentAdsPage} из ${totalPages}`;
+    // Сортируем: закрепленные вверху
+    const now = new Date();
+    filteredAds = filteredAds.sort((a, b) => {
+        const aPinned = a.is_pinned && (!a.pinned_until || new Date(a.pinned_until) > now);
+        const bPinned = b.is_pinned && (!b.pinned_until || new Date(b.pinned_until) > now);
+        
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    const compact = window.localStorage.getItem('ads_compact') === '1';
+    if (compact) {
+        adsList.classList.add('compact');
+    } else {
+        adsList.classList.remove('compact');
     }
+
+    let adsHTML = filteredAds.map((ad, index) => {
+        const myAge = ad.my_age || ad.myAge || '?';
+        const ageFrom = ad.age_from || ad.ageFrom || '?';
+        const ageTo = ad.age_to || ad.ageTo || '?';
+        const nickname = ad.display_nickname || 'Аноним';
+        const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > now);
+        
+        // Маппинг телосложения
+        const bodyLabels = {
+            slim: 'Худощавое', athletic: 'Спортивное', average: 'Среднее', curvy: 'Полное',
+            'Стройное': 'Стройное', 'Обычное': 'Обычное', 'Плотное': 'Плотное', 'Спортивное': 'Спортивное', 'Другое': 'Другое'
+        };
+        const bodyType = ad.body_type ? (bodyLabels[ad.body_type] || ad.body_type) : null;
+        
+        // PRO статус
+        const isPremium = ad.is_premium && (!ad.premium_until || new Date(ad.premium_until) > now);
+        const premiumClass = isPremium ? 'premium-ad' : '';
+        const premiumBadge = isPremium ? ' <span class="pro-badge">⭐</span>' : '';
+        
+        // Функция получения URL фото
+        const photoUrl = (url) => typeof getPhotoUrl === 'function' ? getPhotoUrl(url, 'small') : url;
+        
+        return `
+        <div class="ad-card ${compact ? 'compact' : ''} ${premiumClass}" onclick="showAdDetails(${index})">
+            ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
+            ${ad.photo_urls && ad.photo_urls.length > 0 ? `
+            <div class="ad-photo-thumbnails" style="display: grid; grid-template-columns: repeat(${Math.min(ad.photo_urls.length, 3)}, 1fr); gap: 4px; margin-bottom: 12px;">
+                ${ad.photo_urls.slice(0, 3).map((pUrl, photoIdx) => `
+                    <div style="aspect-ratio: 1; overflow: hidden; border-radius: 8px; background: linear-gradient(135deg, rgba(26, 26, 46, 0.8) 0%, rgba(46, 46, 66, 0.6) 100%); position: relative;">
+                        <img 
+                            src="${photoUrl(pUrl)}" 
+                            alt="Фото ${photoIdx + 1}" 
+                            loading="lazy"
+                            style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease;"
+                            onload="this.style.opacity='1'"
+                            onerror="this.style.opacity='0.3'; this.alt='❌'">
+                    </div>
+                `).join('')}
+            </div>
+            ` : ''}
+            <div class="ad-header">
+                <h3>👤 ${nickname}${premiumBadge}</h3>
+                <div class="created-at"><span class="icon">⏰</span> <span class="value">${formatCreatedAt(ad.created_at)}</span></div>
+            </div>
+            <div class="ad-info">
+                ${compact ? `
+                <div class="ad-field"><span class="icon">🏙</span>${ad.city}</div>
+                <div class="ad-field"><span class="icon">👤</span>${formatGender(ad.gender)}</div>
+                <div class="ad-field"><span class="icon">🔍</span>${formatTarget(ad.target)}</div>
+                <div class="ad-field"><span class="icon">🎯</span>${formatGoals(ad.goal)}</div>
+                <div class="ad-field"><span class="icon">🎂</span>${myAge}л</div>
+                <div class="ad-field"><span class="icon">📅</span>${ageFrom}-${ageTo}</div>
+                ${bodyType ? `<div class="ad-field"><span class="icon">💪</span>${bodyType}</div>` : ''}
+                ${ad.orientation ? `<div class="ad-field"><span class="icon">💗</span>${formatOrientation(ad.orientation)}</div>` : ''}
+                ` : `
+                <div class="ad-field">
+                    <span class="icon">🏙</span>
+                    <span class="label">Город:</span>
+                    <span class="value">${ad.city}</span>
+                </div>
+                <div class="ad-field">
+                    <span class="icon">👤</span>
+                    <span class="label">Пол:</span>
+                    <span class="value">${formatGender(ad.gender)}</span>
+                </div>
+                <div class="ad-field">
+                    <span class="icon">🔍</span>
+                    <span class="label">Ищет:</span>
+                    <span class="value">${formatTarget(ad.target)}</span>
+                </div>
+                <div class="ad-field">
+                    <span class="icon">🎯</span>
+                    <span class="label">Цель:</span>
+                    <span class="value">${formatGoals(ad.goal)}</span>
+                </div>
+                <div class="ad-field">
+                    <span class="icon">🎂</span>
+                    <span class="label">Мой возраст:</span>
+                    <span class="value">${myAge} лет</span>
+                </div>
+                <div class="ad-field">
+                    <span class="icon">📅</span>
+                    <span class="label">Возраст партнера:</span>
+                    <span class="value">${ageFrom} - ${ageTo} лет</span>
+                </div>
+                ${bodyType ? `
+                <div class="ad-field">
+                    <span class="icon">💪</span>
+                    <span class="label">Телосложение:</span>
+                    <span class="value">${bodyType}</span>
+                </div>
+                ` : ''}
+                ${ad.orientation ? `
+                <div class="ad-field">
+                    <span class="icon">💗</span>
+                    <span class="label">Ориентация:</span>
+                    <span class="value">${formatOrientation(ad.orientation)}</span>
+                </div>
+                ` : ''}
+                `}
+            </div>
+            <div class="ad-text">"${compact ? ad.text.substring(0, 120) : ad.text.substring(0, 100)}${ad.text.length > (compact ? 120 : 100) ? '...' : ''}"</div>
+        </div>
+    `;
+    }).join('');
+    
+    // Добавляем кнопку загрузки
+    if (window.loadingAds) {
+        adsHTML += `
+            <div id="loadingMore" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 10px;">Загружаем еще анкеты...</p>
+            </div>
+        `;
+    } else if (window.hasMoreAds) {
+        adsHTML += `
+            <div id="loadingMore" style="text-align: center; padding: 20px;">
+                <button class="neon-button" onclick="loadMoreAds()" style="width: auto; padding: 12px 24px;">
+                    📜 Загрузить еще (${window.allLoadedAds?.length || 0} из ${window.totalAds || '?'})
+                </button>
+            </div>
+        `;
+    } else if (!window.hasMoreAds && window.allLoadedAds?.length > 0) {
+        adsHTML += `
+            <div style="text-align: center; padding: 20px; color: var(--text-secondary); opacity: 0.5;">
+                <p style="margin: 0;">✅ Все анкеты загружены (${window.allLoadedAds.length})</p>
+            </div>
+        `;
+    }
+    
+    adsList.innerHTML = adsHTML;
+    
+    // Сохраняем анкеты для showAdDetails
+    window.currentAds = filteredAds;
 }
 
 /**
@@ -1619,5 +1907,9 @@ window.setupInfiniteScroll = setupInfiniteScroll;
 window.sendContactMessage = sendContactMessage;
 window.showMyAds = showMyAds;
 window.loadMyAds = showMyAds; // Алиас для showMyAds
+window.formatGender = formatGender;
+window.formatTarget = formatTarget;
+window.formatGoals = formatGoals;
+window.formatOrientation = formatOrientation;
 
 console.log('✅ [ADS] Модуль анкет инициализирован');
