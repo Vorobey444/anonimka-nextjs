@@ -583,40 +583,41 @@ let isLoadingAds = false;
 /**
  * Показать раздел просмотра анкет
  */
-async function showBrowseAds() {
-    // Предотвращаем бесконечный цикл
-    if (isLoadingAds) {
-        console.log('⚠️ [ADS] Загрузка уже в процессе, пропускаем');
-        return;
-    }
-    
+function showBrowseAds() {
     console.log('🔍 [ADS] Открытие просмотра анкет');
     
-    isLoadingAds = true;
+    showScreen('browseAds');
     
-    try {
-        // НЕ вызываем showScreen здесь - это вызовет цикл!
-        // showScreen вызывается из menu.js, который потом вызывает нас
-        // Просто показываем экран напрямую если нужно
-        const screen = document.getElementById('browseAds');
-        if (screen && screen.style.display === 'none') {
-            // Скрываем все экраны
-            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-            screen.style.display = 'block';
+    // Отображаем текущую локацию
+    const browseLocationDisplay = document.getElementById('browseLocationDisplay');
+    const userLoc = typeof getUserLocation === 'function' ? getUserLocation() : null;
+    
+    if (userLoc && browseLocationDisplay) {
+        // Избегаем дублирования если регион = город
+        const locationPart = userLoc.region === userLoc.city 
+            ? userLoc.city 
+            : `${userLoc.region}, ${userLoc.city}`;
+        const locationText = locationData ? `${locationData[userLoc.country]?.flag || ''} ${locationPart}` : locationPart;
+        browseLocationDisplay.textContent = locationText;
+    } else if (browseLocationDisplay) {
+        browseLocationDisplay.textContent = 'Локация не установлена';
+    }
+    
+    // Загружаем анкеты по локации пользователя
+    setTimeout(() => {
+        if (userLoc) {
+            console.log('📍 [ADS] Загружаем анкеты по локации:', userLoc);
+            loadAdsByLocation(userLoc.country, userLoc.region, userLoc.city);
+        } else {
+            console.log('📍 [ADS] Локация не установлена, показываем все анкеты');
+            loadAds();
         }
-        
-        currentAdsPage = 1;
-        
-        // Применяем фильтры и загружаем анкеты
-        await loadAds();
         
         // Устанавливаем UI фильтра на базе локации пользователя
         if (typeof setFilterLocationUI === 'function') {
             setFilterLocationUI();
         }
-    } finally {
-        isLoadingAds = false;
-    }
+    }, 100);
 }
 
 // Флаг загрузки для loadAds
@@ -1023,13 +1024,19 @@ function toggleAdsCompact() {
  */
 
 /**
- * Показать мои анкеты (только загрузка данных, без переключения экрана)
+ * Показать мои анкеты
  */
-async function showMyAds() {
+function showMyAds() {
+    console.log('📋 [ADS] Открытие моих анкет');
+    showScreen('myAds');
+    loadMyAds();
+}
+
+/**
+ * Загрузить мои анкеты (только данные)
+ */
+async function loadMyAds() {
     console.log('📋 [ADS] Загрузка моих анкет');
-    
-    // НЕ вызываем showScreen здесь - это вызовет рекурсию!
-    // showScreen вызывается из меню, а showMyAds только загружает данные
     
     try {
         const userToken = localStorage.getItem('user_token');

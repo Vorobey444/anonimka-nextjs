@@ -63,8 +63,10 @@ function showScreen(screenId) {
     // Закрываем бургер-меню если открыто
     closeBurgerMenu();
     
-    // Выполняем специфичные инициализации экрана
-    initializeScreenContent(screenId);
+    // Обновляем кнопки Telegram
+    if (typeof updateTelegramButtons === 'function') {
+        updateTelegramButtons(screenId);
+    }
 }
 
 /**
