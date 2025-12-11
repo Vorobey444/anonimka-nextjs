@@ -662,6 +662,11 @@ function initializeMenuModule() {
     console.log('✅ [MENU] Модуль навигации инициализирован');
 }
 
+// Алиас для совместимости
+function showNicknameChange() {
+    showNicknameEditor();
+}
+
 // Экспорт функций в глобальную область
 window.showScreen = showScreen;
 window.showMainMenu = showMainMenu;
@@ -679,6 +684,7 @@ window.showPolls = showPolls;
 window.showContacts = showContacts;
 window.showAbout = showAbout;
 window.showNicknameChange = showNicknameChange;
+window.showNicknameEditor = showNicknameEditor;
 window.showBlockedUsers = showBlockedUsers;
 window.showAdminPanel = showAdminPanel;
 window.showAffiliateProgram = showAffiliateProgram;

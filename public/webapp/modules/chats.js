@@ -655,4 +655,35 @@ async function updateChatBadge() {
     }
 }
 
+/**
+ * Переключение вкладок чатов (active/requests)
+ */
+function switchChatTab(tab) {
+    console.log('💬 [CHATS] Переключение вкладки:', tab);
+    
+    // Переключаем активную кнопку
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    if (event && event.target) {
+        const targetBtn = event.target.closest('.tab-btn');
+        if (targetBtn) targetBtn.classList.add('active');
+    }
+    
+    // Переключаем контент
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    if (tab === 'active') {
+        const activeTab = document.getElementById('activeChatsTab');
+        if (activeTab) activeTab.classList.add('active');
+    } else if (tab === 'requests') {
+        const requestsTab = document.getElementById('requestsTab');
+        if (requestsTab) requestsTab.classList.add('active');
+    }
+}
+
+// Экспорт функций в глобальную область
+window.switchChatTab = switchChatTab;
+window.showMyChats = showMyChats;
+window.loadMyChats = loadMyChats;
+window.updateChatBadge = updateChatBadge;
+
 console.log('✅ [CHATS] Модуль чатов инициализирован');
