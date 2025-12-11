@@ -415,11 +415,8 @@ function goToSettings() {
  * Показать экран правил
  */
 function showRulesScreen() {
-    const modal = document.getElementById('rulesModal');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
     closeBurgerMenu();
+    showScreen('rules');
 }
 
 /**
@@ -447,11 +444,8 @@ function closeRulesModal() {
  * Показать экран приватности
  */
 function showPrivacyScreen() {
-    const modal = document.getElementById('privacyModal');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
     closeBurgerMenu();
+    showScreen('privacy');
 }
 
 /**
@@ -479,30 +473,16 @@ function closePrivacyModal() {
  * Показать экран контактов
  */
 function showContactsScreen() {
-    const modal = document.getElementById('contactsModal');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
     closeBurgerMenu();
+    showScreen('contacts');
 }
 
 /**
  * Показать контакты
  */
 function showContacts() {
-    const contactsScreen = document.getElementById('contactsScreen');
-    if (contactsScreen) {
-        // Скрываем все экраны
-        const screens = document.querySelectorAll('.screen');
-        screens.forEach(s => {
-            s.classList.remove('active');
-            s.style.display = 'none';
-        });
-        
-        contactsScreen.classList.add('active');
-        contactsScreen.style.display = 'flex';
-    }
     closeBurgerMenu();
+    showScreen('contacts');
 }
 
 /**
@@ -560,20 +540,9 @@ function showNicknameEditorScreen() {
  */
 async function showBlockedUsers() {
     closeBurgerMenu();
+    showScreen('blockedUsers');
+    
     const container = document.getElementById('blockedUsersContainer');
-    
-    // Показываем экран
-    const blockedScreen = document.getElementById('blockedUsersScreen');
-    if (blockedScreen) {
-        const screens = document.querySelectorAll('.screen');
-        screens.forEach(s => {
-            s.classList.remove('active');
-            s.style.display = 'none';
-        });
-        blockedScreen.classList.add('active');
-        blockedScreen.style.display = 'flex';
-    }
-    
     if (!container) return;
     
     container.innerHTML = `
