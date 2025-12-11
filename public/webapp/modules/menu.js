@@ -183,17 +183,9 @@ function initializeMenuButtons() {
  * Открыть/закрыть бургер-меню
  */
 function toggleBurgerMenu() {
-    const menu = document.getElementById('burgerMenu');
-    const hamburger = document.querySelector('.hamburger-icon');
-    
-    if (!menu) return;
-    
-    const isOpen = menu.style.display === 'flex';
-    
-    if (isOpen) {
-        closeBurgerMenu();
-    } else {
-        openBurgerMenu();
+    const overlay = document.getElementById('hamburgerMenuOverlay');
+    if (overlay) {
+        overlay.classList.toggle('active');
     }
 }
 
@@ -299,17 +291,9 @@ function handleBackButton() {
  * Открыть бургер-меню
  */
 function openBurgerMenu() {
-    const menu = document.getElementById('burgerMenu');
-    const hamburger = document.querySelector('.hamburger-icon');
-    
-    if (menu) {
-        menu.style.display = 'flex';
-        menu.classList.add('open');
-        
-        if (hamburger) {
-            hamburger.classList.add('active');
-        }
-        
+    const overlay = document.getElementById('hamburgerMenuOverlay');
+    if (overlay) {
+        overlay.classList.add('active');
         console.log('📖 [MENU] Бургер-меню открыто');
     }
 }
@@ -318,17 +302,9 @@ function openBurgerMenu() {
  * Закрыть бургер-меню
  */
 function closeBurgerMenu() {
-    const menu = document.getElementById('burgerMenu');
-    const hamburger = document.querySelector('.hamburger-icon');
-    
-    if (menu) {
-        menu.style.display = 'none';
-        menu.classList.remove('open');
-        
-        if (hamburger) {
-            hamburger.classList.remove('active');
-        }
-        
+    const overlay = document.getElementById('hamburgerMenuOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
         console.log('📖 [MENU] Бургер-меню закрыто');
     }
 }
@@ -1442,5 +1418,23 @@ if (document.readyState === 'loading') {
 } else {
     initializeAndroidMenu();
 }
+
+// Закрытие меню при клике вне меню (как в backup)
+document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('hamburgerMenuOverlay');
+    const menu = overlay?.querySelector('.hamburger-menu-content');
+    const hamburgerBtn = document.querySelector('.hamburger-menu');
+    
+    if (overlay && menu) {
+        document.addEventListener('click', (e) => {
+            // Если меню открыто и клик НЕ внутри меню и НЕ на кнопке открытия
+            if (overlay.classList.contains('active') && 
+                !menu.contains(e.target) && 
+                !hamburgerBtn?.contains(e.target)) {
+                closeBurgerMenu();
+            }
+        });
+    }
+});
 
 console.log('✅ [MENU] Модуль навигации загружен');

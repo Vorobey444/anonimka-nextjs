@@ -2165,11 +2165,11 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.0.6'; // FIX: processIPLocation - использовать country code KZ вместо kazakhstan
+        const bugFixVersion = '2.0.7'; // FIX: hamburgerMenuOverlay вместо burgerMenu
         const lastVersion = localStorage.getItem('app_version');
         
         if (lastVersion !== bugFixVersion) {
-            console.log('[CACHE] Обнаружена новая версия 2.0.6, очищаем кеш...');
+            console.log('[CACHE] Обнаружена новая версия 2.0.7, очищаем кеш...');
             localStorage.setItem('app_version', bugFixVersion);
             
             // Удаляем все зарегистрированные Service Workers
