@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-11T19:10:25.125Z
+ * Автоматически сгенерирован: 2025-12-11T19:12:40.481Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -1476,7 +1476,7 @@ console.log('✅ Модуль утилит инициализирован');
 } catch(e) { console.error('❌ Ошибка в модуле utils.js:', e); }
 })();
 
-// ========== auth.js (27.0 KB) ==========
+// ========== auth.js (27.1 KB) ==========
 (function() {
 try {
 /**
@@ -1707,7 +1707,7 @@ async function initializeNickname() {
         console.log('🔍 [AUTH] savedNickname:', savedNickname);
         
         // Проверяем реальный никнейм в БД через API
-        const tgId = tg?.initDataUnsafe?.user?.id;
+        const tgId = typeof tg !== 'undefined' && tg?.initDataUnsafe?.user?.id ? tg.initDataUnsafe.user.id : null;
         const userToken = localStorage.getItem('user_token');
         console.log('🔍 [AUTH] tgId:', tgId, 'userToken:', userToken ? 'есть' : 'нет');
         let realNickname = null;
@@ -5618,7 +5618,7 @@ console.log('✅ [PREMIUM] Модуль Premium инициализирован')
 } catch(e) { console.error('❌ Ошибка в модуле premium.js:', e); }
 })();
 
-// ========== referral.js (12.6 KB) ==========
+// ========== referral.js (12.8 KB) ==========
 (function() {
 try {
 /**
@@ -5645,7 +5645,7 @@ async function handleReferralLink() {
         console.log('🔗 [REFERRAL] Проверка реферальной ссылки');
         
         // Проверяем start_param из Telegram WebApp
-        let startParam = tg?.initDataUnsafe?.start_param;
+        let startParam = typeof tg !== 'undefined' && tg?.initDataUnsafe?.start_param ? tg.initDataUnsafe.start_param : null;
         
         if (!startParam) {
             // Проверяем URL параметр ?ref=
@@ -5662,9 +5662,13 @@ async function handleReferralLink() {
                 const telegramLink = `https://t.me/${botUsername}?startapp=ref_${refParam}`;
                 
                 // Показываем сообщение и редиректим
-                tg.showAlert('Переход в Telegram...', () => {
+                if (typeof tg !== 'undefined' && tg?.showAlert) {
+                    tg.showAlert('Переход в Telegram...', () => {
+                        window.location.href = telegramLink;
+                    });
+                } else {
                     window.location.href = telegramLink;
-                });
+                }
                 return;
             }
         } else if (startParam.startsWith('ref_')) {
@@ -15594,7 +15598,7 @@ function logoutUser() {
  * Обработка обратных кнопок (Android)
  */
 function setupBackButtonHandler() {
-    if (!tg?.BackButton) return;
+    if (typeof tg === 'undefined' || !tg?.BackButton) return;
     
     // Обработка back-кнопки в Telegram
     tg.BackButton.onClick(() => {

@@ -22,7 +22,7 @@ async function handleReferralLink() {
         console.log('🔗 [REFERRAL] Проверка реферальной ссылки');
         
         // Проверяем start_param из Telegram WebApp
-        let startParam = tg?.initDataUnsafe?.start_param;
+        let startParam = typeof tg !== 'undefined' && tg?.initDataUnsafe?.start_param ? tg.initDataUnsafe.start_param : null;
         
         if (!startParam) {
             // Проверяем URL параметр ?ref=
@@ -39,9 +39,13 @@ async function handleReferralLink() {
                 const telegramLink = `https://t.me/${botUsername}?startapp=ref_${refParam}`;
                 
                 // Показываем сообщение и редиректим
-                tg.showAlert('Переход в Telegram...', () => {
+                if (typeof tg !== 'undefined' && tg?.showAlert) {
+                    tg.showAlert('Переход в Telegram...', () => {
+                        window.location.href = telegramLink;
+                    });
+                } else {
                     window.location.href = telegramLink;
-                });
+                }
                 return;
             }
         } else if (startParam.startsWith('ref_')) {

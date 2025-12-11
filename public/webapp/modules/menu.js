@@ -795,7 +795,7 @@ function logoutUser() {
  * Обработка обратных кнопок (Android)
  */
 function setupBackButtonHandler() {
-    if (!tg?.BackButton) return;
+    if (typeof tg === 'undefined' || !tg?.BackButton) return;
     
     // Обработка back-кнопки в Telegram
     tg.BackButton.onClick(() => {

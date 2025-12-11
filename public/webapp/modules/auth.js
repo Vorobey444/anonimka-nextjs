@@ -226,7 +226,7 @@ async function initializeNickname() {
         console.log('🔍 [AUTH] savedNickname:', savedNickname);
         
         // Проверяем реальный никнейм в БД через API
-        const tgId = tg?.initDataUnsafe?.user?.id;
+        const tgId = typeof tg !== 'undefined' && tg?.initDataUnsafe?.user?.id ? tg.initDataUnsafe.user.id : null;
         const userToken = localStorage.getItem('user_token');
         console.log('🔍 [AUTH] tgId:', tgId, 'userToken:', userToken ? 'есть' : 'нет');
         let realNickname = null;
