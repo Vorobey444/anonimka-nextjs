@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-11T19:59:56.411Z
+ * Автоматически сгенерирован: 2025-12-11T20:04:20.219Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -7720,7 +7720,7 @@ console.log('✅ [ADMIN] Модуль админ-панели инициализ
 } catch(e) { console.error('❌ Ошибка в модуле admin.js:', e); }
 })();
 
-// ========== location.js (90.6 KB) ==========
+// ========== location.js (91.8 KB) ==========
 (function() {
 try {
 /**
@@ -8658,14 +8658,43 @@ function resetAndDetectLocation() {
 }
 
 /**
- * Показать UI для проверки/выбора локации
+ * Показать UI автоопределения локации и запустить определение
  */
 function showAutoLocationDetection() {
-    const modal = document.getElementById('autoLocationModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        console.log('📍 [LOCATION] Показано окно проверки локации');
+    console.log('📍 [LOCATION] Запуск автоопределения локации...');
+    
+    // Скрываем все экраны
+    const screens = document.querySelectorAll('.screen');
+    screens.forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+    });
+    
+    // Показываем экран автоопределения
+    const autoScreen = document.getElementById('autoLocationDetection');
+    if (autoScreen) {
+        autoScreen.classList.add('active');
+        autoScreen.style.display = 'flex';
+        
+        // Сбрасываем UI
+        const detectionText = autoScreen.querySelector('.detection-text');
+        const detectionResult = autoScreen.querySelector('.detection-result');
+        const detectionAnimation = autoScreen.querySelector('.detection-animation');
+        
+        if (detectionText) detectionText.textContent = 'Анализируем ваш IP-адрес...';
+        if (detectionResult) detectionResult.style.display = 'none';
+        if (detectionAnimation) detectionAnimation.style.display = 'block';
     }
+    
+    // Закрываем бургер-меню если открыто
+    if (typeof closeBurgerMenu === 'function') {
+        closeBurgerMenu();
+    }
+    
+    // Запускаем автоопределение
+    setTimeout(() => {
+        autoDetectLocationAsync();
+    }, 500);
 }
 
 function closeAutoLocationDetection() {
