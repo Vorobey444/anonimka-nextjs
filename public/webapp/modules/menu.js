@@ -978,6 +978,209 @@ async function sendAdminNotification() {
     }
 }
 
+/**
+ * ===== АДМИНСКИЕ ФУНКЦИИ =====
+ */
+
+// Переменные для статуса админа
+let isAdminUser = false;
+let adminCheckCompleted = false;
+
+/**
+ * Загрузить статистику сайта (для админов)
+ */
+async function loadSiteStats() {
+    try {
+        // Проверяем is_admin только один раз
+        if (!adminCheckCompleted) {
+            let userId = tg?.initDataUnsafe?.user?.id;
+            if (!userId) {
+                const savedUser = localStorage.getItem('telegram_user');
+                if (savedUser) {
+                    try {
+                        const userData = JSON.parse(savedUser);
+                        userId = userData?.id;
+                    } catch (e) {
+                        console.warn('[ADMIN STATS] Ошибка парсинга telegram_user:', e);
+                    }
+                }
+            }
+            
+            const userToken = localStorage.getItem('user_token');
+            
+            if (userId) {
+                try {
+                    const userStatusResponse = await fetch(`/api/users?action=check-admin&user_id=${userId}`);
+                    const userStatusData = await userStatusResponse.json();
+                    isAdminUser = userStatusData.is_admin === true;
+                } catch (err) {
+                    console.error('[ADMIN STATS] Ошибка проверки статуса админа:', err);
+                }
+            } else if (userToken) {
+                try {
+                    const userStatusResponse = await fetch(`/api/users?action=check-admin&userToken=${userToken}`);
+                    const userStatusData = await userStatusResponse.json();
+                    isAdminUser = userStatusData.is_admin === true;
+                } catch (err) {
+                    console.error('[ADMIN STATS] Ошибка проверки статуса админа по токену:', err);
+                }
+            }
+            
+            adminCheckCompleted = true;
+            
+            // Скрываем/показываем элементы админа
+            const adminStatsEl = document.getElementById('adminStats');
+            if (adminStatsEl) {
+                adminStatsEl.style.display = isAdminUser ? 'flex' : 'none';
+            }
+
+            const adminMenuItem = document.getElementById('adminMenuItem');
+            if (adminMenuItem) {
+                adminMenuItem.style.display = isAdminUser ? 'flex' : 'none';
+            }
+        }
+        
+        if (!isAdminUser) return;
+        
+        const response = await fetch('/api/analytics?metric=all');
+        const data = await response.json();
+        
+        const totalVisitsEl = document.getElementById('totalVisits');
+        const onlineNowEl = document.getElementById('onlineNow');
+        const totalAdsEl = document.getElementById('totalAds');
+        const blockedUsersEl = document.getElementById('blockedUsersCount');
+        
+        if (totalVisitsEl && data.total_unique_users !== undefined) {
+            totalVisitsEl.textContent = formatNumber(data.total_unique_users);
+        }
+        
+        if (onlineNowEl && data.unique_last_24h !== undefined) {
+            onlineNowEl.textContent = formatNumber(data.unique_last_24h);
+        }
+        
+        if (totalAdsEl && data.total_ads !== undefined) {
+            totalAdsEl.textContent = formatNumber(data.total_ads);
+        }
+        
+        if (blockedUsersEl && data.blocked_users !== undefined) {
+            blockedUsersEl.textContent = formatNumber(data.blocked_users);
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки статистики:', error);
+    }
+}
+
+/**
+ * Запустить автообновление статистики
+ */
+function startStatsAutoUpdate() {
+    loadSiteStats();
+    setInterval(() => {
+        if (isAdminUser) {
+            loadSiteStats();
+        }
+    }, 10000);
+}
+
+/**
+ * Форматирование чисел
+ */
+function formatNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return String(num);
+}
+
+/**
+ * Форматирование даты
+ */
+function formatDateTime(dateStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString('ru-RU', { hour12: false });
+}
+
+/**
+ * Запрос к API администратора
+ */
+async function fetchAdminData(action, params = {}) {
+    const adminToken = localStorage.getItem('user_token');
+    if (!adminToken) {
+        throw new Error('Не найден user_token для запроса администратора');
+    }
+
+    const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, params, adminToken })
+    });
+
+    const data = await response.json();
+    if (!response.ok || data.success === false) {
+        throw new Error(data.error || 'Ошибка админ-запроса');
+    }
+    return data;
+}
+
+/**
+ * Забанить пользователя (админ)
+ */
+async function banUserFromAdmin(userToken) {
+    const reason = prompt('Причина блокировки?', 'Нарушение правил');
+    if (reason === null) return;
+    const hoursInput = prompt('Длительность бана в часах (пусто = бессрочно)');
+    const durationHours = hoursInput && hoursInput.trim() !== '' ? Number(hoursInput) : null;
+    try {
+        await fetchAdminData('ban-user', { userToken, reason, durationHours });
+        loadAdminUsers();
+    } catch (err) {
+        tg.showAlert ? tg.showAlert(err.message) : alert(err.message);
+    }
+}
+
+/**
+ * Снять бан с пользователя (админ)
+ */
+async function unbanUserFromAdmin(userToken) {
+    if (!confirm('Снять бан с пользователя?')) return;
+    try {
+        await fetchAdminData('unban-user', { userToken });
+        loadAdminUsers();
+    } catch (err) {
+        tg.showAlert ? tg.showAlert(err.message) : alert(err.message);
+    }
+}
+
+/**
+ * Заблокировать анкету (админ)
+ */
+async function blockAdFromAdmin(adId) {
+    const reason = prompt('Причина блокировки анкеты?', 'Модерация');
+    if (reason === null) return;
+    const hoursInput = prompt('Длительность блокировки (часов, пусто = бессрочно)');
+    const durationHours = hoursInput && hoursInput.trim() !== '' ? Number(hoursInput) : null;
+    try {
+        await fetchAdminData('block-ad', { adId, reason, durationHours });
+        if (typeof loadAdminAds === 'function') loadAdminAds();
+    } catch (err) {
+        tg.showAlert ? tg.showAlert(err.message) : alert(err.message);
+    }
+}
+
+/**
+ * Разблокировать анкету (админ)
+ */
+async function unblockAdFromAdmin(adId) {
+    if (!confirm('Разблокировать анкету?')) return;
+    try {
+        await fetchAdminData('unblock-ad', { adId });
+        if (typeof loadAdminAds === 'function') loadAdminAds();
+    } catch (err) {
+        tg.showAlert ? tg.showAlert(err.message) : alert(err.message);
+    }
+}
+
 window.openAffiliateProgram = openAffiliateProgram;
 window.votePoll = votePoll;
 window.loadPollResults = loadPollResults;
@@ -985,5 +1188,13 @@ window.promptInstallApp = promptInstallApp;
 window.switchAdminTab = switchAdminTab;
 window.loadAdminUsers = loadAdminUsers;
 window.sendAdminNotification = sendAdminNotification;
+window.loadSiteStats = loadSiteStats;
+window.startStatsAutoUpdate = startStatsAutoUpdate;
+window.fetchAdminData = fetchAdminData;
+window.banUserFromAdmin = banUserFromAdmin;
+window.unbanUserFromAdmin = unbanUserFromAdmin;
+window.blockAdFromAdmin = blockAdFromAdmin;
+window.unblockAdFromAdmin = unblockAdFromAdmin;
+window.formatDateTime = formatDateTime;
 
 console.log('✅ [MENU] Модуль навигации загружен');

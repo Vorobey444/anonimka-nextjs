@@ -32,6 +32,131 @@ let adsFilters = {
 };
 
 /**
+ * ===== УТИЛИТЫ ДЛЯ АНКЕТ =====
+ */
+
+/**
+ * Нормализация названия города
+ */
+function normalizeCity(cityName) {
+    if (!cityName) return null;
+    const normalized = cityName.trim();
+    
+    // Маппинг старых и новых названий
+    const cityAliases = {
+        'Алма-Ата': 'Алматы',
+        'Алма-ата': 'Алматы',
+        'алма-ата': 'Алматы',
+        'Almaty': 'Алматы',
+        'Ленинград': 'Санкт-Петербург',
+        'Leningrad': 'Санкт-Петербург',
+        'Свердловск': 'Екатеринбург'
+    };
+    
+    return cityAliases[normalized] || normalized;
+}
+
+/**
+ * Обновить отображение локации в форме
+ */
+function updateFormLocationDisplay() {
+    const currentUserLocation = typeof getUserLocation === 'function' ? getUserLocation() : null;
+    if (currentUserLocation) {
+        // Избегаем дублирования если регион = город
+        const locationPart = currentUserLocation.region === currentUserLocation.city 
+            ? currentUserLocation.city 
+            : `${currentUserLocation.region}, ${currentUserLocation.city}`;
+        
+        // Получаем флаг
+        let flag = '📍';
+        if (typeof locationData !== 'undefined' && locationData[currentUserLocation.country]) {
+            flag = locationData[currentUserLocation.country].flag;
+        }
+        
+        const locationText = `${flag} ${locationPart}`;
+        const formLocationDisplay = document.getElementById('formLocationDisplay');
+        if (formLocationDisplay) {
+            formLocationDisplay.textContent = locationText;
+        }
+    }
+}
+
+/**
+ * Обработка фильтра по городу
+ */
+function handleCityFilter(city) {
+    // Сброс выбора
+    document.querySelectorAll('.city-btn.filter').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+
+    // Выбор нового города
+    const cityBtn = document.querySelector(`[data-city="${city}"].filter`);
+    if (cityBtn) {
+        cityBtn.classList.add('selected');
+    }
+
+    // Загружаем анкеты по городу
+    if (typeof loadAdsByLocation === 'function') {
+        const currentUserLocation = typeof getUserLocation === 'function' ? getUserLocation() : null;
+        if (currentUserLocation) {
+            loadAdsByLocation(currentUserLocation.country, currentUserLocation.region, city);
+        }
+    }
+}
+
+/**
+ * Загрузить еще анкеты (пагинация)
+ */
+function loadMoreAds() {
+    if (window.loadingAds || !window.hasMoreAds) return;
+    
+    console.log('🔘 Кнопка "Загрузить еще" нажата');
+    window.currentAdsPage++;
+    if (typeof loadAds === 'function') {
+        loadAds(window.currentFilters || {}, true);
+    }
+}
+
+/**
+ * Настройка infinite scroll
+ */
+function setupInfiniteScroll() {
+    let scrollTimeout;
+    const handleScroll = () => {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+            const documentHeight = Math.max(
+                document.body.scrollHeight,
+                document.body.offsetHeight,
+                document.documentElement.clientHeight,
+                document.documentElement.scrollHeight,
+                document.documentElement.offsetHeight
+            );
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+            const scrolledToBottom = (windowHeight + scrollTop) >= documentHeight - 300;
+            
+            if (scrolledToBottom && window.hasMoreAds && !window.loadingAds) {
+                console.log('📜 Auto-scroll: загружаем следующую страницу');
+                window.currentAdsPage++;
+                if (typeof loadAds === 'function') {
+                    loadAds(window.currentFilters || {}, true);
+                }
+            }
+        }, 150);
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('scroll', handleScroll, { passive: true });
+}
+
+// Инициализируем infinite scroll при загрузке
+if (typeof window !== 'undefined') {
+    setupInfiniteScroll();
+}
+
+/**
  * ===== СОЗДАНИЕ И РЕДАКТИРОВАНИЕ АНКЕТ =====
  */
 
@@ -1015,6 +1140,109 @@ async function contactAuthor(adId, authorToken) {
 }
 
 /**
+ * Вспомогательная функция для отправки сообщения автору
+ */
+async function sendContactMessage(ad, authorToken, currentUserToken, message) {
+    try {
+        // Проверяем, существует ли уже чат
+        const checkResponse = await fetch('/api/neon-chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'check-existing',
+                params: { user1_token: currentUserToken, user2_token: authorToken, adId: ad.id }
+            })
+        });
+
+        const checkResult = await checkResponse.json();
+
+        if (checkResult.error) {
+            console.error('Error checking existing chat:', checkResult.error);
+            tg.showAlert('❌ Ошибка при проверке чата. Попробуйте позже.');
+            return;
+        }
+
+        const existingChat = checkResult.data;
+
+        if (existingChat) {
+            if (existingChat.blocked_by) {
+                tg.showAlert('❌ Чат заблокирован');
+                return;
+            }
+            if (existingChat.accepted) {
+                tg.showAlert('✅ Чат уже существует! Откройте раздел "Мои чаты"');
+                return;
+            } else {
+                tg.showAlert('✅ Запрос уже отправлен! Ожидайте ответа от автора.');
+                return;
+            }
+        }
+
+        // Создаем новый запрос на чат
+        const createResponse = await fetch('/api/neon-chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'create',
+                params: { 
+                    user1_token: currentUserToken, 
+                    user2_token: authorToken, 
+                    adId: ad.id,
+                    message: message.trim()
+                }
+            })
+        });
+
+        const createResult = await createResponse.json();
+
+        if (createResult.error) {
+            console.error('Error creating chat request:', createResult.error);
+            
+            // Специальная обработка для лимита запросов
+            if (createResult.error.message === 'LIMIT_REACHED') {
+                tg.showConfirm(
+                    '⚠️ Анкета перегружена запросами\n\n' +
+                    'Эта анкета уже получила максимум запросов.\n\n' +
+                    'Хотите получить PRO и написать автору в любом случае?',
+                    (confirmed) => {
+                        if (confirmed && typeof showPremiumModal === 'function') {
+                            showPremiumModal();
+                        }
+                    }
+                );
+            } else {
+                tg.showAlert('❌ Ошибка при создании запроса на чат: ' + createResult.error.message);
+            }
+            return;
+        }
+
+        if (createResult.data) {
+            // Отправляем уведомление в Telegram
+            try {
+                await fetch('/api/send-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        receiverToken: authorToken,
+                        receiverTgId: ad.tg_id,
+                        adId: ad.id,
+                        messageText: message.trim()
+                    })
+                });
+            } catch (notifyError) {
+                console.warn('Notification failed:', notifyError);
+            }
+
+            tg.showAlert('✅ Запрос на чат отправлен!\n\nАвтор анкеты получит уведомление.');
+        }
+        
+    } catch (error) {
+        console.error('Error sending message:', error);
+        tg.showAlert('❌ Ошибка при отправке сообщения. Попробуйте позже.');
+    }
+}
+
+/**
  * Перейти на следующую страницу анкет
  */
 function nextAdsPage() {
@@ -1350,5 +1578,11 @@ window.setupAdPhotoSwipe = setupAdPhotoSwipe;
 window.openPhotoFullscreen = openPhotoFullscreen;
 window.getPhotoUrl = getPhotoUrl;
 window.toggleAdsCompact = toggleAdsCompact;
+window.normalizeCity = normalizeCity;
+window.updateFormLocationDisplay = updateFormLocationDisplay;
+window.handleCityFilter = handleCityFilter;
+window.loadMoreAds = loadMoreAds;
+window.setupInfiniteScroll = setupInfiniteScroll;
+window.sendContactMessage = sendContactMessage;
 
 console.log('✅ [ADS] Модуль анкет инициализирован');
