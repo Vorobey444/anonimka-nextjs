@@ -132,6 +132,7 @@ function updateChatsList(acceptedChats, pendingRequests) {
     const chatRequests = document.getElementById('chatRequests');
     const activeCount = document.getElementById('activeChatsCount');
     const requestsCount = document.getElementById('requestsCount');
+    const userId = localStorage.getItem('user_token') || getCurrentUserId();
     
     if (activeCount) activeCount.textContent = acceptedChats.length;
     if (requestsCount) requestsCount.textContent = pendingRequests.length;
@@ -140,21 +141,49 @@ function updateChatsList(acceptedChats, pendingRequests) {
     if (activeChats) {
         if (acceptedChats.length === 0) {
             activeChats.innerHTML = `
-                <div class="empty-state">
+                <div class="empty-chats">
+                    <div class="neon-icon">💬</div>
                     <h3>Нет открытых чатов</h3>
-                    <p>Начните общение через анкету</p>
+                    <p>Принятые чаты появятся здесь</p>
                 </div>
             `;
         } else {
-            activeChats.innerHTML = acceptedChats.map(chat => `
-                <div class="chat-card" onclick="openChat('${chat.id}')">
-                    <div class="chat-header">
-                        <span>Чат #${chat.id}</span>
-                        <span>${formatChatTime(chat.last_message_time)}</span>
+            activeChats.innerHTML = acceptedChats.map(chat => {
+                const lastMessageTime = chat.last_message_time ? formatChatTime(chat.last_message_time) : (chat.updated_at ? formatChatTime(chat.updated_at) : '');
+                const lastMessage = chat.last_message || 'Нажмите для открытия чата';
+                const lastMessagePreview = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
+                const unreadCount = parseInt(chat.unread_count) || 0;
+                const unreadBadge = unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : '';
+                
+                // Проверяем блокировку
+                let blockStatus = '';
+                const hasBlockedBy = !!chat.blocked_by;
+                const hasBlockedByToken = !!chat.blocked_by_token;
+                if (hasBlockedBy || hasBlockedByToken) {
+                    const isBlockedByMe = (hasBlockedBy && String(chat.blocked_by) == String(userId))
+                        || (hasBlockedByToken && String(chat.blocked_by_token) === String(userId));
+                    if (isBlockedByMe) {
+                        blockStatus = '<span style="color: var(--neon-orange); font-size: 0.8rem;">🚫 (Чат заблокирован вами)</span>';
+                    } else {
+                        blockStatus = '<span style="color: var(--neon-pink); font-size: 0.8rem;">🚫 (Вы заблокированы)</span>';
+                    }
+                }
+                
+                return `
+                    <div class="chat-card" onclick="openChat('${chat.id}')">
+                        <div class="chat-card-header">
+                            <span class="chat-ad-id">💬 Чат #${chat.id || 'N/A'}</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                ${unreadBadge}
+                                <span class="chat-time">${lastMessageTime}</span>
+                            </div>
+                        </div>
+                        <div class="chat-preview">
+                            ${blockStatus || lastMessagePreview}
+                        </div>
                     </div>
-                    <div class="chat-preview">${chat.last_message || 'Нажмите для открытия'}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
     }
     
@@ -162,22 +191,48 @@ function updateChatsList(acceptedChats, pendingRequests) {
     if (chatRequests) {
         if (pendingRequests.length === 0) {
             chatRequests.innerHTML = `
-                <div class="empty-state">
-                    <h3>Нет входящих запросов</h3>
-                    <p>Запросы на чаты появятся здесь</p>
+                <div class="empty-chats">
+                    <div class="neon-icon">📨</div>
+                    <h3>Нет новых запросов</h3>
+                    <p>Запросы на чаты от других пользователей появятся здесь</p>
                 </div>
             `;
         } else {
-            chatRequests.innerHTML = pendingRequests.map(chat => `
-                <div class="chat-request-card">
-                    <div class="request-header">Чат #${chat.id}</div>
-                    <div class="request-message">${chat.last_message || 'Хочет начать диалог'}</div>
-                    <div class="request-actions">
-                        <button onclick="acceptChatRequest('${chat.id}')">✅ Принять</button>
-                        <button onclick="rejectChatRequest('${chat.id}')">❌ Отклонить</button>
+            chatRequests.innerHTML = pendingRequests.map(chat => {
+                const requestTime = chat.created_at ? formatChatTime(chat.created_at) : '';
+                const senderName = chat.sender_nickname || 'Собеседник';
+                
+                let messageText = chat.last_message_text || chat.message || 'Хочет начать диалог';
+                if (messageText.length > 80) {
+                    messageText = messageText.substring(0, 77) + '...';
+                }
+                
+                // PRO статус отправителя
+                const isPremium = chat.sender_is_premium && 
+                                 (!chat.sender_premium_until || new Date(chat.sender_premium_until) > new Date());
+                const proBadge = isPremium ? '<span class="pro-badge">⭐</span>' : '';
+                
+                return `
+                    <div class="chat-request-card ${isPremium ? 'pro-request' : ''}">
+                        <div class="request-header">
+                            <span class="request-ad-id">📨 Чат #${chat.id || 'N/A'} ${proBadge}</span>
+                            <span class="request-time">${requestTime}</span>
+                        </div>
+                        <div class="request-message">
+                            <strong>${typeof escapeHtml === 'function' ? escapeHtml(senderName) : senderName}</strong><br>
+                            "${typeof escapeHtml === 'function' ? escapeHtml(messageText) : messageText}"
+                        </div>
+                        <div class="request-actions">
+                            <button class="request-btn request-btn-accept" onclick="acceptChatRequest('${chat.id}')">
+                                ✅ Создать приватный чат
+                            </button>
+                            <button class="request-btn request-btn-reject" onclick="rejectChatRequest('${chat.id}')">
+                                ❌ Отклонить
+                            </button>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
     }
 }
@@ -192,10 +247,18 @@ async function openChat(chatId) {
     showScreen('chatView');
     
     try {
-        const userId = getCurrentUserId();
+        // Используем user_token как основной идентификатор
+        const userToken = localStorage.getItem('user_token');
+        const userId = userToken || getCurrentUserId();
         
-        // Отмечаем пользователя как активного
-        await markUserActive(userId, chatId);
+        if (!userId) {
+            console.warn('⚠️ [CHATS] userId не найден');
+        }
+        
+        // Отмечаем пользователя как активного (если есть userId)
+        if (userId) {
+            await markUserActive(userId, chatId);
+        }
         
         // Загружаем информацию о чате и сообщения
         await loadChatMessages(chatId);
@@ -204,7 +267,9 @@ async function openChat(chatId) {
         await checkBlockStatus(chatId);
         
         // Запускаем автообновление сообщений
-        startChatPolling(chatId, userId);
+        if (userId) {
+            startChatPolling(chatId, userId);
+        }
         
         // Помечаем сообщения как прочитанные
         await markMessagesAsRead(chatId);
@@ -224,9 +289,10 @@ async function loadChatMessages(chatId, silent = false) {
         console.log('📥 [CHATS] Загрузка сообщений чата:', chatId);
         
         const messagesContainer = document.getElementById('chatMessages');
+        const scrollContainer = document.querySelector('.chat-messages-container');
         
         if (!silent && messagesContainer) {
-            messagesContainer.innerHTML = '<p>Загрузка...</p>';
+            messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 20px;">Загрузка сообщений...</p>';
         }
         
         const response = await fetch('/api/neon-messages', {
@@ -242,8 +308,8 @@ async function loadChatMessages(chatId, silent = false) {
         
         if (result.error) {
             console.error('❌ [CHATS] Ошибка загрузки сообщений:', result.error);
-            if (messagesContainer) {
-                messagesContainer.innerHTML = '<p>Ошибка загрузки сообщений</p>';
+            if (!silent && messagesContainer) {
+                messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Ошибка загрузки сообщений</p>';
             }
             return;
         }
@@ -251,32 +317,146 @@ async function loadChatMessages(chatId, silent = false) {
         const messages = result.data || [];
         console.log(`✅ [CHATS] Загружено ${messages.length} сообщений`);
         
-        // Отображаем сообщения
+        if (messages.length === 0) {
+            if (messagesContainer) {
+                messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Нет сообщений. Начните диалог!</p>';
+            }
+            return;
+        }
+        
+        // Получаем user_token для сравнения
+        let myUserId = localStorage.getItem('user_token');
+        if (!myUserId || myUserId === 'null' || myUserId === 'undefined') {
+            myUserId = getCurrentUserId();
+        }
+        
+        // Проверяем, нужно ли обновлять
+        if (silent && messagesContainer) {
+            const currentMessagesCount = messagesContainer.querySelectorAll('.message').length;
+            if (currentMessagesCount === messages.length) {
+                return; // Нет новых сообщений
+            }
+        }
+        
+        // Сохраняем позицию скролла для silent режима
+        const wasAtBottom = silent && scrollContainer ? 
+            (scrollContainer.scrollHeight - scrollContainer.scrollTop <= scrollContainer.clientHeight + 50) : 
+            true;
+        
+        // Сохраняем никнейм оппонента
+        const firstOpponentMessage = messages.find(msg => msg.sender_token != myUserId);
+        if (firstOpponentMessage && firstOpponentMessage.sender_nickname) {
+            window.currentOpponentNickname = firstOpponentMessage.sender_nickname;
+        }
+        
         if (messagesContainer) {
-            const myUserId = getCurrentUserId();
-            
             messagesContainer.innerHTML = messages.map(msg => {
-                const isMine = msg.sender_token === myUserId || msg.sender_id === myUserId;
+                const isMine = msg.sender_token == myUserId;
+                const messageClass = isMine ? 'sent' : 'received';
                 const time = formatMessageTime(msg.created_at);
                 
+                // Индикатор ответа
+                let replyIndicatorHtml = '';
+                if (msg.reply_to_message_id) {
+                    const originalMsg = messages.find(m => m.id == msg.reply_to_message_id);
+                    const replyToNickname = originalMsg?.sender_nickname || 'Собеседник';
+                    const replyToText = originalMsg?.message || '📸 Фото';
+                    const replyPreviewText = replyToText.length > 30 ? replyToText.substring(0, 30) + '...' : replyToText;
+                    
+                    replyIndicatorHtml = `
+                        <div class="message-reply-indicator" onclick="scrollToMessage(${msg.reply_to_message_id})">
+                            <div class="reply-indicator-line"></div>
+                            <div class="reply-indicator-content">
+                                <div class="reply-indicator-nickname">${escapeHtml(replyToNickname)}</div>
+                                <div class="reply-indicator-text">${escapeHtml(replyPreviewText)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Никнейм для входящих
+                let nicknameHtml = '';
+                if (!isMine) {
+                    const nickname = msg.sender_nickname || 'Собеседник';
+                    nicknameHtml = `<div class="message-nickname">${escapeHtml(nickname)}</div>`;
+                }
+                
+                // Фото/видео
+                let photoHtml = '';
+                if (msg.photo_url) {
+                    const isVideo = msg.photo_url.includes('.mp4') || msg.photo_url.includes('.mov') || msg.photo_url.includes('video');
+                    
+                    if (isVideo) {
+                        photoHtml = `<video src="${escapeHtml(msg.photo_url)}" class="message-photo" controls playsinline controlslist="nodownload" disablePictureInPicture></video>`;
+                    } else {
+                        photoHtml = `<div class="message-photo-secure" style="background-image: url('${escapeHtml(msg.photo_url)}');" onclick="showPhotoModal('${escapeHtml(msg.photo_url)}')"></div>`;
+                    }
+                }
+                
+                // Текст сообщения
+                let messageTextHtml = '';
+                if (msg.message) {
+                    messageTextHtml = `<div class="message-text">${escapeHtml(msg.message)}</div>`;
+                }
+                
+                // Статусы доставки
+                let statusIcon = '';
+                if (isMine) {
+                    if (msg.read) {
+                        statusIcon = '<span class="message-status read">✓✓</span>';
+                    } else if (msg.delivered) {
+                        statusIcon = '<span class="message-status delivered">✓✓</span>';
+                    } else {
+                        statusIcon = '<span class="message-status sent">✓</span>';
+                    }
+                }
+                
+                const nickname = msg.sender_nickname || 'Собеседник';
+                
+                // Реакции
+                let reactionHtml = '';
+                if (msg.reactions && msg.reactions.length > 0) {
+                    const topReaction = msg.reactions[0];
+                    reactionHtml = `
+                        <div class="message-reaction" data-message-id="${msg.id}">
+                            <span class="message-reaction-emoji">${topReaction.emoji}</span>
+                            ${topReaction.count > 1 ? `<span class="message-reaction-count">${topReaction.count}</span>` : ''}
+                        </div>
+                    `;
+                }
+                
                 return `
-                    <div class="message ${isMine ? 'sent' : 'received'}" 
-                         data-message-id="${msg.id}"
+                    <div class="message ${messageClass}" 
+                         data-message-id="${msg.id}" 
+                         data-nickname="${escapeHtml(nickname)}"
                          data-is-mine="${isMine}">
-                        ${!isMine ? `<div class="message-nickname">${msg.sender_nickname || 'Собеседник'}</div>` : ''}
-                        <div class="message-text">${escapeHtml(msg.message)}</div>
-                        <div class="message-time">${time}</div>
+                        ${replyIndicatorHtml}
+                        ${nicknameHtml}
+                        ${photoHtml}
+                        ${messageTextHtml}
+                        <div class="message-time">${time} ${statusIcon}</div>
+                        ${reactionHtml}
                     </div>
                 `;
             }).join('');
             
-            // Скроллим вниз
-            const scrollContainer = document.querySelector('.chat-messages-container');
-            if (scrollContainer) {
-                setTimeout(() => {
-                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                }, 100);
+            // Обработчики реакций
+            if (typeof setupMessageReactions === 'function') {
+                setupMessageReactions();
             }
+            
+            // Обработчики свайпов
+            if (typeof setupMessageSwipeHandlers === 'function') {
+                setupMessageSwipeHandlers();
+            }
+        }
+        
+        // Скроллим вниз
+        if (scrollContainer && (!silent || wasAtBottom)) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            setTimeout(() => {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            }, 100);
         }
         
     } catch (error) {
