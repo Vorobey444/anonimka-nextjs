@@ -227,29 +227,15 @@ function processIPLocation(data) {
     let regionName = data.region;
     let cityName = data.city;
     
-    // Маппинг кодов стран на наши ключи
-    const countryMap = {
-        'RU': 'russia',
-        'KZ': 'kazakhstan', 
-        'BY': 'belarus',
-        'UA': 'ukraine',
-        'KG': 'kyrgyzstan',
-        'TJ': 'tajikistan',
-        'UZ': 'uzbekistan',
-        'AM': 'armenia',
-        'AZ': 'azerbaijan',
-        'MD': 'moldova',
-        'GE': 'georgia'
-    };
+    console.log('🔄 [LOCATION] processIPLocation:', { countryCode, regionName, cityName });
     
-    const mappedCountry = countryMap[countryCode];
-    
-    if (!mappedCountry || !locationData[mappedCountry]) {
-        console.log('❌ Неподдерживаемая страна:', countryCode);
+    // Проверяем есть ли страна в данных (ключи в locationData - это коды стран: KZ, RU, BY и т.д.)
+    if (!locationData[countryCode]) {
+        console.log('❌ [LOCATION] Страна не поддерживается:', countryCode);
         return null;
     }
     
-    const countryData = locationData[mappedCountry];
+    const countryData = locationData[countryCode];
     
     // Ищем регион и город
     let foundRegion = null;
@@ -279,8 +265,10 @@ function processIPLocation(data) {
         foundCity = countryData.regions[foundRegion][0];
     }
     
+    console.log('✅ [LOCATION] Результат processIPLocation:', { country: countryCode, region: foundRegion, city: foundCity });
+    
     return {
-        country: mappedCountry,
+        country: countryCode,
         region: foundRegion,
         city: foundCity,
         detected: {
