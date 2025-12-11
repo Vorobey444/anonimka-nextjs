@@ -8,7 +8,7 @@
 console.log('🚀 ===== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ANONIMKA =====');
 
 // Версия для cache busting (меняйте при обновлениях)
-const appVersion = '2.1.9';
+const appVersion = '2.2.6';
 
 /**
  * Загрузка бандла
@@ -180,6 +180,52 @@ async function initializeApplication() {
                 initializeMenuModule();
                 console.log('✅ [APP] Меню инициализировано (fallback)');
             }
+        }
+        
+        // 8. Дополнительные инициализации (как в монолите)
+        try {
+            if (typeof updateChatBadge === 'function') {
+                updateChatBadge();
+                console.log('✅ [APP] Счётчик чатов обновлён');
+            }
+        } catch (e) {
+            console.error('❌ [APP] Ошибка updateChatBadge:', e);
+        }
+        
+        try {
+            if (typeof markMessagesAsDelivered === 'function') {
+                markMessagesAsDelivered();
+                console.log('✅ [APP] Сообщения помечены как доставленные');
+            }
+        } catch (e) {
+            console.error('❌ [APP] Ошибка markMessagesAsDelivered:', e);
+        }
+        
+        try {
+            if (typeof updateLogoutButtonVisibility === 'function') {
+                updateLogoutButtonVisibility();
+                console.log('✅ [APP] Видимость кнопки выхода обновлена');
+            }
+        } catch (e) {
+            console.error('❌ [APP] Ошибка updateLogoutButtonVisibility:', e);
+        }
+        
+        try {
+            if (typeof loadPremiumStatus === 'function') {
+                loadPremiumStatus();
+                console.log('✅ [APP] Premium статус загружен');
+            }
+        } catch (e) {
+            console.error('❌ [APP] Ошибка loadPremiumStatus:', e);
+        }
+        
+        try {
+            if (typeof loadSiteStats === 'function') {
+                loadSiteStats();
+                console.log('✅ [APP] Статистика сайта загружена');
+            }
+        } catch (e) {
+            console.error('❌ [APP] Ошибка loadSiteStats:', e);
         }
         
         console.log('✅ [APP] ===== ПРИЛОЖЕНИЕ ГОТОВО =====');
