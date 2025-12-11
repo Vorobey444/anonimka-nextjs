@@ -1582,7 +1582,37 @@ function saveLocationAndContinue() {
  * Выбор страны в настройке
  */
 function selectSetupCountry(countryCode) {
-    setupSelectedCountry = countryCode;
+    // Маппинг названий стран на коды ISO
+    const countryCodeMap = {
+        'russia': 'RU',
+        'kazakhstan': 'KZ',
+        'belarus': 'BY',
+        'ukraine': 'UA',
+        'kyrgyzstan': 'KG',
+        'tajikistan': 'TJ',
+        'uzbekistan': 'UZ',
+        'armenia': 'AM',
+        'azerbaijan': 'AZ',
+        'moldova': 'MD',
+        'georgia': 'GE',
+        // Верхний регистр - оставляем как есть
+        'RU': 'RU',
+        'KZ': 'KZ',
+        'BY': 'BY',
+        'UA': 'UA',
+        'KG': 'KG',
+        'TJ': 'TJ',
+        'UZ': 'UZ',
+        'AM': 'AM',
+        'AZ': 'AZ',
+        'MD': 'MD',
+        'GE': 'GE'
+    };
+    
+    const isoCode = countryCodeMap[countryCode] || countryCode.toUpperCase();
+    console.log('📍 [LOCATION] Выбрана страна:', countryCode, '→', isoCode);
+    
+    setupSelectedCountry = isoCode;
     setupSelectedRegion = null;
     setupSelectedCity = null;
     
@@ -1596,8 +1626,8 @@ function selectSetupCountry(countryCode) {
     // Пропускаем выбор региона, сразу показываем города
     // Собираем все города из всех регионов страны
     const allCities = [];
-    if (locationData && locationData[countryCode] && locationData[countryCode].regions) {
-        const regions = locationData[countryCode].regions;
+    if (locationData && locationData[isoCode] && locationData[isoCode].regions) {
+        const regions = locationData[isoCode].regions;
         Object.keys(regions).forEach(regionName => {
             allCities.push(...regions[regionName]);
         });
@@ -1625,7 +1655,6 @@ function selectSetupCountry(countryCode) {
     // Сохраняем список всех городов для фильтрации
     window.setupAllCities = allCities;
     
-    console.log('📍 [LOCATION] Выбрана страна для настройки:', locationData[countryCode]?.name);
     console.log('📍 [LOCATION] Доступно городов:', allCities.length);
     
     // Показываем все доступные города

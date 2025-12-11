@@ -6,6 +6,44 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const revalidate = 0;
 
+// Нормализация английских названий городов в русские
+const cityNormalization: Record<string, string> = {
+  'Almaty': 'Алматы',
+  'Alma-Ata': 'Алматы',
+  'Astana': 'Астана',
+  'Nur-Sultan': 'Астана',
+  'Shymkent': 'Шымкент',
+  'Karaganda': 'Караганда',
+  'Aktobe': 'Актобе',
+  'Pavlodar': 'Павлодар',
+  'Atyrau': 'Атырау',
+  'Moscow': 'Москва',
+  'Saint Petersburg': 'Санкт-Петербург',
+  'Novosibirsk': 'Новосибирск',
+  'Yekaterinburg': 'Екатеринбург',
+  'Kazan': 'Казань',
+  'Nizhny Novgorod': 'Нижний Новгород',
+  'Chelyabinsk': 'Челябинск',
+  'Samara': 'Самара',
+  'Omsk': 'Омск',
+  'Rostov-on-Don': 'Ростов-на-Дону',
+  'Ufa': 'Уфа',
+  'Krasnoyarsk': 'Красноярск',
+  'Voronezh': 'Воронеж',
+  'Volgograd': 'Волгоград',
+  'Krasnodar': 'Краснодар',
+  'Minsk': 'Минск',
+  'Kyiv': 'Киев',
+  'Kharkiv': 'Харьков',
+  'Bishkek': 'Бишкек',
+  'Dushanbe': 'Душанбе',
+  'Tashkent': 'Ташкент'
+};
+
+function normalizeCity(city: string): string {
+  return cityNormalization[city] || city;
+}
+
 // GET - получение объявлений
 export async function GET(req: NextRequest) {
   try {
@@ -22,7 +60,9 @@ export async function GET(req: NextRequest) {
     }
     
     const { searchParams } = new URL(req.url);
-    const city = searchParams.get('city');
+    // Нормализуем город при поиске
+    const rawCity = searchParams.get('city');
+    const city = rawCity ? normalizeCity(rawCity) : null;
     const country = searchParams.get('country');
     const id = searchParams.get('id');
     const userToken = searchParams.get('userToken');
@@ -35,6 +75,7 @@ export async function GET(req: NextRequest) {
     
     console.log("[ADS API] 🔍 Получение объявлений:", { 
       city, 
+      rawCity,
       country, 
       id, 
       userToken: userToken ? 'есть' : 'нет', 
@@ -99,11 +140,15 @@ export async function GET(req: NextRequest) {
         LIMIT 1
       `;
     } else if (city && country) {
+      // Поиск по нормализованному И оригинальному названию города
+      const originalCity = rawCity || city;
+      
       // Получаем total count для пагинации с фильтром по городу и стране
       const countResult = await sql`
         SELECT COUNT(*) as total
         FROM ads
-        WHERE ads.city = ${city} AND ads.country = ${country}
+        WHERE (ads.city = ${city} OR ads.city = ${originalCity} OR LOWER(ads.city) = LOWER(${city}) OR LOWER(ads.city) = LOWER(${originalCity}))
+          AND ads.country = ${country}
           AND NOT (
             COALESCE(is_blocked, false) = true
             AND (blocked_until IS NULL OR blocked_until > NOW())
@@ -121,7 +166,8 @@ export async function GET(req: NextRequest) {
           ads.is_blocked, ads.blocked_reason, ads.blocked_until, ads.photo_urls
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
-        WHERE ads.city = ${city} AND ads.country = ${country}
+        WHERE (ads.city = ${city} OR ads.city = ${originalCity} OR LOWER(ads.city) = LOWER(${city}) OR LOWER(ads.city) = LOWER(${originalCity}))
+          AND ads.country = ${country}
           AND NOT (
             COALESCE(ads.is_blocked, false) = true
             AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW())
@@ -144,11 +190,14 @@ export async function GET(req: NextRequest) {
       (result as any).pagination = pagination;
       
     } else if (city) {
+      // Поиск по нормализованному И оригинальному названию города
+      const originalCity = rawCity || city;
+      
       // Получаем total count для пагинации с фильтром по городу
       const countResult = await sql`
         SELECT COUNT(*) as total
         FROM ads
-        WHERE ads.city = ${city}
+        WHERE (ads.city = ${city} OR ads.city = ${originalCity} OR LOWER(ads.city) = LOWER(${city}) OR LOWER(ads.city) = LOWER(${originalCity}))
           AND NOT (
             COALESCE(is_blocked, false) = true
             AND (blocked_until IS NULL OR blocked_until > NOW())
@@ -166,7 +215,7 @@ export async function GET(req: NextRequest) {
           ads.is_blocked, ads.blocked_reason, ads.blocked_until, ads.photo_urls
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
-        WHERE ads.city = ${city}
+        WHERE (ads.city = ${city} OR ads.city = ${originalCity} OR LOWER(ads.city) = LOWER(${city}) OR LOWER(ads.city) = LOWER(${originalCity}))
           AND NOT (
             COALESCE(ads.is_blocked, false) = true
             AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW())

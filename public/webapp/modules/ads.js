@@ -1646,56 +1646,132 @@ function showMyAds() {
 }
 
 /**
- * Загрузить мои анкеты (только данные)
+ * Загрузить мои анкеты (фильтрация по user_token как в монолите)
  */
 async function loadMyAds() {
     console.log('📋 [ADS] Загрузка моих анкет');
     
+    const myAdsList = document.getElementById('myAdsList');
+    if (!myAdsList) {
+        console.error('❌ Элемент myAdsList не найден!');
+        return;
+    }
+    
+    myAdsList.innerHTML = `
+        <div class="loading-spinner"></div>
+        <p>Загрузка ваших анкет...</p>
+    `;
+    
     try {
         const userToken = localStorage.getItem('user_token');
-        if (!userToken) {
-            tg.showAlert('Требуется авторизация');
+        const userId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
+        
+        if (!userToken && !userId) {
+            myAdsList.innerHTML = `
+                <div class="no-ads">
+                    <div class="neon-icon">🔐</div>
+                    <h3>Требуется авторизация</h3>
+                    <p>Авторизуйтесь чтобы видеть свои анкеты</p>
+                </div>
+            `;
             return;
         }
         
-        const response = await fetch(`/api/ads?user_token=${userToken}`);
+        // Получаем ВСЕ анкеты (как в монолите)
+        const response = await fetch('/api/ads');
         const result = await response.json();
+        const allAds = result.ads || [];
         
-        const myAds = result.ads || [];
-        const container = document.getElementById('myAdsList');
+        console.log('📋 Всего анкет:', allAds.length);
         
-        if (!container) return;
+        // Фильтруем по user_token (как в монолите)
+        let myAds = [];
+        if (userToken) {
+            myAds = allAds.filter(ad => ad.user_token === userToken);
+        } else if (userId) {
+            myAds = allAds.filter(ad => String(ad.tg_id) === String(userId));
+        }
+        
+        console.log('📋 Мои анкеты:', myAds.length);
         
         if (myAds.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>У вас нет анкет</h3>
-                    <button class="neon-button" onclick="showCreateAd()">
-                        ➕ Создать анкету
+            myAdsList.innerHTML = `
+                <div class="no-ads">
+                    <div class="neon-icon">📭</div>
+                    <h3>У вас пока нет анкет</h3>
+                    <p>Создайте первую анкету и она появится здесь</p>
+                    <button class="neon-button primary" onclick="showCreateAd()">
+                        ✏️ Создать анкету
                     </button>
                 </div>
             `;
             return;
         }
         
-        container.innerHTML = myAds.map(ad => `
-            <div class="my-ad-card">
+        // Отображаем анкеты с кнопками действий
+        myAdsList.innerHTML = myAds.map(ad => {
+            const isPinned = ad.is_pinned && (!ad.pinned_until || new Date(ad.pinned_until) > new Date());
+            const ageFrom = ad.age_from || ad.ageFrom || '?';
+            const ageTo = ad.age_to || ad.ageTo || '?';
+            const nickname = ad.display_nickname || 'Аноним';
+            
+            const bodyLabels = {
+                slim: 'Худощавое', athletic: 'Спортивное', average: 'Среднее', curvy: 'Полное',
+                'Стройное': 'Стройное', 'Обычное': 'Обычное', 'Плотное': 'Плотное', 'Спортивное': 'Спортивное', 'Другое': 'Другое'
+            };
+            const bodyType = ad.body_type ? (bodyLabels[ad.body_type] || ad.body_type) : 'не указано';
+            
+            const authorGender = typeof formatGender === 'function' ? formatGender(ad.gender) : ad.gender;
+            const genderLower = ad.gender?.toLowerCase();
+            let authorIcon = '♀️';
+            if (genderLower === 'male' || genderLower === 'мужчина') authorIcon = '♂️';
+            else if (genderLower === 'пара') authorIcon = '👫';
+            
+            const targetText = typeof formatTarget === 'function' ? formatTarget(ad.target) : ad.target;
+            const targetLower = ad.target?.toLowerCase();
+            let targetIcon = '👤';
+            if (targetLower === 'male' || targetLower === 'мужчину') targetIcon = '♂️';
+            else if (targetLower === 'female' || targetLower === 'женщину' || targetLower === 'девушку') targetIcon = '♀️';
+            else if (targetLower === 'couple' || targetLower === 'пару') targetIcon = '♂️♀️';
+            
+            const flag = (typeof locationData !== 'undefined' && locationData[ad.country]) ? locationData[ad.country].flag : '🌍';
+            const cityText = ad.region === ad.city ? ad.city : `${ad.region}, ${ad.city}`;
+            
+            return `
+            <div class="ad-card" data-ad-id="${ad.id}">
+                ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
                 <div class="ad-header">
-                    <span>${ad.my_age} лет, ${ad.city}</span>
-                    <span>${formatCreatedAt(ad.created_at)}</span>
+                    <h3>${authorIcon} ${authorGender}, ${ad.my_age || '?'} лет</h3>
+                    <div class="created-at"><span class="icon">⏰</span> ${typeof formatCreatedAt === 'function' ? formatCreatedAt(ad.created_at) : ad.created_at}</div>
                 </div>
-                <div class="ad-preview">
-                    <p>${ad.text.substring(0, 80)}...</p>
+                <div class="ad-info">
+                    <div class="ad-field"><span class="icon">💪</span> <strong>Телосложение:</strong> ${bodyType}</div>
+                    ${ad.orientation ? `<div class="ad-field"><span class="icon">💗</span> <strong>Ориентация:</strong> ${typeof formatOrientation === 'function' ? formatOrientation(ad.orientation) : ad.orientation}</div>` : ''}
+                    <div class="ad-field"><span class="icon">🎯</span> <strong>Цель:</strong> ${typeof formatGoals === 'function' ? formatGoals(ad.goal) : ad.goal}</div>
+                    <div class="ad-field"><span class="icon">${targetIcon}</span> <strong>Ищу:</strong> ${targetText}, ${ageFrom}-${ageTo} лет</div>
+                    <div class="ad-field"><span class="icon">📍</span> ${flag} ${cityText}</div>
+                    ${ad.text ? `<div class="ad-field full-width"><span class="icon">💬</span> <strong>О себе:</strong> ${ad.text}</div>` : ''}
                 </div>
                 <div class="ad-actions">
-                    <button class="action-btn edit" onclick="editAd(${ad.id})">✏️ Редактировать</button>
-                    <button class="action-btn delete" onclick="deleteMyAd(${ad.id})">🗑️ Удалить</button>
+                    <button class="delete-ad-btn" onclick="deleteMyAd(${ad.id})">🗑️ Удалить</button>
+                    <button class="pin-ad-btn" onclick="pinMyAd(${ad.id}, ${!isPinned})">${isPinned ? '✖️ Открепить' : '📌 Закрепить (1ч)'}</button>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
+        
+        console.log('✅ Мои анкеты отображены');
         
     } catch (error) {
-        console.error('❌ [ADS] Ошибка загрузки моих анкет:', error);
+        console.error('❌ Ошибка загрузки моих анкет:', error);
+        myAdsList.innerHTML = `
+            <div class="no-ads">
+                <div class="neon-icon">⚠️</div>
+                <h3>Ошибка загрузки</h3>
+                <p>${error.message || 'Неизвестная ошибка'}</p>
+                <button class="neon-button primary" onclick="loadMyAds()">🔄 Попробовать снова</button>
+            </div>
+        `;
     }
 }
 
