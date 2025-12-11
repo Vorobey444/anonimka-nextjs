@@ -44,6 +44,30 @@ function normalizeCity(city: string): string {
   return cityNormalization[city] || city;
 }
 
+// Нормализация кодов стран в полные названия (как в базе)
+const countryNormalization: Record<string, string> = {
+  'KZ': 'kazakhstan',
+  'RU': 'russia',
+  'BY': 'belarus',
+  'UA': 'ukraine',
+  'KG': 'kyrgyzstan',
+  'TJ': 'tajikistan',
+  'UZ': 'uzbekistan',
+  'AM': 'armenia',
+  'AZ': 'azerbaijan',
+  'MD': 'moldova',
+  'GE': 'georgia'
+};
+
+function normalizeCountry(country: string): string[] {
+  // Возвращаем массив возможных вариантов для поиска
+  const normalized = countryNormalization[country.toUpperCase()];
+  if (normalized) {
+    return [country, normalized, country.toLowerCase(), country.toUpperCase()];
+  }
+  return [country, country.toLowerCase(), country.toUpperCase()];
+}
+
 // GET - получение объявлений
 export async function GET(req: NextRequest) {
   try {
@@ -63,7 +87,9 @@ export async function GET(req: NextRequest) {
     // Нормализуем город при поиске
     const rawCity = searchParams.get('city');
     const city = rawCity ? normalizeCity(rawCity) : null;
-    const country = searchParams.get('country');
+    const rawCountry = searchParams.get('country');
+    // Получаем все варианты написания страны для поиска
+    const countryVariants = rawCountry ? normalizeCountry(rawCountry) : [];
     const id = searchParams.get('id');
     const userToken = searchParams.get('userToken');
     const tgId = searchParams.get('tgId');
@@ -76,7 +102,8 @@ export async function GET(req: NextRequest) {
     console.log("[ADS API] 🔍 Получение объявлений:", { 
       city, 
       rawCity,
-      country, 
+      rawCountry,
+      countryVariants,
       id, 
       userToken: userToken ? 'есть' : 'нет', 
       tgId: tgId ? 'есть' : 'нет', 
@@ -139,16 +166,17 @@ export async function GET(req: NextRequest) {
           )
         LIMIT 1
       `;
-    } else if (city && country) {
-      // Поиск по нормализованному И оригинальному названию города
+    } else if (city && countryVariants.length > 0) {
+      // Поиск по нормализованному И оригинальному названию города и всем вариантам страны
       const originalCity = rawCity || city;
+      const [cv1, cv2, cv3, cv4] = [...countryVariants, '', '', '', ''];
       
       // Получаем total count для пагинации с фильтром по городу и стране
       const countResult = await sql`
         SELECT COUNT(*) as total
         FROM ads
         WHERE (ads.city = ${city} OR ads.city = ${originalCity} OR LOWER(ads.city) = LOWER(${city}) OR LOWER(ads.city) = LOWER(${originalCity}))
-          AND ads.country = ${country}
+          AND (ads.country = ${cv1} OR ads.country = ${cv2} OR ads.country = ${cv3} OR ads.country = ${cv4} OR LOWER(ads.country) = LOWER(${cv1}))
           AND NOT (
             COALESCE(is_blocked, false) = true
             AND (blocked_until IS NULL OR blocked_until > NOW())
@@ -167,10 +195,10 @@ export async function GET(req: NextRequest) {
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
         WHERE (ads.city = ${city} OR ads.city = ${originalCity} OR LOWER(ads.city) = LOWER(${city}) OR LOWER(ads.city) = LOWER(${originalCity}))
-          AND ads.country = ${country}
+          AND (ads.country = ${cv1} OR ads.country = ${cv2} OR ads.country = ${cv3} OR ads.country = ${cv4} OR LOWER(ads.country) = LOWER(${cv1}))
           AND NOT (
             COALESCE(ads.is_blocked, false) = true
-            AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW())
+            AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW()))
           )
         ORDER BY 
           CASE WHEN ads.is_pinned = true AND (ads.pinned_until IS NULL OR ads.pinned_until > NOW()) THEN 0 ELSE 1 END,
@@ -237,12 +265,15 @@ export async function GET(req: NextRequest) {
       };
       (result as any).pagination = pagination;
       
-    } else if (country) {
+    } else if (countryVariants.length > 0) {
+      // Поиск по всем вариантам страны
+      const [cv1, cv2, cv3, cv4] = [...countryVariants, '', '', '', ''];
+      
       // Получаем total count для пагинации с фильтром по стране
       const countResult = await sql`
         SELECT COUNT(*) as total
         FROM ads
-        WHERE ads.country = ${country}
+        WHERE (ads.country = ${cv1} OR ads.country = ${cv2} OR ads.country = ${cv3} OR ads.country = ${cv4} OR LOWER(ads.country) = LOWER(${cv1}))
           AND NOT (
             COALESCE(is_blocked, false) = true
             AND (blocked_until IS NULL OR blocked_until > NOW())
@@ -260,7 +291,7 @@ export async function GET(req: NextRequest) {
           ads.is_blocked, ads.blocked_reason, ads.blocked_until, ads.photo_urls
         FROM ads
         LEFT JOIN users ON (ads.tg_id = users.id OR ads.user_token = users.user_token)
-        WHERE ads.country = ${country}
+        WHERE (ads.country = ${cv1} OR ads.country = ${cv2} OR ads.country = ${cv3} OR ads.country = ${cv4} OR LOWER(ads.country) = LOWER(${cv1}))
           AND NOT (
             COALESCE(ads.is_blocked, false) = true
             AND (ads.blocked_until IS NULL OR ads.blocked_until > NOW())
