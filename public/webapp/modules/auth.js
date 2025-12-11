@@ -53,6 +53,9 @@ function getCurrentUserId() {
  */
 function checkTelegramAuth() {
     console.log('🔐 Проверка авторизации...');
+    console.log('  📊 Детальная диагностика:');
+    console.log('    - tg:', typeof tg !== 'undefined' ? tg : 'undefined');
+    console.log('    - tg?.initDataUnsafe?.user:', typeof tg !== 'undefined' ? tg?.initDataUnsafe?.user : 'undefined');
     
     // Проверяем если это Android устройство - используем email авторизацию
     const isAndroid = navigator.userAgent.includes('Android');
@@ -120,15 +123,62 @@ function checkTelegramAuth() {
         return true;
     }
     
-    // Проверяем сохранённые данные авторизации (для web)
-    const savedUser = localStorage.getItem('telegram_user');
+    // Проверяем email авторизацию (приоритетнее для web)
     const userToken = localStorage.getItem('user_token');
+    const authMethod = localStorage.getItem('auth_method');
     
-    if (savedUser) {
-        console.log('✅ Telegram пользователь восстановлен из localStorage');
+    if (userToken && userToken !== 'null' && userToken !== 'undefined' && authMethod === 'email') {
+        console.log('✅ Найдена email авторизация, user_token:', userToken.substring(0, 16) + '...');
+        
+        // Закрываем модальные окна
+        const telegramModal = document.getElementById('telegramAuthModal');
+        if (telegramModal) {
+            telegramModal.style.display = 'none';
+        }
+        const emailModal = document.getElementById('emailAuthModal');
+        if (emailModal) {
+            emailModal.style.display = 'none';
+        }
+        
         return true;
     }
     
+    // Проверяем сохранённые данные Telegram из предыдущей сессии
+    const savedUser = localStorage.getItem('telegram_user');
+    if (savedUser) {
+        try {
+            const userData = JSON.parse(savedUser);
+            console.log('✅ Найдена сохранённая Telegram авторизация');
+            
+            // Проверяем, не истекла ли авторизация (30 дней)
+            const authTime = localStorage.getItem('telegram_auth_time');
+            const now = Date.now();
+            if (authTime && (now - parseInt(authTime)) < 30 * 24 * 60 * 60 * 1000) {
+                console.log('✅ Telegram авторизация действительна');
+                
+                // Восстанавливаем user_id если его нет
+                if (!localStorage.getItem('user_id') && userData.id) {
+                    localStorage.setItem('user_id', userData.id.toString());
+                    console.log('✅ Восстановлен user_id:', userData.id);
+                }
+                
+                // Закрываем модальные окна
+                const modal = document.getElementById('telegramAuthModal');
+                const emailModal = document.getElementById('emailAuthModal');
+                if (modal) modal.style.display = 'none';
+                if (emailModal) emailModal.style.display = 'none';
+                
+                return true;
+            } else {
+                console.log('⚠️ Telegram авторизация истекла');
+            }
+        } catch (e) {
+            console.error('Ошибка парсинга данных пользователя:', e);
+            localStorage.removeItem('telegram_user');
+        }
+    }
+    
+    // Проверяем обычный user_token без auth_method
     if (userToken && userToken !== 'null' && userToken !== 'undefined') {
         console.log('✅ Пользователь авторизован по токену');
         return true;
@@ -145,64 +195,103 @@ async function initializeUserInDatabase() {
     try {
         console.log('🔄 [AUTH] Инициализация пользователя в БД');
         
-        // Пытаемся получить user_token
-        let userToken = localStorage.getItem('user_token');
+        // Проверяем Telegram WebApp user
+        const tgUser = typeof tg !== 'undefined' ? tg?.initDataUnsafe?.user : window.Telegram?.WebApp?.initDataUnsafe?.user;
         
-        // Если токена нет, создаём новый через API
-        if (!userToken || userToken === 'null' || userToken === 'undefined') {
-            console.log('📝 [AUTH] Токен отсутствует, запрашиваем новый...');
-            
-            const tgUser = tg?.initDataUnsafe?.user;
-            const payload = {
-                action: 'initialize',
-                params: {}
-            };
-            
-            // Если это Telegram пользователь, передаём его ID
-            if (tgUser && tgUser.id) {
-                payload.params.tg_id = tgUser.id;
-                payload.params.tg_username = tgUser.username;
-                payload.params.tg_first_name = tgUser.first_name;
-                console.log('📱 [AUTH] Инициализация Telegram пользователя:', tgUser.id);
+        // Или проверяем сохранённую авторизацию через Login Widget
+        const savedUser = localStorage.getItem('telegram_user');
+        let userId = null;
+        
+        if (tgUser && tgUser.id) {
+            userId = tgUser.id;
+            console.log('🔑 [AUTH] Используем Telegram WebApp user:', userId);
+        } else if (savedUser) {
+            try {
+                const userData = JSON.parse(savedUser);
+                if (userData?.id) {
+                    userId = userData.id;
+                    console.log('🔑 [AUTH] Используем сохранённый Login Widget user:', userId);
+                }
+            } catch (e) {
+                console.warn('⚠️ [AUTH] Ошибка парсинга сохранённого пользователя:', e);
             }
+        }
+        
+        if (userId) {
+            console.log('📤 [AUTH] Инициализируем пользователя в БД...');
             
-            const response = await fetch('/api/user-init', {
+            const response = await fetch('/api/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    tgId: userId,
+                    nickname: null // Не отправляем локальный никнейм, чтобы не перезаписать серверный
+                })
             });
             
             const result = await response.json();
-            
-            if (result.error) {
-                console.error('❌ [AUTH] Ошибка инициализации:', result.error);
-                return false;
-            }
-            
-            // Сохраняем полученный токен
-            userToken = result.data?.user_token || result.data?.token;
-            if (userToken) {
-                localStorage.setItem('user_token', userToken);
-                console.log('✅ [AUTH] Токен создан и сохранён:', userToken.substring(0, 16) + '...');
+            if (result.success && result.userToken) {
+                // Сохраняем токен в localStorage
+                localStorage.setItem('user_token', result.userToken);
+                console.log('✅ [AUTH] Пользователь инициализирован, токен получен');
+                
+                // Обновляем last_login_at для статистики активных пользователей
+                try {
+                    await fetch('/api/users', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tgId: userId })
+                    });
+                    console.log('✅ [AUTH] last_login_at обновлён');
+                } catch (e) {
+                    console.warn('⚠️ [AUTH] Не удалось обновить last_login_at:', e);
+                }
+                
+                // Синхронизируем никнейм из БД (сервер — источник истины)
+                try {
+                    const resp2 = await fetch(`/api/users?tgId=${userId}`);
+                    const data2 = await resp2.json();
+                    if (data2?.success && data2.displayNickname) {
+                        localStorage.setItem('userNickname', data2.displayNickname);
+                        localStorage.setItem('user_nickname', data2.displayNickname);
+                        console.log('🔄 [AUTH] Никнейм синхронизирован из БД:', data2.displayNickname);
+                        
+                        // Обновим UI если нужно
+                        const currentNicknameDisplay = document.getElementById('currentNicknameDisplay');
+                        if (currentNicknameDisplay) currentNicknameDisplay.textContent = data2.displayNickname;
+                        const nicknameInputPage = document.getElementById('nicknameInputPage');
+                        if (nicknameInputPage) nicknameInputPage.value = data2.displayNickname;
+                    } else {
+                        console.log('ℹ️ [AUTH] Никнейм не найден в БД');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ [AUTH] Не удалось подтянуть никнейм из БД:', e);
+                }
+            } else {
+                console.warn('⚠️ [AUTH] Ошибка инициализации пользователя:', result.error);
             }
         } else {
-            console.log('✅ [AUTH] Токен уже существует:', userToken.substring(0, 16) + '...');
-        }
-        
-        // Отправляем heartbeat для обновления активности
-        if (userToken) {
-            try {
-                await fetch('/api/user-init', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'heartbeat',
-                        params: { user_token: userToken }
-                    })
-                });
-                console.log('💓 [AUTH] Heartbeat отправлен');
-            } catch (e) {
-                console.warn('⚠️ [AUTH] Ошибка heartbeat:', e.message);
+            // Для веб-пользователей проверяем user_token
+            const userToken = localStorage.getItem('user_token');
+            if (userToken && userToken !== 'null' && userToken !== 'undefined') {
+                console.log('✅ [AUTH] Веб-пользователь с токеном:', userToken.substring(0, 16) + '...');
+                
+                // Отправляем heartbeat
+                try {
+                    await fetch('/api/user-init', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'heartbeat',
+                            params: { user_token: userToken }
+                        })
+                    });
+                    console.log('💓 [AUTH] Heartbeat отправлен');
+                } catch (e) {
+                    console.warn('⚠️ [AUTH] Ошибка heartbeat:', e.message);
+                }
+            } else {
+                console.log('ℹ️ [AUTH] Telegram ID не найден, пропускаем инициализацию (веб-пользователь)');
             }
         }
         

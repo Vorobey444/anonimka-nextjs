@@ -1184,7 +1184,7 @@ async function loadSiteStats() {
     try {
         // Проверяем is_admin только один раз
         if (!adminCheckCompleted) {
-            let userId = tg?.initDataUnsafe?.user?.id;
+            let userId = typeof tg !== 'undefined' && tg?.initDataUnsafe?.user?.id ? tg.initDataUnsafe.user.id : null;
             if (!userId) {
                 const savedUser = localStorage.getItem('telegram_user');
                 if (savedUser) {
@@ -1198,12 +1198,15 @@ async function loadSiteStats() {
             }
             
             const userToken = localStorage.getItem('user_token');
+            console.log('[ADMIN STATS] Проверка админа для user_id:', userId, 'user_token:', userToken ? 'есть' : 'нет');
             
             if (userId) {
                 try {
                     const userStatusResponse = await fetch(`/api/users?action=check-admin&user_id=${userId}`);
                     const userStatusData = await userStatusResponse.json();
+                    console.log('[ADMIN STATS] Ответ API (по user_id):', userStatusData);
                     window.isAdminUser = userStatusData.is_admin === true;
+                    console.log('[ADMIN STATS] isAdminUser:', window.isAdminUser);
                 } catch (err) {
                     console.error('[ADMIN STATS] Ошибка проверки статуса админа:', err);
                 }
@@ -1211,18 +1214,24 @@ async function loadSiteStats() {
                 try {
                     const userStatusResponse = await fetch(`/api/users?action=check-admin&userToken=${userToken}`);
                     const userStatusData = await userStatusResponse.json();
+                    console.log('[ADMIN STATS] Ответ API (по userToken):', userStatusData);
                     window.isAdminUser = userStatusData.is_admin === true;
+                    console.log('[ADMIN STATS] isAdminUser:', window.isAdminUser);
                 } catch (err) {
                     console.error('[ADMIN STATS] Ошибка проверки статуса админа по токену:', err);
                 }
+            } else {
+                console.warn('[ADMIN STATS] Ни userId, ни userToken не найдены');
             }
             
             adminCheckCompleted = true;
             
             // Скрываем/показываем элементы админа
             const adminStatsEl = document.getElementById('adminStats');
+            console.log('[ADMIN STATS] Элемент adminStats найден:', !!adminStatsEl);
             if (adminStatsEl) {
                 adminStatsEl.style.display = window.isAdminUser ? 'flex' : 'none';
+                console.log('[ADMIN STATS] Установлен display:', adminStatsEl.style.display);
             }
 
             const adminMenuItem = document.getElementById('adminMenuItem');
@@ -1236,25 +1245,38 @@ async function loadSiteStats() {
         const response = await fetch('/api/analytics?metric=all');
         const data = await response.json();
         
+        console.log('[STATS] API Response:', data);
+        
         const totalVisitsEl = document.getElementById('totalVisits');
         const onlineNowEl = document.getElementById('onlineNow');
         const totalAdsEl = document.getElementById('totalAds');
         const blockedUsersEl = document.getElementById('blockedUsersCount');
         
+        console.log('[STATS] Found elements:', {
+            totalVisitsEl: !!totalVisitsEl,
+            onlineNowEl: !!onlineNowEl,
+            totalAdsEl: !!totalAdsEl,
+            blockedUsersEl: !!blockedUsersEl
+        });
+        
         if (totalVisitsEl && data.total_unique_users !== undefined) {
             totalVisitsEl.textContent = formatNumber(data.total_unique_users);
+            console.log('[STATS] Updated totalVisits:', data.total_unique_users);
         }
         
         if (onlineNowEl && data.unique_last_24h !== undefined) {
             onlineNowEl.textContent = formatNumber(data.unique_last_24h);
+            console.log('[STATS] Updated onlineNow:', data.unique_last_24h);
         }
         
         if (totalAdsEl && data.total_ads !== undefined) {
             totalAdsEl.textContent = formatNumber(data.total_ads);
+            console.log('[STATS] Updated totalAds:', data.total_ads);
         }
         
         if (blockedUsersEl && data.blocked_users !== undefined) {
             blockedUsersEl.textContent = formatNumber(data.blocked_users);
+            console.log('[STATS] Updated blockedUsers:', data.blocked_users);
         }
     } catch (error) {
         console.error('Ошибка загрузки статистики:', error);

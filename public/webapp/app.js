@@ -8,7 +8,7 @@
 console.log('🚀 ===== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ANONIMKA =====');
 
 // Версия для cache busting (меняйте при обновлениях)
-const appVersion = '2.2.6';
+const appVersion = '2.2.7';
 
 /**
  * Загрузка бандла
@@ -153,6 +153,12 @@ async function initializeApplication() {
             console.log('✅ [APP] Никнейм инициализирован');
         }
         
+        // 4.1 Скрываем функции для email пользователей
+        if (typeof hideEmailUserFeatures === 'function') {
+            hideEmailUserFeatures();
+            console.log('✅ [APP] Email user features скрыты');
+        }
+        
         // 5. Проверяем местоположение
         if (typeof checkUserLocation === 'function') {
             await checkUserLocation();
@@ -163,6 +169,12 @@ async function initializeApplication() {
         if (typeof handleReferralLink === 'function') {
             await handleReferralLink();
             console.log('✅ [APP] Реферальная ссылка обработана');
+        }
+        
+        // 6.1 Завершаем отложенный реферал если есть
+        if (typeof finalizePendingReferral === 'function') {
+            await finalizePendingReferral();
+            console.log('✅ [APP] Отложенный реферал завершён');
         }
         
         // 7. Проверяем, нужен ли онбординг
