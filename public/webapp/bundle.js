@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-11T19:57:24.235Z
+ * Автоматически сгенерирован: 2025-12-11T19:59:56.411Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -7720,7 +7720,7 @@ console.log('✅ [ADMIN] Модуль админ-панели инициализ
 } catch(e) { console.error('❌ Ошибка в модуле admin.js:', e); }
 })();
 
-// ========== location.js (93.4 KB) ==========
+// ========== location.js (90.6 KB) ==========
 (function() {
 try {
 /**
@@ -8507,74 +8507,6 @@ function handleNoLocation(hasNickname) {
             checkOnboardingStatus();
         }
     }
-}
-
-/**
- * Определение локации по GPS
- */
-async function detectLocationByGPS() {
-    return new Promise((resolve) => {
-        if (!navigator.geolocation) {
-            console.log('❌ GPS недоступен в этом браузере');
-            resolve(null);
-            return;
-        }
-        
-        console.log('🛰️ Запрашиваем GPS координаты...');
-        
-        const timeoutId = setTimeout(() => {
-            console.log('⏱️ GPS таймаут (15 секунд)');
-            resolve(null);
-        }, 15000);
-        
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                clearTimeout(timeoutId);
-                const { latitude, longitude } = position.coords;
-                console.log(`📍 GPS координаты получены: ${latitude}, ${longitude}`);
-                
-                try {
-                    const response = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ru`,
-                        {
-                            headers: {
-                                'User-Agent': 'Anonimka-App/1.0'
-                            }
-                        }
-                    );
-                    const data = await response.json();
-                    console.log('🗺️ Геокодирование ответ:', data);
-                    
-                    if (data && data.address) {
-                        const locationData = {
-                            country_code: data.address.country_code?.toUpperCase(),
-                            country_name: data.address.country,
-                            region: data.address.state || data.address.region,
-                            city: data.address.city || data.address.town || data.address.village,
-                            source: 'gps'
-                        };
-                        console.log('✅ GPS локация определена:', locationData);
-                        resolve(locationData);
-                    } else {
-                        resolve(null);
-                    }
-                } catch (error) {
-                    console.error('❌ Ошибка геокодирования GPS:', error);
-                    resolve(null);
-                }
-            },
-            (error) => {
-                clearTimeout(timeoutId);
-                console.log(`❌ GPS ошибка: ${error.message}`);
-                resolve(null);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 300000
-            }
-        );
-    });
 }
 
 /**
