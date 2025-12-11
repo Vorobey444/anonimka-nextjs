@@ -1153,15 +1153,24 @@ function closeAdModal() {
  * Показать детали анкеты (из списка)
  */
 function showAdDetails(index) {
+    console.log('🔍 [ADS] showAdDetails вызвана с index:', index);
+    console.log('🔍 [ADS] window.currentAds:', window.currentAds?.length, 'анкет');
+    
     const ad = window.currentAds?.[index];
     
     if (!ad) {
+        console.error('❌ [ADS] Анкета не найдена по индексу:', index);
         tg.showAlert('Анкета не найдена');
         return;
     }
     
+    console.log('✅ [ADS] Анкета найдена:', ad.id, ad.display_nickname);
+    
     const adContent = document.getElementById('adContent');
-    if (!adContent) return;
+    if (!adContent) {
+        console.error('❌ [ADS] Элемент adContent не найден!');
+        return;
+    }
     
     window.currentAdIndex = index;
     window.currentPhotoIndex = 0;
@@ -1245,6 +1254,8 @@ function showAdDetails(index) {
             ` : ''}
         </div>
     `;
+    
+    console.log('✅ [ADS] Контент adContent заполнен, длина:', adContent.innerHTML.length);
     
     showScreen('adDetails');
     
