@@ -33,13 +33,10 @@ let currentScreen = 'mainMenu';
 function showScreen(screenId) {
     console.log('📺 [MENU] Переход на экран:', screenId);
     
-    // Скрываем все экраны
-    Object.values(screens).forEach(screen => {
-        const el = document.getElementById(screen);
-        if (el) {
-            el.style.display = 'none';
-            el.classList.remove('active');
-        }
+    // Скрываем ВСЕ экраны с классом .screen (как в backup)
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+        screen.style.display = 'none';
     });
     
     // Показываем нужный экран с правильными стилями
@@ -47,9 +44,18 @@ function showScreen(screenId) {
     if (screenEl) {
         screenEl.style.display = 'flex';
         screenEl.style.flexDirection = 'column';
-        screenEl.style.alignItems = 'center';
         screenEl.classList.add('active');
         currentScreen = screenId;
+        
+        // Управление видимостью переключателя тарифов (как в backup)
+        const premiumToggle = document.getElementById('premiumToggle');
+        if (premiumToggle) {
+            if (screenId === 'mainMenu') {
+                premiumToggle.style.display = 'flex';
+            } else {
+                premiumToggle.style.display = 'none';
+            }
+        }
         
         // Логируем для дебага
         console.log('✅ [MENU] Экран отображен');
@@ -333,11 +339,11 @@ function showMainMenu() {
         screen.style.display = 'none';
     });
     
-    // Показываем главный экран
-    const homeScreen = document.getElementById('homeScreen');
-    if (homeScreen) {
-        homeScreen.classList.add('active');
-        homeScreen.style.display = 'flex';
+    // Показываем главный экран (ID в HTML = mainMenu)
+    const mainMenuScreen = document.getElementById('mainMenu');
+    if (mainMenuScreen) {
+        mainMenuScreen.classList.add('active');
+        mainMenuScreen.style.display = 'flex';
     }
     
     // Обновляем отображение локации
@@ -848,6 +854,21 @@ function initializeMenuModule() {
     
     // Показываем главный экран
     showScreen(screens.homeScreen);
+    
+    // Загружаем превью последнего сообщения для кнопки Мир чат (как в backup)
+    setTimeout(() => {
+        try {
+            if (typeof loadWorldChatPreview === 'function') {
+                loadWorldChatPreview();
+                // Обновляем превью каждые 10 секунд
+                setInterval(() => {
+                    loadWorldChatPreview();
+                }, 10000);
+            }
+        } catch (e) {
+            console.error('❌ [MENU] Ошибка loadWorldChatPreview:', e);
+        }
+    }, 300);
     
     console.log('✅ [MENU] Модуль навигации инициализирован');
 }

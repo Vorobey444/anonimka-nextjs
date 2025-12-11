@@ -1616,9 +1616,38 @@ async function saveSetupLocation() {
  */
 function updateLocationDisplay() {
     const locationDisplay = document.getElementById('userLocationDisplay');
+    console.log('📍 [LOCATION] updateLocationDisplay:', { 
+        hasDisplay: !!locationDisplay, 
+        currentUserLocation 
+    });
+    
     if (locationDisplay && currentUserLocation) {
-        const flag = locationData?.[currentUserLocation.country]?.flag || '📍';
-        locationDisplay.textContent = `${flag} ${currentUserLocation.city || 'Не указан'}`;
+        // Страна может быть в разных форматах: 'KZ', 'kazakhstan', 'Казахстан'
+        let countryCode = currentUserLocation.country;
+        
+        // Пробуем найти данные страны
+        let countryData = locationData?.[countryCode];
+        
+        // Если не нашли, пробуем по верхнему регистру
+        if (!countryData && countryCode) {
+            countryData = locationData?.[countryCode.toUpperCase()];
+        }
+        
+        // Если всё ещё не нашли, ищем по названию
+        if (!countryData && countryCode) {
+            const lowerCountry = countryCode.toLowerCase();
+            if (lowerCountry === 'kazakhstan' || lowerCountry === 'казахстан') {
+                countryData = locationData?.['KZ'];
+            } else if (lowerCountry === 'russia' || lowerCountry === 'россия') {
+                countryData = locationData?.['RU'];
+            }
+        }
+        
+        const flag = countryData?.flag || '📍';
+        const city = currentUserLocation.city || 'Не указан';
+        locationDisplay.textContent = `${flag} ${city}`;
+        
+        console.log('✅ [LOCATION] Отображение обновлено:', `${flag} ${city}`);
     }
 }
 
