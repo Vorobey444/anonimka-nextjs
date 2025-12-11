@@ -1257,6 +1257,12 @@ function showAdDetails(index) {
     
     console.log('✅ [ADS] Контент adContent заполнен, длина:', adContent.innerHTML.length);
     
+    // Обновляем кнопку "Написать автору"
+    const contactBtn = document.querySelector('#adDetails button.neon-button');
+    if (contactBtn) {
+        contactBtn.onclick = () => contactAuthor(index);
+    }
+    
     showScreen('adDetails');
     
     if (ad.photo_urls && ad.photo_urls.length > 1) {
