@@ -239,6 +239,11 @@ function updateFormStep(step) {
         }
     }
     
+    // Шаг 9 - загружаем галерею фото пользователя
+    if (step === 9 && typeof loadMyPhotosForStep9 === 'function') {
+        loadMyPhotosForStep9();
+    }
+    
     // Обновляем прогресс
     const progressBar = document.querySelector('.form-progress');
     if (progressBar) {

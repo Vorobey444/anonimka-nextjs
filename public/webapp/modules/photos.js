@@ -325,16 +325,24 @@ async function addAdPhoto() {
             const img = document.getElementById('adPhotoImage');
             const btn = document.getElementById('addAdPhotoBtn');
             
-            console.log('📸 [addAdPhoto] Elements found:', { preview: !!preview, img: !!img, btn: !!btn });
-            console.log('📸 [addAdPhoto] Setting img.src to:', photoData.photo_url);
+            console.log('📸 [addAdPhoto] photoData:', photoData);
             
-            if (preview && img && btn) {
-                img.src = photoData.photo_url;
-                preview.style.display = 'block';
-                btn.style.display = 'none';
-            }
+            // Сохраняем фото в БД user_photos
+            const userToken = localStorage.getItem('user_token');
+            await fetch('/api/user-photos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userToken,
+                    fileId: photoData.file_id,
+                    photoUrl: photoData.photo_url
+                })
+            });
             
-            tg.showAlert('✅ Фото загружено!');
+            // Перезагружаем галерею
+            loadMyPhotosForStep9();
+            
+            tg.showAlert('✅ Фото добавлено!');
             
         } catch (error) {
             console.error('❌ Ошибка загрузки фото:', error);
@@ -374,35 +382,106 @@ function removeAdPhoto() {
  */
 async function loadMyPhotosForStep9() {
     try {
+        console.log('📸 [loadMyPhotosForStep9] Загрузка фото...');
         const userToken = localStorage.getItem('user_token');
         if (!userToken) return;
         
         const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
         const result = await resp.json();
         
-        if (result.error) return;
-        
-        const photos = result.data || [];
-        const container = document.getElementById('step9PhotosGrid');
-        
-        if (!container) return;
-        
-        if (photos.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 20px; color: #888;">
-                    <p>У вас нет загруженных фото</p>
-                    <p style="font-size: 0.8rem;">Добавьте фото ниже</p>
-                </div>
-            `;
+        const container = document.getElementById('step9PhotoGallery');
+        if (!container) {
+            console.error('❌ step9PhotoGallery контейнер не найден');
             return;
         }
         
-        container.innerHTML = photos.map(photo => `
-            <div class="step9-photo-item ${photo.is_active ? 'active' : ''}" onclick="selectStep9Photo(${photo.id}, '${photo.photo_url}')">
-                <img src="${photo.photo_url}" alt="Фото">
-                ${photo.is_active ? '<div class="step9-photo-badge">✓</div>' : ''}
-            </div>
-        `).join('');
+        if (result.error || !result.data || result.data.length === 0) {
+            console.log('ℹ️ Нет фото в галерее');
+            container.innerHTML = `
+                <div style="text-align: center; padding: 15px; color: var(--text-gray);">
+                    <p style="margin: 0;">📷 У вас пока нет фото</p>
+                    <p style="margin: 8px 0 0 0; font-size: 13px;">Загрузите фото ниже</p>
+                </div>
+            `;
+            container.style.display = 'block';
+            return;
+        }
+        
+        const photos = result.data;
+        console.log(`✅ Загружено ${photos.length} фото`);
+        
+        container.innerHTML = '';
+        container.style.display = 'block';
+        
+        // Инфо блок
+        const infoDiv = document.createElement('div');
+        infoDiv.style.cssText = `
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 12px;
+            color: var(--neon-cyan);
+            font-size: 12px;
+        `;
+        infoDiv.innerHTML = `ℹ️ Выберите фото для анкеты или добавьте новое`;
+        container.appendChild(infoDiv);
+        
+        // Сетка фото
+        const gridDiv = document.createElement('div');
+        gridDiv.style.cssText = `
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        `;
+        
+        photos.slice(0, 6).forEach((photo, index) => {
+            const photoDiv = document.createElement('div');
+            photoDiv.className = 'step9-photo-item';
+            photoDiv.style.cssText = `
+                position: relative;
+                border: 2px solid ${formData?.selectedPhotoId === photo.id ? 'var(--neon-pink)' : 'var(--neon-cyan)'};
+                border-radius: 8px;
+                overflow: hidden;
+                aspect-ratio: 1;
+                cursor: pointer;
+            `;
+            photoDiv.onclick = () => selectStep9Photo(photo.id, photo.photo_url, photo.file_id);
+            
+            const img = document.createElement('img');
+            img.src = photo.photo_url;
+            img.alt = `Фото ${index + 1}`;
+            img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+            photoDiv.appendChild(img);
+            
+            // Кнопка удаления
+            const delBtn = document.createElement('button');
+            delBtn.innerHTML = '✕';
+            delBtn.style.cssText = `
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: rgba(255, 0, 0, 0.9);
+                color: white;
+                border: none;
+                cursor: pointer;
+                font-size: 14px;
+            `;
+            delBtn.onclick = async (e) => {
+                e.stopPropagation();
+                if (confirm('Удалить это фото?')) {
+                    await deleteStep9Photo(photo.id);
+                }
+            };
+            photoDiv.appendChild(delBtn);
+            
+            gridDiv.appendChild(photoDiv);
+        });
+        
+        container.appendChild(gridDiv);
         
     } catch (error) {
         console.error('Ошибка загрузки фото для шага 9:', error);
@@ -412,20 +491,45 @@ async function loadMyPhotosForStep9() {
 /**
  * Выбрать фото на шаге 9
  */
-function selectStep9Photo(photoId, photoUrl) {
+function selectStep9Photo(photoId, photoUrl, fileId) {
     if (typeof formData !== 'undefined') {
         formData.selectedPhotoId = photoId;
         formData.adPhotoUrl = photoUrl;
+        formData.adPhotoFileId = fileId;
     }
     
     // Обновляем UI - отмечаем выбранное фото
     document.querySelectorAll('.step9-photo-item').forEach(item => {
-        item.classList.remove('selected');
+        item.style.borderColor = 'var(--neon-cyan)';
     });
     
-    event.currentTarget.classList.add('selected');
+    if (event && event.currentTarget) {
+        event.currentTarget.style.borderColor = 'var(--neon-pink)';
+    }
     
     console.log('📸 Выбрано фото:', photoId);
+    tg.showAlert('✅ Фото выбрано для анкеты!');
+}
+
+/**
+ * Удалить фото на шаге 9
+ */
+async function deleteStep9Photo(photoId) {
+    try {
+        const userToken = localStorage.getItem('user_token');
+        const resp = await fetch('/api/user-photos', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ photoId, userToken })
+        });
+        
+        if (resp.ok) {
+            tg.showAlert('✅ Фото удалено');
+            loadMyPhotosForStep9(); // Перезагружаем галерею
+        }
+    } catch (error) {
+        console.error('Ошибка удаления фото:', error);
+    }
 }
 
 /**
@@ -597,6 +701,7 @@ window.movePhotoUp = movePhotoUp;
 window.movePhotoDown = movePhotoDown;
 window.loadMyPhotosForStep9 = loadMyPhotosForStep9;
 window.selectStep9Photo = selectStep9Photo;
+window.deleteStep9Photo = deleteStep9Photo;
 window.showPhotoSourceMenu = showPhotoSourceMenu;
 window.closePhotoSourceMenu = closePhotoSourceMenu;
 window.openGallery = openGallery;
