@@ -183,6 +183,62 @@ function updateFormStep(step) {
     const currentStepEl = document.getElementById(`step${step}`);
     if (currentStepEl) currentStepEl.classList.add('active');
     
+    // Шаг 8 - создаём textarea динамически
+    const textareaContainer = document.getElementById('textareaContainer');
+    if (textareaContainer) {
+        if (step === 8) {
+            textareaContainer.style.display = 'block';
+            
+            // Удаляем старый textarea если есть
+            let textarea = document.getElementById('adText');
+            if (textarea) textarea.remove();
+            
+            // Создаём textarea динамически
+            textarea = document.createElement('textarea');
+            textarea.id = 'adText';
+            textarea.placeholder = 'Расскажите о себе и что ищете...';
+            textarea.rows = 6;
+            textarea.maxLength = 500;
+            
+            // Применяем стили
+            Object.assign(textarea.style, {
+                display: 'block',
+                visibility: 'visible',
+                opacity: '1',
+                width: '100%',
+                maxWidth: '500px',
+                padding: '15px',
+                background: 'rgba(26, 26, 46, 0.8)',
+                border: '2px solid #ff00ff',
+                borderRadius: '15px',
+                color: '#e0e0ff',
+                fontSize: '16px',
+                resize: 'vertical',
+                minHeight: '120px',
+                height: 'auto',
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                boxSizing: 'border-box',
+                margin: '0 auto'
+            });
+            
+            textarea.addEventListener('input', updateCharacterCount);
+            textareaContainer.innerHTML = '';
+            textareaContainer.appendChild(textarea);
+            
+            // Добавляем счетчик символов
+            const counter = document.createElement('div');
+            counter.id = 'charCounter';
+            counter.style.marginTop = '8px';
+            counter.style.textAlign = 'right';
+            counter.style.fontSize = '12px';
+            counter.style.color = 'var(--text-gray)';
+            counter.textContent = '0/500';
+            textareaContainer.appendChild(counter);
+        } else {
+            textareaContainer.style.display = 'none';
+        }
+    }
+    
     // Обновляем прогресс
     const progressBar = document.querySelector('.form-progress');
     if (progressBar) {
@@ -194,6 +250,29 @@ function updateFormStep(step) {
     const progressText = document.querySelector('.form-step-info');
     if (progressText) {
         progressText.textContent = `Шаг ${step}/${totalSteps}`;
+    }
+}
+
+/**
+ * Обновление счетчика символов для текста анкеты
+ */
+function updateCharacterCount() {
+    const textarea = document.getElementById('adText');
+    const counter = document.getElementById('charCounter');
+    
+    if (textarea && counter) {
+        const currentLength = textarea.value.length;
+        const maxLength = textarea.getAttribute('maxlength') || 500;
+        counter.textContent = `${currentLength}/${maxLength}`;
+        
+        // Меняем цвет если приближаемся к лимиту
+        if (currentLength >= maxLength) {
+            counter.style.color = 'var(--neon-pink)';
+        } else if (currentLength >= maxLength * 0.9) {
+            counter.style.color = 'var(--neon-orange)';
+        } else {
+            counter.style.color = 'var(--text-gray)';
+        }
     }
 }
 
@@ -1044,5 +1123,6 @@ window.selectTarget = selectTarget;
 window.selectGoal = selectGoal;
 window.selectBody = selectBody;
 window.selectOrientation = selectOrientation;
+window.updateCharacterCount = updateCharacterCount;
 
 console.log('✅ [ADS] Модуль анкет инициализирован');
