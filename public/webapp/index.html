@@ -2165,11 +2165,11 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.0.1'; // FIX: Абсолютные пути модулей
+        const bugFixVersion = '2.0.2'; // FIX: displayAds с фото и всеми полями
         const lastVersion = localStorage.getItem('app_version');
         
         if (lastVersion !== bugFixVersion) {
-            console.log('[CACHE] Обнаружена новая версия 2.0.1, очищаем кеш...');
+            console.log('[CACHE] Обнаружена новая версия 2.0.2, очищаем кеш...');
             localStorage.setItem('app_version', bugFixVersion);
             
             // Удаляем все зарегистрированные Service Workers

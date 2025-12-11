@@ -42,7 +42,7 @@ const dependentModules = [
 ];
 
 // Версия для cache busting
-const moduleVersion = '2.0.1';
+const moduleVersion = '2.0.2';
 
 /**
  * Загрузить один модуль
