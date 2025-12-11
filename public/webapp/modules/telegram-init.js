@@ -141,6 +141,12 @@ function startStatsAutoUpdate() {
     console.log('📊 Stats auto-update started');
 }
 
+// Экспорт функций для onclick
+window.initializeTelegramWebApp = initializeTelegramWebApp;
+window.supportsCloudStorage = supportsCloudStorage;
+window.trackPageVisit = trackPageVisit;
+window.startStatsAutoUpdate = startStatsAutoUpdate;
+
 console.log('🔍 Проверка Telegram WebApp:');
 console.log('  - window.Telegram:', !!window.Telegram);
 console.log('  - window.Telegram.WebApp:', !!window.Telegram?.WebApp);

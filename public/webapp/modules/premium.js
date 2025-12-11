@@ -351,10 +351,202 @@ function isEmailUser() {
     return false;
 }
 
+/**
+ * ===== ПОКУПКА И ОПЛАТА =====
+ */
+
+// Глобальные переменные для покупки
+let selectedPremiumMonths = 1;
+let selectedPremiumPrice = { stars: 0, discount: 0 };
+
+/**
+ * Показать модальное окно покупки Stars
+ */
+function showStarsPurchaseModal() {
+    const modal = document.getElementById('starsPurchaseModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        const slider = document.getElementById('premiumSlider');
+        if (slider) {
+            slider.value = 1;
+            updatePremiumPricing(1);
+        }
+    }
+}
+
+/**
+ * Закрыть модальное окно покупки Stars
+ */
+function closeStarsPurchaseModal() {
+    const modal = document.getElementById('starsPurchaseModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+/**
+ * Обновить цену при движении слайдера
+ */
+async function updatePremiumPricing(months) {
+    selectedPremiumMonths = parseInt(months);
+    
+    try {
+        const response = await fetch(`/api/premium/calculate?months=${months}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Ошибка расчёта цены:', data.error);
+            return;
+        }
+        
+        selectedPremiumPrice = {
+            stars: data.stars,
+            discount: data.discount
+        };
+        
+        const durationLabel = document.getElementById('premiumDurationLabel');
+        const priceLabel = document.getElementById('premiumPrice');
+        const discountLabel = document.getElementById('premiumDiscount');
+        
+        const monthWord = months == 1 ? 'месяц' : (months >= 2 && months <= 4) ? 'месяца' : 'месяцев';
+        
+        if (durationLabel) durationLabel.textContent = `${months} ${monthWord}`;
+        if (priceLabel) priceLabel.textContent = `${data.stars} ⭐`;
+        
+        if (discountLabel) {
+            if (data.discount > 0) {
+                discountLabel.textContent = `🔥 Скидка ${data.discount}%`;
+                discountLabel.style.display = 'block';
+            } else {
+                discountLabel.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка обновления цены:', error);
+    }
+}
+
+/**
+ * Покупка PRO с выбранным сроком
+ */
+async function buyPremiumWithDuration() {
+    try {
+        const isTelegramWebApp = window.Telegram?.WebApp?.platform !== 'unknown' && !!window.Telegram?.WebApp?.initData;
+        
+        if (!isTelegramWebApp) {
+            tg.showAlert('💳 Покупка доступна только в Telegram!\\n\\nОткройте приложение через @anonimka_kz_bot');
+            return;
+        }
+        
+        const userId = getCurrentUserId();
+        if (!userId || userId.startsWith('web_')) {
+            tg.showAlert('Необходима авторизация через Telegram');
+            return;
+        }
+        
+        closeStarsPurchaseModal();
+        closePremiumModal();
+        
+        const monthWord = selectedPremiumMonths === 1 ? 'месяц' : 
+                         (selectedPremiumMonths >= 2 && selectedPremiumMonths <= 4) ? 'месяца' : 'месяцев';
+        
+        let confirmText = `💳 Покупка PRO подписки\\n\\n` +
+                         `⏱️ Срок: ${selectedPremiumMonths} ${monthWord}\\n` +
+                         `💰 Стоимость: ${selectedPremiumPrice.stars} Stars`;
+        
+        if (selectedPremiumPrice.discount > 0) {
+            confirmText += `\\n🔥 Скидка: ${selectedPremiumPrice.discount}%`;
+        }
+        
+        confirmText += '\\n\\n✨ Что входит:\\n• 3 анкеты/день\\n• Безлимит фото\\n• Закрепление 3×1ч/день\\n• Значок PRO\\n\\nОткрыть бота для оплаты?';
+        
+        tg.showConfirm(confirmText, (confirmed) => {
+            if (confirmed) {
+                const startParam = `buy_premium_${selectedPremiumMonths}m`;
+                try {
+                    tg.close();
+                    const botUrl = `https://t.me/anonimka_kz_bot?start=${startParam}`;
+                    if (tg.openTelegramLink) {
+                        tg.openTelegramLink(botUrl);
+                    } else {
+                        window.open(botUrl, '_blank');
+                    }
+                } catch (error) {
+                    window.location.href = `https://t.me/anonimka_kz_bot?start=${startParam}`;
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка покупки PRO:', error);
+        tg.showAlert('Ошибка при переходе к оплате. Попробуйте позже.');
+    }
+}
+
+/**
+ * Выбрать тарифный план
+ */
+async function selectPlan(plan) {
+    if (plan === 'free' && userPremiumStatus.isPremium) {
+        tg.showAlert('Переход на FREE недоступен: FREE включается автоматически когда заканчивается PRO');
+    }
+}
+
+/**
+ * Показать заглушку для оплаты долларом
+ */
+function showDollarPaymentComingSoon() {
+    const message = '💵 Оплата за 1$ скоро будет доступна!\\n\\n' +
+                   '🔜 Мы подключаем платежную систему\\n' +
+                   '💳 Принимаем карты всех стран\\n' +
+                   '🌍 Быстрая оплата без комиссий\\n\\n' +
+                   '⏰ Следите за обновлениями!';
+    
+    if (tg && tg.showAlert) {
+        tg.showAlert(message);
+    } else {
+        alert(message);
+    }
+}
+
+/**
+ * Показать предложение триала
+ */
+function showTrialOffer() {
+    if (userPremiumStatus.isPremium) {
+        if (tg && tg.showAlert) tg.showAlert('Уже активен PRO, триал недоступен.');
+        return;
+    }
+    const pitch = '🎃 Могу дать Вам 7 часов PRO.' +
+                  '\\n📢 До 3 анкет' +
+                  '\\n📸 Безлимит фото' +
+                  '\\n📌 3 закрепления' +
+                  '\\n\\nВключить сейчас?';
+    if (tg && tg.showConfirm) {
+        tg.showConfirm(pitch, (ok) => {
+            if (ok) activatePremiumTrial7h();
+        });
+    } else {
+        if (confirm(pitch.replace(/\\n/g,'\\n'))) activatePremiumTrial7h();
+    }
+}
+
 // Экспортируем функции в глобальную область для вызова из HTML onclick
 window.showPremiumModal = showPremiumModal;
 window.closePremiumModal = closePremiumModal;
 window.loadPremiumStatus = loadPremiumStatus;
 window.updatePremiumUI = updatePremiumUI;
+window.updateAdLimitBadge = updateAdLimitBadge;
+window.updatePremiumModalButtons = updatePremiumModalButtons;
+window.updateCurrentSubscriptionInfo = updateCurrentSubscriptionInfo;
+window.activatePremiumTrial7h = activatePremiumTrial7h;
+window.checkPhotoLimit = checkPhotoLimit;
+window.isEmailUser = isEmailUser;
+window.showStarsPurchaseModal = showStarsPurchaseModal;
+window.closeStarsPurchaseModal = closeStarsPurchaseModal;
+window.updatePremiumPricing = updatePremiumPricing;
+window.buyPremiumWithDuration = buyPremiumWithDuration;
+window.selectPlan = selectPlan;
+window.showDollarPaymentComingSoon = showDollarPaymentComingSoon;
+window.showTrialOffer = showTrialOffer;
 
 console.log('✅ [PREMIUM] Модуль Premium инициализирован');

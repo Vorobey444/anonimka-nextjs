@@ -484,4 +484,90 @@ function updateLogoutButtonVisibility() {
     }
 }
 
+/**
+ * Сохранить никнейм со страницы настроек
+ */
+async function saveNicknamePage() {
+    const nicknameInputPage = document.getElementById('nicknameInputPage');
+    
+    if (!nicknameInputPage) return;
+    
+    let nickname = nicknameInputPage.value.trim();
+    
+    if (!nickname) {
+        tg.showAlert('❌ Никнейм не может быть пустым');
+        return;
+    }
+    
+    let tgIdAuth = null;
+    const userToken = localStorage.getItem('user_token');
+    const authMethod = localStorage.getItem('auth_method');
+    const isAndroid = navigator.userAgent.includes('Android');
+    const isTelegramWebApp = window.Telegram?.WebApp?.platform !== 'unknown' && !!window.Telegram?.WebApp?.initData;
+    
+    if (authMethod === 'email' || (isAndroid && userToken)) {
+        tgIdAuth = 99999999;
+    } else if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+        tgIdAuth = Number(window.Telegram.WebApp.initDataUnsafe.user.id);
+    } else {
+        const savedUserJson = localStorage.getItem('telegram_user');
+        if (savedUserJson) {
+            try {
+                const u = JSON.parse(savedUserJson);
+                if (u?.id) tgIdAuth = Number(u.id);
+            } catch (e) {}
+        }
+    }
+
+    if (!tgIdAuth) {
+        tg.showAlert('❌ Не удалось получить данные авторизации');
+        return;
+    }
+
+    try {
+        const payload = { tgId: tgIdAuth, nickname: nickname };
+        if (userToken) payload.userToken = userToken;
+        
+        const response = await fetch('/api/nickname', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            tg.showAlert(result.error || 'Ошибка сохранения никнейма');
+            return;
+        }
+        
+        localStorage.setItem('user_nickname', nickname);
+        localStorage.setItem('userNickname', nickname);
+        
+        const header = document.getElementById('nicknameHeader');
+        if (header) header.textContent = nickname;
+        
+        tg.showAlert('✅ Никнейм сохранён!');
+        
+    } catch (error) {
+        console.error('Ошибка сохранения никнейма:', error);
+        tg.showAlert('Ошибка: ' + error.message);
+    }
+}
+
+// Экспорт функций для onclick
+window.getCurrentUserId = getCurrentUserId;
+window.checkTelegramAuth = checkTelegramAuth;
+window.initializeUserInDatabase = initializeUserInDatabase;
+window.initializeNickname = initializeNickname;
+window.showRequiredNicknameModal = showRequiredNicknameModal;
+window.saveRequiredNickname = saveRequiredNickname;
+window.getUserNickname = getUserNickname;
+window.logout = logout;
+window.isUserAuthorized = isUserAuthorized;
+window.getCurrentUserInfo = getCurrentUserInfo;
+window.handleLogout = handleLogout;
+window.updateLogoutButtonVisibility = updateLogoutButtonVisibility;
+window.saveNicknamePage = saveNicknamePage;
+
 console.log('✅ [AUTH] Модуль авторизации инициализирован');

@@ -694,5 +694,296 @@ window.showAdminPanel = showAdminPanel;
 window.showAffiliateProgram = showAffiliateProgram;
 window.showAffiliateInfo = showAffiliateInfo;
 window.initializeMenuModule = initializeMenuModule;
+window.closeHamburgerAndGoHome = closeHamburgerAndGoHome;
+window.goToHome = goToHome;
+window.goToProfile = goToProfile;
+window.goToMyAds = goToMyAds;
+window.goToChats = goToChats;
+window.goToReferral = goToReferral;
+window.goToSettings = goToSettings;
+window.showRulesScreen = showRulesScreen;
+window.showRules = showRules;
+window.showRulesModal = showRulesModal;
+window.closeRulesModal = closeRulesModal;
+window.showPrivacyScreen = showPrivacyScreen;
+window.showPrivacy = showPrivacy;
+window.showPrivacyModal = showPrivacyModal;
+window.closePrivacyModal = closePrivacyModal;
+window.showContactsScreen = showContactsScreen;
+window.closeModal = closeModal;
+window.logoutUser = logoutUser;
+window.showWorldChatFAQ = showWorldChatFAQ;
+window.closeWorldChatFAQ = closeWorldChatFAQ;
+window.showNicknameEditorScreen = showNicknameEditorScreen;
+window.handleBackButton = handleBackButton;
+window.updateMenuButtons = updateMenuButtons;
+window.initializeMenuButtons = initializeMenuButtons;
+
+/**
+ * Открыть партнёрскую программу в Telegram боте
+ */
+function openAffiliateProgram() {
+    const botUsername = 'anonimka_kz_bot';
+    const botProfileUrl = `https://t.me/${botUsername}`;
+    
+    if (window.Telegram?.WebApp?.openTelegramLink) {
+        window.Telegram.WebApp.openTelegramLink(botProfileUrl);
+    } else {
+        window.open(botProfileUrl, '_blank');
+    }
+}
+
+/**
+ * Голосование в опросе
+ */
+async function votePoll(pollId, answer) {
+    const userToken = localStorage.getItem('user_token');
+    if (!userToken) {
+        alert('Ошибка: токен пользователя не найден');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/poll', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-Token': userToken
+            },
+            body: JSON.stringify({
+                poll_id: pollId,
+                answer: answer
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            localStorage.setItem(`poll_voted_${pollId}`, 'true');
+            loadPollResults(pollId);
+        } else {
+            if (data.error === 'Already voted') {
+                alert('Вы уже проголосовали в этом опросе!');
+                loadPollResults(pollId);
+            } else {
+                alert('Ошибка голосования: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка голосования:', error);
+        alert('Ошибка соединения с сервером');
+    }
+}
+
+/**
+ * Загрузить результаты опроса
+ */
+async function loadPollResults(pollId) {
+    let prefix = '';
+    if (pollId === 'photos_in_ads') {
+        prefix = 'photos';
+    }
+    
+    const optionsElement = document.getElementById(`${prefix}PollOptions`);
+    const resultsElement = document.getElementById(`${prefix}PollResults`);
+    
+    if (!optionsElement || !resultsElement) return;
+    
+    try {
+        const userToken = localStorage.getItem('user_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (userToken) headers['X-User-Token'] = userToken;
+        
+        const response = await fetch(`/api/poll?poll_id=${pollId}`, { headers });
+        const data = await response.json();
+        
+        if (data.success) {
+            const total = data.results.yes + data.results.no;
+            const yesPercent = total > 0 ? Math.round((data.results.yes / total) * 100) : 0;
+            const noPercent = total > 0 ? Math.round((data.results.no / total) * 100) : 0;
+            
+            if (data.hasVoted) {
+                optionsElement.style.display = 'none';
+                resultsElement.style.display = 'block';
+                resultsElement.innerHTML = `
+                    <div class="poll-result">
+                        <span>✅ Да</span>
+                        <div class="progress-bar"><div class="progress" style="width: ${yesPercent}%"></div></div>
+                        <span>${yesPercent}% (${data.results.yes})</span>
+                    </div>
+                    <div class="poll-result">
+                        <span>❌ Нет</span>
+                        <div class="progress-bar"><div class="progress" style="width: ${noPercent}%"></div></div>
+                        <span>${noPercent}% (${data.results.no})</span>
+                    </div>
+                    <p style="margin-top: 10px; color: var(--muted);">Всего голосов: ${total}</p>
+                `;
+            } else {
+                optionsElement.style.display = 'flex';
+                resultsElement.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки результатов:', error);
+    }
+}
+
+/**
+ * Установить приложение на рабочий стол
+ */
+function promptInstallApp() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isTelegramWebApp = window.Telegram?.WebApp?.platform !== 'unknown';
+    
+    if (!isTelegramWebApp && window.deferredPWAPrompt) {
+        window.deferredPWAPrompt.prompt();
+        window.deferredPWAPrompt.userChoice.then((choiceResult) => {
+            window.deferredPWAPrompt = null;
+        });
+        return;
+    }
+    
+    if (!isTelegramWebApp && !window.deferredPWAPrompt) {
+        if (isIOS) {
+            tg.showAlert(
+                '📲 Установка на iPhone (Safari):\\n\\n' +
+                '1️⃣ Нажмите кнопку "Поделиться" (квадрат со стрелкой)\\n\\n' +
+                '2️⃣ Прокрутите вниз и выберите "На экран Домой"\\n\\n' +
+                '3️⃣ Нажмите "Добавить"\\n\\n' +
+                '✨ Готово! Иконка появится на рабочем столе'
+            );
+        } else {
+            tg.showAlert(
+                '📲 Установка в браузере:\\n\\n' +
+                '1. Откройте меню браузера (⋮ или ⚙️)\\n' +
+                '2. Выберите "Установить приложение" или "Добавить на главный экран"\\n' +
+                '3. Подтвердите установку'
+            );
+        }
+        return;
+    }
+    
+    if (window.Telegram?.WebApp?.addToHomeScreen && !isIOS) {
+        try {
+            window.Telegram.WebApp.addToHomeScreen();
+        } catch (error) {
+            tg.showAlert('❌ Не удалось создать ярлык. Попробуйте через меню Telegram (⋮).');
+        }
+    } else {
+        if (isIOS) {
+            tg.showAlert(
+                '📲 Установка на iPhone:\\n\\n' +
+                '1️⃣ Нажмите ⋮ (три точки) в ПРАВОМ ВЕРХНЕМ углу\\n\\n' +
+                '2️⃣ Выберите "Создать ярлык" или "Add to Home Screen"\\n\\n' +
+                '3️⃣ Нажмите "Добавить"'
+            );
+        } else {
+            tg.showAlert(
+                '📲 Создание ярлыка:\\n\\n' +
+                '1. Откройте меню Telegram (⋮ в правом верхнем углу)\\n' +
+                '2. Выберите "Создать ярлык"\\n' +
+                '3. Подтвердите добавление на рабочий стол'
+            );
+        }
+    }
+}
+
+/**
+ * Переключение вкладок админ-панели
+ */
+function switchAdminTab(tab) {
+    document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
+    
+    document.querySelectorAll('.admin-tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    const tabContent = document.getElementById(`admin-${tab}`);
+    if (tabContent) tabContent.style.display = 'block';
+    
+    if (tab === 'users') loadAdminUsers();
+}
+
+/**
+ * Загрузить список пользователей для админ-панели
+ */
+async function loadAdminUsers() {
+    try {
+        const container = document.getElementById('admin-users-list');
+        if (!container) return;
+        
+        container.innerHTML = '<div class="loading">Загрузка...</div>';
+        
+        const response = await fetch('/api/admin/users');
+        const data = await response.json();
+        
+        if (!data.success) {
+            container.innerHTML = '<div class="error">Ошибка загрузки</div>';
+            return;
+        }
+        
+        if (!data.users?.length) {
+            container.innerHTML = '<div class="empty">Нет пользователей</div>';
+            return;
+        }
+        
+        container.innerHTML = data.users.map(user => `
+            <div class="admin-user-item">
+                <div class="user-info">
+                    <span class="nickname">${user.display_nickname || 'Аноним'}</span>
+                    <span class="id">ID: ${user.telegram_id || user.id}</span>
+                </div>
+                <div class="user-status ${user.is_premium ? 'premium' : ''}">
+                    ${user.is_premium ? '⭐ PRO' : 'FREE'}
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Ошибка загрузки пользователей:', error);
+    }
+}
+
+/**
+ * Отправить уведомление всем пользователям
+ */
+async function sendAdminNotification() {
+    const message = document.getElementById('adminNotificationText')?.value?.trim();
+    if (!message) {
+        tg.showAlert('Введите текст уведомления');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            tg.showAlert(`✅ Отправлено ${data.count} уведомлений`);
+            document.getElementById('adminNotificationText').value = '';
+        } else {
+            tg.showAlert('Ошибка: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Ошибка отправки уведомления:', error);
+        tg.showAlert('Ошибка при отправке');
+    }
+}
+
+window.openAffiliateProgram = openAffiliateProgram;
+window.votePoll = votePoll;
+window.loadPollResults = loadPollResults;
+window.promptInstallApp = promptInstallApp;
+window.switchAdminTab = switchAdminTab;
+window.loadAdminUsers = loadAdminUsers;
+window.sendAdminNotification = sendAdminNotification;
 
 console.log('✅ [MENU] Модуль навигации загружен');

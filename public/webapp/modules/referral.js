@@ -300,4 +300,13 @@ function shareReferralLink() {
     }
 }
 
+// Экспорт функций для onclick
+window.handleReferralLink = handleReferralLink;
+window.finalizePendingReferral = finalizePendingReferral;
+window.processReferralReward = processReferralReward;
+window.showReferralModal = showReferralModal;
+window.closeReferralModal = closeReferralModal;
+window.copyReferralLink = copyReferralLink;
+window.shareReferralLink = shareReferralLink;
+
 console.log('✅ [REFERRAL] Модуль реферальной программы инициализирован');

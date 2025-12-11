@@ -795,4 +795,22 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
+// Экспорт функций для onclick
+window.showWorldChat = showWorldChat;
+window.toggleFontSize = toggleFontSize;
+window.switchWorldChatTab = switchWorldChatTab;
+window.loadWorldChatMessages = loadWorldChatMessages;
+window.sendWorldChatMessage = sendWorldChatMessage;
+window.updateWorldChatCharCount = updateWorldChatCharCount;
+window.handleWorldChatInput = handleWorldChatInput;
+window.loadWorldChatPreview = loadWorldChatPreview;
+window.showWorldChatContextMenu = showWorldChatContextMenu;
+window.closeWorldChatContextMenu = closeWorldChatContextMenu;
+window.worldChatPrivateMessage = worldChatPrivateMessage;
+window.worldChatBlockUser = worldChatBlockUser;
+window.worldChatReportUser = worldChatReportUser;
+window.showWorldChatFAQ = showWorldChatFAQ;
+window.closeWorldChatFAQ = closeWorldChatFAQ;
+window.clickWorldChatNickname = clickWorldChatNickname;
+
 console.log('✅ [WORLD-CHAT] Модуль мирового чата инициализирован');

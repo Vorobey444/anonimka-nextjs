@@ -505,4 +505,25 @@ function checkOnboarding() {
     return true;
 }
 
+// Экспорт функций для onclick
+window.showOnboardingScreen = showOnboardingScreen;
+window.hideOnboardingScreen = hideOnboardingScreen;
+window.updateOnboardingStep = updateOnboardingStep;
+window.nextOnboardingStep = nextOnboardingStep;
+window.previousOnboardingStep = previousOnboardingStep;
+window.validateOnboardingStep = validateOnboardingStep;
+window.showOnboardingStep1 = showOnboardingStep1;
+window.showOnboardingStep2 = showOnboardingStep2;
+window.selectOnboardingGender = selectOnboardingGender;
+window.showOnboardingStep3 = showOnboardingStep3;
+window.updateOnboardingAge = updateOnboardingAge;
+window.showOnboardingStep4 = showOnboardingStep4;
+window.selectOnboardingOrientation = selectOnboardingOrientation;
+window.showOnboardingStep5 = showOnboardingStep5;
+window.toggleOnboardingGoal = toggleOnboardingGoal;
+window.showOnboardingStep6 = showOnboardingStep6;
+window.toggleOnboardingLanguage = toggleOnboardingLanguage;
+window.completeOnboarding = completeOnboarding;
+window.checkOnboarding = checkOnboarding;
+
 console.log('✅ [ONBOARDING] Модуль онбординга загружен');

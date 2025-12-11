@@ -232,4 +232,9 @@ if (typeof window !== 'undefined') {
     };
 }
 
+// Экспорт функций для onclick
+window.showCustomAlert = showCustomAlert;
+window.showCustomConfirm = showCustomConfirm;
+window.showCustomPrompt = showCustomPrompt;
+
 console.log('✅ Модуль UI диалогов инициализирован');

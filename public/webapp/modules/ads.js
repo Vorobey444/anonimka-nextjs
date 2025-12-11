@@ -637,4 +637,314 @@ function prevAdsPage() {
     }
 }
 
+/**
+ * ===== ФИЛЬТРЫ АНКЕТ =====
+ */
+
+// Объект для хранения фильтров
+let adsFilters = {
+    gender: 'all',
+    target: 'all',
+    orientation: 'all',
+    ageFrom: 18,
+    ageTo: 99
+};
+
+/**
+ * Переключить панель фильтров
+ */
+function toggleFilters() {
+    const panel = document.getElementById('filtersPanel');
+    if (!panel) return;
+    if (panel.style.display === 'none' || !panel.style.display) {
+        panel.style.display = 'block';
+        updateFilterButtons();
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+/**
+ * Установить значение фильтра
+ */
+function setFilter(type, value) {
+    adsFilters[type] = value;
+    updateFilterButtons();
+}
+
+/**
+ * Обновить активные кнопки фильтров
+ */
+function updateFilterButtons() {
+    document.querySelectorAll('[data-filter-type="gender"]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === adsFilters.gender);
+    });
+    document.querySelectorAll('[data-filter-type="target"]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === adsFilters.target);
+    });
+    document.querySelectorAll('[data-filter-type="orientation"]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === adsFilters.orientation);
+    });
+}
+
+/**
+ * Применить фильтры
+ */
+function applyFilters() {
+    const ageFromInput = document.getElementById('ageFrom');
+    const ageToInput = document.getElementById('ageTo');
+    
+    if (ageFromInput && ageToInput) {
+        adsFilters.ageFrom = parseInt(ageFromInput.value) || 18;
+        adsFilters.ageTo = parseInt(ageToInput.value) || 99;
+    }
+    
+    let activeCount = 0;
+    if (adsFilters.gender !== 'all') activeCount++;
+    if (adsFilters.target !== 'all') activeCount++;
+    if (adsFilters.orientation !== 'all') activeCount++;
+    if (adsFilters.ageFrom !== 18 || adsFilters.ageTo !== 99) activeCount++;
+    
+    const badge = document.getElementById('filterBadge');
+    if (badge) {
+        badge.textContent = activeCount > 0 ? activeCount : '';
+        badge.style.display = activeCount > 0 ? 'inline' : 'none';
+    }
+    
+    const panel = document.getElementById('filtersPanel');
+    if (panel) panel.style.display = 'none';
+    
+    showBrowseAds();
+}
+
+/**
+ * Сбросить фильтры
+ */
+function resetFilters() {
+    adsFilters = {
+        gender: 'all',
+        target: 'all',
+        orientation: 'all',
+        ageFrom: 18,
+        ageTo: 99
+    };
+    
+    const ageFromInput = document.getElementById('ageFrom');
+    const ageToInput = document.getElementById('ageTo');
+    if (ageFromInput) ageFromInput.value = 18;
+    if (ageToInput) ageToInput.value = 99;
+    
+    updateFilterButtons();
+    
+    const badge = document.getElementById('filterBadge');
+    if (badge) {
+        badge.textContent = '';
+        badge.style.display = 'none';
+    }
+    
+    const panel = document.getElementById('filtersPanel');
+    if (panel) panel.style.display = 'none';
+    
+    showBrowseAds();
+}
+
+/**
+ * ===== ФУНКЦИИ ВОЗРАСТА =====
+ */
+
+/**
+ * Увеличить возраст
+ */
+function increaseAge(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    let currentValue = parseInt(input.value);
+    const maxValue = parseInt(input.max) || 100;
+    
+    if (isNaN(currentValue) || !input.value) {
+        input.value = 18;
+        return;
+    }
+    
+    if (currentValue < maxValue) {
+        input.value = currentValue + 1;
+    }
+}
+
+/**
+ * Уменьшить возраст
+ */
+function decreaseAge(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    let currentValue = parseInt(input.value);
+    const minValue = parseInt(input.min) || 18;
+    
+    if (isNaN(currentValue) || !input.value) {
+        input.value = 18;
+        return;
+    }
+    
+    if (currentValue > minValue) {
+        input.value = currentValue - 1;
+    }
+}
+
+/**
+ * ===== ФУНКЦИИ ЖАЛОБ =====
+ */
+
+let currentReportData = {
+    reportedUserId: null,
+    reportedNickname: null,
+    reportType: null,
+    relatedAdId: null,
+    reason: null
+};
+
+/**
+ * Пожаловаться на анкету
+ */
+function reportAd() {
+    const ad = window.currentAds?.[window.currentAdIndex];
+    if (!ad) {
+        tg.showAlert('Анкета не найдена');
+        return;
+    }
+    
+    const reportedUserId = ad.user_id || null;
+    if (!reportedUserId) {
+        tg.showAlert('Не удалось определить автора анкеты');
+        return;
+    }
+    
+    currentReportData = {
+        reportedUserId: reportedUserId,
+        reportedNickname: ad.display_nickname || 'Аноним',
+        reportType: 'ad',
+        relatedAdId: ad.id,
+        reason: null
+    };
+    
+    const modal = document.getElementById('reportModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+/**
+ * Закрыть модальное окно жалобы
+ */
+function closeReportModal() {
+    const modal = document.getElementById('reportModal');
+    if (modal) modal.style.display = 'none';
+    
+    const details = document.getElementById('reportDetailsSection');
+    if (details) details.style.display = 'none';
+    
+    const desc = document.getElementById('reportDescription');
+    if (desc) desc.value = '';
+    
+    document.querySelectorAll('.report-reason-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    currentReportData.reason = null;
+}
+
+/**
+ * Выбрать причину жалобы
+ */
+function selectReportReason(reason) {
+    currentReportData.reason = reason;
+    
+    document.querySelectorAll('.report-reason-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    if (event && event.target) {
+        const btn = event.target.closest('.report-reason-btn');
+        if (btn) btn.classList.add('selected');
+    }
+    
+    const details = document.getElementById('reportDetailsSection');
+    if (details) details.style.display = 'block';
+}
+
+/**
+ * Отправить жалобу
+ */
+async function submitReport() {
+    if (!currentReportData.reason) {
+        tg.showAlert('Выберите причину жалобы');
+        return;
+    }
+    
+    const currentUserId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('user_id');
+    
+    if (!currentUserId || !currentReportData.reportedUserId) {
+        tg.showAlert('Ошибка: не удалось определить пользователей');
+        return;
+    }
+    
+    const description = document.getElementById('reportDescription')?.value?.trim();
+    
+    try {
+        const response = await fetch('/api/reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                reporterId: parseInt(currentUserId),
+                reportedUserId: parseInt(currentReportData.reportedUserId),
+                reportType: currentReportData.reportType,
+                reason: currentReportData.reason,
+                description: description || null,
+                relatedAdId: currentReportData.relatedAdId || null,
+                relatedMessageId: null
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            tg.showAlert('✅ Жалоба отправлена. Администрация рассмотрит её в ближайшее время.');
+            closeReportModal();
+        } else {
+            tg.showAlert(data.error || 'Ошибка при отправке жалобы');
+        }
+    } catch (error) {
+        console.error('Ошибка отправки жалобы:', error);
+        tg.showAlert('Ошибка при отправке жалобы');
+    }
+}
+
+// Экспорт функций в глобальную область
+window.showCreateAd = showCreateAd;
+window.showBrowseAds = showBrowseAds;
+window.showMyAds = showMyAds;
+window.nextStep = nextStep;
+window.previousStep = previousStep;
+window.submitAd = submitAd;
+window.closeAdModal = closeAdModal;
+window.showAdModal = showAdModal;
+window.contactAuthor = contactAuthor;
+window.deleteMyAd = deleteMyAd;
+window.loadAds = loadAds;
+window.nextAdsPage = nextAdsPage;
+window.prevAdsPage = prevAdsPage;
+window.handleCreateAdBack = handleCreateAdBack;
+window.nextFormStep = nextFormStep;
+window.prevFormStep = prevFormStep;
+window.updateFormStep = updateFormStep;
+window.displayAds = displayAds;
+window.toggleFilters = toggleFilters;
+window.setFilter = setFilter;
+window.updateFilterButtons = updateFilterButtons;
+window.applyFilters = applyFilters;
+window.resetFilters = resetFilters;
+window.increaseAge = increaseAge;
+window.decreaseAge = decreaseAge;
+window.reportAd = reportAd;
+window.closeReportModal = closeReportModal;
+window.selectReportReason = selectReportReason;
+window.submitReport = submitReport;
+
 console.log('✅ [ADS] Модуль анкет инициализирован');

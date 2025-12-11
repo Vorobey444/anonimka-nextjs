@@ -722,4 +722,79 @@ async function loadUserData(userId) {
     }
 }
 
+/**
+ * Показать форму обратной связи по email
+ */
+function showEmailForm() {
+    showScreen('emailForm');
+    const senderEmail = document.getElementById('senderEmail');
+    const emailSubject = document.getElementById('emailSubject');
+    const emailMessage = document.getElementById('emailMessage');
+    const emailStatus = document.getElementById('emailStatus');
+    
+    if (senderEmail) senderEmail.value = '';
+    if (emailSubject) emailSubject.value = 'Обращение через anonimka.online';
+    if (emailMessage) emailMessage.value = '';
+    if (emailStatus) emailStatus.style.display = 'none';
+}
+
+/**
+ * Отправить email через форму
+ */
+async function handleEmailSubmit(event) {
+    if (event) event.preventDefault();
+    
+    const senderEmail = document.getElementById('senderEmail')?.value?.trim();
+    const emailSubject = document.getElementById('emailSubject')?.value?.trim();
+    const emailMessage = document.getElementById('emailMessage')?.value?.trim();
+    
+    if (!senderEmail || !emailMessage) {
+        tg.showAlert('Заполните все обязательные поля');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                from: senderEmail,
+                subject: emailSubject || 'Обращение через anonimka.online',
+                message: emailMessage
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            tg.showAlert('✅ Письмо отправлено!');
+            if (document.getElementById('emailMessage')) {
+                document.getElementById('emailMessage').value = '';
+            }
+        } else {
+            tg.showAlert('Ошибка: ' + (data.error || 'Не удалось отправить'));
+        }
+    } catch (error) {
+        console.error('Ошибка отправки email:', error);
+        tg.showAlert('Ошибка при отправке письма');
+    }
+}
+
+// Экспорт функций для onclick
+window.showTelegramAuthModal = showTelegramAuthModal;
+window.closeTelegramAuthModal = closeTelegramAuthModal;
+window.generateTelegramQR = generateTelegramQR;
+window.initTelegramLoginWidget = initTelegramLoginWidget;
+window.showEmailAuthModal = showEmailAuthModal;
+window.switchToTelegramAuth = switchToTelegramAuth;
+window.switchToEmailAuth = switchToEmailAuth;
+window.showReferralModal = showReferralModal;
+window.getCurrentUserId = getCurrentUserId;
+window.getUserNickname = getUserNickname;
+window.getUserLocation = getUserLocation;
+window.getUserData = getUserData;
+window.loadUserData = loadUserData;
+window.showEmailForm = showEmailForm;
+window.handleEmailSubmit = handleEmailSubmit;
+
 console.log('✅ Модуль auth-modals.js инициализирован');

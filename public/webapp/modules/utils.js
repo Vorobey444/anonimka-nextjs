@@ -350,4 +350,20 @@ async function uploadPhotoToTelegram(file, userId) {
     }
 }
 
+// Экспорт функций для onclick
+window.hashSensitiveData = hashSensitiveData;
+window.safeLog = safeLog;
+window.getCurrentUserId = getCurrentUserId;
+window.getUserNickname = getUserNickname;
+window.getUserLocation = getUserLocation;
+window.formatNumber = formatNumber;
+window.formatCreatedAt = formatCreatedAt;
+window.formatGender = formatGender;
+window.formatTarget = formatTarget;
+window.formatGoals = formatGoals;
+window.formatSingleGoal = formatSingleGoal;
+window.formatOrientation = formatOrientation;
+window.convertHeicToJpeg = convertHeicToJpeg;
+window.uploadPhotoToTelegram = uploadPhotoToTelegram;
+
 console.log('✅ Модуль утилит инициализирован');

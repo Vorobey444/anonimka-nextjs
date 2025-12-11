@@ -680,10 +680,106 @@ function switchChatTab(tab) {
     }
 }
 
+/**
+ * Отмена ответа на сообщение
+ */
+function cancelReply() {
+    replyToMessage = null;
+    const preview = document.getElementById('replyPreview');
+    if (preview) preview.style.display = 'none';
+}
+
+/**
+ * Переключение размера шрифта в чате
+ */
+function toggleChatFontSize() {
+    const messagesContainer = document.querySelector('.chat-messages');
+    if (!messagesContainer) return;
+    
+    let currentSize = localStorage.getItem('chatFontSize') || 'medium';
+    const sizes = ['small', 'medium', 'large'];
+    const currentIndex = sizes.indexOf(currentSize);
+    const nextIndex = (currentIndex + 1) % sizes.length;
+    const nextSize = sizes[nextIndex];
+    
+    messagesContainer.classList.remove('font-small', 'font-medium', 'font-large');
+    messagesContainer.classList.add(`font-${nextSize}`);
+    localStorage.setItem('chatFontSize', nextSize);
+    
+    const btn = document.getElementById('chatFontSizeBtn');
+    if (btn) {
+        btn.style.fontSize = nextSize === 'small' ? '14px' : nextSize === 'medium' ? '18px' : '22px';
+    }
+}
+
+/**
+ * Переключение меню чата
+ */
+function toggleChatMenu() {
+    const menu = document.getElementById('chatMenu');
+    if (!menu) return;
+    if (menu.style.display === 'none' || !menu.style.display) {
+        menu.style.display = 'block';
+    } else {
+        menu.style.display = 'none';
+    }
+}
+
+/**
+ * Подтверждение удаления чата
+ */
+function confirmDeleteChat() {
+    const menu = document.getElementById('chatMenu');
+    if (menu) menu.style.display = 'none';
+    
+    tg.showConfirm(
+        '⚠️ Чат будет удален у обеих сторон.\\n\\nВсе сообщения будут потеряны.\\n\\nПродолжить?',
+        async (confirmed) => {
+            if (confirmed) {
+                await deleteChat();
+            }
+        }
+    );
+}
+
+/**
+ * Открыть чат в Telegram
+ */
+function openTelegramChat() {
+    const username = localStorage.getItem('opponentTelegramUsername');
+    if (username) {
+        const url = `https://t.me/${username}`;
+        if (tg && tg.openTelegramLink) {
+            tg.openTelegramLink(url);
+        } else {
+            window.open(url, '_blank');
+        }
+    } else {
+        tg.showAlert('Telegram собеседника недоступен');
+    }
+}
+
 // Экспорт функций в глобальную область
 window.switchChatTab = switchChatTab;
 window.showMyChats = showMyChats;
 window.loadMyChats = loadMyChats;
 window.updateChatBadge = updateChatBadge;
+window.sendMessage = sendMessage;
+window.openChat = openChat;
+window.loadChatMessages = loadChatMessages;
+window.acceptChatRequest = acceptChatRequest;
+window.rejectChatRequest = rejectChatRequest;
+window.markMessagesAsRead = markMessagesAsRead;
+window.toggleBlockUser = toggleBlockUser;
+window.showBlockWarning = showBlockWarning;
+window.updateBlockUI = updateBlockUI;
+window.deleteChat = deleteChat;
+window.updateChatsList = updateChatsList;
+window.checkBlockStatus = checkBlockStatus;
+window.cancelReply = cancelReply;
+window.toggleChatFontSize = toggleChatFontSize;
+window.toggleChatMenu = toggleChatMenu;
+window.confirmDeleteChat = confirmDeleteChat;
+window.openTelegramChat = openTelegramChat;
 
 console.log('✅ [CHATS] Модуль чатов инициализирован');

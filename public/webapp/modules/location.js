@@ -895,5 +895,7 @@ window.showAllSetupCities = showAllSetupCities;
 window.saveSetupLocation = saveSetupLocation;
 window.autoDetectLocation = autoDetectLocation;
 window.updateLocationDisplay = updateLocationDisplay;
+window.showAutoLocationDetection = showAutoLocationDetection;
+window.showManualLocationSetup = showManualLocationSetup;
 
 console.log('✅ [LOCATION] Модуль локации инициализирован');
