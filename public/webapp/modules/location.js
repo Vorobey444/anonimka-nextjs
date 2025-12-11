@@ -1842,6 +1842,112 @@ window.detectLocationByGPS = detectLocationByGPS;
 window.detectLocationByIP = detectLocationByIP;
 window.displayUserLocation = displayUserLocation;
 window.resetAndDetectLocation = resetAndDetectLocation;
+window.handleSetupRegionInput = handleSetupRegionInput;
+window.showAllSetupRegions = showAllSetupRegions;
+window.showSetupRegionSuggestions = showSetupRegionSuggestions;
+window.selectSetupRegion = selectSetupRegion;
+window.showIPDetectionError = showIPDetectionError;
+
+/**
+ * Обработка ввода региона в настройке
+ */
+function handleSetupRegionInput(value) {
+    if (!setupSelectedCountry) return;
+    
+    if (!value.trim()) {
+        hideAllSuggestions();
+        return;
+    }
+    
+    const regions = Object.keys(locationData[setupSelectedCountry]?.regions || {});
+    const filtered = regions.filter(region => 
+        region.toLowerCase().startsWith(value.toLowerCase())
+    );
+    
+    showSetupRegionSuggestions(filtered);
+}
+
+/**
+ * Показать все регионы в настройке
+ */
+function showAllSetupRegions() {
+    if (!setupSelectedCountry) return;
+    const regions = Object.keys(locationData[setupSelectedCountry]?.regions || {});
+    showSetupRegionSuggestions(regions);
+}
+
+/**
+ * Показать предложения регионов в настройке
+ */
+function showSetupRegionSuggestions(regions) {
+    const suggestionsContainer = document.querySelector('.setup-region-suggestions');
+    if (!suggestionsContainer) return;
+    
+    if (regions.length === 0) {
+        suggestionsContainer.style.display = 'none';
+        suggestionsContainer.classList.remove('active');
+        return;
+    }
+    
+    suggestionsContainer.innerHTML = regions.map(region => `
+        <div class="suggestion-item" onclick="selectSetupRegion('${region}')">
+            ${region}
+        </div>
+    `).join('');
+    
+    suggestionsContainer.style.display = 'block';
+    suggestionsContainer.classList.add('active');
+}
+
+/**
+ * Выбор региона в настройке
+ */
+function selectSetupRegion(regionName) {
+    setupSelectedRegion = regionName;
+    setupSelectedCity = null;
+    
+    const regionInput = document.querySelector('.setup-region-input');
+    if (regionInput) regionInput.value = regionName;
+    hideAllSuggestions();
+    
+    // Показываем выбор города
+    const citySection = document.querySelector('.setup-city-selection');
+    if (citySection) {
+        citySection.style.display = 'block';
+        setTimeout(() => citySection.style.opacity = '1', 50);
+    }
+    
+    // Очищаем поле города
+    const cityInput = document.querySelector('.setup-city-input');
+    if (cityInput) cityInput.value = '';
+    
+    console.log('Выбран регион:', regionName);
+    setTimeout(() => showAllSetupCities(), 100);
+}
+
+/**
+ * Показать ошибку определения IP
+ */
+function showIPDetectionError() {
+    const selectedDiv = document.querySelector('.setup-selected-location');
+    if (selectedDiv) {
+        selectedDiv.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">😕</div>
+                <h3 style="color: var(--neon-pink);">Не удалось определить локацию</h3>
+                <p style="color: var(--text-gray);">Пожалуйста, выберите страну вручную выше</p>
+            </div>
+        `;
+        selectedDiv.style.display = 'block';
+    }
+}
+
+// Алиас для совместимости с app.js.backup
+function initLocationSelector() {
+    initLocationHandlers();
+}
+
+window.initLocationSelector = initLocationSelector;
 
 // Инициализация при загрузке модуля
 (function initLocationOnLoad() {

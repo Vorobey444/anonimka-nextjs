@@ -753,5 +753,99 @@ window.showDollarPaymentComingSoon = showDollarPaymentComingSoon;
 window.showTrialOffer = showTrialOffer;
 window.activatePremium = activatePremium;
 window.buyPremiumViaTelegram = buyPremiumViaTelegram;
+window.startMidnightLimitCheck = startMidnightLimitCheck;
+window.manualRefreshLimits = manualRefreshLimits;
+
+/**
+ * Запуск проверки обновления лимитов в полночь АЛМАТЫ (UTC+5)
+ */
+function startMidnightLimitCheck() {
+    console.log('⏰ Запущена проверка обновления лимитов в полночь (Алматы UTC+5)');
+    
+    let lastNotificationDate = null;
+    
+    setInterval(() => {
+        const now = new Date();
+        const utcHours = now.getUTCHours();
+        const utcMinutes = now.getUTCMinutes();
+        
+        // Конвертируем в Алматы время (UTC+5)
+        const almatyHours = (utcHours + 5) % 24;
+        
+        const almatyDate = new Date(now.getTime() + (5 * 60 * 60 * 1000));
+        const currentAlmatyDate = almatyDate.toISOString().split('T')[0];
+        
+        // Если 00:00-00:01 по Алматы - обновляем лимиты
+        if (almatyHours === 0 && utcMinutes <= 1) {
+            if (lastNotificationDate === currentAlmatyDate) return;
+            
+            console.log('🌙 Полночь в Алматы! Обновляем лимиты...');
+            lastNotificationDate = currentAlmatyDate;
+            
+            if (typeof loadPremiumStatus === 'function') {
+                loadPremiumStatus().then(() => {
+                    console.log('✅ Лимиты обновлены после полуночи');
+                    if (typeof updateAdLimitBadge === 'function') updateAdLimitBadge();
+                    
+                    if (typeof tg !== 'undefined' && tg?.showAlert) {
+                        tg.showAlert('🎉 Полночь! Лимиты обновлены!');
+                    }
+                }).catch(err => {
+                    console.error('❌ Ошибка обновления лимитов:', err);
+                });
+            }
+        }
+    }, 60000); // каждую минуту
+}
+
+/**
+ * Ручное обновление лимитов
+ */
+async function manualRefreshLimits() {
+    console.log('🔄 Ручное обновление лимитов...');
+    
+    try {
+        await loadPremiumStatus();
+        if (typeof updateAdLimitBadge === 'function') updateAdLimitBadge();
+        
+        if (typeof tg !== 'undefined' && tg?.showAlert) {
+            tg.showAlert('✅ Лимиты обновлены!');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка обновления:', error);
+        if (typeof tg !== 'undefined' && tg?.showAlert) {
+            tg.showAlert('❌ Ошибка обновления лимитов');
+        }
+    }
+}
+
+/**
+ * Скрыть функции недоступные для email пользователей
+ */
+function hideEmailUserFeatures() {
+    const emailUser = typeof isEmailUser === 'function' ? isEmailUser() : false;
+    
+    if (emailUser) {
+        console.log('📧 Email user detected - hiding Stars/Referral features');
+        
+        // Скрываем кнопку реферала на главной странице
+        const referralMainBtn = document.getElementById('referralMainButton');
+        if (referralMainBtn) {
+            referralMainBtn.style.display = 'none';
+            console.log('✅ Скрыли кнопку реферала на главной');
+        }
+    } else {
+        console.log('📱 Telegram user detected - showing Referral button');
+        
+        // Показываем кнопку реферала для Telegram пользователей
+        const referralMainBtn = document.getElementById('referralMainButton');
+        if (referralMainBtn) {
+            referralMainBtn.style.display = 'block';
+            console.log('✅ Показали кнопку реферала на главной');
+        }
+    }
+}
+
+window.hideEmailUserFeatures = hideEmailUserFeatures;
 
 console.log('✅ [PREMIUM] Модуль Premium инициализирован');

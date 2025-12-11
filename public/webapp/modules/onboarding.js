@@ -811,5 +811,118 @@ window.updateTelegramNameButton = updateTelegramNameButton;
 window.saveNicknamePage = saveNicknamePage;
 window.showNicknameEditor = showNicknameEditor;
 window.saveNickname = saveNickname;
+window.cancelNicknameEdit = cancelNicknameEdit;
+window.useDefaultNickname = useDefaultNickname;
+window.useDefaultNicknameMain = useDefaultNicknameMain;
+window.checkOnboardingStatus = checkOnboardingStatus;
+
+/**
+ * Отменить редактирование никнейма
+ */
+function cancelNicknameEdit() {
+    if (typeof showMainMenu === 'function') showMainMenu();
+}
+
+/**
+ * Использовать имя из Telegram (старая версия для совместимости)
+ */
+function useDefaultNickname() {
+    let telegramName = 'Аноним';
+    
+    if (typeof isTelegramWebApp !== 'undefined' && isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user) {
+        const user = window.Telegram.WebApp.initDataUnsafe.user;
+        telegramName = user.first_name || user.username || 'Аноним';
+    } else {
+        const savedUser = localStorage.getItem('telegram_user');
+        if (savedUser) {
+            try {
+                const user = JSON.parse(savedUser);
+                telegramName = user.first_name || user.username || 'Аноним';
+            } catch (e) {
+                console.error('Ошибка парсинга данных пользователя:', e);
+            }
+        }
+    }
+    
+    const nicknameInput = document.getElementById('nicknameInput');
+    if (nicknameInput) {
+        nicknameInput.value = telegramName;
+        localStorage.setItem('user_nickname', telegramName);
+    }
+}
+
+/**
+ * Использовать имя из Telegram на главной странице
+ */
+function useDefaultNicknameMain() {
+    useDefaultNickname();
+}
+
+/**
+ * Проверка статуса онбординга пользователя
+ */
+async function checkOnboardingStatus() {
+    console.log('checkOnboardingStatus вызвана');
+    try {
+        // Проверяем, не открыто ли уже модальное окно никнейма
+        const nicknameModal = document.getElementById('requiredNicknameModal');
+        if (nicknameModal && nicknameModal.style.display === 'flex') {
+            console.log('⚠️ Модальное окно никнейма уже открыто');
+            return;
+        }
+        
+        // Сначала проверяем локальное хранилище
+        const localNickname = localStorage.getItem('userNickname');
+        if (localNickname && localNickname.trim() !== '') {
+            console.log('✅ Никнейм найден в localStorage:', localNickname);
+            if (typeof showMainMenu === 'function') showMainMenu();
+            return;
+        }
+        
+        // Получаем tgId или userToken
+        let tgId = null;
+        let userToken = localStorage.getItem('user_token');
+        
+        if (typeof isTelegramWebApp !== 'undefined' && isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+            tgId = window.Telegram.WebApp.initDataUnsafe.user.id;
+        } else {
+            try {
+                const savedUser = localStorage.getItem('telegram_user');
+                if (savedUser) {
+                    const user = JSON.parse(savedUser);
+                    tgId = user.id;
+                }
+            } catch (e) {}
+        }
+        
+        if (!tgId && !userToken) {
+            console.log('⚠️ Нет ни tgId ни userToken');
+            return;
+        }
+        
+        // Проверяем никнейм в БД
+        let url = '/api/users?';
+        if (tgId) url += `tgId=${tgId}`;
+        else if (userToken) url += `userToken=${userToken}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        const nickname = data.displayNickname || data.nickname;
+        
+        if (nickname && nickname.trim() !== '') {
+            localStorage.setItem('userNickname', nickname);
+            localStorage.setItem('user_nickname', nickname);
+            console.log('✅ Никнейм из БД:', nickname);
+            if (typeof showMainMenu === 'function') showMainMenu();
+        } else {
+            console.log('⚠️ У пользователя нет никнейма');
+            if (typeof showOnboardingScreen === 'function') showOnboardingScreen();
+        }
+    } catch (error) {
+        console.error('❌ Ошибка checkOnboardingStatus:', error);
+        if (typeof showOnboardingScreen === 'function') showOnboardingScreen();
+    }
+}
 
 console.log('✅ [ONBOARDING] Модуль онбординга загружен');

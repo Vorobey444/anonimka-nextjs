@@ -1057,5 +1057,129 @@ window.capturePhoto = capturePhoto;
 window.closeCameraModal = closeCameraModal;
 window.switchCamera = switchCamera;
 window.swapPhotoPositions = swapPhotoPositions;
+window.openCamera = openCamera;
+window.deletePhotoFromStep9 = deletePhotoFromStep9;
+
+/**
+ * Открыть камеру для съёмки
+ */
+async function openCamera() {
+    if (typeof closePhotoSourceMenu === 'function') closePhotoSourceMenu();
+    
+    // Проверяем поддержку getUserMedia
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        // Fallback на обычный input с capture
+        const cameraInput = document.getElementById('cameraInput');
+        if (cameraInput) {
+            cameraInput.value = '';
+            cameraInput.click();
+        }
+        return;
+    }
+    
+    try {
+        // Создаем модальное окно с камерой
+        const cameraModal = document.createElement('div');
+        cameraModal.id = 'cameraModal';
+        cameraModal.innerHTML = `
+            <div style="
+                position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0, 0, 0, 0.95); z-index: 10000;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+            ">
+                <video id="cameraPreview" autoplay playsinline style="
+                    max-width: 100%; max-height: 70vh; border-radius: 12px;
+                "></video>
+                <div style="display: flex; gap: 15px; margin-top: 20px;">
+                    <button onclick="switchCamera()" style="
+                        background: rgba(131, 56, 236, 0.2); border: 2px solid var(--neon-purple);
+                        border-radius: 50%; width: 70px; height: 70px; font-size: 32px; cursor: pointer;
+                    ">🔄</button>
+                    <button onclick="capturePhoto()" style="
+                        background: rgba(0, 217, 255, 0.2); border: 2px solid var(--neon-cyan);
+                        border-radius: 50%; width: 70px; height: 70px; font-size: 32px; cursor: pointer;
+                    ">📸</button>
+                    <button onclick="closeCameraModal()" style="
+                        background: rgba(255, 0, 102, 0.2); border: 2px solid var(--neon-pink);
+                        border-radius: 50%; width: 70px; height: 70px; font-size: 32px; cursor: pointer;
+                    ">❌</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(cameraModal);
+        
+        // Запускаем камеру
+        window.currentFacingMode = 'environment';
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: window.currentFacingMode }
+        });
+        
+        const video = document.getElementById('cameraPreview');
+        if (video) {
+            video.srcObject = stream;
+            window.currentCameraStream = stream;
+        }
+        
+    } catch (error) {
+        console.error('❌ [PHOTOS] Ошибка открытия камеры:', error);
+        // Fallback на input
+        const cameraInput = document.getElementById('cameraInput');
+        if (cameraInput) {
+            cameraInput.value = '';
+            cameraInput.click();
+        }
+    }
+}
+
+/**
+ * Удалить фото на шаге 9 (удаляет из галереи и всех анкет)
+ */
+async function deletePhotoFromStep9(photoId) {
+    try {
+        const userToken = localStorage.getItem('user_token');
+        if (!userToken) {
+            throw new Error('User token not found');
+        }
+        
+        console.log('🗑️ Удаляем фото ID:', photoId);
+        
+        const response = await fetch('/api/user-photos', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userToken, photoId })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        console.log('✅ Фото удалено');
+        
+        // Удаляем элемент из DOM
+        const photoElement = document.querySelector(`[data-photo-id="${photoId}"]`);
+        if (photoElement && photoElement.parentElement) {
+            photoElement.parentElement.remove();
+        }
+        
+        // Проверяем, остались ли фото
+        const gridDiv = document.getElementById('step9PhotoGrid');
+        if (gridDiv && gridDiv.children.length === 0) {
+            const galleryContainer = document.getElementById('step9PhotoGallery');
+            if (galleryContainer) {
+                galleryContainer.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                        <p>📷 У вас пока нет фото в галерее</p>
+                    </div>
+                `;
+            }
+        }
+        
+    } catch (error) {
+        console.error('❌ Ошибка удаления фото:', error);
+        if (typeof tg !== 'undefined' && tg?.showAlert) {
+            tg.showAlert('Ошибка при удалении фото');
+        }
+    }
+}
 
 console.log('✅ [PHOTOS] Модуль фото инициализирован');

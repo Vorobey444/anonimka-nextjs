@@ -1197,4 +1197,23 @@ window.closeAndroidAuthModal = closeAndroidAuthModal;
 window.openTelegramBot = openTelegramBot;
 window.verifyAndroidAuthCode = verifyAndroidAuthCode;
 
+// Показать уведомление о привязке Telegram для Android WebView
+function showTelegramLinkNotification() {
+    // Проверяем если это Android WebView
+    const isAndroidWebView = navigator.userAgent.includes('wv') || 
+                            (navigator.userAgent.includes('Android') && window.AndroidInterface);
+    
+    if (!isAndroidWebView) return;
+    
+    // Проверяем есть ли уже авторизация
+    const hasTelegramId = localStorage.getItem('telegram_user');
+    if (hasTelegramId) return;
+    
+    // Показываем модальное окно с инструкцией
+    console.log('📱 Показываем модальное окно авторизации для Android');
+    showAndroidAuthModal();
+}
+
+window.showTelegramLinkNotification = showTelegramLinkNotification;
+
 console.log('✅ Модуль auth-modals.js инициализирован');

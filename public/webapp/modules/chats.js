@@ -1296,4 +1296,154 @@ window.replyToMsg = replyToMsg;
 window.scrollToMessage = scrollToMessage;
 window.applyChatFontSize = applyChatFontSize;
 
+/**
+ * Показать меню удаления сообщения
+ */
+function showDeleteMessageMenu(event, messageId) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    console.log('Меню удаления для сообщения:', messageId);
+    
+    const modal = document.createElement('div');
+    modal.className = 'delete-message-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(20, 20, 30, 0.98);
+        border: 2px solid var(--neon-red);
+        border-radius: 16px;
+        padding: 20px;
+        z-index: 10000;
+        min-width: 280px;
+    `;
+    
+    modal.innerHTML = `
+        <div style="margin-bottom: 15px; text-align: center;">
+            <div style="font-size: 18px; font-weight: bold; color: var(--neon-red);">Удалить сообщение?</div>
+            <div style="font-size: 12px; color: var(--text-gray);">Сообщение будет удалено у обоих</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button onclick="deleteMessage(${messageId})" style="
+                padding: 12px; background: linear-gradient(135deg, #ff4444, #cc0000);
+                border: none; border-radius: 10px; color: white; font-size: 14px; cursor: pointer;
+            ">🗑️ Удалить</button>
+            <button onclick="closeDeleteMessageMenu()" style="
+                padding: 12px; background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+                border: none; border-radius: 10px; color: white; font-size: 14px; cursor: pointer;
+            ">Отмена</button>
+        </div>
+    `;
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'delete-message-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.7); z-index: 9999;
+    `;
+    overlay.onclick = closeDeleteMessageMenu;
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+}
+
+/**
+ * Настройка long press для удаления своих сообщений
+ */
+function setupMessageLongPress() {
+    const messages = document.querySelectorAll('.message[data-is-mine="true"]');
+    
+    messages.forEach(msg => {
+        let pressTimer = null;
+        let touchMoved = false;
+        
+        const startLongPress = (e) => {
+            touchMoved = false;
+            const messageId = msg.getAttribute('data-message-id');
+            
+            pressTimer = setTimeout(() => {
+                if (!touchMoved && messageId) {
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    }
+                    showDeleteMessageMenu(e, messageId);
+                }
+            }, 500);
+        };
+        
+        const cancelLongPress = () => {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
+        
+        const handleTouchMove = () => {
+            touchMoved = true;
+            cancelLongPress();
+        };
+        
+        msg.addEventListener('touchstart', startLongPress, { passive: true });
+        msg.addEventListener('touchend', cancelLongPress, { passive: true });
+        msg.addEventListener('touchmove', handleTouchMove, { passive: true });
+        msg.addEventListener('mousedown', startLongPress);
+        msg.addEventListener('mouseup', cancelLongPress);
+        msg.addEventListener('mouseleave', cancelLongPress);
+    });
+}
+
+/**
+ * Пометить сообщения как доставленные
+ */
+async function markMessagesAsDelivered() {
+    try {
+        const userId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
+        if (!userId || userId.startsWith('web_')) return;
+        
+        const response = await fetch('/api/neon-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'mark-delivered',
+                params: { userId }
+            })
+        });
+        const result = await response.json();
+        
+        if (!result.error) {
+            console.log('✅ Сообщения помечены как доставленные');
+        }
+    } catch (error) {
+        console.error('Ошибка markMessagesAsDelivered:', error);
+    }
+}
+
+/**
+ * Отметить пользователя как неактивного
+ */
+async function markUserInactive(userId) {
+    try {
+        await fetch('/api/user-activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'mark-inactive',
+                params: { userId }
+            })
+        });
+        console.log('👋 Пользователь неактивен');
+    } catch (error) {
+        console.error('Ошибка markUserInactive:', error);
+    }
+}
+
+window.showDeleteMessageMenu = showDeleteMessageMenu;
+window.setupMessageLongPress = setupMessageLongPress;
+window.markMessagesAsDelivered = markMessagesAsDelivered;
+window.markUserInactive = markUserInactive;
+
 console.log('✅ [CHATS] Модуль чатов инициализирован');

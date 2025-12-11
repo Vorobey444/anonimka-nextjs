@@ -22,7 +22,7 @@ const criticalModules = [
     '/webapp/modules/auth.js',              // 5. Аутентификация (нужны utils)
 ];
 
-// Независимые модули - загружаются ПАРАЛЛЕЛЬНО (6 модулей одновременно)
+// Независимые модули - загружаются ПАРАЛЛЕЛЬНО (7 модулей одновременно)
 const parallelModules = [
     '/webapp/modules/auth-modals.js',       // Модальные окна авторизации
     '/webapp/modules/location-data.js',     // Данные локаций
@@ -30,6 +30,7 @@ const parallelModules = [
     '/webapp/modules/premium.js',           // Премиум функции
     '/webapp/modules/referral.js',          // Рефералка
     '/webapp/modules/world-chat.js',        // Мировой чат
+    '/webapp/modules/debug.js',             // Панель отладки
 ];
 
 // Модули с зависимостями - загружаются ПОСЛЕ параллельных
@@ -42,7 +43,7 @@ const dependentModules = [
 ];
 
 // Версия для cache busting
-const moduleVersion = '2.0.9';
+const moduleVersion = '2.1.0';
 
 /**
  * Загрузить один модуль

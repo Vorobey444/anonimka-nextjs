@@ -2217,10 +2217,140 @@ window.loadMoreAds = loadMoreAds;
 window.setupInfiniteScroll = setupInfiniteScroll;
 window.sendContactMessage = sendContactMessage;
 window.showMyAds = showMyAds;
-window.loadMyAds = showMyAds; // Алиас для showMyAds
+window.loadMyAds = showMyAds;
 window.formatGender = formatGender;
 window.formatTarget = formatTarget;
 window.formatGoals = formatGoals;
 window.formatOrientation = formatOrientation;
+window.getAllAds = getAllAds;
+window.performDeleteAd = performDeleteAd;
+window.validateAgeRange = validateAgeRange;
+window.validateAgeRangeWithMessage = validateAgeRangeWithMessage;
+
+/**
+ * Получить все анкеты (сортированные)
+ */
+async function getAllAds() {
+    const response = await fetch('/api/ads', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    const ads = result.ads || [];
+    
+    // Сортируем: сначала закрепленные, потом по дате
+    const now = new Date();
+    return ads.sort((a, b) => {
+        const aPinned = a.is_pinned && (!a.pinned_until || new Date(a.pinned_until) > now);
+        const bPinned = b.is_pinned && (!b.pinned_until || new Date(b.pinned_until) > now);
+        
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
+}
+
+/**
+ * Удаление анкеты
+ */
+async function performDeleteAd(adId) {
+    try {
+        const userId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
+        const userToken = localStorage.getItem('user_token');
+
+        if ((!userId || userId.startsWith('web_')) && !userToken) {
+            tg.showAlert('❌ Требуется авторизация через Telegram');
+            return;
+        }
+
+        const response = await fetch('/api/ads', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: adId,
+                tgId: (userId && !userId.startsWith('web_')) ? userId : undefined,
+                userToken: userToken || undefined
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.error) {
+            throw new Error(result.error.message || result.error || 'Ошибка сервера');
+        }
+
+        if (result.success) {
+            tg.showAlert('🗑️ Анкета удалена!');
+            if (typeof loadMyAds === 'function') loadMyAds();
+            if (typeof loadPremiumStatus === 'function') await loadPremiumStatus();
+        } else {
+            tg.showAlert('❌ Не удалось удалить анкету');
+        }
+    } catch (error) {
+        console.error('Error deleting ad:', error);
+        tg.showAlert('❌ Ошибка при удалении анкеты');
+    }
+}
+
+/**
+ * Валидация диапазона возраста (автокоррекция)
+ */
+function validateAgeRange() {
+    const ageFrom = document.getElementById('ageFrom');
+    const ageTo = document.getElementById('ageTo');
+    
+    if (ageFrom && ageTo) {
+        let fromValue = parseInt(ageFrom.value);
+        let toValue = parseInt(ageTo.value);
+        
+        if (ageFrom.value && !isNaN(fromValue)) {
+            if (fromValue < 18) { ageFrom.value = 18; fromValue = 18; }
+            if (fromValue > 99) { ageFrom.value = 99; fromValue = 99; }
+        }
+        
+        if (ageTo.value && !isNaN(toValue)) {
+            if (toValue < 18) { ageTo.value = 18; toValue = 18; }
+            if (toValue > 99) { ageTo.value = 99; toValue = 99; }
+        }
+        
+        if (ageFrom.value && ageTo.value && !isNaN(fromValue) && !isNaN(toValue)) {
+            if (fromValue > toValue) ageTo.value = fromValue;
+        }
+    }
+}
+
+/**
+ * Валидация диапазона возраста с сообщением об ошибке
+ */
+function validateAgeRangeWithMessage() {
+    const ageFrom = document.getElementById('ageFrom');
+    const ageTo = document.getElementById('ageTo');
+    
+    const fromValue = parseInt(ageFrom?.value);
+    const toValue = parseInt(ageTo?.value);
+    
+    if (!fromValue || isNaN(fromValue) || !toValue || isNaN(toValue)) {
+        tg.showAlert('❌ Укажите возраст партнера');
+        return false;
+    }
+    
+    if (fromValue < 18 || fromValue > 99 || toValue < 18 || toValue > 99) {
+        tg.showAlert('❌ Возраст должен быть от 18 до 99 лет');
+        return false;
+    }
+    
+    if (fromValue > toValue) {
+        tg.showAlert('❌ Возраст "От" не может быть больше "До"');
+        return false;
+    }
+    
+    return true;
+}
 
 console.log('✅ [ADS] Модуль анкет инициализирован');

@@ -694,4 +694,65 @@ window.copyEmailData = copyEmailData;
 window.openManualMailto = openManualMailto;
 window.showEmailStatus = showEmailStatus;
 
+// Настройка обработчика формы email
+let emailFormHandlersInitialized = false;
+
+function setupEmailFormHandlers() {
+    const contactForm = document.getElementById('contactForm');
+    
+    console.log('setupEmailFormHandlers вызвана');
+    console.log('contactForm найдена:', !!contactForm);
+    
+    if (contactForm) {
+        contactForm.addEventListener('submit', window.handleEmailSubmit);
+        console.log('Обработчик submit добавлен к форме');
+        emailFormHandlersInitialized = true;
+    }
+}
+
+// Настройка обработчиков событий для контактов
+function setupContactsEventListeners() {
+    console.log('Настройка обработчиков контактов');
+    
+    // Добавляем обработчики событий для Telegram контакта
+    const telegramContact = document.querySelector('.contact-item[onclick*="openTelegramChat"]');
+    
+    if (telegramContact) {
+        console.log('Найден элемент telegram контакта, добавляем обработчик');
+        telegramContact.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Клик по telegram контакту');
+            openTelegramChat();
+        });
+    }
+}
+
+// Показать опцию ручной отправки email
+function showManualEmailOption(emailData) {
+    const statusDiv = document.getElementById('emailStatus');
+    if (!statusDiv) return;
+    
+    statusDiv.className = 'email-status error';
+    statusDiv.innerHTML = `
+        📋 <strong>Данные для ручной отправки:</strong>
+        <br><br>
+        <strong>На:</strong> aleksey@vorobey444.ru<br>
+        <strong>От:</strong> ${emailData.senderEmail}<br>
+        <strong>Тема:</strong> ${emailData.subject}<br>
+        <strong>Сообщение:</strong><br>
+        ${emailData.message.replace(/\n/g, '<br>')}
+        <br><br>
+        <button class="neon-button secondary" onclick="copyEmailData('${emailData.senderEmail}', '${emailData.subject.replace(/'/g, "\\'")}', '${emailData.message.replace(/'/g, "\\'")}')">
+            📋 Копировать данные
+        </button>
+        <button class="neon-button primary" onclick="openManualMailto('${emailData.senderEmail}', '${emailData.subject.replace(/'/g, "\\'")}', '${emailData.message.replace(/'/g, "\\'")}')">
+            📧 Открыть почту
+        </button>
+    `;
+}
+
+window.setupEmailFormHandlers = setupEmailFormHandlers;
+window.setupContactsEventListeners = setupContactsEventListeners;
+window.showManualEmailOption = showManualEmailOption;
+
 console.log('✅ Модуль утилит инициализирован');
