@@ -570,7 +570,11 @@ function showNicknameEditorScreen() {
 /**
  * Показать заблокированных пользователей
  */
-function showBlockedUsers() {
+async function showBlockedUsers() {
+    closeBurgerMenu();
+    const container = document.getElementById('blockedUsersContainer');
+    
+    // Показываем экран
     const blockedScreen = document.getElementById('blockedUsersScreen');
     if (blockedScreen) {
         const screens = document.querySelectorAll('.screen');
@@ -578,16 +582,139 @@ function showBlockedUsers() {
             s.classList.remove('active');
             s.style.display = 'none';
         });
-        
         blockedScreen.classList.add('active');
         blockedScreen.style.display = 'flex';
-        
-        // Загружаем список заблокированных
-        if (typeof loadBlockedUsers === 'function') {
-            loadBlockedUsers();
-        }
     }
-    closeBurgerMenu();
+    
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Загрузка...</p>
+        </div>
+    `;
+    
+    try {
+        // Получаем идентификатор пользователя (userToken для email, userId для Telegram)
+        let userToken = localStorage.getItem('user_token');
+        
+        // Fallback на Telegram ID если токена нет
+        if (!userToken || userToken === 'null' || userToken === 'undefined') {
+            const userId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
+            if (!userId || userId.startsWith('web_')) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="neon-icon">🔒</div>
+                        <h3>Требуется авторизация</h3>
+                        <p>Для просмотра заблокированных пользуйтесь Telegram</p>
+                    </div>
+                `;
+                return;
+            }
+            userToken = userId;
+        }
+        
+        const response = await fetch('/api/user-blocks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get-blocked-users',
+                params: { userToken: userToken }
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="neon-icon">⚠️</div>
+                    <h3>Ошибка</h3>
+                    <p>${result.error}</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const blockedUsers = result.data || [];
+        
+        if (blockedUsers.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="neon-icon">✅</div>
+                    <h3>Список пуст</h3>
+                    <p>У вас нет заблокированных пользователей</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const escapeHtmlFn = typeof escapeHtml === 'function' ? escapeHtml : (str) => str;
+        const formatTimeFn = typeof formatChatTime === 'function' ? formatChatTime : (t) => t;
+        
+        container.innerHTML = blockedUsers.map(user => `
+            <div class="blocked-user-card">
+                <div class="blocked-user-info">
+                    <span class="blocked-user-icon">👤</span>
+                    <div class="blocked-user-details">
+                        <div class="blocked-user-name">${escapeHtmlFn(user.blocked_nickname || 'Неизвестный')}</div>
+                        <div class="blocked-user-date">Заблокирован ${formatTimeFn(user.created_at)}</div>
+                    </div>
+                </div>
+                <button class="unblock-btn" onclick="unblockUserFromList('${user.blocked_token}')" title="Разблокировать">
+                    ×
+                </button>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Ошибка загрузки заблокированных:', error);
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="neon-icon">⚠️</div>
+                <h3>Ошибка</h3>
+                <p>Не удалось загрузить список</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Разблокировать пользователя из списка заблокированных
+ */
+async function unblockUserFromList(blockedId) {
+    const userToken = localStorage.getItem('user_token');
+    
+    tg.showConfirm('Разблокировать пользователя?', async (confirmed) => {
+        if (!confirmed) return;
+        
+        try {
+            const response = await fetch('/api/user-blocks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'unblock-user',
+                    params: { blockerToken: userToken, blockedToken: blockedId }
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.error) {
+                tg.showAlert('Ошибка: ' + result.error);
+                return;
+            }
+            
+            tg.showAlert('✅ Пользователь разблокирован');
+            // Перезагружаем список
+            showBlockedUsers();
+            
+        } catch (error) {
+            console.error('Ошибка разблокировки:', error);
+            tg.showAlert('Ошибка при разблокировке');
+        }
+    });
 }
 
 /**
@@ -766,6 +893,7 @@ window.showAbout = showAbout;
 window.showNicknameChange = showNicknameChange;
 window.showNicknameEditor = showNicknameEditor;
 window.showBlockedUsers = showBlockedUsers;
+window.unblockUserFromList = unblockUserFromList;
 window.showAdminPanel = showAdminPanel;
 window.showAffiliateProgram = showAffiliateProgram;
 window.showAffiliateInfo = showAffiliateInfo;
@@ -1275,5 +1403,38 @@ window.unbanUserFromAdmin = unbanUserFromAdmin;
 window.blockAdFromAdmin = blockAdFromAdmin;
 window.unblockAdFromAdmin = unblockAdFromAdmin;
 window.formatDateTime = formatDateTime;
+
+/**
+ * Проверяет является ли это Android приложение
+ */
+function isAndroidApp() {
+    return typeof AndroidAuth !== 'undefined' && AndroidAuth.isAndroid && AndroidAuth.isAndroid();
+}
+
+/**
+ * Инициализирует Android-специфичные элементы меню
+ */
+function initializeAndroidMenu() {
+    if (!isAndroidApp()) {
+        console.log('📱 [MENU] Not Android app, hiding Android-specific menu items');
+        document.querySelectorAll('.android-only').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.non-android-only').forEach(el => el.style.display = 'flex');
+        return;
+    }
+    
+    console.log('✅ [MENU] Android app detected, showing Android menu items');
+    document.querySelectorAll('.android-only').forEach(el => el.style.display = 'flex');
+    document.querySelectorAll('.non-android-only').forEach(el => el.style.display = 'none');
+}
+
+window.isAndroidApp = isAndroidApp;
+window.initializeAndroidMenu = initializeAndroidMenu;
+
+// Инициализируем Android меню при загрузке страницы
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAndroidMenu);
+} else {
+    initializeAndroidMenu();
+}
 
 console.log('✅ [MENU] Модуль навигации загружен');

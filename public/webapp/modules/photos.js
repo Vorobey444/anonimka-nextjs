@@ -672,6 +672,67 @@ function openGallery() {
 }
 
 /**
+ * Обработчик выбора фото из галереи
+ */
+function handlePhotoSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    console.log('📷 Выбран файл:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+    });
+    
+    // Проверка размера (макс 20 МБ)
+    if (file.size > 20 * 1024 * 1024) {
+        tg.showAlert('Файл слишком большой! Максимум 20 МБ');
+        event.target.value = '';
+        return;
+    }
+    
+    // Проверка что файл не пустой (Stories имеют size = 0)
+    if (file.size === 0) {
+        tg.showAlert('❌ Stories и временные файлы не поддерживаются!\n\nСохраните фото в галерею и выберите его оттуда.');
+        event.target.value = '';
+        return;
+    }
+    
+    // Принимаем изображения, видео и HEIC (Live Photos, анимации)
+    const isMedia = file.type.startsWith('image/') || 
+                    file.type.startsWith('video/') ||
+                    file.name.toLowerCase().endsWith('.heic') || 
+                    file.name.toLowerCase().endsWith('.heif');
+    
+    if (!isMedia) {
+        tg.showAlert('Можно прикрепить только фото или видео!');
+        event.target.value = '';
+        return;
+    }
+    
+    selectedPhoto = file;
+    
+    // Показываем превью
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const preview = document.getElementById('photoPreview');
+        const img = document.getElementById('photoPreviewImage');
+        
+        if (!preview || !img) return;
+        
+        // Для видео показываем иконку, для фото - превью
+        if (file.type.startsWith('video/')) {
+            img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-size="50">🎥</text></svg>';
+        } else {
+            img.src = e.target.result;
+        }
+        
+        preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
  * Удалить выбранное фото
  */
 function removePhoto() {
@@ -883,6 +944,7 @@ window.deleteStep9Photo = deleteStep9Photo;
 window.showPhotoSourceMenu = showPhotoSourceMenu;
 window.closePhotoSourceMenu = closePhotoSourceMenu;
 window.openGallery = openGallery;
+window.handlePhotoSelect = handlePhotoSelect;
 window.removePhoto = removePhoto;
 window.showPhotoModal = showPhotoModal;
 window.closePhotoModal = closePhotoModal;

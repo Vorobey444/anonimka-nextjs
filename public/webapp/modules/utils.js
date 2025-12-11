@@ -113,6 +113,42 @@ function formatNumber(num) {
 }
 
 /**
+ * Форматирование времени для списка чатов
+ */
+function formatChatTime(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'только что';
+    if (diffMins < 60) return `${diffMins} мин назад`;
+    if (diffHours < 24) return `${diffHours} ч назад`;
+    if (diffDays < 7) return `${diffDays} д назад`;
+    
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
+/**
+ * Форматирование времени для сообщений
+ */
+function formatMessageTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+
+/**
+ * Экранирование HTML
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
  * Форматирование даты создания
  */
 function formatCreatedAt(createdAt) {
@@ -482,6 +518,40 @@ ${emailData.message}
     }
 }
 
+/**
+ * Открыть email composer для связи с поддержкой
+ */
+function openEmailComposer() {
+    console.log('openEmailComposer вызвана');
+    const recipient = 'aleksey@vorobey444.ru';
+    const subject = encodeURIComponent('Обращение через anonimka.online');
+    const body = encodeURIComponent(`Здравствуйте!\n\nПишу вам через анонимную доску анкет anonimka.online\n\n[Опишите вашу проблему или вопрос]\n\nС уважением,\n[Ваше имя]`);
+    const mailtoLink = `mailto:${recipient}?subject=${subject}&body=${body}`;
+    window.open(mailtoLink, '_blank');
+}
+
+/**
+ * Открыть Telegram чат с поддержкой
+ */
+function openTelegramChat() {
+    console.log('openTelegramChat вызвана');
+    
+    const telegramUrl = 'https://t.me/Vorobey_444';
+    
+    // Пробуем открыть через Telegram Web App API
+    if (tg && tg.openTelegramLink) {
+        console.log('Используем tg.openTelegramLink');
+        tg.openTelegramLink(telegramUrl);
+    } else if (tg && tg.openLink) {
+        console.log('Используем tg.openLink');
+        tg.openLink(telegramUrl);
+    } else {
+        console.log('Используем window.open как fallback');
+        // Fallback - обычная ссылка
+        window.open(telegramUrl, '_blank');
+    }
+}
+
 // Экспорт функций для onclick
 window.hashSensitiveData = hashSensitiveData;
 window.safeLog = safeLog;
@@ -489,6 +559,9 @@ window.getCurrentUserId = getCurrentUserId;
 window.getUserNickname = getUserNickname;
 window.getUserLocation = getUserLocation;
 window.formatNumber = formatNumber;
+window.formatChatTime = formatChatTime;
+window.formatMessageTime = formatMessageTime;
+window.escapeHtml = escapeHtml;
 window.formatCreatedAt = formatCreatedAt;
 window.formatGender = formatGender;
 window.formatTarget = formatTarget;
@@ -501,5 +574,124 @@ window.loadEmailService = loadEmailService;
 window.sendEmailToBackend = sendEmailToBackend;
 window.sendEmailViaTelegram = sendEmailViaTelegram;
 window.sendEmailViaMailto = sendEmailViaMailto;
+window.openEmailComposer = openEmailComposer;
+window.openTelegramChat = openTelegramChat;
+
+/**
+ * Функция для расчета времени до полуночи (обновления лимитов) - АЛМАТЫ UTC+5
+ */
+function getTimeUntilMidnight() {
+    const now = new Date();
+    const utcHours = now.getUTCHours();
+    const utcMinutes = now.getUTCMinutes();
+    
+    // Конвертируем в Алматы время (UTC+5)
+    const almatyHours = (utcHours + 5) % 24;
+    
+    // Считаем время до полуночи Алматы
+    const hoursUntilMidnight = (24 - almatyHours - 1);
+    const minutesUntilMidnight = (60 - utcMinutes);
+    
+    const hours = minutesUntilMidnight === 60 ? hoursUntilMidnight + 1 : hoursUntilMidnight;
+    const minutes = minutesUntilMidnight === 60 ? 0 : minutesUntilMidnight;
+    
+    if (hours > 0) {
+        return `${hours}ч ${minutes}м`;
+    } else {
+        return `${minutes}м`;
+    }
+}
+
+/**
+ * Возвращает правильную форму слова в зависимости от числа
+ * @param {number} number - число
+ * @param {string} one - форма для 1 (анкета)
+ * @param {string} few - форма для 2-4 (анкеты)
+ * @param {string} many - форма для 5+ (анкет)
+ */
+function getPluralForm(number, one, few, many) {
+    const mod10 = number % 10;
+    const mod100 = number % 100;
+    
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+    return many;
+}
+
+/**
+ * Копировать данные письма в буфер обмена
+ */
+function copyEmailData(senderEmail, subject, message) {
+    const emailText = `На: aleksey@vorobey444.ru
+От: ${senderEmail}
+Тема: ${subject}
+
+${message}`;
+
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(emailText).then(() => {
+            showEmailStatus('success', '✅ Данные письма скопированы в буфер обмена');
+        });
+    } else {
+        // Fallback для старых браузеров
+        const textArea = document.createElement('textarea');
+        textArea.value = emailText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showEmailStatus('success', '✅ Данные письма скопированы в буфер обмена');
+    }
+}
+
+/**
+ * Открыть почтовый клиент вручную
+ */
+function openManualMailto(senderEmail, subject, message) {
+    const mailtoData = {
+        senderEmail,
+        subject,
+        message
+    };
+    
+    sendEmailViaMailto(mailtoData).then(result => {
+        if (result.success) {
+            showEmailStatus('success', result.message);
+        } else {
+            showEmailStatus('error', result.error);
+        }
+    });
+}
+
+/**
+ * Показать статус отправки email
+ */
+function showEmailStatus(type, message) {
+    const statusDiv = document.getElementById('emailStatus');
+    if (!statusDiv) return;
+    
+    statusDiv.className = `email-status ${type}`;
+    
+    if (type === 'loading') {
+        statusDiv.innerHTML = `<div class="loading-spinner"></div>${message}`;
+    } else {
+        statusDiv.innerHTML = message;
+    }
+    
+    statusDiv.style.display = 'block';
+    
+    // Автоматически скрываем сообщение через 5 секунд (кроме ошибок)
+    if (type === 'success') {
+        setTimeout(() => {
+            statusDiv.style.display = 'none';
+        }, 5000);
+    }
+}
+
+window.getTimeUntilMidnight = getTimeUntilMidnight;
+window.getPluralForm = getPluralForm;
+window.copyEmailData = copyEmailData;
+window.openManualMailto = openManualMailto;
+window.showEmailStatus = showEmailStatus;
 
 console.log('✅ Модуль утилит инициализирован');
