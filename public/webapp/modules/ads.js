@@ -288,13 +288,31 @@ function showCreateAd() {
         return;
     }
     
+    // Проверяем локацию
+    const currentUserLocation = typeof getUserLocation === 'function' ? getUserLocation() : null;
+    if (!currentUserLocation || !currentUserLocation.city) {
+        tg.showAlert('Сначала выберите ваш город');
+        if (typeof showLocationSetup === 'function') {
+            showLocationSetup();
+        }
+        return;
+    }
+    
     // Сбрасываем форму
     formData = {};
     currentStep = 1;
     
+    // Автоматически заполняем локацию из настроек пользователя
+    formData.country = currentUserLocation.country;
+    formData.region = currentUserLocation.region;
+    formData.city = currentUserLocation.city;
+    
     // Показываем первый шаг
     showScreen('createAd');
     updateFormStep(1);
+    
+    // Отображаем локацию в форме
+    updateFormLocationDisplay();
     
     // Инициализируем обработчики формы
     initFormHandlers();

@@ -332,6 +332,12 @@ function goToHome() {
 function showMainMenu() {
     console.log('🏠 [MENU] Переход в главное меню');
     
+    // Убедимся что модальные окна авторизации скрыты
+    const telegramModal = document.getElementById('telegramAuthModal');
+    const emailModal = document.getElementById('emailAuthModal');
+    if (telegramModal) telegramModal.style.display = 'none';
+    if (emailModal) emailModal.style.display = 'none';
+    
     // Скрываем все экраны
     const allScreens = document.querySelectorAll('.screen');
     allScreens.forEach(screen => {
@@ -349,6 +355,16 @@ function showMainMenu() {
     // Обновляем отображение локации
     if (typeof updateLocationDisplay === 'function') {
         updateLocationDisplay();
+    }
+    
+    // Обновляем статус PRO и переключатель FREE/PRO
+    if (typeof loadPremiumStatus === 'function') {
+        loadPremiumStatus();
+    }
+    
+    // Обновляем счетчик непрочитанных чатов
+    if (typeof updateChatBadge === 'function') {
+        updateChatBadge();
     }
     
     // Обновляем Telegram кнопки
@@ -489,18 +505,9 @@ function showContacts() {
  * Показать "О приложении"
  */
 function showAbout() {
-    const aboutScreen = document.getElementById('aboutScreen');
-    if (aboutScreen) {
-        const screens = document.querySelectorAll('.screen');
-        screens.forEach(s => {
-            s.classList.remove('active');
-            s.style.display = 'none';
-        });
-        
-        aboutScreen.classList.add('active');
-        aboutScreen.style.display = 'flex';
-    }
     closeBurgerMenu();
+    showScreen('about');
+    updateActiveMenuItem('about');
 }
 
 /**
@@ -525,11 +532,17 @@ function showNicknameEditorScreen() {
         nicknameScreen.classList.add('active');
         nicknameScreen.style.display = 'flex';
         
-        // Заполняем текущий никнейм
-        const input = nicknameScreen.querySelector('#nicknamePageInput');
+        // Заполняем текущий никнейм в инпут и в отображение
+        const currentNickname = localStorage.getItem('user_nickname') || localStorage.getItem('userNickname') || '';
+        
+        const input = nicknameScreen.querySelector('#nicknameInputPage');
         if (input) {
-            const currentNickname = localStorage.getItem('user_nickname') || localStorage.getItem('userNickname') || '';
             input.value = currentNickname;
+        }
+        
+        const display = document.getElementById('currentNicknameDisplay');
+        if (display) {
+            display.textContent = currentNickname || 'Аноним';
         }
     }
     closeBurgerMenu();

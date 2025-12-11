@@ -631,9 +631,9 @@ async function confirmDetectedLocation(country, region, city) {
 }
 
 /**
- * Показать ручной выбор локации
+ * Показать ручной выбор локации (сбросить выбор в UI)
  */
-function showManualLocationSetup() {
+function resetManualLocationUI() {
     const selectedDiv = document.querySelector('.setup-selected-location');
     if (selectedDiv) selectedDiv.style.display = 'none';
     
@@ -646,7 +646,7 @@ function showManualLocationSetup() {
         btn.classList.remove('active');
     });
     
-    console.log('📍 Показан ручной выбор локации');
+    console.log('📍 Сброшен ручной выбор локации');
 }
 
 /**
@@ -1186,7 +1186,7 @@ function showLocationChoiceScreen() {
         s.style.display = 'none';
     });
     
-    const locationChoiceScreen = document.getElementById('locationChoiceScreen');
+    const locationChoiceScreen = document.getElementById('locationChoice');
     if (locationChoiceScreen) {
         locationChoiceScreen.classList.add('active');
         locationChoiceScreen.style.display = 'flex';
@@ -1202,16 +1202,13 @@ function showLocationChoiceScreen() {
  * Показать настройку локации (ручной ввод)
  */
 function showManualLocationSetup() {
-    const screens = document.querySelectorAll('.screen');
-    screens.forEach(s => {
-        s.classList.remove('active');
-        s.style.display = 'none';
-    });
+    showScreen('locationSetup');
+    resetSetupLocation();
     
-    const manualLocationScreen = document.getElementById('manualLocationScreen');
-    if (manualLocationScreen) {
-        manualLocationScreen.classList.add('active');
-        manualLocationScreen.style.display = 'flex';
+    // Показываем кнопку "Назад" всегда
+    const locationBackBtn = document.getElementById('locationBackBtn');
+    if (locationBackBtn) {
+        locationBackBtn.style.display = 'block';
     }
 }
 

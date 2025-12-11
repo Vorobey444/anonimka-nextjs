@@ -533,8 +533,8 @@ function openEmailComposer() {
 /**
  * Открыть Telegram чат с поддержкой
  */
-function openTelegramChat() {
-    console.log('openTelegramChat вызвана');
+function openSupportTelegramChat() {
+    console.log('openSupportTelegramChat вызвана');
     
     const telegramUrl = 'https://t.me/Vorobey_444';
     
@@ -575,7 +575,7 @@ window.sendEmailToBackend = sendEmailToBackend;
 window.sendEmailViaTelegram = sendEmailViaTelegram;
 window.sendEmailViaMailto = sendEmailViaMailto;
 window.openEmailComposer = openEmailComposer;
-window.openTelegramChat = openTelegramChat;
+window.openSupportTelegramChat = openSupportTelegramChat;
 
 /**
  * Функция для расчета времени до полуночи (обновления лимитов) - АЛМАТЫ UTC+5
