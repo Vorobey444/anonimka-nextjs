@@ -202,11 +202,12 @@ function showTelegramAuthModal() {
         // Добавляем обработчик клика для принудительного открытия
         deepLinkButton.onclick = function(e) {
             e.preventDefault();
-            console.log('🔗 Открываем Telegram:', telegramDeepLink, 'isTelegramWebApp:', isTelegramWebApp);
+            const isTgWebApp = window.Telegram?.WebApp?.platform !== 'unknown' && !!window.Telegram?.WebApp?.initData;
+            console.log('🔗 Открываем Telegram:', telegramDeepLink, 'isTelegramWebApp:', isTgWebApp);
 
             // Внутри Telegram WebApp используем родной метод
             try {
-                if (isTelegramWebApp && window.Telegram?.WebApp?.openTelegramLink) {
+                if (isTgWebApp && window.Telegram?.WebApp?.openTelegramLink) {
                     window.Telegram.WebApp.openTelegramLink(telegramDeepLink);
                     return false;
                 }
@@ -724,9 +725,10 @@ function showReferralModal() {
 }
 
 // Получить текущий ID пользователя для серверных лимитов (предпочтительно Telegram ID)
-function getCurrentUserId() {
+function getCurrentUserIdLocal() {
     // 1) Telegram WebApp user
-    if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+    const isTgWebApp = window.Telegram?.WebApp?.platform !== 'unknown' && !!window.Telegram?.WebApp?.initData;
+    if (isTgWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
         return String(window.Telegram.WebApp.initDataUnsafe.user.id);
     }
     // 2) Telegram Login Widget сохранённый пользователь
@@ -741,7 +743,12 @@ function getCurrentUserId() {
             console.error('Ошибка получения ID пользователя:', e);
         }
     }
-    // 3) Для чисто веб-пользователей (без Telegram) возвращаем null — сервер будет работать по user_token
+    // 3) user_token
+    const userToken = localStorage.getItem('user_token');
+    if (userToken && userToken !== 'null') {
+        return userToken;
+    }
+    // 4) Для чисто веб-пользователей (без Telegram) возвращаем null
     return null;
 }
 

@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-11T19:12:40.481Z
+ * Автоматически сгенерирован: 2025-12-11T19:18:06.983Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -711,7 +711,7 @@ console.log('✅ Модуль UI диалогов инициализирован
 } catch(e) { console.error('❌ Ошибка в модуле ui-dialogs.js:', e); }
 })();
 
-// ========== utils.js (27.9 KB) ==========
+// ========== utils.js (28.7 KB) ==========
 (function() {
 try {
 /**
@@ -756,9 +756,22 @@ function safeLog(...args) {
  * Получить текущий ID пользователя
  */
 function getCurrentUserId() {
-    if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+    // Проверяем Telegram WebApp
+    const isTgWebApp = typeof window !== 'undefined' && 
+                       window.Telegram?.WebApp?.platform !== 'unknown' && 
+                       !!window.Telegram?.WebApp?.initData;
+    
+    if (isTgWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
         return String(window.Telegram.WebApp.initDataUnsafe.user.id);
     }
+    
+    // Проверяем user_token (для email авторизации и Android)
+    const userToken = localStorage.getItem('user_token');
+    if (userToken && userToken !== 'null' && userToken !== 'undefined') {
+        return userToken;
+    }
+    
+    // Проверяем сохранённого Telegram пользователя
     const savedUser = localStorage.getItem('telegram_user');
     if (savedUser) {
         try {
@@ -770,6 +783,13 @@ function getCurrentUserId() {
             console.error('Ошибка получения ID пользователя:', e);
         }
     }
+    
+    // Проверяем user_id
+    const userId = localStorage.getItem('user_id');
+    if (userId && userId !== 'null' && userId !== 'undefined') {
+        return userId;
+    }
+    
     return null;
 }
 
@@ -2149,7 +2169,7 @@ console.log('✅ [AUTH] Модуль авторизации инициализи
 } catch(e) { console.error('❌ Ошибка в модуле auth.js:', e); }
 })();
 
-// ========== auth-modals.js (51.2 KB) ==========
+// ========== auth-modals.js (51.5 KB) ==========
 (function() {
 try {
 // ================================================
@@ -2356,11 +2376,12 @@ function showTelegramAuthModal() {
         // Добавляем обработчик клика для принудительного открытия
         deepLinkButton.onclick = function(e) {
             e.preventDefault();
-            console.log('🔗 Открываем Telegram:', telegramDeepLink, 'isTelegramWebApp:', isTelegramWebApp);
+            const isTgWebApp = window.Telegram?.WebApp?.platform !== 'unknown' && !!window.Telegram?.WebApp?.initData;
+            console.log('🔗 Открываем Telegram:', telegramDeepLink, 'isTelegramWebApp:', isTgWebApp);
 
             // Внутри Telegram WebApp используем родной метод
             try {
-                if (isTelegramWebApp && window.Telegram?.WebApp?.openTelegramLink) {
+                if (isTgWebApp && window.Telegram?.WebApp?.openTelegramLink) {
                     window.Telegram.WebApp.openTelegramLink(telegramDeepLink);
                     return false;
                 }
@@ -2878,9 +2899,10 @@ function showReferralModal() {
 }
 
 // Получить текущий ID пользователя для серверных лимитов (предпочтительно Telegram ID)
-function getCurrentUserId() {
+function getCurrentUserIdLocal() {
     // 1) Telegram WebApp user
-    if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+    const isTgWebApp = window.Telegram?.WebApp?.platform !== 'unknown' && !!window.Telegram?.WebApp?.initData;
+    if (isTgWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
         return String(window.Telegram.WebApp.initDataUnsafe.user.id);
     }
     // 2) Telegram Login Widget сохранённый пользователь
@@ -2895,7 +2917,12 @@ function getCurrentUserId() {
             console.error('Ошибка получения ID пользователя:', e);
         }
     }
-    // 3) Для чисто веб-пользователей (без Telegram) возвращаем null — сервер будет работать по user_token
+    // 3) user_token
+    const userToken = localStorage.getItem('user_token');
+    if (userToken && userToken !== 'null') {
+        return userToken;
+    }
+    // 4) Для чисто веб-пользователей (без Telegram) возвращаем null
     return null;
 }
 

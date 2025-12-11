@@ -40,9 +40,22 @@ function safeLog(...args) {
  * Получить текущий ID пользователя
  */
 function getCurrentUserId() {
-    if (isTelegramWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+    // Проверяем Telegram WebApp
+    const isTgWebApp = typeof window !== 'undefined' && 
+                       window.Telegram?.WebApp?.platform !== 'unknown' && 
+                       !!window.Telegram?.WebApp?.initData;
+    
+    if (isTgWebApp && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
         return String(window.Telegram.WebApp.initDataUnsafe.user.id);
     }
+    
+    // Проверяем user_token (для email авторизации и Android)
+    const userToken = localStorage.getItem('user_token');
+    if (userToken && userToken !== 'null' && userToken !== 'undefined') {
+        return userToken;
+    }
+    
+    // Проверяем сохранённого Telegram пользователя
     const savedUser = localStorage.getItem('telegram_user');
     if (savedUser) {
         try {
@@ -54,6 +67,13 @@ function getCurrentUserId() {
             console.error('Ошибка получения ID пользователя:', e);
         }
     }
+    
+    // Проверяем user_id
+    const userId = localStorage.getItem('user_id');
+    if (userId && userId !== 'null' && userId !== 'undefined') {
+        return userId;
+    }
+    
     return null;
 }
 
