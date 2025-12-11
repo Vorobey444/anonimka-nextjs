@@ -10,6 +10,89 @@
 console.log('📸 [PHOTOS] Инициализация модуля фото');
 
 /**
+ * Получить URL фото (защищённый или обычный)
+ */
+function getPhotoUrl(photoUrlOrFileId, size = null) {
+    // Если уже защищённый URL - возвращаем как есть
+    if (photoUrlOrFileId && photoUrlOrFileId.includes('/api/secure-photo')) {
+        return photoUrlOrFileId;
+    }
+    
+    // Если это file_id от Telegram - преобразуем в защищённый URL
+    if (photoUrlOrFileId && photoUrlOrFileId.startsWith('Ag')) {
+        const secureUrl = `/api/secure-photo?fileId=${encodeURIComponent(photoUrlOrFileId)}`;
+        return secureUrl;
+    }
+    
+    // Иначе возвращаем как есть (может быть уже готовый URL)
+    return photoUrlOrFileId;
+}
+
+/**
+ * Сжатие изображения
+ */
+async function compressImage(file, maxSizeMB = 4) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // Ограничиваем размер до 1280px по большей стороне
+                const maxDimension = 1280;
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Конвертируем в JPEG с качеством 0.85
+                canvas.toBlob((blob) => {
+                    URL.revokeObjectURL(url);
+                    
+                    if (!blob) {
+                        reject(new Error('Не удалось сжать изображение'));
+                        return;
+                    }
+                    
+                    const newFile = new File([blob], file.name.replace(/\.(heic|heif|png|webp)$/i, '.jpg'), {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    
+                    console.log(`✅ Изображение сжато: ${file.size} → ${blob.size} bytes`);
+                    resolve(newFile);
+                }, 'image/jpeg', 0.85);
+            } catch (err) {
+                URL.revokeObjectURL(url);
+                reject(err);
+            }
+        };
+        
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('Не удалось загрузить изображение для сжатия'));
+        };
+        
+        img.src = url;
+    });
+}
+
+/**
  * Показать страницу "Мои фото"
  */
 function showMyPhotos() {
@@ -709,5 +792,7 @@ window.removePhoto = removePhoto;
 window.showPhotoModal = showPhotoModal;
 window.closePhotoModal = closePhotoModal;
 window.addPhotoFromGallery = addPhotoFromGallery;
+window.getPhotoUrl = getPhotoUrl;
+window.compressImage = compressImage;
 
 console.log('✅ [PHOTOS] Модуль фото инициализирован');

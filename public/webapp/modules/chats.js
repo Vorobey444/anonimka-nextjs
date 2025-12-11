@@ -759,6 +759,369 @@ function openTelegramChat() {
     }
 }
 
+/**
+ * ===== ФУНКЦИИ РЕАКЦИЙ НА СООБЩЕНИЯ =====
+ */
+
+/**
+ * Настройка обработчиков свайпа для сообщений
+ */
+function setupMessageSwipeHandlers() {
+    const messages = document.querySelectorAll('.message');
+    
+    messages.forEach(msg => {
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+        let isDragging = false;
+        let hasMoved = false;
+        
+        const handleStart = (e) => {
+            startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+            currentX = startX;
+            isDragging = true;
+            hasMoved = false;
+            msg.style.transition = 'none';
+        };
+        
+        const handleMove = (e) => {
+            if (!isDragging) return;
+            
+            currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+            const diffX = currentX - startX;
+            const diffY = Math.abs(currentY - startY);
+            
+            const isMine = msg.getAttribute('data-is-mine') === 'true';
+            
+            // Свайп влево (для всех) - ответить
+            if (diffX < 0 && diffX > -150) {
+                msg.style.transform = `translateX(${diffX}px)`;
+                if (Math.abs(diffX) > 5) {
+                    hasMoved = true;
+                }
+            }
+            // Свайп вправо (только свои) - удалить
+            else if (diffX > 0 && diffX < 150 && isMine) {
+                msg.style.transform = `translateX(${diffX}px)`;
+                if (Math.abs(diffX) > 5) {
+                    hasMoved = true;
+                }
+            }
+        };
+        
+        const handleEnd = (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            const diff = currentX - startX;
+            msg.style.transition = 'transform 0.2s ease';
+            msg.style.transform = '';
+            
+            const isMine = msg.getAttribute('data-is-mine') === 'true';
+            
+            // Свайп влево (-100px) И было движение - показываем ответ
+            if (diff < -100 && hasMoved) {
+                const messageId = msg.getAttribute('data-message-id');
+                const nickname = msg.getAttribute('data-nickname');
+                const messageText = msg.querySelector('.message-text')?.textContent || '';
+                
+                if (messageId && nickname) {
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    }
+                    if (typeof replyToMsg === 'function') {
+                        replyToMsg(messageId, nickname, messageText);
+                    }
+                }
+            }
+            // Свайп вправо (60px) И своё сообщение И было движение - удалить
+            else if (diff > 60 && isMine && hasMoved) {
+                const messageId = msg.getAttribute('data-message-id');
+                if (messageId) {
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    }
+                    if (typeof showDeleteMessageMenu === 'function') {
+                        showDeleteMessageMenu(null, parseInt(messageId));
+                    }
+                }
+            }
+            
+            hasMoved = false;
+        };
+        
+        // Touch events
+        msg.addEventListener('touchstart', handleStart, { passive: true });
+        msg.addEventListener('touchmove', handleMove, { passive: true });
+        msg.addEventListener('touchend', handleEnd, { passive: true });
+        
+        // Mouse events для десктопа
+        msg.addEventListener('mousedown', handleStart);
+        msg.addEventListener('mousemove', handleMove);
+        msg.addEventListener('mouseup', handleEnd);
+        msg.addEventListener('mouseleave', () => {
+            if (isDragging) {
+                isDragging = false;
+                msg.style.transition = 'transform 0.2s ease';
+                msg.style.transform = '';
+            }
+        });
+    });
+}
+
+/**
+ * Настройка реакций на сообщения
+ */
+function setupMessageReactions() {
+    const messages = document.querySelectorAll('.message');
+    
+    messages.forEach(msg => {
+        const isMine = msg.getAttribute('data-is-mine') === 'true';
+        
+        let clickTimeout = null;
+        let clickCount = 0;
+        let longPressTimer = null;
+        let longPressStarted = false;
+        
+        // Обработчик двойного клика
+        const handleClick = (e) => {
+            if (e.target.closest('.message-photo, .message-photo-secure, video, button, .message-reply-indicator, .message-reaction')) {
+                return;
+            }
+            
+            if (isMine) return;
+            
+            if (longPressStarted) {
+                longPressStarted = false;
+                return;
+            }
+            
+            clickCount++;
+            
+            if (clickCount === 1) {
+                clickTimeout = setTimeout(() => {
+                    clickCount = 0;
+                }, 300);
+            } else if (clickCount === 2) {
+                clearTimeout(clickTimeout);
+                clickCount = 0;
+                addReaction(msg, '❤️');
+            }
+        };
+        
+        // Долгое нажатие - показываем меню реакций
+        const handleLongPressStart = (e) => {
+            if (e.target.closest('.message-photo, .message-photo-secure, video, button, .message-reply-indicator, .message-reaction')) {
+                return;
+            }
+            
+            if (isMine) return;
+            
+            const coords = e.touches ? e.touches[0] : e;
+            longPressTimer = setTimeout(() => {
+                longPressStarted = true;
+                showReactionPicker(msg, coords);
+            }, 500);
+        };
+        
+        const handleLongPressEnd = () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+            setTimeout(() => {
+                longPressStarted = false;
+            }, 100);
+        };
+        
+        const handleLongPressMove = () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        };
+        
+        msg.addEventListener('click', handleClick);
+        msg.addEventListener('touchstart', handleLongPressStart, { passive: true });
+        msg.addEventListener('touchend', handleLongPressEnd);
+        msg.addEventListener('touchmove', handleLongPressMove);
+        msg.addEventListener('mousedown', handleLongPressStart);
+        msg.addEventListener('mouseup', handleLongPressEnd);
+        msg.addEventListener('mousemove', handleLongPressMove);
+    });
+}
+
+/**
+ * Показать меню выбора реакций
+ */
+function showReactionPicker(messageElement, event) {
+    closeReactionPicker();
+    
+    const reactions = ['❤️', '👍', '😂', '🔥', '👎', '😠'];
+    
+    const picker = document.createElement('div');
+    picker.className = 'reaction-picker';
+    picker.id = 'reactionPicker';
+    
+    reactions.forEach(emoji => {
+        const option = document.createElement('div');
+        option.className = 'reaction-option';
+        option.textContent = emoji;
+        option.onclick = () => {
+            addReaction(messageElement, emoji);
+            closeReactionPicker();
+        };
+        picker.appendChild(option);
+    });
+    
+    document.body.appendChild(picker);
+    
+    picker.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+    }, { passive: true });
+    
+    picker.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+    }, { passive: true });
+    
+    const rect = messageElement.getBoundingClientRect();
+    const pickerRect = picker.getBoundingClientRect();
+    
+    let left = rect.left + rect.width / 2 - pickerRect.width / 2;
+    let top = rect.top - pickerRect.height - 10;
+    
+    if (left < 10) left = 10;
+    if (left + pickerRect.width > window.innerWidth - 10) {
+        left = window.innerWidth - pickerRect.width - 10;
+    }
+    if (top < 10) {
+        top = rect.bottom + 10;
+    }
+    
+    picker.style.left = left + 'px';
+    picker.style.top = top + 'px';
+    
+    setTimeout(() => {
+        document.addEventListener('click', closeReactionPickerOnClickOutside);
+    }, 100);
+}
+
+/**
+ * Закрыть меню реакций
+ */
+function closeReactionPicker() {
+    const picker = document.getElementById('reactionPicker');
+    if (picker) {
+        picker.remove();
+        document.removeEventListener('click', closeReactionPickerOnClickOutside);
+    }
+}
+
+function closeReactionPickerOnClickOutside(e) {
+    const picker = document.getElementById('reactionPicker');
+    if (picker && !picker.contains(e.target)) {
+        closeReactionPicker();
+    }
+}
+
+/**
+ * Добавить реакцию на сообщение
+ */
+async function addReaction(messageElement, emoji) {
+    const messageId = messageElement.dataset.messageId;
+    
+    if (!messageId) {
+        console.error('Message ID not found');
+        return;
+    }
+    
+    try {
+        showReactionOnMessage(messageElement, emoji);
+        
+        const userToken = localStorage.getItem('user_token');
+        const response = await fetch('/api/reactions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message_id: messageId,
+                emoji: emoji,
+                user_token: userToken
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to add reaction');
+        }
+        
+        const data = await response.json();
+        console.log('✅ Реакция добавлена:', data);
+        
+    } catch (error) {
+        console.error('❌ Ошибка добавления реакции:', error);
+        removeReactionFromMessage(messageElement);
+    }
+}
+
+/**
+ * Показать реакцию на сообщении
+ */
+function showReactionOnMessage(messageElement, emoji, count = 1) {
+    const existingReaction = messageElement.querySelector('.message-reaction');
+    if (existingReaction) {
+        existingReaction.remove();
+    }
+    
+    const messageId = messageElement.getAttribute('data-message-id');
+    const reaction = document.createElement('div');
+    reaction.className = 'message-reaction';
+    reaction.setAttribute('data-message-id', messageId);
+    reaction.innerHTML = `
+        <span class="message-reaction-emoji">${emoji}</span>
+        ${count > 1 ? `<span class="message-reaction-count">${count}</span>` : ''}
+    `;
+    
+    const removeHandler = async (e) => {
+        e.stopPropagation();
+        
+        try {
+            const response = await fetch('/api/reactions', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Token': window.userToken
+                },
+                body: JSON.stringify({
+                    message_id: parseInt(messageId),
+                    emoji: emoji
+                })
+            });
+            
+            if (response.ok) {
+                reaction.remove();
+            }
+        } catch (error) {
+            console.error('Ошибка удаления реакции:', error);
+        }
+    };
+    
+    reaction.addEventListener('click', removeHandler);
+    messageElement.appendChild(reaction);
+}
+
+/**
+ * Убрать реакцию с сообщения
+ */
+function removeReactionFromMessage(messageElement) {
+    const reaction = messageElement.querySelector('.message-reaction');
+    if (reaction) {
+        reaction.remove();
+    }
+}
+
 // Экспорт функций в глобальную область
 window.switchChatTab = switchChatTab;
 window.showMyChats = showMyChats;
@@ -781,5 +1144,12 @@ window.toggleChatFontSize = toggleChatFontSize;
 window.toggleChatMenu = toggleChatMenu;
 window.confirmDeleteChat = confirmDeleteChat;
 window.openTelegramChat = openTelegramChat;
+window.setupMessageSwipeHandlers = setupMessageSwipeHandlers;
+window.setupMessageReactions = setupMessageReactions;
+window.showReactionPicker = showReactionPicker;
+window.closeReactionPicker = closeReactionPicker;
+window.addReaction = addReaction;
+window.showReactionOnMessage = showReactionOnMessage;
+window.removeReactionFromMessage = removeReactionFromMessage;
 
 console.log('✅ [CHATS] Модуль чатов инициализирован');

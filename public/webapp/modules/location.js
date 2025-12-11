@@ -421,6 +421,238 @@ function showManualLocationSetup() {
 }
 
 /**
+ * Обработка отсутствия локации
+ */
+function handleNoLocation(hasNickname) {
+    console.log('📍 Сохраненной локации нет');
+    if (hasNickname) {
+        console.log('Никнейм есть, но локация потерялась - запускаем автоопределение');
+        showAutoLocationDetection();
+    } else {
+        console.log('Ждём установки никнейма, автоопределение будет после');
+        if (typeof checkOnboardingStatus === 'function') {
+            checkOnboardingStatus();
+        }
+    }
+}
+
+/**
+ * Определение локации по GPS
+ */
+async function detectLocationByGPS() {
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+            console.log('❌ GPS недоступен в этом браузере');
+            resolve(null);
+            return;
+        }
+        
+        console.log('🛰️ Запрашиваем GPS координаты...');
+        
+        const timeoutId = setTimeout(() => {
+            console.log('⏱️ GPS таймаут (15 секунд)');
+            resolve(null);
+        }, 15000);
+        
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                clearTimeout(timeoutId);
+                const { latitude, longitude } = position.coords;
+                console.log(`📍 GPS координаты получены: ${latitude}, ${longitude}`);
+                
+                try {
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ru`,
+                        {
+                            headers: {
+                                'User-Agent': 'Anonimka-App/1.0'
+                            }
+                        }
+                    );
+                    const data = await response.json();
+                    console.log('🗺️ Геокодирование ответ:', data);
+                    
+                    if (data && data.address) {
+                        const locationData = {
+                            country_code: data.address.country_code?.toUpperCase(),
+                            country_name: data.address.country,
+                            region: data.address.state || data.address.region,
+                            city: data.address.city || data.address.town || data.address.village,
+                            source: 'gps'
+                        };
+                        console.log('✅ GPS локация определена:', locationData);
+                        resolve(locationData);
+                    } else {
+                        resolve(null);
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка геокодирования GPS:', error);
+                    resolve(null);
+                }
+            },
+            (error) => {
+                clearTimeout(timeoutId);
+                console.log(`❌ GPS ошибка: ${error.message}`);
+                resolve(null);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 300000
+            }
+        );
+    });
+}
+
+/**
+ * Определение локации по IP
+ */
+async function detectLocationByIP() {
+    const detectionText = document.querySelector('.detection-text');
+    console.log('detectLocationByIP вызвана');
+    
+    if (!detectionText) {
+        console.error('Элемент .detection-text не найден!');
+        showPopularLocations();
+        return;
+    }
+    
+    try {
+        console.log('Начинаем определение локации...');
+        
+        detectionText.textContent = 'Сканируем цифровой след';
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        
+        // Сначала пробуем GPS
+        detectionText.textContent = 'Проверяем GPS';
+        let locationData = await detectLocationByGPS();
+        
+        if (locationData) {
+            console.log('✅ Используем GPS локацию:', locationData);
+        } else {
+            console.log('⚠️ GPS недоступен, используем IP определение');
+            
+            detectionText.textContent = 'Анализируем сетевые маршруты';
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            detectionText.textContent = 'Определяем геолокацию';
+        }
+        
+        // Если GPS не сработал - используем IP
+        if (!locationData) {
+            // ipinfo.io
+            try {
+                console.log('🌐 Пробуем ipinfo.io...');
+                const response1 = await fetch('https://ipinfo.io/json');
+                const data1 = await response1.json();
+                console.log('📍 Ответ от ipinfo.io:', data1);
+                
+                if (data1 && data1.country) {
+                    locationData = {
+                        country_code: data1.country,
+                        country_name: data1.country,
+                        region: data1.region,
+                        city: data1.city,
+                        source: 'ipinfo.io'
+                    };
+                }
+            } catch (e) {
+                console.log('❌ ipinfo.io недоступен:', e);
+            }
+            
+            // ip-api.com
+            if (!locationData) {
+                try {
+                    console.log('🌐 Пробуем ip-api.com...');
+                    const response2 = await fetch('http://ip-api.com/json/?fields=status,country,countryCode,region,regionName,city,timezone');
+                    const data2 = await response2.json();
+                    console.log('📍 Ответ от ip-api.com:', data2);
+                    
+                    if (data2 && data2.status === 'success') {
+                        locationData = {
+                            country_code: data2.countryCode,
+                            country_name: data2.country,
+                            region: data2.regionName,
+                            city: data2.city,
+                            source: 'ip-api.com'
+                        };
+                    }
+                } catch (e) {
+                    console.log('❌ ip-api.com недоступен:', e);
+                }
+            }
+            
+            // Fallback: часовой пояс
+            if (!locationData) {
+                try {
+                    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    console.log('⏰ Часовой пояс:', timezone);
+                    
+                    locationData = guessLocationByTimezone(timezone);
+                    if (locationData) {
+                        locationData.source = 'timezone';
+                    }
+                } catch (e) {
+                    console.log('❌ Определение по часовому поясу не сработало:', e);
+                }
+            }
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (locationData && locationData.country_code) {
+            detectionText.textContent = 'Сопоставляем с базой данных';
+            await new Promise(resolve => setTimeout(resolve, 600));
+            
+            detectionText.textContent = 'Почти готово';
+            await new Promise(resolve => setTimeout(resolve, 400));
+            
+            const detectedLocation = processIPLocation(locationData);
+            if (detectedLocation) {
+                showDetectedLocationResult(detectedLocation);
+                return;
+            }
+        }
+        
+        showPopularLocations();
+        
+    } catch (error) {
+        console.error('Ошибка определения локации по IP:', error);
+        showPopularLocations();
+    }
+}
+
+/**
+ * Отобразить текущую локацию пользователя
+ */
+function displayUserLocation() {
+    const location = getUserLocation();
+    if (location && location.city) {
+        console.log('📍 Текущая локация:', location.country, location.region, location.city);
+        updateLocationDisplay();
+    } else {
+        console.log('📍 Локация не установлена');
+    }
+}
+
+/**
+ * Сбросить и переопределить локацию
+ */
+function resetAndDetectLocation() {
+    console.log('🔄 Сброс и переопределение локации...');
+    
+    // Сбрасываем сохраненную локацию
+    localStorage.removeItem('user_location');
+    
+    if (typeof currentUserLocation !== 'undefined') {
+        currentUserLocation = null;
+    }
+    
+    // Запускаем автоопределение
+    autoDetectLocation();
+}
+
+/**
  * Показать UI для проверки/выбора локации
  */
 function showAutoLocationDetection() {
@@ -1164,6 +1396,11 @@ window.confirmDetectedLocation = confirmDetectedLocation;
 window.updateLocationDisplay = updateLocationDisplay;
 window.showAutoLocationDetection = showAutoLocationDetection;
 window.showManualLocationSetup = showManualLocationSetup;
+window.handleNoLocation = handleNoLocation;
+window.detectLocationByGPS = detectLocationByGPS;
+window.detectLocationByIP = detectLocationByIP;
+window.displayUserLocation = displayUserLocation;
+window.resetAndDetectLocation = resetAndDetectLocation;
 
 // Инициализация при загрузке модуля
 (function initLocationOnLoad() {
