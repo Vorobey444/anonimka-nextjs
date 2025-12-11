@@ -404,6 +404,47 @@ function toggleOnboardingLanguage(language) {
 }
 
 /**
+ * ===== СТАТУС НИКНЕЙМА =====
+ */
+
+/**
+ * Показать статус проверки никнейма
+ */
+function showNicknameStatus(type, message) {
+    const statusEl = document.getElementById('nicknameStatus');
+    if (!statusEl) return;
+    
+    statusEl.className = 'nickname-status';
+    if (type) {
+        statusEl.classList.add(type);
+        statusEl.textContent = message;
+    } else {
+        statusEl.textContent = '';
+    }
+}
+
+/**
+ * Обновить состояние кнопки "Продолжить"
+ */
+function updateContinueButton() {
+    const nicknameInput = document.getElementById('onboardingNicknameInput');
+    const agreeCheckbox = document.getElementById('agreeTerms');
+    const continueBtn = document.getElementById('onboardingContinue');
+    const statusEl = document.getElementById('nicknameStatus');
+    
+    if (!continueBtn) return;
+    
+    const nickname = nicknameInput?.value.trim() || '';
+    const agreed = agreeCheckbox?.checked || false;
+    const nicknameAvailable = statusEl?.classList.contains('available');
+    
+    const canContinue = nickname.length >= 1 && nicknameAvailable && agreed;
+    
+    continueBtn.disabled = !canContinue;
+    continueBtn.textContent = canContinue ? '🚀 Продолжить' : '⏳ Сохраняем...';
+}
+
+/**
  * ===== ЗАВЕРШЕНИЕ ОНБОРДИНГА =====
  */
 
@@ -525,5 +566,7 @@ window.showOnboardingStep6 = showOnboardingStep6;
 window.toggleOnboardingLanguage = toggleOnboardingLanguage;
 window.completeOnboarding = completeOnboarding;
 window.checkOnboarding = checkOnboarding;
+window.showNicknameStatus = showNicknameStatus;
+window.updateContinueButton = updateContinueButton;
 
 console.log('✅ [ONBOARDING] Модуль онбординга загружен');

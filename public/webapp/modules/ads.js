@@ -655,6 +655,221 @@ function closeAdModal() {
 }
 
 /**
+ * Показать детали анкеты (из списка)
+ */
+function showAdDetails(index) {
+    const ad = window.currentAds?.[index];
+    
+    if (!ad) {
+        tg.showAlert('Анкета не найдена');
+        return;
+    }
+    
+    const adContent = document.getElementById('adContent');
+    if (!adContent) return;
+    
+    window.currentAdIndex = index;
+    window.currentPhotoIndex = 0;
+    window.currentAdPhotos = ad.photo_urls || [];
+    
+    const myAge = ad.my_age || ad.myAge || '?';
+    const ageFrom = ad.age_from || ad.ageFrom || '?';
+    const ageTo = ad.age_to || ad.ageTo || '?';
+    
+    const bodyLabels = {
+        slim: 'Худощавое', athletic: 'Спортивное', average: 'Среднее', curvy: 'Полное',
+        'Стройное': 'Стройное', 'Обычное': 'Обычное', 'Плотное': 'Плотное', 'Спортивное': 'Спортивное', 'Другое': 'Другое'
+    };
+    const bodyType = ad.body_type ? (bodyLabels[ad.body_type] || ad.body_type) : '?';
+    const nickname = ad.display_nickname || 'Аноним';
+    
+    adContent.innerHTML = `
+        <div class="ad-details-card">
+            <div class="ad-details-header">
+                <div class="ad-location">
+                    <span class="location-icon">📍</span>
+                    <span class="location-text">${ad.city}</span>
+                </div>
+                <div class="ad-date-badge">${new Date(ad.created_at).toLocaleDateString('ru-RU')}</div>
+            </div>
+            
+            ${ad.photo_urls && ad.photo_urls.length > 0 ? `
+            <div class="ad-details-photos">
+                <div class="ad-main-photo" id="adMainPhotoContainer" style="position: relative; touch-action: pan-y; width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a1a2e 0%, #2e2e42 100%); border-radius: 12px; overflow: hidden;">
+                    <img id="adMainPhoto" 
+                        src="${getPhotoUrl(ad.photo_urls[0], 'medium')}" 
+                        alt="Фото анкеты" 
+                        loading="eager"
+                        data-full-url="${getPhotoUrl(ad.photo_urls[0], 'large')}"
+                        style="width: 100%; height: 100%; object-fit: contain; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;" 
+                        onload="this.style.opacity='1'"
+                        onerror="this.style.opacity='0.3'"
+                        onclick="openPhotoFullscreen(this.dataset.fullUrl || this.src)">
+                    ${ad.photo_urls.length > 1 ? `
+                    <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px; color: white; font-size: 0.8rem;">
+                        <span id="photoCounter">1 / ${ad.photo_urls.length}</span>
+                    </div>
+                    ` : ''}
+                </div>
+                ${ad.photo_urls.length > 1 ? `
+                <div class="ad-photo-gallery">
+                    ${ad.photo_urls.map((photoUrl, photoIndex) => `
+                        <div class="ad-photo-thumbnail-small" onclick="event.stopPropagation(); switchAdPhoto(${photoIndex})" style="background: linear-gradient(135deg, #1a1a2e 0%, #2e2e42 100%);">
+                            <img src="${getPhotoUrl(photoUrl, 'small')}" alt="Photo ${photoIndex + 1}" 
+                                loading="lazy" style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease;"
+                                onload="this.style.opacity='1'" onerror="this.style.opacity='0.3'">
+                        </div>
+                    `).join('')}
+                </div>
+                ` : ''}
+            </div>
+            ` : ''}
+            
+            <div class="ad-author-info">
+                <div class="author-avatar">👤</div>
+                <div class="author-details">
+                    <div class="author-name">${nickname}</div>
+                    <div class="author-params">${ad.gender}, ${myAge} лет, ${bodyType}</div>
+                </div>
+            </div>
+            
+            <div class="ad-search-info">
+                <div class="search-title">🔍 Ищет:</div>
+                <div class="search-params">
+                    <div class="param-item"><span class="param-icon">👥</span><span>${formatTarget(ad.target)}, ${ageFrom}-${ageTo} лет</span></div>
+                    <div class="param-item"><span class="param-icon">🎯</span><span>${formatGoals(ad.goal)}</span></div>
+                    ${ad.orientation ? `<div class="param-item"><span class="param-icon">💗</span><span>${formatOrientation(ad.orientation)}</span></div>` : ''}
+                </div>
+            </div>
+            
+            ${ad.text ? `
+            <div class="ad-description-box">
+                <div class="description-title">💬 О себе:</div>
+                <div class="description-text">${ad.text}</div>
+            </div>
+            ` : ''}
+        </div>
+    `;
+    
+    showScreen('adDetails');
+    
+    if (ad.photo_urls && ad.photo_urls.length > 1) {
+        setupAdPhotoSwipe();
+    }
+}
+
+/**
+ * Переключение фото в анкете
+ */
+function switchAdPhoto(photoIndex, direction = 0) {
+    if (!window.currentAdPhotos || photoIndex >= window.currentAdPhotos.length) return;
+    window.currentPhotoIndex = photoIndex;
+    const img = document.getElementById('adMainPhoto');
+    const counter = document.getElementById('photoCounter');
+    
+    if (img) {
+        const slideDirection = direction > 0 ? 'translateX(-100%)' : direction < 0 ? 'translateX(100%)' : 'translateX(0)';
+        img.style.transition = 'transform 0.3s ease-out, opacity 0.2s ease-out';
+        img.style.transform = slideDirection;
+        img.style.opacity = '0';
+        
+        setTimeout(() => {
+            img.src = getPhotoUrl(window.currentAdPhotos[photoIndex], 'medium');
+            img.dataset.fullUrl = getPhotoUrl(window.currentAdPhotos[photoIndex], 'large');
+            
+            const enterDirection = direction > 0 ? 'translateX(100%)' : direction < 0 ? 'translateX(-100%)' : 'translateX(0)';
+            img.style.transition = 'none';
+            img.style.transform = enterDirection;
+            
+            setTimeout(() => {
+                img.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+                img.style.transform = 'translateX(0)';
+                img.style.opacity = '1';
+            }, 10);
+        }, 150);
+    }
+    
+    if (counter) counter.textContent = `${photoIndex + 1} / ${window.currentAdPhotos.length}`;
+}
+
+/**
+ * Настройка свайпа для фото анкеты
+ */
+function setupAdPhotoSwipe() {
+    const container = document.getElementById('adMainPhotoContainer');
+    if (!container) return;
+    
+    let startX = 0;
+    let isDragging = false;
+    
+    const handleStart = (e) => {
+        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        isDragging = true;
+    };
+    
+    const handleEnd = (e) => {
+        if (!isDragging) return;
+        const endX = e.type === 'touchend' ? e.changedTouches[0].clientX : e.clientX;
+        const diff = startX - endX;
+        
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) {
+                const nextIndex = (window.currentPhotoIndex + 1) % window.currentAdPhotos.length;
+                switchAdPhoto(nextIndex, 1);
+            } else {
+                const prevIndex = (window.currentPhotoIndex - 1 + window.currentAdPhotos.length) % window.currentAdPhotos.length;
+                switchAdPhoto(prevIndex, -1);
+            }
+        }
+        isDragging = false;
+    };
+    
+    container.addEventListener('touchstart', handleStart, { passive: true });
+    container.addEventListener('touchend', handleEnd, { passive: true });
+    container.addEventListener('mousedown', handleStart);
+    container.addEventListener('mouseup', handleEnd);
+}
+
+/**
+ * Открыть фото в полноэкранном режиме
+ */
+function openPhotoFullscreen(photoUrl) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.95); z-index: 10000;
+        display: flex; align-items: center; justify-content: center; cursor: zoom-out;
+    `;
+    
+    const img = document.createElement('img');
+    img.src = photoUrl;
+    img.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain;';
+    
+    overlay.appendChild(img);
+    overlay.addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+}
+
+/**
+ * Получить URL фото с размером
+ */
+function getPhotoUrl(url, size = 'medium') {
+    if (!url) return '';
+    // Если это наш прокси URL - возвращаем как есть
+    if (url.startsWith('/api/')) return url;
+    return url;
+}
+
+/**
+ * Переключение компактного режима списка анкет
+ */
+function toggleAdsCompact() {
+    const current = window.localStorage.getItem('ads_compact') === '1';
+    window.localStorage.setItem('ads_compact', current ? '0' : '1');
+    loadAds(adsFilters);
+}
+
+/**
  * ===== УПРАВЛЕНИЕ СОБСТВЕННЫМИ АНКЕТАМИ =====
  */
 
@@ -1129,5 +1344,11 @@ window.selectGoal = selectGoal;
 window.selectBody = selectBody;
 window.selectOrientation = selectOrientation;
 window.updateCharacterCount = updateCharacterCount;
+window.showAdDetails = showAdDetails;
+window.switchAdPhoto = switchAdPhoto;
+window.setupAdPhotoSwipe = setupAdPhotoSwipe;
+window.openPhotoFullscreen = openPhotoFullscreen;
+window.getPhotoUrl = getPhotoUrl;
+window.toggleAdsCompact = toggleAdsCompact;
 
 console.log('✅ [ADS] Модуль анкет инициализирован');

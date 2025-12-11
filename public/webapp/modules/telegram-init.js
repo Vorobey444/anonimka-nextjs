@@ -163,11 +163,92 @@ function startStatsAutoUpdate() {
     console.log('📊 Stats auto-update started');
 }
 
+/**
+ * Настройка автоскрытия скроллбаров
+ */
+function setupAutoHideScrollbars() {
+    const scrollTimeouts = new WeakMap();
+    
+    function attachScrollHandler(element) {
+        // Проверяем что элемент может скроллиться
+        if (element.scrollHeight <= element.clientHeight) return;
+        
+        element.addEventListener('scroll', function() {
+            // Добавляем класс при скролле
+            this.classList.add('scrolling');
+            
+            // Очищаем предыдущий таймаут
+            const existingTimeout = scrollTimeouts.get(this);
+            if (existingTimeout) clearTimeout(existingTimeout);
+            
+            // Убираем класс через 2 секунды после остановки скролла
+            const newTimeout = setTimeout(() => {
+                this.classList.remove('scrolling');
+            }, 2000);
+            
+            scrollTimeouts.set(this, newTimeout);
+        }, { passive: true });
+    }
+    
+    // Функция для проверки нужен ли скролл
+    function checkScrollNeed(element) {
+        // Исключаем карточки анкет и модальные окна с анкетами
+        if (element.classList.contains('ad-card') || 
+            element.closest('.ad-card') ||
+            element.classList.contains('modal-ad-card')) {
+            return;
+        }
+        
+        if (element.scrollHeight > element.clientHeight) {
+            element.style.overflowY = 'auto';
+        } else {
+            element.style.overflowY = 'visible';
+        }
+    }
+    
+    // Добавляем обработчики на все скроллируемые элементы (исключая карточки анкет)
+    const scrollableElements = document.querySelectorAll('.screen, .modal-body:not(.ad-card), .messages-list, .chat-messages');
+    scrollableElements.forEach(element => {
+        if (!element.classList.contains('ad-card') && !element.closest('.ad-card')) {
+            attachScrollHandler(element);
+            checkScrollNeed(element);
+        }
+    });
+    
+    // Наблюдаем за новыми элементами и изменением размеров
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeType === 1 && 
+                    !node.classList.contains('ad-card') && 
+                    !node.closest('.ad-card')) {
+                    attachScrollHandler(node);
+                    checkScrollNeed(node);
+                    node.querySelectorAll('.screen, .modal-body:not(.ad-card), .messages-list, .chat-messages').forEach(el => {
+                        if (!el.classList.contains('ad-card') && !el.closest('.ad-card')) {
+                            attachScrollHandler(el);
+                            checkScrollNeed(el);
+                        }
+                    });
+                }
+            });
+        });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Пересчитываем при изменении размера окна
+    window.addEventListener('resize', () => {
+        scrollableElements.forEach(checkScrollNeed);
+    });
+}
+
 // Экспорт функций для onclick
 window.initializeTelegramWebApp = initializeTelegramWebApp;
 window.supportsCloudStorage = supportsCloudStorage;
 window.trackPageVisit = trackPageVisit;
 window.startStatsAutoUpdate = startStatsAutoUpdate;
+window.setupAutoHideScrollbars = setupAutoHideScrollbars;
 
 console.log('🔍 Проверка Telegram WebApp:');
 console.log('  - window.Telegram:', !!window.Telegram);

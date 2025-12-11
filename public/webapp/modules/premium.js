@@ -492,6 +492,184 @@ async function selectPlan(plan) {
 }
 
 /**
+ * Активировать Premium (с кринжовыми диалогами)
+ */
+async function activatePremium() {
+    try {
+        // Блокируем прямую активацию: только реферал - КРИНЖОВЫЙ ДИАЛОГ
+        if (!userPremiumStatus.isPremium) {
+            // Первое предупреждение - провокация
+            tg.showConfirm(
+                '🤔 ТЫ действительно хочешь PRO, БРО?',
+                (confirmed) => {
+                    if (confirmed) {
+                        // Кринжовая отмазка
+                        const messages = [
+                            '😂 Ну тогда пригласите друга!\n\n📲 Ваша реферальная ссылка ждёт в разделе "Реферальная программа"',
+                            '🤣 Ахаха! Думали будет кнопка "Купить"?\n\nНЕТ! Только через друга! 💪\n\nРеферальная ссылка уже готова для Вас 👆',
+                            '😏 Хитрый план не прокатил!\n\nPRO = приглашение друга, вот и вся магия ✨\n\nБерите ссылку и зовите друзей! 🔥',
+                            '🎭 Сюрприз! Халявы нет!\n\nНо есть БЕСПЛАТНЫЙ PRO через реферала!\n\nДруг создаёт анкету → Вы получаете PRO 🎁',
+                            '💡 А Вы шустрый! Но не прокатит 😎\n\nPRO дают за друзей, а не за кнопки!\n\nВперёд приглашать! 🚀',
+                            '🎪 Добро пожаловать в реферальный цирк!\n\nБилет = 1 друг = 1 месяц PRO 🎟️\n\nЛови ссылку и вперёд! 🤡',
+                            '🧠 200 IQ ход! Но мы Вас раскусили 🕵️\n\nЗахотели халяву? Приведите друзей!\n\nТак работают легенды 💪',
+                            '⚡️ PLOT TWIST!\n\nДенег не надо, друзей надо! 🤝\n\nРеферальная программа — Ваш ключ к PRO! 🗝️'
+                        ];
+                        const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+                        
+                        // Проверяем, использовал ли уже 7-часовой триал
+                        const trial7hUsed = userPremiumStatus.trial7h_used || false;
+                        
+                        if (!trial7hUsed) {
+                            // Предлагаем 7 часов PRO (только один раз)
+                            tg.showAlert(randomMsg + '\n\n🎃 Но могу дать Вам троллинг-TRIAL: 7 часов PRO. Хотите?', () => {
+                                tg.showConfirm('🔥 Врубить 7 часов PRO сейчас? Потом всё исчезнет как карета в 00:00!', (trialConfirm) => {
+                                    if (trialConfirm) {
+                                        activatePremiumTrial7h();
+                                    } else {
+                                        if (typeof showReferralModal === 'function') showReferralModal();
+                                    }
+                                });
+                            });
+                        } else {
+                            // Триал уже использован - только реферал
+                            const usedTrialMessages = [
+                                '😏 Вы уже использовали триал, помните?\n\nТеперь только реферал работает!',
+                                '🤷‍♂️ 7 часов уже было, больше не дам!\n\nХотите PRO? Зовите друга!',
+                                '🎭 Второй раз фокус не сработает!\n\nРеферальная программа — Ваш единственный путь!',
+                                '😎 Триал был разовой акцией!\n\nТеперь только друзья дают PRO!'
+                            ];
+                            const randomUsedMsg = usedTrialMessages[Math.floor(Math.random() * usedTrialMessages.length)];
+                            tg.showAlert(randomMsg + '\n\n' + randomUsedMsg, () => {
+                                if (typeof showReferralModal === 'function') showReferralModal();
+                            });
+                        }
+                    } else {
+                        // Если отказался - кринжовая подначка
+                        const rejectMessages = [
+                            '😢 Эх, а я уже обрадовался...\n\nНу ладно, FREE тоже норм! 💪',
+                            '🤷‍♂️ Передумал? Бывает!\n\nБесплатная версия тоже огонь 🔥',
+                            '😅 Понял, не сегодня!\n\nКогда будешь готов - мы тут 👍',
+                            '🙃 Испугался ответственности?\n\nДруг не кусается, обещаем! 😄',
+                            '💭 Раздумал стать легендой?\n\nНу ок, FREE версия тоже топ! 🎯',
+                            '🤔 Философски подошёл к вопросу...\n\nУважаю! Возвращайся когда созреешь 🧘',
+                            '😎 Независимый выбор!\n\nFREE воины тоже достойны уважения 🛡️'
+                        ];
+                        const randomReject = rejectMessages[Math.floor(Math.random() * rejectMessages.length)];
+                        tg.showAlert(randomReject);
+                    }
+                }
+            );
+            return;
+        }
+        
+        const userId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
+        if (!userId || userId.startsWith('web_')) {
+            tg.showAlert('Необходима авторизация через Telegram');
+            return;
+        }
+        
+        console.log('🔄 Активация/деактивация Premium, текущий статус:', userPremiumStatus.isPremium);
+        
+        // Проверяем текущий статус
+        if (userPremiumStatus.isPremium) {
+            // Уже на PRO - понижаем до FREE сразу
+            console.log('⬇️ Понижение до FREE...');
+            
+            const response = await fetch('/api/premium', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'toggle-premium',
+                    params: { userId }
+                })
+            });
+            
+            const result = await response.json();
+            
+            console.log('📥 Ответ сервера (понижение):', result);
+            
+            if (result.error) {
+                throw new Error(result.error.message);
+            }
+            
+            // Обновляем локальный статус
+            userPremiumStatus.isPremium = false;
+            userPremiumStatus.premiumUntil = null;
+            
+            // Перезагружаем лимиты с сервера
+            await loadPremiumStatus();
+            
+            tg.showAlert('Вы вернулись на FREE тариф');
+            
+            setTimeout(() => closePremiumModal(), 1000);
+            return;
+        }
+        
+        // Показываем загрузку
+        const btn = document.getElementById('activatePremiumBtn');
+        const originalText = btn ? btn.textContent : '';
+        if (btn) {
+            btn.textContent = '⏳ Обработка...';
+            btn.disabled = true;
+        }
+        
+        console.log('⬆️ Повышение до PRO...');
+        
+        // Переключаем статус (для теста)
+        const response = await fetch('/api/premium', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'toggle-premium',
+                params: { userId }
+            })
+        });
+        
+        const result = await response.json();
+        
+        console.log('📥 Ответ сервера (повышение):', result);
+        
+        if (result.error) {
+            throw new Error(result.error.message);
+        }
+        
+        // Перезагружаем полный статус с сервера
+        await loadPremiumStatus();
+        
+        // Показываем уведомление
+        if (userPremiumStatus.isPremium) {
+            tg.showAlert('🎉 Поздравляем! PRO активирован на 30 дней!\n\nТеперь доступны:\n✅ Безлимит фото\n✅ До 3 анкет в день\n✅ Закрепление 3 раза в день');
+        } else {
+            tg.showAlert('Вы вернулись на FREE тариф\n\nДоступны базовые функции');
+        }
+        
+        // Закрываем модалку через 1 секунду
+        setTimeout(() => {
+            closePremiumModal();
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Ошибка активации Premium:', error);
+        tg.showAlert('Ошибка: ' + error.message);
+        
+        // Возвращаем кнопку
+        const btn = document.getElementById('activatePremiumBtn');
+        if (btn) {
+            btn.textContent = 'Оформить PRO';
+            btn.disabled = false;
+        }
+    }
+}
+
+/**
+ * Покупка Premium через Telegram (перенаправляет на buyPremiumWithDuration)
+ */
+async function buyPremiumViaTelegram() {
+    // Перенаправляем на новую функцию
+    await buyPremiumWithDuration();
+}
+
+/**
  * Показать заглушку для оплаты долларом
  */
 function showDollarPaymentComingSoon() {
@@ -548,5 +726,7 @@ window.buyPremiumWithDuration = buyPremiumWithDuration;
 window.selectPlan = selectPlan;
 window.showDollarPaymentComingSoon = showDollarPaymentComingSoon;
 window.showTrialOffer = showTrialOffer;
+window.activatePremium = activatePremium;
+window.buyPremiumViaTelegram = buyPremiumViaTelegram;
 
 console.log('✅ [PREMIUM] Модуль Premium инициализирован');

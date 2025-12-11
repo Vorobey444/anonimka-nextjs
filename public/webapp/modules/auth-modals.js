@@ -5,6 +5,110 @@
 
 console.log('📦 Загружен модуль: auth-modals.js');
 
+/**
+ * Скрыть модальные окна авторизации немедленно (IIFE)
+ */
+(function hideAuthModalsImmediately() {
+    const userToken = localStorage.getItem('user_token');
+    
+    // Если токен есть - скрываем модалки (пользователь авторизован)
+    if (userToken) {
+        if (document.readyState === 'loading') {
+            // DOM еще не загружен, ждем
+            document.addEventListener('DOMContentLoaded', function() {
+                const telegramModal = document.getElementById('telegramAuthModal');
+                const emailModal = document.getElementById('emailAuthModal');
+                if (telegramModal) telegramModal.style.display = 'none';
+                if (emailModal) emailModal.style.display = 'none';
+            });
+        } else {
+            // DOM уже загружен
+            const telegramModal = document.getElementById('telegramAuthModal');
+            const emailModal = document.getElementById('emailAuthModal');
+            if (telegramModal) telegramModal.style.display = 'none';
+            if (emailModal) emailModal.style.display = 'none';
+        }
+    }
+    // Если токена нет - НЕ скрываем модалки, они должны показаться
+})();
+
+/**
+ * Резервный механизм: если авторизация не показалась, принудительно показать модалку
+ */
+function ensureAuthModalVisibility() {
+    const userToken = localStorage.getItem('user_token');
+    if (userToken) return;
+    
+    const modal = document.getElementById('telegramAuthModal');
+    if (!modal) return;
+
+    const computedStyle = window.getComputedStyle(modal);
+    if (computedStyle.display === 'none') {
+        console.warn('⚠️ Fallback: принудительно показываем модальное окно авторизации');
+        modal.style.display = 'flex';
+        modal.style.visibility = 'visible';
+        modal.style.opacity = '1';
+        modal.style.zIndex = '99999';
+        modal.classList.remove('hidden');
+        modal.removeAttribute('hidden');
+
+        const loginWidgetContainer = document.getElementById('loginWidgetContainer');
+        if (loginWidgetContainer) loginWidgetContainer.style.display = 'block';
+        const loginWidgetDivider = document.getElementById('loginWidgetDivider');
+        if (loginWidgetDivider) loginWidgetDivider.style.display = 'flex';
+
+        // Гарантируем отображение основного контента модалки
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.style.display = 'flex';
+            modalContent.style.opacity = '1';
+            modalContent.style.visibility = 'visible';
+        }
+        const modalBody = modal.querySelector('.modal-body');
+        if (modalBody) modalBody.style.display = 'block';
+    }
+}
+
+/**
+ * Проверка и обработка возврата после авторизации
+ */
+function checkAndHandleAuthReturn() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isAuthorized = urlParams.get('authorized') === 'true';
+    const isFromApp = urlParams.get('from_app') === 'true';
+    const userId = urlParams.get('user_id');
+    
+    if (isAuthorized && userId) {
+        console.log('✅ Возврат после авторизации, user_id:', userId);
+        
+        // Закрываем модальное окно авторизации
+        const authModal = document.getElementById('telegramAuthModal');
+        if (authModal) {
+            authModal.style.display = 'none';
+            console.log('✅ Модальное окно авторизации закрыто');
+        }
+        
+        // Если это из Android приложения
+        if (isFromApp && window.Telegram?.WebApp) {
+            console.log('📱 Закрываем Telegram WebApp для возврата в Android');
+            
+            // Показываем уведомление перед закрытием
+            setTimeout(() => {
+                window.Telegram.WebApp.close();
+            }, 500);
+        }
+        
+        // Очищаем URL от параметров авторизации
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        
+        // Перезагружаем данные пользователя
+        setTimeout(() => {
+            window.location.reload();
+        }, isFromApp ? 1000 : 500);
+    }
+}
+
 // Показать модальное окно авторизации через Telegram
 function showTelegramAuthModal() {
     console.log('📱 Показываем модальное окно авторизации');
@@ -796,5 +900,7 @@ window.getUserData = getUserData;
 window.loadUserData = loadUserData;
 window.showEmailForm = showEmailForm;
 window.handleEmailSubmit = handleEmailSubmit;
+window.ensureAuthModalVisibility = ensureAuthModalVisibility;
+window.checkAndHandleAuthReturn = checkAndHandleAuthReturn;
 
 console.log('✅ Модуль auth-modals.js инициализирован');
