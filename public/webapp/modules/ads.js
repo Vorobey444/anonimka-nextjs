@@ -641,15 +641,6 @@ function prevAdsPage() {
  * ===== ФИЛЬТРЫ АНКЕТ =====
  */
 
-// Объект для хранения фильтров
-let adsFilters = {
-    gender: 'all',
-    target: 'all',
-    orientation: 'all',
-    ageFrom: 18,
-    ageTo: 99
-};
-
 /**
  * Переключить панель фильтров
  */
