@@ -333,6 +333,30 @@ async function checkPhotoLimit() {
 }
 
 /**
+ * Увеличить счётчик фото после успешной отправки
+ */
+async function incrementPhotoCount() {
+    try {
+        const userId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
+        if (!userId || userId.startsWith('web_')) return;
+        
+        await fetch('/api/premium', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'increment-photo-count',
+                params: { userId }
+            })
+        });
+        
+        // Обновляем статус
+        await loadPremiumStatus();
+    } catch (error) {
+        console.error('❌ [PREMIUM] Ошибка увеличения счётчика фото:', error);
+    }
+}
+
+/**
  * Проверить является ли пользователь email пользователем
  */
 function isEmailUser() {
@@ -718,6 +742,7 @@ window.updatePremiumModalButtons = updatePremiumModalButtons;
 window.updateCurrentSubscriptionInfo = updateCurrentSubscriptionInfo;
 window.activatePremiumTrial7h = activatePremiumTrial7h;
 window.checkPhotoLimit = checkPhotoLimit;
+window.incrementPhotoCount = incrementPhotoCount;
 window.isEmailUser = isEmailUser;
 window.showStarsPurchaseModal = showStarsPurchaseModal;
 window.closeStarsPurchaseModal = closeStarsPurchaseModal;

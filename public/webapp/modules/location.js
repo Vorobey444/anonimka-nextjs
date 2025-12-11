@@ -987,6 +987,223 @@ function showManualLocationSetup() {
 }
 
 /**
+ * ===== ФУНКЦИИ ДЛЯ ФИЛЬТРА ПО ЛОКАЦИИ =====
+ */
+
+/**
+ * Выбор страны для фильтра
+ */
+function selectFilterCountry(countryCode) {
+    filterSelectedCountry = countryCode;
+    filterSelectedRegion = null;
+    filterSelectedCity = null;
+    
+    // Обновляем кнопки
+    document.querySelectorAll('.filter-country').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    const activeBtn = document.querySelector(`[data-country="${countryCode}"].filter-country`);
+    if (activeBtn) activeBtn.classList.add('active');
+    
+    // Показываем выбор региона с анимацией
+    const regionSection = document.querySelector('.filter-region-selection');
+    if (regionSection) {
+        regionSection.style.display = 'block';
+        setTimeout(() => { regionSection.style.opacity = '1'; }, 50);
+    }
+    
+    // Скрываем остальные секции
+    const citySection = document.querySelector('.filter-city-selection');
+    const selectedLocation = document.querySelector('.filter-selected-location');
+    if (citySection) citySection.style.display = 'none';
+    if (selectedLocation) selectedLocation.style.display = 'none';
+    
+    // Очищаем поля
+    const regionInput = document.querySelector('.filter-region-input');
+    const cityInput = document.querySelector('.filter-city-input');
+    if (regionInput) regionInput.value = '';
+    if (cityInput) cityInput.value = '';
+    
+    console.log('📍 [LOCATION] Выбрана страна для фильтра:', locationData[countryCode]?.name);
+}
+
+/**
+ * Обработка ввода региона для фильтра
+ */
+function handleFilterRegionInput(value) {
+    if (!filterSelectedCountry) return;
+    
+    if (!value.trim()) {
+        hideAllSuggestions();
+        return;
+    }
+    
+    if (locationData && locationData[filterSelectedCountry]) {
+        const regions = Object.keys(locationData[filterSelectedCountry].regions);
+        const filtered = regions.filter(region => 
+            region.toLowerCase().startsWith(value.toLowerCase())
+        );
+        showFilterRegionSuggestions(filtered);
+    }
+}
+
+/**
+ * Показать все регионы для фильтра
+ */
+function showAllFilterRegions() {
+    if (!filterSelectedCountry || !locationData || !locationData[filterSelectedCountry]) return;
+    
+    const regions = Object.keys(locationData[filterSelectedCountry].regions);
+    showFilterRegionSuggestions(regions);
+}
+
+/**
+ * Показать предложения регионов для фильтра
+ */
+function showFilterRegionSuggestions(regions) {
+    const suggestionsContainer = document.querySelector('.filter-region-suggestions');
+    if (!suggestionsContainer) return;
+    
+    if (regions.length === 0) {
+        suggestionsContainer.style.display = 'none';
+        return;
+    }
+    
+    suggestionsContainer.innerHTML = regions.map(region => `
+        <div class="suggestion-item" onclick="selectFilterRegion('${region.replace(/'/g, "\\'")}')">
+            ${region}
+        </div>
+    `).join('');
+    
+    suggestionsContainer.classList.add('active');
+    suggestionsContainer.style.display = 'block';
+}
+
+/**
+ * Выбор региона для фильтра
+ */
+function selectFilterRegion(regionName) {
+    filterSelectedRegion = regionName;
+    filterSelectedCity = null;
+    
+    const regionInput = document.querySelector('.filter-region-input');
+    if (regionInput) regionInput.value = regionName;
+    hideAllSuggestions();
+    
+    // Показываем выбор города с анимацией
+    const citySection = document.querySelector('.filter-city-selection');
+    if (citySection) {
+        citySection.style.display = 'block';
+        setTimeout(() => { citySection.style.opacity = '1'; }, 50);
+    }
+    
+    // Очищаем поле города
+    const cityInput = document.querySelector('.filter-city-input');
+    if (cityInput) {
+        cityInput.value = '';
+        cityInput.focus();
+    }
+    
+    console.log('📍 [LOCATION] Выбран регион для фильтра:', regionName);
+}
+
+/**
+ * Обработка ввода города для фильтра
+ */
+function handleFilterCityInput(value) {
+    if (!filterSelectedCountry || !filterSelectedRegion) return;
+    
+    if (!value.trim()) {
+        hideAllSuggestions();
+        return;
+    }
+    
+    if (locationData && locationData[filterSelectedCountry]) {
+        const cities = locationData[filterSelectedCountry].regions[filterSelectedRegion] || [];
+        const filtered = cities.filter(city => 
+            city.toLowerCase().startsWith(value.toLowerCase())
+        );
+        showFilterCitySuggestions(filtered);
+    }
+}
+
+/**
+ * Показать все города для фильтра
+ */
+function showAllFilterCities() {
+    if (!filterSelectedCountry || !filterSelectedRegion || !locationData) return;
+    
+    const cities = locationData[filterSelectedCountry]?.regions[filterSelectedRegion] || [];
+    showFilterCitySuggestions(cities);
+}
+
+/**
+ * Показать предложения городов для фильтра
+ */
+function showFilterCitySuggestions(cities) {
+    const suggestionsContainer = document.querySelector('.filter-city-suggestions');
+    if (!suggestionsContainer) return;
+    
+    if (cities.length === 0) {
+        suggestionsContainer.style.display = 'none';
+        return;
+    }
+    
+    suggestionsContainer.innerHTML = cities.map(city => `
+        <div class="suggestion-item" onclick="selectFilterCity('${city.replace(/'/g, "\\'")}')">
+            ${city}
+        </div>
+    `).join('');
+    
+    suggestionsContainer.classList.add('active');
+    suggestionsContainer.style.display = 'block';
+}
+
+/**
+ * Выбор города для фильтра
+ */
+function selectFilterCity(cityName) {
+    filterSelectedCity = cityName;
+    
+    const cityInput = document.querySelector('.filter-city-input');
+    if (cityInput) cityInput.value = cityName;
+    hideAllSuggestions();
+    
+    // Показываем выбранную локацию
+    showFilterSelectedLocation();
+    
+    // Загружаем анкеты по выбранной локации
+    if (typeof loadAdsByLocation === 'function') {
+        loadAdsByLocation(filterSelectedCountry, filterSelectedRegion, cityName);
+    }
+    
+    console.log('📍 [LOCATION] Выбран город для фильтра:', cityName);
+}
+
+/**
+ * Показать выбранную локацию для фильтра
+ */
+function showFilterSelectedLocation() {
+    const selectedLocationDiv = document.querySelector('.filter-selected-location');
+    const locationText = document.querySelector('.filter-location-text');
+    
+    if (selectedLocationDiv && locationText && locationData && filterSelectedCountry) {
+        const fullLocation = `${locationData[filterSelectedCountry].flag} ${filterSelectedRegion || ''}, ${filterSelectedCity || ''}`;
+        locationText.textContent = fullLocation;
+        
+        // Скрываем секции выбора
+        const regionSection = document.querySelector('.filter-region-selection');
+        const citySection = document.querySelector('.filter-city-selection');
+        if (regionSection) regionSection.style.display = 'none';
+        if (citySection) citySection.style.display = 'none';
+        
+        // Показываем выбранную локацию с анимацией
+        selectedLocationDiv.style.display = 'block';
+        setTimeout(() => { selectedLocationDiv.style.opacity = '1'; }, 50);
+    }
+}
+
+/**
  * Сброс выбора локации для фильтра
  */
 function resetFilterLocationSelection() {
@@ -1522,6 +1739,16 @@ window.updateLocationDisplay = updateLocationDisplay;
 window.showAutoLocationDetection = showAutoLocationDetection;
 window.showManualLocationSetup = showManualLocationSetup;
 window.resetFilterLocationSelection = resetFilterLocationSelection;
+window.selectFilterCountry = selectFilterCountry;
+window.handleFilterRegionInput = handleFilterRegionInput;
+window.showAllFilterRegions = showAllFilterRegions;
+window.showFilterRegionSuggestions = showFilterRegionSuggestions;
+window.selectFilterRegion = selectFilterRegion;
+window.handleFilterCityInput = handleFilterCityInput;
+window.showAllFilterCities = showAllFilterCities;
+window.showFilterCitySuggestions = showFilterCitySuggestions;
+window.selectFilterCity = selectFilterCity;
+window.showFilterSelectedLocation = showFilterSelectedLocation;
 window.handleNoLocation = handleNoLocation;
 window.detectLocationByGPS = detectLocationByGPS;
 window.detectLocationByIP = detectLocationByIP;
