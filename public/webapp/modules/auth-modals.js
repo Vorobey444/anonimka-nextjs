@@ -779,10 +779,41 @@ function getUserLocation() {
             const parsed = JSON.parse(locationStr);
             console.log('📍 Parsed location:', parsed);
             if (!parsed || typeof parsed !== 'object') return null;
+            
+            let city = parsed.city || null;
+            let region = parsed.region || null;
+            
+            // Автокоррекция известных ошибок IP-определения
+            // Если город = "Акмола" или другие неправильные названия, пробуем определить по timezone
+            const invalidCities = ['Акмола', 'Akmola', 'Akmola Region'];
+            if (city && invalidCities.includes(city)) {
+                console.warn('⚠️ Обнаружен некорректный город:', city, '- пробуем timezone...');
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                console.log('📍 Timezone:', timezone);
+                
+                // Timezone карта для автокоррекции
+                const tzCorrections = {
+                    'Asia/Almaty': { city: 'Алматы', region: 'Алматинская область' },
+                    'Asia/Qyzylorda': { city: 'Кызылорда', region: 'Кызылординская область' },
+                    'Asia/Aqtobe': { city: 'Актобе', region: 'Актюбинская область' },
+                    'Asia/Oral': { city: 'Уральск', region: 'Западно-Казахстанская область' }
+                };
+                
+                if (tzCorrections[timezone]) {
+                    city = tzCorrections[timezone].city;
+                    region = tzCorrections[timezone].region;
+                    console.log('✅ Локация исправлена по timezone:', { city, region });
+                    
+                    // Сохраняем исправленную локацию
+                    const corrected = { ...parsed, city, region, timestamp: Date.now() };
+                    localStorage.setItem('userLocation', JSON.stringify(corrected));
+                }
+            }
+            
             const normalized = {
                 country: parsed.country || null,
-                region: parsed.region || null,
-                city: parsed.city || null,
+                region: region,
+                city: city,
                 timestamp: parsed.timestamp || Date.now()
             };
             return normalized;

@@ -119,6 +119,7 @@ async function autoDetectLocationAsync() {
         try {
             const response = await fetch('https://ipinfo.io/json');
             const data = await response.json();
+            console.log('📡 ipinfo.io RAW ответ:', data);
             if (data && data.country) {
                 locationResult = {
                     country_code: data.country,
@@ -130,7 +131,7 @@ async function autoDetectLocationAsync() {
                 console.log('✅ Локация получена от ipinfo.io:', locationResult);
             }
         } catch (e) {
-            console.log('⚠️ ipinfo.io недоступен');
+            console.log('⚠️ ipinfo.io недоступен:', e.message);
         }
         
         // Если не сработало, пробуем ip-api.com
@@ -138,6 +139,7 @@ async function autoDetectLocationAsync() {
             try {
                 const response = await fetch('http://ip-api.com/json/?fields=status,country,countryCode,region,regionName,city');
                 const data = await response.json();
+                console.log('📡 ip-api.com RAW ответ:', data);
                 if (data && data.status === 'success') {
                     locationResult = {
                         country_code: data.countryCode,
@@ -149,23 +151,26 @@ async function autoDetectLocationAsync() {
                     console.log('✅ Локация получена от ip-api.com:', locationResult);
                 }
             } catch (e) {
-                console.log('⚠️ ip-api.com недоступен');
-            }
-        }
-        
-        // Если не сработало, определяем по часовому поясу
-        if (!locationResult) {
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            locationResult = guessLocationByTimezone(timezone);
-            if (locationResult) {
-                locationResult.source = 'timezone';
-                console.log('✅ Локация определена по часовому поясу:', locationResult);
+                console.log('⚠️ ip-api.com недоступен:', e.message);
             }
         }
         
         // Показываем экран подтверждения если удалось определить
         if (locationResult && locationResult.country_code) {
-            const detectedLocation = processIPLocation(locationResult);
+            let detectedLocation = processIPLocation(locationResult);
+            
+            // Если город не найден (используются значения по умолчанию), пробуем timezone
+            if (detectedLocation && detectedLocation.detected && 
+                detectedLocation.city !== detectedLocation.detected.city) {
+                console.log('⚠️ Город от IP API не найден, пробуем timezone fallback...');
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const tzLocation = guessLocationByTimezone(timezone);
+                if (tzLocation && tzLocation.country_code === locationResult.country_code) {
+                    console.log('✅ Используем локацию из timezone:', tzLocation);
+                    detectedLocation = processIPLocation(tzLocation);
+                }
+            }
+            
             if (detectedLocation) {
                 // Устанавливаем выбранную локацию
                 setupSelectedCountry = detectedLocation.country;
@@ -177,8 +182,22 @@ async function autoDetectLocationAsync() {
                 console.log('✅ Локация определена, показан экран подтверждения:', detectedLocation);
             }
         } else {
-            console.log('⚠️ Не удалось автоматически определить локацию');
-            showPopularLocations();
+            // Если IP не сработал, определяем по часовому поясу
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const tzLocation = guessLocationByTimezone(timezone);
+            if (tzLocation) {
+                console.log('✅ Локация определена по часовому поясу:', tzLocation);
+                const detectedLocation = processIPLocation(tzLocation);
+                if (detectedLocation) {
+                    setupSelectedCountry = detectedLocation.country;
+                    setupSelectedRegion = detectedLocation.region;
+                    setupSelectedCity = detectedLocation.city;
+                    showDetectedLocationResult(detectedLocation);
+                }
+            } else {
+                console.log('⚠️ Не удалось автоматически определить локацию');
+                showPopularLocations();
+            }
         }
     } catch (error) {
         console.error('❌ Ошибка автоопределения локации:', error);

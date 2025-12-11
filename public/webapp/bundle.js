@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-11T19:41:57.570Z
+ * Автоматически сгенерирован: 2025-12-11T19:45:49.950Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -2478,7 +2478,7 @@ console.log('✅ [AUTH] Модуль авторизации инициализи
 } catch(e) { console.error('❌ Ошибка в модуле auth.js:', e); }
 })();
 
-// ========== auth-modals.js (51.5 KB) ==========
+// ========== auth-modals.js (53.5 KB) ==========
 (function() {
 try {
 // ================================================
@@ -3262,10 +3262,41 @@ function getUserLocation() {
             const parsed = JSON.parse(locationStr);
             console.log('📍 Parsed location:', parsed);
             if (!parsed || typeof parsed !== 'object') return null;
+            
+            let city = parsed.city || null;
+            let region = parsed.region || null;
+            
+            // Автокоррекция известных ошибок IP-определения
+            // Если город = "Акмола" или другие неправильные названия, пробуем определить по timezone
+            const invalidCities = ['Акмола', 'Akmola', 'Akmola Region'];
+            if (city && invalidCities.includes(city)) {
+                console.warn('⚠️ Обнаружен некорректный город:', city, '- пробуем timezone...');
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                console.log('📍 Timezone:', timezone);
+                
+                // Timezone карта для автокоррекции
+                const tzCorrections = {
+                    'Asia/Almaty': { city: 'Алматы', region: 'Алматинская область' },
+                    'Asia/Qyzylorda': { city: 'Кызылорда', region: 'Кызылординская область' },
+                    'Asia/Aqtobe': { city: 'Актобе', region: 'Актюбинская область' },
+                    'Asia/Oral': { city: 'Уральск', region: 'Западно-Казахстанская область' }
+                };
+                
+                if (tzCorrections[timezone]) {
+                    city = tzCorrections[timezone].city;
+                    region = tzCorrections[timezone].region;
+                    console.log('✅ Локация исправлена по timezone:', { city, region });
+                    
+                    // Сохраняем исправленную локацию
+                    const corrected = { ...parsed, city, region, timestamp: Date.now() };
+                    localStorage.setItem('userLocation', JSON.stringify(corrected));
+                }
+            }
+            
             const normalized = {
                 country: parsed.country || null,
-                region: parsed.region || null,
-                city: parsed.city || null,
+                region: region,
+                city: city,
                 timestamp: parsed.timestamp || Date.now()
             };
             return normalized;
@@ -7689,7 +7720,7 @@ console.log('✅ [ADMIN] Модуль админ-панели инициализ
 } catch(e) { console.error('❌ Ошибка в модуле admin.js:', e); }
 })();
 
-// ========== location.js (87.7 KB) ==========
+// ========== location.js (89.0 KB) ==========
 (function() {
 try {
 /**
@@ -7813,6 +7844,7 @@ async function autoDetectLocationAsync() {
         try {
             const response = await fetch('https://ipinfo.io/json');
             const data = await response.json();
+            console.log('📡 ipinfo.io RAW ответ:', data);
             if (data && data.country) {
                 locationResult = {
                     country_code: data.country,
@@ -7824,7 +7856,7 @@ async function autoDetectLocationAsync() {
                 console.log('✅ Локация получена от ipinfo.io:', locationResult);
             }
         } catch (e) {
-            console.log('⚠️ ipinfo.io недоступен');
+            console.log('⚠️ ipinfo.io недоступен:', e.message);
         }
         
         // Если не сработало, пробуем ip-api.com
@@ -7832,6 +7864,7 @@ async function autoDetectLocationAsync() {
             try {
                 const response = await fetch('http://ip-api.com/json/?fields=status,country,countryCode,region,regionName,city');
                 const data = await response.json();
+                console.log('📡 ip-api.com RAW ответ:', data);
                 if (data && data.status === 'success') {
                     locationResult = {
                         country_code: data.countryCode,
@@ -7843,23 +7876,26 @@ async function autoDetectLocationAsync() {
                     console.log('✅ Локация получена от ip-api.com:', locationResult);
                 }
             } catch (e) {
-                console.log('⚠️ ip-api.com недоступен');
-            }
-        }
-        
-        // Если не сработало, определяем по часовому поясу
-        if (!locationResult) {
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            locationResult = guessLocationByTimezone(timezone);
-            if (locationResult) {
-                locationResult.source = 'timezone';
-                console.log('✅ Локация определена по часовому поясу:', locationResult);
+                console.log('⚠️ ip-api.com недоступен:', e.message);
             }
         }
         
         // Показываем экран подтверждения если удалось определить
         if (locationResult && locationResult.country_code) {
-            const detectedLocation = processIPLocation(locationResult);
+            let detectedLocation = processIPLocation(locationResult);
+            
+            // Если город не найден (используются значения по умолчанию), пробуем timezone
+            if (detectedLocation && detectedLocation.detected && 
+                detectedLocation.city !== detectedLocation.detected.city) {
+                console.log('⚠️ Город от IP API не найден, пробуем timezone fallback...');
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const tzLocation = guessLocationByTimezone(timezone);
+                if (tzLocation && tzLocation.country_code === locationResult.country_code) {
+                    console.log('✅ Используем локацию из timezone:', tzLocation);
+                    detectedLocation = processIPLocation(tzLocation);
+                }
+            }
+            
             if (detectedLocation) {
                 // Устанавливаем выбранную локацию
                 setupSelectedCountry = detectedLocation.country;
@@ -7871,8 +7907,22 @@ async function autoDetectLocationAsync() {
                 console.log('✅ Локация определена, показан экран подтверждения:', detectedLocation);
             }
         } else {
-            console.log('⚠️ Не удалось автоматически определить локацию');
-            showPopularLocations();
+            // Если IP не сработал, определяем по часовому поясу
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const tzLocation = guessLocationByTimezone(timezone);
+            if (tzLocation) {
+                console.log('✅ Локация определена по часовому поясу:', tzLocation);
+                const detectedLocation = processIPLocation(tzLocation);
+                if (detectedLocation) {
+                    setupSelectedCountry = detectedLocation.country;
+                    setupSelectedRegion = detectedLocation.region;
+                    setupSelectedCity = detectedLocation.city;
+                    showDetectedLocationResult(detectedLocation);
+                }
+            } else {
+                console.log('⚠️ Не удалось автоматически определить локацию');
+                showPopularLocations();
+            }
         }
     } catch (error) {
         console.error('❌ Ошибка автоопределения локации:', error);
