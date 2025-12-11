@@ -662,4 +662,26 @@ function initializeMenuModule() {
     console.log('✅ [MENU] Модуль навигации инициализирован');
 }
 
+// Экспорт функций в глобальную область
+window.showScreen = showScreen;
+window.showMainMenu = showMainMenu;
+window.toggleHamburgerMenu = toggleHamburgerMenu;
+window.toggleBurgerMenu = toggleBurgerMenu;
+window.closeBurgerMenu = closeBurgerMenu;
+window.closeHamburgerMenu = closeHamburgerMenu;
+window.openBurgerMenu = openBurgerMenu;
+window.showCreateAd = showCreateAd;
+window.showBrowseAds = showBrowseAds;
+window.showMyAds = showMyAds;
+window.showMyChats = showMyChats;
+window.showWorldChat = showWorldChat;
+window.showPolls = showPolls;
+window.showContacts = showContacts;
+window.showAbout = showAbout;
+window.showNicknameChange = showNicknameChange;
+window.showBlockedUsers = showBlockedUsers;
+window.showAdminPanel = showAdminPanel;
+window.showAffiliateProgram = showAffiliateProgram;
+window.initializeMenuModule = initializeMenuModule;
+
 console.log('✅ [MENU] Модуль навигации загружен');
