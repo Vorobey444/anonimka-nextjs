@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/build-bundle.js && next build",
+    "bundle": "node scripts/build-bundle.js",
     "start": "next start",
     "lint": "next lint",
     "test:e2e": "ts-node tests/e2e/test-runner.ts",

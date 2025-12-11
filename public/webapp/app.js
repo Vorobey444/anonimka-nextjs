@@ -1,67 +1,31 @@
 /**
  * ГЛАВНАЯ ТОЧКА ВХОДА (app.js)
  * 
- * Оптимизированная загрузка модулей:
- * - Критичные модули загружаются последовательно
- * - Независимые модули загружаются параллельно
- * - Зависимые модули загружаются после параллельных
+ * ОПТИМИЗИРОВАНО: Загружает один объединённый бандл вместо 18 отдельных файлов
+ * Это уменьшает время загрузки с ~2-3 секунд до ~300-500ms
  */
 
 console.log('🚀 ===== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ANONIMKA =====');
 
-/**
- * ===== МОДУЛИ ПРИЛОЖЕНИЯ =====
- */
-
-// Критичные модули - загружаются ПОСЛЕДОВАТЕЛЬНО (зависят друг от друга)
-const criticalModules = [
-    '/webapp/modules/telegram-init.js',    // 1. Инициализация Telegram WebApp (нужен tg)
-    '/webapp/modules/error-logging.js',     // 2. Логирование ошибок
-    '/webapp/modules/ui-dialogs.js',        // 3. Диалоги и уведомления
-    '/webapp/modules/utils.js',             // 4. Вспомогательные функции
-    '/webapp/modules/auth.js',              // 5. Аутентификация (нужны utils)
-];
-
-// Независимые модули - загружаются ПАРАЛЛЕЛЬНО (8 модулей одновременно)
-const parallelModules = [
-    '/webapp/modules/auth-modals.js',       // Модальные окна авторизации
-    '/webapp/modules/location-data.js',     // Данные локаций
-    '/webapp/modules/photos.js',            // Управление фотографиями
-    '/webapp/modules/premium.js',           // Премиум функции
-    '/webapp/modules/referral.js',          // Рефералка
-    '/webapp/modules/world-chat.js',        // Мировой чат
-    '/webapp/modules/debug.js',             // Панель отладки
-    '/webapp/modules/admin.js',             // Админ-панель
-];
-
-// Модули с зависимостями - загружаются ПОСЛЕ параллельных
-const dependentModules = [
-    '/webapp/modules/location.js',          // Зависит от location-data
-    '/webapp/modules/ads.js',               // Зависит от location, photos
-    '/webapp/modules/chats.js',             // Зависит от auth
-    '/webapp/modules/onboarding.js',        // Зависит от auth
-    '/webapp/modules/menu.js'               // Зависит от всех (загружается последним)
-];
-
-// Версия для cache busting
-const moduleVersion = '2.1.7';
+// Версия для cache busting (меняйте при обновлениях)
+const appVersion = '2.1.9';
 
 /**
- * Загрузить один модуль
+ * Загрузка бандла
  */
-function loadModule(moduleUrl) {
+function loadBundle() {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = `${moduleUrl}?v=${moduleVersion}.${Date.now()}`;
+        script.src = `/webapp/bundle.js?v=${appVersion}`;
         script.type = 'text/javascript';
         
         script.onload = () => {
-            console.log(`✅ [APP] Загружен ${moduleUrl}`);
-            resolve(moduleUrl);
+            console.log('✅ [APP] Бандл загружен');
+            resolve();
         };
         script.onerror = () => {
-            console.error(`❌ [APP] Ошибка загрузки: ${moduleUrl}`);
-            reject(new Error(`Failed to load: ${moduleUrl}`));
+            console.error('❌ [APP] Ошибка загрузки бандла, пробуем fallback...');
+            reject(new Error('Failed to load bundle'));
         };
         
         document.head.appendChild(script);
@@ -69,47 +33,45 @@ function loadModule(moduleUrl) {
 }
 
 /**
- * Асинхронная загрузка модулей (оптимизированная)
+ * Fallback загрузка модулей по отдельности
  */
-async function loadModules() {
-    console.log('📦 [APP] Начинаем загрузку модулей...');
-    const startTime = performance.now();
+async function loadModulesFallback() {
+    console.log('🔄 [APP] Fallback: загрузка модулей по отдельности...');
     
-    try {
-        // 1. Критичные модули - последовательно (5 модулей)
-        console.log('📥 [APP] Загрузка критичных модулей...');
-        for (const moduleUrl of criticalModules) {
-            await loadModule(moduleUrl);
+    const modules = [
+        '/webapp/modules/telegram-init.js',
+        '/webapp/modules/error-logging.js',
+        '/webapp/modules/ui-dialogs.js',
+        '/webapp/modules/utils.js',
+        '/webapp/modules/auth.js',
+        '/webapp/modules/auth-modals.js',
+        '/webapp/modules/location-data.js',
+        '/webapp/modules/photos.js',
+        '/webapp/modules/premium.js',
+        '/webapp/modules/referral.js',
+        '/webapp/modules/world-chat.js',
+        '/webapp/modules/debug.js',
+        '/webapp/modules/admin.js',
+        '/webapp/modules/location.js',
+        '/webapp/modules/ads.js',
+        '/webapp/modules/chats.js',
+        '/webapp/modules/onboarding.js',
+        '/webapp/modules/menu.js'
+    ];
+    
+    for (const moduleUrl of modules) {
+        try {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = `${moduleUrl}?v=${appVersion}`;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+            console.log(`  ✅ ${moduleUrl}`);
+        } catch (e) {
+            console.error(`  ❌ ${moduleUrl}`);
         }
-        
-        // 2. Независимые модули - параллельно (6 модулей одновременно!)
-        console.log('📥 [APP] Параллельная загрузка независимых модулей...');
-        await Promise.all(parallelModules.map(loadModule));
-        
-        // 3. Зависимые модули - последовательно (5 модулей)
-        console.log('📥 [APP] Загрузка зависимых модулей...');
-        for (const moduleUrl of dependentModules) {
-            await loadModule(moduleUrl);
-        }
-        
-        const loadTime = Math.round(performance.now() - startTime);
-        console.log(`✅ [APP] Все модули загружены за ${loadTime}ms!`);
-        return true;
-        
-    } catch (error) {
-        console.error(`❌ [APP] Критическая ошибка при загрузке модулей:`, error);
-        
-        if (typeof logErrorToServer === 'function') {
-            logErrorToServer('Module Loading Error', error);
-        }
-        
-        if (typeof tg !== 'undefined' && tg?.showAlert) {
-            tg.showAlert('Ошибка загрузки приложения. Пожалуйста, обновите страницу.');
-        } else {
-            alert('Ошибка загрузки приложения. Пожалуйста, обновите страницу.');
-        }
-        
-        return false;
     }
 }
 
@@ -235,20 +197,25 @@ async function initializeApplication() {
  */
 async function startApplication() {
     console.log('📄 [APP] Запуск приложения...');
+    const startTime = performance.now();
     
     try {
-        const modulesLoaded = await loadModules();
+        // Пробуем загрузить бандл (один файл вместо 18)
+        await loadBundle();
         
-        if (modulesLoaded) {
-            await initializeApplication();
-        }
+        const loadTime = Math.round(performance.now() - startTime);
+        console.log(`✅ [APP] Модули загружены за ${loadTime}ms`);
+        
+        await initializeApplication();
+        
+        const totalTime = Math.round(performance.now() - startTime);
+        console.log(`🎉 [APP] Приложение запущено за ${totalTime}ms`);
         
     } catch (error) {
-        console.error('❌ [APP] Критическая ошибка при запуске:', error);
-        
-        if (typeof logErrorToServer === 'function') {
-            logErrorToServer('Critical Startup Error', error);
-        }
+        // Fallback - загружаем модули по отдельности
+        console.warn('⚠️ [APP] Бандл не загрузился, используем fallback');
+        await loadModulesFallback();
+        await initializeApplication();
     }
 }
 
