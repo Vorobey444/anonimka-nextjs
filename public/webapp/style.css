@@ -5289,8 +5289,10 @@ body.emoji-flags-supported .country-code {
 .chat-input-container {
     position: fixed;
     bottom: 0;
-    left: 0;
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 768px;
     background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(16, 16, 32, 0.98));
     border-top: 2px solid var(--border-glow);
     padding: 8px 10px;
@@ -5299,6 +5301,7 @@ body.emoji-flags-supported .country-code {
     z-index: 100;
     flex-wrap: wrap;
     align-items: center;
+    box-sizing: border-box;
 }
 
 .attach-photo-button {
