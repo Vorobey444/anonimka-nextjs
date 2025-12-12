@@ -15121,7 +15121,75 @@ function showOnboardingScreen() {
     screen.style.display = 'flex';
     console.log('📱 [ONBOARDING] Показан экран онбординга, шаг:', onboardingStep);
     
+    // Инициализируем проверку никнейма
+    initializeOnboardingNicknameCheck();
+    
     updateOnboardingStep();
+}
+
+/**
+ * Инициализация проверки никнейма в онбординге
+ */
+function initializeOnboardingNicknameCheck() {
+    const nicknameInput = document.getElementById('onboardingNicknameInput');
+    const statusEl = document.getElementById('nicknameStatus');
+    const continueBtn = document.getElementById('onboardingContinue');
+    
+    if (!nicknameInput || !statusEl) {
+        console.warn('⚠️ [ONBOARDING] Элементы проверки никнейма не найдены');
+        return;
+    }
+    
+    // Удаляем старые обработчики если были
+    nicknameInput.oninput = null;
+    
+    let checkTimeout;
+    
+    nicknameInput.oninput = () => {
+        clearTimeout(checkTimeout);
+        const nickname = nicknameInput.value.trim();
+        
+        if (!nickname) {
+            statusEl.textContent = '';
+            statusEl.className = 'nickname-status';
+            if (continueBtn) continueBtn.disabled = true;
+            return;
+        }
+        
+        if (nickname.length < 3) {
+            statusEl.textContent = '⚠️ Минимум 3 символа';
+            statusEl.className = 'nickname-status taken';
+            if (continueBtn) continueBtn.disabled = true;
+            return;
+        }
+        
+        statusEl.textContent = '⏳ Проверяем...';
+        statusEl.className = 'nickname-status';
+        
+        checkTimeout = setTimeout(async () => {
+            try {
+                const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
+                const data = await response.json();
+                
+                if (data.available) {
+                    statusEl.textContent = '✅ Доступен';
+                    statusEl.className = 'nickname-status available';
+                    if (continueBtn) continueBtn.disabled = false;
+                } else {
+                    statusEl.textContent = '❌ Уже занят';
+                    statusEl.className = 'nickname-status taken';
+                    if (continueBtn) continueBtn.disabled = true;
+                }
+            } catch (error) {
+                console.error('Ошибка проверки никнейма:', error);
+                statusEl.textContent = '';
+                statusEl.className = 'nickname-status';
+                if (continueBtn) continueBtn.disabled = true;
+            }
+        }, 500);
+    };
+    
+    console.log('✅ [ONBOARDING] Проверка никнейма инициализирована');
 }
 
 /**
