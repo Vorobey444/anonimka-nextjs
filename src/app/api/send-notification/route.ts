@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
           {
             text: '💬 Мои чаты',
             web_app: {
-              url: `${process.env.VERCEL_API_URL || 'https://anonimka.kz'}/webapp#my-chats`
+              url: `${process.env.VERCEL_API_URL || 'https://anonimka.online'}/webapp#my-chats`
             }
           }
         ],
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
           {
             text: '📱 Открыть приложение',
             web_app: {
-              url: `${process.env.VERCEL_API_URL || 'https://anonimka.kz'}/webapp`
+              url: `${process.env.VERCEL_API_URL || 'https://anonimka.online'}/webapp`
             }
           }
         ]

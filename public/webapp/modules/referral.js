@@ -218,7 +218,7 @@ function showReferralModal() {
     }
     
     // Формируем веб-ссылку
-    const webLink = `https://anonimka.kz/webapp?ref=${userToken}`;
+    const webLink = `https://anonimka.online/webapp?ref=${userToken}`;
     
     if (referralLinkEl) {
         referralLinkEl.innerHTML = `

@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     const lower = text.trim().toLowerCase();
 
     // WebApp base (your app already deployed on Vercel)
-    const WEBAPP_URL = process.env.WEBAPP_URL || 'https://anonimka.kz/webapp';
+    const WEBAPP_URL = process.env.WEBAPP_URL || 'https://anonimka.online/webapp';
 
     if (lower.startsWith('/start')) {
       // support /start ref_xxx or /start auth_xxx
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       const param = parts.length > 1 ? parts[1] : '';
 
       let welcome = `👋 Привет, ${firstName}!
-\n🎯 Anonimka.kz — анонимное общение.
+\n🎯 Anonimka — анонимное общение.
 \nОткрывай мини‑приложение ниже:`;
 
       // If referral param exists, pass it to webapp

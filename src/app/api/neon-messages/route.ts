@@ -352,7 +352,7 @@ export async function POST(request: NextRequest) {
                           {
                             text: '💬 Открыть чат',
                             web_app: {
-                              url: `https://anonimka.kz/webapp`
+                              url: `https://anonimka.online/webapp`
                             }
                           }
                         ]
