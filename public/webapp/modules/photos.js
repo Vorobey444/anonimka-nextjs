@@ -550,13 +550,14 @@ async function loadMyPhotosForStep9() {
         infoDiv.innerHTML = `ℹ️ Нажмите на фото чтобы выбрать • Зажмите и перетащите для изменения порядка`;
         container.appendChild(infoDiv);
         
-        // Компактная сетка фото 3x2
+        // Компактная сетка фото 3x2 (маленькие превью)
         const gridDiv = document.createElement('div');
         gridDiv.id = 'step9PhotoGrid';
         gridDiv.style.cssText = `
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(3, 70px);
+            gap: 6px;
+            justify-content: center;
         `;
         
         photos.slice(0, 6).forEach((photo, index) => {
@@ -568,9 +569,10 @@ async function loadMyPhotosForStep9() {
             photoDiv.style.cssText = `
                 position: relative;
                 border: 2px solid ${isSelected ? 'var(--neon-pink)' : 'rgba(0, 255, 255, 0.5)'};
-                border-radius: 8px;
+                border-radius: 6px;
                 overflow: hidden;
-                aspect-ratio: 1;
+                width: 70px;
+                height: 70px;
                 cursor: grab;
                 transition: transform 0.2s, border-color 0.2s;
                 background: #1a1a2e;
@@ -607,14 +609,14 @@ async function loadMyPhotosForStep9() {
             const numBadge = document.createElement('div');
             numBadge.style.cssText = `
                 position: absolute;
-                top: 4px;
-                left: 4px;
-                width: 20px;
-                height: 20px;
+                top: 2px;
+                left: 2px;
+                width: 16px;
+                height: 16px;
                 border-radius: 50%;
                 background: rgba(0, 0, 0, 0.7);
                 color: white;
-                font-size: 11px;
+                font-size: 9px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -623,24 +625,26 @@ async function loadMyPhotosForStep9() {
             numBadge.textContent = index + 1;
             photoDiv.appendChild(numBadge);
             
-            // Кнопка удаления
+            // Кнопка удаления (маленькая)
             const delBtn = document.createElement('button');
             delBtn.innerHTML = '✕';
             delBtn.style.cssText = `
                 position: absolute;
-                top: 4px;
-                right: 4px;
-                width: 22px;
-                height: 22px;
+                top: 2px;
+                right: 2px;
+                width: 16px;
+                height: 16px;
                 border-radius: 50%;
                 background: rgba(255, 50, 50, 0.9);
                 color: white;
                 border: none;
                 cursor: pointer;
-                font-size: 12px;
+                font-size: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                padding: 0;
+                line-height: 1;
             `;
             delBtn.onclick = async (e) => {
                 e.stopPropagation();

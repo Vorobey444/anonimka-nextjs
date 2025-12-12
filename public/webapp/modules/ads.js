@@ -836,33 +836,40 @@ async function submitAd() {
             return;
         }
         
-        // Собираем данные из формы
+        // Получаем локацию пользователя
+        const userLocation = typeof getUserLocation === 'function' ? getUserLocation() : null;
+        
+        // Собираем данные из formData и DOM
         const adData = {
             user_token: userToken,
             nickname: localStorage.getItem('userNickname'),
-            gender: document.querySelector('input[name="gender"]:checked')?.value,
-            my_age: document.querySelector('input[name="my_age"]')?.value,
-            body_type: document.querySelector('input[name="body_type"]:checked')?.value,
-            orientation: document.querySelector('input[name="orientation"]:checked')?.value,
-            goal: Array.from(document.querySelectorAll('input[name="goal"]:checked'))
-                .map(el => el.value),
-            target: document.querySelector('input[name="target"]:checked')?.value,
-            age_from: document.querySelector('input[name="age_from"]')?.value,
-            age_to: document.querySelector('input[name="age_to"]')?.value,
-            country: selectedCountry,
-            region: selectedRegion || '',
-            city: selectedCity,
-            text: document.querySelector('textarea[name="description"]')?.value,
+            gender: formData.gender || document.querySelector('input[name="gender"]:checked')?.value,
+            my_age: formData.myAge || document.querySelector('input[name="my_age"]')?.value,
+            body_type: formData.body || document.querySelector('input[name="body_type"]:checked')?.value,
+            orientation: formData.orientation || document.querySelector('input[name="orientation"]:checked')?.value,
+            goal: formData.goal || formData.goals?.join(', ') || '',
+            target: formData.target || document.querySelector('input[name="target"]:checked')?.value,
+            age_from: formData.ageFrom || document.querySelector('input[name="age_from"]')?.value,
+            age_to: formData.ageTo || document.querySelector('input[name="age_to"]')?.value,
+            country: formData.country || userLocation?.country || '',
+            region: formData.region || userLocation?.region || '',
+            city: formData.city || userLocation?.city || '',
+            text: formData.text || document.getElementById('adText')?.value || '',
+            photo_url: formData.adPhotoUrl || null,
+            photo_file_id: formData.adPhotoFileId || null,
             created_at: new Date().toISOString()
         };
         
+        console.log('📋 [ADS] Данные анкеты:', adData);
+        
         // Валидация
         if (!adData.gender || !adData.my_age || !adData.city) {
+            console.error('❌ Не хватает данных:', { gender: adData.gender, my_age: adData.my_age, city: adData.city });
             tg.showAlert('Пожалуйста, заполните все обязательные поля');
             return;
         }
         
-        if (adData.text.length < 10) {
+        if (!adData.text || adData.text.length < 10) {
             tg.showAlert('Описание должно содержать минимум 10 символов');
             return;
         }

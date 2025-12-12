@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-12T07:14:26.194Z
+ * Автоматически сгенерирован: 2025-12-12T07:23:09.424Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -3933,7 +3933,7 @@ console.log('📊 [LOCATION-DATA] Всего стран:', Object.keys(locationD
 } catch(e) { console.error('❌ Ошибка в модуле location-data.js:', e); }
 })();
 
-// ========== photos.js (53.9 KB) ==========
+// ========== photos.js (54.1 KB) ==========
 (function() {
 try {
 /**
@@ -4488,13 +4488,14 @@ async function loadMyPhotosForStep9() {
         infoDiv.innerHTML = `ℹ️ Нажмите на фото чтобы выбрать • Зажмите и перетащите для изменения порядка`;
         container.appendChild(infoDiv);
         
-        // Компактная сетка фото 3x2
+        // Компактная сетка фото 3x2 (маленькие превью)
         const gridDiv = document.createElement('div');
         gridDiv.id = 'step9PhotoGrid';
         gridDiv.style.cssText = `
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(3, 70px);
+            gap: 6px;
+            justify-content: center;
         `;
         
         photos.slice(0, 6).forEach((photo, index) => {
@@ -4506,9 +4507,10 @@ async function loadMyPhotosForStep9() {
             photoDiv.style.cssText = `
                 position: relative;
                 border: 2px solid ${isSelected ? 'var(--neon-pink)' : 'rgba(0, 255, 255, 0.5)'};
-                border-radius: 8px;
+                border-radius: 6px;
                 overflow: hidden;
-                aspect-ratio: 1;
+                width: 70px;
+                height: 70px;
                 cursor: grab;
                 transition: transform 0.2s, border-color 0.2s;
                 background: #1a1a2e;
@@ -4545,14 +4547,14 @@ async function loadMyPhotosForStep9() {
             const numBadge = document.createElement('div');
             numBadge.style.cssText = `
                 position: absolute;
-                top: 4px;
-                left: 4px;
-                width: 20px;
-                height: 20px;
+                top: 2px;
+                left: 2px;
+                width: 16px;
+                height: 16px;
                 border-radius: 50%;
                 background: rgba(0, 0, 0, 0.7);
                 color: white;
-                font-size: 11px;
+                font-size: 9px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -4561,24 +4563,26 @@ async function loadMyPhotosForStep9() {
             numBadge.textContent = index + 1;
             photoDiv.appendChild(numBadge);
             
-            // Кнопка удаления
+            // Кнопка удаления (маленькая)
             const delBtn = document.createElement('button');
             delBtn.innerHTML = '✕';
             delBtn.style.cssText = `
                 position: absolute;
-                top: 4px;
-                right: 4px;
-                width: 22px;
-                height: 22px;
+                top: 2px;
+                right: 2px;
+                width: 16px;
+                height: 16px;
                 border-radius: 50%;
                 background: rgba(255, 50, 50, 0.9);
                 color: white;
                 border: none;
                 cursor: pointer;
-                font-size: 12px;
+                font-size: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                padding: 0;
+                line-height: 1;
             `;
             delBtn.onclick = async (e) => {
                 e.stopPropagation();
@@ -10343,7 +10347,7 @@ console.log('✅ [LOCATION] Модуль локации инициализиро
 } catch(e) { console.error('❌ Ошибка в модуле location.js:', e); }
 })();
 
-// ========== ads.js (95.6 KB) ==========
+// ========== ads.js (96.3 KB) ==========
 (function() {
 try {
 /**
@@ -11184,33 +11188,40 @@ async function submitAd() {
             return;
         }
         
-        // Собираем данные из формы
+        // Получаем локацию пользователя
+        const userLocation = typeof getUserLocation === 'function' ? getUserLocation() : null;
+        
+        // Собираем данные из formData и DOM
         const adData = {
             user_token: userToken,
             nickname: localStorage.getItem('userNickname'),
-            gender: document.querySelector('input[name="gender"]:checked')?.value,
-            my_age: document.querySelector('input[name="my_age"]')?.value,
-            body_type: document.querySelector('input[name="body_type"]:checked')?.value,
-            orientation: document.querySelector('input[name="orientation"]:checked')?.value,
-            goal: Array.from(document.querySelectorAll('input[name="goal"]:checked'))
-                .map(el => el.value),
-            target: document.querySelector('input[name="target"]:checked')?.value,
-            age_from: document.querySelector('input[name="age_from"]')?.value,
-            age_to: document.querySelector('input[name="age_to"]')?.value,
-            country: selectedCountry,
-            region: selectedRegion || '',
-            city: selectedCity,
-            text: document.querySelector('textarea[name="description"]')?.value,
+            gender: formData.gender || document.querySelector('input[name="gender"]:checked')?.value,
+            my_age: formData.myAge || document.querySelector('input[name="my_age"]')?.value,
+            body_type: formData.body || document.querySelector('input[name="body_type"]:checked')?.value,
+            orientation: formData.orientation || document.querySelector('input[name="orientation"]:checked')?.value,
+            goal: formData.goal || formData.goals?.join(', ') || '',
+            target: formData.target || document.querySelector('input[name="target"]:checked')?.value,
+            age_from: formData.ageFrom || document.querySelector('input[name="age_from"]')?.value,
+            age_to: formData.ageTo || document.querySelector('input[name="age_to"]')?.value,
+            country: formData.country || userLocation?.country || '',
+            region: formData.region || userLocation?.region || '',
+            city: formData.city || userLocation?.city || '',
+            text: formData.text || document.getElementById('adText')?.value || '',
+            photo_url: formData.adPhotoUrl || null,
+            photo_file_id: formData.adPhotoFileId || null,
             created_at: new Date().toISOString()
         };
         
+        console.log('📋 [ADS] Данные анкеты:', adData);
+        
         // Валидация
         if (!adData.gender || !adData.my_age || !adData.city) {
+            console.error('❌ Не хватает данных:', { gender: adData.gender, my_age: adData.my_age, city: adData.city });
             tg.showAlert('Пожалуйста, заполните все обязательные поля');
             return;
         }
         
-        if (adData.text.length < 10) {
+        if (!adData.text || adData.text.length < 10) {
             tg.showAlert('Описание должно содержать минимум 10 символов');
             return;
         }
