@@ -17297,3 +17297,178 @@ console.log('✅ [MENU] Модуль навигации загружен');
 })();
 
 console.log('✅ [BUNDLE] Все 18 модулей загружены!');
+
+// ========== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ==========
+(async function initializeApplication() {
+    try {
+        console.log('⚙️ [APP] Инициализация приложения...');
+        
+        // Проверяем параметры URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const authParam = urlParams.get('auth');
+        console.log('🔗 [APP] URL параметр auth:', authParam);
+        
+        // 1. Инициализируем Telegram WebApp
+        if (typeof initializeTelegramWebApp === 'function') {
+            initializeTelegramWebApp();
+            console.log('✅ [APP] Telegram WebApp инициализирован');
+        }
+        
+        // 2. Проверяем авторизацию
+        let isAuthorized = false;
+        if (typeof checkTelegramAuth === 'function') {
+            isAuthorized = await checkTelegramAuth();
+        }
+        
+        // Если пришли с параметром auth=telegram, показываем модалку авторизации
+        if (authParam === 'telegram') {
+            console.log('📱 [APP] Параметр auth=telegram - показываем модальное окно');
+            if (typeof showTelegramAuthModal === 'function') {
+                showTelegramAuthModal();
+            }
+            window.history.replaceState({}, '', window.location.pathname);
+            return;
+        }
+        
+        // Если пришли с параметром auth=email
+        if (authParam === 'email') {
+            console.log('📧 [APP] Параметр auth=email - показываем модальное окно');
+            if (typeof showEmailAuthModal === 'function') {
+                showEmailAuthModal();
+            }
+            window.history.replaceState({}, '', window.location.pathname);
+            return;
+        }
+        
+        if (!isAuthorized) {
+            console.warn('⚠️ [APP] Пользователь не авторизирован');
+            
+            // Проверяем, это Android устройство?
+            const isAndroid = navigator.userAgent.includes('Android');
+            
+            if (isAndroid) {
+                console.log('📱 [APP] Android устройство - показываем Email авторизацию');
+                if (typeof showEmailAuthModal === 'function') {
+                    showEmailAuthModal();
+                }
+            } else {
+                console.log('🌐 [APP] Браузер - показываем Telegram авторизацию');
+                if (typeof showTelegramAuthModal === 'function') {
+                    showTelegramAuthModal();
+                }
+            }
+        }
+        
+        // 3. Инициализируем пользователя в БД (если авторизован)
+        if (isAuthorized && typeof initializeUserInDatabase === 'function') {
+            await initializeUserInDatabase();
+            console.log('✅ [APP] Пользователь инициализирован в БД');
+        }
+        
+        // 4. Инициализируем никнейм
+        if (typeof initializeNickname === 'function') {
+            await initializeNickname();
+            console.log('✅ [APP] Никнейм инициализирован');
+        }
+        
+        // 4.1 Скрываем функции для email пользователей
+        if (typeof hideEmailUserFeatures === 'function') {
+            hideEmailUserFeatures();
+            console.log('✅ [APP] Email user features скрыты');
+        }
+        
+        // 5. Проверяем местоположение
+        if (typeof checkUserLocation === 'function') {
+            await checkUserLocation();
+            console.log('✅ [APP] Местоположение проверено');
+        }
+        
+        // 6. Обрабатываем реферальную ссылку
+        if (typeof handleReferralLink === 'function') {
+            await handleReferralLink();
+            console.log('✅ [APP] Реферальная ссылка обработана');
+        }
+        
+        // 6.1 Завершаем отложенный реферал если есть
+        if (typeof finalizePendingReferral === 'function') {
+            await finalizePendingReferral();
+            console.log('✅ [APP] Отложенный реферал завершён');
+        }
+        
+        // 7. Проверяем, нужен ли онбординг
+        if (typeof checkOnboarding === 'function') {
+            const needsOnboarding = checkOnboarding();
+            
+            if (!needsOnboarding) {
+                if (typeof initializeMenuModule === 'function') {
+                    initializeMenuModule();
+                    console.log('✅ [APP] Меню инициализировано');
+                }
+            }
+        } else {
+            if (typeof initializeMenuModule === 'function') {
+                initializeMenuModule();
+                console.log('✅ [APP] Меню инициализировано (fallback)');
+            }
+        }
+        
+        // 8. Дополнительные инициализации
+        try {
+            if (typeof updateChatBadge === 'function') {
+                updateChatBadge();
+                console.log('✅ [APP] Счётчик чатов обновлён');
+            }
+        } catch (e) {
+            console.error('❌ [APP] Ошибка updateChatBadge:', e);
+        }
+        
+        try {
+            if (typeof markMessagesAsDelivered === 'function') {
+                markMessagesAsDelivered();
+                console.log('✅ [APP] Сообщения помечены как доставленные');
+            }
+        } catch (e) {
+            console.error('❌ [APP] Ошибка markMessagesAsDelivered:', e);
+        }
+        
+        try {
+            if (typeof updateLogoutButtonVisibility === 'function') {
+                updateLogoutButtonVisibility();
+                console.log('✅ [APP] Видимость кнопки выхода обновлена');
+            }
+        } catch (e) {
+            console.error('❌ [APP] Ошибка updateLogoutButtonVisibility:', e);
+        }
+        
+        try {
+            if (typeof loadPremiumStatus === 'function') {
+                loadPremiumStatus();
+                console.log('✅ [APP] Premium статус загружен');
+            }
+        } catch (e) {
+            console.error('❌ [APP] Ошибка loadPremiumStatus:', e);
+        }
+        
+        try {
+            if (typeof loadSiteStats === 'function') {
+                loadSiteStats();
+                console.log('✅ [APP] Статистика сайта загружена');
+            }
+        } catch (e) {
+            console.error('❌ [APP] Ошибка loadSiteStats:', e);
+        }
+        
+        console.log('✅ [APP] ===== ПРИЛОЖЕНИЕ ГОТОВО =====');
+        
+    } catch (error) {
+        console.error('❌ [APP] Ошибка инициализации приложения:', error);
+        
+        if (typeof logErrorToServer === 'function') {
+            logErrorToServer('App Initialization Error', error);
+        }
+        
+        if (typeof tg !== 'undefined' && tg?.showAlert) {
+            tg.showAlert('Ошибка при инициализации приложения');
+        }
+    }
+})();
