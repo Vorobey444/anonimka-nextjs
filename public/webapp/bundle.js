@@ -2114,6 +2114,7 @@ async function showRequiredNicknameModal() {
         const input = document.getElementById('requiredNicknameInput');
         const btn = document.getElementById('requiredNicknameBtn');
         const terms = document.getElementById('agreeTermsCheckbox');
+        const statusEl = document.getElementById('requiredNicknameStatus');
         
         if (!modal || !input || !btn) {
             console.error('❌ [AUTH] Элементы модального окна не найдены');
@@ -2124,6 +2125,67 @@ async function showRequiredNicknameModal() {
         // Показываем модальное окно
         modal.style.display = 'flex';
         setTimeout(() => input.focus(), 100);
+        
+        // Дебаунс для проверки никнейма
+        let checkTimeout;
+        const checkNicknameDebounced = () => {
+            clearTimeout(checkTimeout);
+            const nickname = input.value.trim();
+            
+            if (!nickname) {
+                if (statusEl) {
+                    statusEl.textContent = '';
+                    statusEl.className = 'nickname-status';
+                }
+                btn.disabled = true;
+                return;
+            }
+            
+            if (nickname.length < 3) {
+                if (statusEl) {
+                    statusEl.textContent = '⚠️ Минимум 3 символа';
+                    statusEl.className = 'nickname-status taken';
+                }
+                btn.disabled = true;
+                return;
+            }
+            
+            if (statusEl) {
+                statusEl.textContent = '⏳ Проверяем...';
+                statusEl.className = 'nickname-status';
+            }
+            
+            checkTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
+                    const data = await response.json();
+                    
+                    if (data.available) {
+                        if (statusEl) {
+                            statusEl.textContent = '✅ Доступен';
+                            statusEl.className = 'nickname-status available';
+                        }
+                        btn.disabled = false;
+                    } else {
+                        if (statusEl) {
+                            statusEl.textContent = '❌ Уже занят';
+                            statusEl.className = 'nickname-status taken';
+                        }
+                        btn.disabled = true;
+                    }
+                } catch (error) {
+                    console.error('Ошибка проверки никнейма:', error);
+                    if (statusEl) {
+                        statusEl.textContent = '';
+                        statusEl.className = 'nickname-status';
+                    }
+                    btn.disabled = true;
+                }
+            }, 500);
+        };
+        
+        // Добавляем обработчик ввода
+        input.oninput = checkNicknameDebounced;
         
         // Обработчик кнопки
         const handleConfirm = async () => {
@@ -2146,6 +2208,13 @@ async function showRequiredNicknameModal() {
                 return;
             }
             
+            // Проверяем доступность еще раз перед сохранением
+            const statusElClass = statusEl?.className || '';
+            if (!statusElClass.includes('available')) {
+                tg.showAlert('Этот никнейм недоступен. Пожалуйста, выберите другой.');
+                return;
+            }
+            
             // Сохраняем никнейм
             await saveRequiredNickname(nickname);
             modal.style.display = 'none';
@@ -2157,9 +2226,12 @@ async function showRequiredNicknameModal() {
         btn.parentNode.replaceChild(newBtn, btn);
         newBtn.onclick = handleConfirm;
         
+        // Изначально кнопка заблокирована
+        newBtn.disabled = true;
+        
         // Также разрешаем подтверждение через Enter
         input.onkeypress = (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
+            if (e.key === 'Enter' && !newBtn.disabled) {
                 handleConfirm();
             }
         };
