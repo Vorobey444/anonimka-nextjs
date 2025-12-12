@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-12T07:53:06.964Z
+ * Автоматически сгенерирован: 2025-12-12T08:04:38.741Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -3933,7 +3933,7 @@ console.log('📊 [LOCATION-DATA] Всего стран:', Object.keys(locationD
 } catch(e) { console.error('❌ Ошибка в модуле location-data.js:', e); }
 })();
 
-// ========== photos.js (57.0 KB) ==========
+// ========== photos.js (57.3 KB) ==========
 (function() {
 try {
 /**
@@ -4502,13 +4502,14 @@ async function loadMyPhotosForStep9() {
         const gridDiv = document.createElement('div');
         gridDiv.id = 'step9PhotoGrid';
         gridDiv.style.cssText = `
-            display: flex;
-            flex-direction: row;
+            display: flex !important;
+            flex-direction: row !important;
             gap: 8px;
             justify-content: center;
-            flex-wrap: nowrap;
+            flex-wrap: nowrap !important;
             overflow-x: auto;
             padding: 4px 0;
+            align-items: flex-start;
         `;
         
         photos.slice(0, 3).forEach((photo, index) => {
@@ -4522,12 +4523,15 @@ async function loadMyPhotosForStep9() {
                 border: 2px solid ${isSelected ? 'var(--neon-pink)' : 'rgba(0, 255, 255, 0.5)'};
                 border-radius: 8px;
                 overflow: hidden;
-                width: 90px;
-                height: 90px;
-                min-width: 90px;
+                width: 90px !important;
+                height: 90px !important;
+                min-width: 90px !important;
+                max-width: 90px !important;
+                flex-shrink: 0;
                 cursor: grab;
                 transition: transform 0.2s, border-color 0.2s;
                 background: #1a1a2e;
+                display: inline-block !important;
             `;
             
             // Drag events
