@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-12T08:29:40.092Z
+ * Автоматически сгенерирован: 2025-12-12T08:40:38.902Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -15657,7 +15657,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (49.9 KB) ==========
+// ========== menu.js (50.3 KB) ==========
 (function() {
 try {
 /**
@@ -16012,6 +16012,12 @@ function showMainMenu() {
     if (mainMenuScreen) {
         mainMenuScreen.classList.add('active');
         mainMenuScreen.style.display = 'flex';
+    }
+    
+    // Показываем переключатель FREE/PRO на главном меню
+    const premiumToggle = document.getElementById('premiumToggle');
+    if (premiumToggle) {
+        premiumToggle.style.display = 'flex';
     }
     
     // Обновляем отображение локации
@@ -16495,6 +16501,12 @@ function initializeMenuModule() {
     
     // Инициализируем back button handler
     setupBackButtonHandler();
+    
+    // Показываем переключатель FREE/PRO
+    const premiumToggle = document.getElementById('premiumToggle');
+    if (premiumToggle) {
+        premiumToggle.style.display = 'flex';
+    }
     
     // Показываем главный экран
     showScreen(screens.homeScreen);

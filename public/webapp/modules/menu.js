@@ -352,6 +352,12 @@ function showMainMenu() {
         mainMenuScreen.style.display = 'flex';
     }
     
+    // Показываем переключатель FREE/PRO на главном меню
+    const premiumToggle = document.getElementById('premiumToggle');
+    if (premiumToggle) {
+        premiumToggle.style.display = 'flex';
+    }
+    
     // Обновляем отображение локации
     if (typeof updateLocationDisplay === 'function') {
         updateLocationDisplay();
@@ -833,6 +839,12 @@ function initializeMenuModule() {
     
     // Инициализируем back button handler
     setupBackButtonHandler();
+    
+    // Показываем переключатель FREE/PRO
+    const premiumToggle = document.getElementById('premiumToggle');
+    if (premiumToggle) {
+        premiumToggle.style.display = 'flex';
+    }
     
     // Показываем главный экран
     showScreen(screens.homeScreen);
