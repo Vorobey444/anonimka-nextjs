@@ -2208,9 +2208,9 @@
         compressScript.src = `/webapp/compress-image.js?v=${timestamp}`;
         document.body.appendChild(compressScript);
         
-        // Затем основной скрипт с версией
+        // Затем основной скрипт (bundle содержит все модули)
         const script = document.createElement('script');
-        script.src = `/webapp/app.js?v=${bugFixVersion}.${timestamp}`;
+        script.src = `/webapp/bundle.js?v=${bugFixVersion}&t=${timestamp}`;
         document.body.appendChild(script);
     </script>
 </body>
