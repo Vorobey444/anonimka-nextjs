@@ -1066,6 +1066,16 @@ async function loadAds(filters = {}, append = false) {
         
         console.log('✅ Получено анкет:', ads.length, 'Пагинация:', pagination);
         
+        // DEBUG: показываем первые 3 анкеты для отладки
+        if (ads.length > 0) {
+            console.log('📋 Первые анкеты:', ads.slice(0, 3).map(a => `${a.display_nickname} (${a.created_at})`));
+            // Показываем алерт с первой анкетой для проверки
+            if (!append && window.debugAdsOnce !== true) {
+                window.debugAdsOnce = true;
+                console.log('🔍 DEBUG первая анкета:', JSON.stringify(ads[0], null, 2));
+            }
+        }
+        
         if (append) {
             window.allLoadedAds.push(...ads);
         } else {

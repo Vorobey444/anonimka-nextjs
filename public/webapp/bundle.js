@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-12T12:42:32.695Z
+ * Автоматически сгенерирован: 2025-12-12T12:56:34.192Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -10441,7 +10441,7 @@ console.log('✅ [LOCATION] Модуль локации инициализиро
 } catch(e) { console.error('❌ Ошибка в модуле location.js:', e); }
 })();
 
-// ========== ads.js (99.2 KB) ==========
+// ========== ads.js (99.8 KB) ==========
 (function() {
 try {
 /**
@@ -11511,6 +11511,16 @@ async function loadAds(filters = {}, append = false) {
         const pagination = result.pagination;
         
         console.log('✅ Получено анкет:', ads.length, 'Пагинация:', pagination);
+        
+        // DEBUG: показываем первые 3 анкеты для отладки
+        if (ads.length > 0) {
+            console.log('📋 Первые анкеты:', ads.slice(0, 3).map(a => `${a.display_nickname} (${a.created_at})`));
+            // Показываем алерт с первой анкетой для проверки
+            if (!append && window.debugAdsOnce !== true) {
+                window.debugAdsOnce = true;
+                console.log('🔍 DEBUG первая анкета:', JSON.stringify(ads[0], null, 2));
+            }
+        }
         
         if (append) {
             window.allLoadedAds.push(...ads);
