@@ -16181,11 +16181,20 @@ async function checkOnboardingStatus() {
             if (typeof showMainMenu === 'function') showMainMenu();
         } else {
             console.log('⚠️ У пользователя нет никнейма');
-            if (typeof showOnboardingScreen === 'function') showOnboardingScreen();
+            if (typeof showRequiredNicknameModal === 'function') {
+                showRequiredNicknameModal().then(() => {
+                    // После выбора никнейма проверяем локацию и показываем меню
+                    if (typeof checkOnboardingStatus === 'function') {
+                        checkOnboardingStatus();
+                    }
+                });
+            }
         }
     } catch (error) {
         console.error('❌ Ошибка checkOnboardingStatus:', error);
-        if (typeof showOnboardingScreen === 'function') showOnboardingScreen();
+        if (typeof showRequiredNicknameModal === 'function') {
+            showRequiredNicknameModal();
+        }
     }
 }
 
