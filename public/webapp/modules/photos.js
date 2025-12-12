@@ -399,6 +399,13 @@ async function swapPhotoPositions(photoId1, photoId2) {
 async function addAdPhoto() {
     console.log('📸 [addAdPhoto] Начало загрузки фото для анкеты');
     
+    // Проверяем количество уже загруженных фото
+    const currentPhotos = document.querySelectorAll('#step9PhotoGrid .step9-photo-item');
+    if (currentPhotos.length >= 3) {
+        tg.showAlert('❌ Максимум 3 фото. Удалите одно фото, чтобы загрузить новое.');
+        return;
+    }
+    
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -1194,6 +1201,13 @@ async function addPhotoFromGallery() {
     
     if (!userToken) {
         tg.showAlert('Требуется авторизация');
+        return;
+    }
+    
+    // Проверяем количество уже загруженных фото
+    const currentPhotos = document.querySelectorAll('#photosGallery .photo-item');
+    if (currentPhotos.length >= 3) {
+        tg.showAlert('❌ Максимум 3 фото. Удалите одно фото, чтобы загрузить новое.');
         return;
     }
     

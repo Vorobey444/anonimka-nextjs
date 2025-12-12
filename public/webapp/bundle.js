@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-12T08:04:38.741Z
+ * Автоматически сгенерирован: 2025-12-12T08:06:30.228Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -3933,7 +3933,7 @@ console.log('📊 [LOCATION-DATA] Всего стран:', Object.keys(locationD
 } catch(e) { console.error('❌ Ошибка в модуле location-data.js:', e); }
 })();
 
-// ========== photos.js (57.3 KB) ==========
+// ========== photos.js (58.0 KB) ==========
 (function() {
 try {
 /**
@@ -4336,6 +4336,13 @@ async function swapPhotoPositions(photoId1, photoId2) {
  */
 async function addAdPhoto() {
     console.log('📸 [addAdPhoto] Начало загрузки фото для анкеты');
+    
+    // Проверяем количество уже загруженных фото
+    const currentPhotos = document.querySelectorAll('#step9PhotoGrid .step9-photo-item');
+    if (currentPhotos.length >= 3) {
+        tg.showAlert('❌ Максимум 3 фото. Удалите одно фото, чтобы загрузить новое.');
+        return;
+    }
     
     const input = document.createElement('input');
     input.type = 'file';
@@ -5132,6 +5139,13 @@ async function addPhotoFromGallery() {
     
     if (!userToken) {
         tg.showAlert('Требуется авторизация');
+        return;
+    }
+    
+    // Проверяем количество уже загруженных фото
+    const currentPhotos = document.querySelectorAll('#photosGallery .photo-item');
+    if (currentPhotos.length >= 3) {
+        tg.showAlert('❌ Максимум 3 фото. Удалите одно фото, чтобы загрузить новое.');
         return;
     }
     
