@@ -1035,7 +1035,8 @@ async function loadAds(filters = {}, append = false) {
         // Формируем параметры запроса - 20 анкет за раз
         const params = new URLSearchParams({
             page: window.currentAdsPage.toString(),
-            limit: '20'
+            limit: '20',
+            _t: Date.now().toString() // Обход кэша
         });
         
         // Если есть фильтр по стране/городу, добавляем
@@ -1051,7 +1052,8 @@ async function loadAds(filters = {}, append = false) {
         
         const response = await fetch(apiUrl, {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store'
         });
         
         if (!response.ok) {
