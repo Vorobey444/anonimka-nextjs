@@ -1547,7 +1547,23 @@ function showAdDetails(index) {
     
     if (ad.photo_urls && ad.photo_urls.length > 1) {
         setupAdPhotoSwipe();
+        // Предзагружаем все фото для быстрого свайпа
+        preloadAdPhotos(ad.photo_urls);
     }
+}
+
+/**
+ * Предзагрузка фото анкеты
+ */
+function preloadAdPhotos(photoUrls) {
+    if (!photoUrls || photoUrls.length <= 1) return;
+    
+    photoUrls.forEach((url, index) => {
+        if (index === 0) return; // Первое уже загружено
+        const img = new Image();
+        img.src = getPhotoUrl(url, 'medium');
+    });
+    console.log('📸 [ADS] Предзагружено', photoUrls.length - 1, 'фото');
 }
 
 /**
@@ -1555,30 +1571,59 @@ function showAdDetails(index) {
  */
 function switchAdPhoto(photoIndex, direction = 0) {
     if (!window.currentAdPhotos || photoIndex >= window.currentAdPhotos.length) return;
+    if (window.isPhotoSwitching) return; // Предотвращаем спам свайпов
+    
     window.currentPhotoIndex = photoIndex;
+    window.isPhotoSwitching = true;
+    
     const img = document.getElementById('adMainPhoto');
     const counter = document.getElementById('photoCounter');
+    const container = document.getElementById('adMainPhotoContainer');
     
-    if (img) {
-        const slideDirection = direction > 0 ? 'translateX(-100%)' : direction < 0 ? 'translateX(100%)' : 'translateX(0)';
-        img.style.transition = 'transform 0.3s ease-out, opacity 0.2s ease-out';
-        img.style.transform = slideDirection;
-        img.style.opacity = '0';
+    if (!img) return;
+    
+    const newSrc = getPhotoUrl(window.currentAdPhotos[photoIndex], 'medium');
+    const newFullUrl = getPhotoUrl(window.currentAdPhotos[photoIndex], 'large');
+    
+    // Предзагружаем новое фото
+    const preloadImg = new Image();
+    preloadImg.src = newSrc;
+    
+    // Анимация выхода старого фото
+    const slideOut = direction > 0 ? 'translateX(-100%)' : direction < 0 ? 'translateX(100%)' : 'translateX(0)';
+    img.style.transition = 'transform 0.2s ease-out, opacity 0.15s ease-out';
+    img.style.transform = slideOut;
+    img.style.opacity = '0';
+    
+    const showNewPhoto = () => {
+        // Меняем src когда фото скрыто
+        img.src = newSrc;
+        img.dataset.fullUrl = newFullUrl;
         
-        setTimeout(() => {
-            img.src = getPhotoUrl(window.currentAdPhotos[photoIndex], 'medium');
-            img.dataset.fullUrl = getPhotoUrl(window.currentAdPhotos[photoIndex], 'large');
-            
-            const enterDirection = direction > 0 ? 'translateX(100%)' : direction < 0 ? 'translateX(-100%)' : 'translateX(0)';
-            img.style.transition = 'none';
-            img.style.transform = enterDirection;
+        // Позиционируем для входа
+        const slideIn = direction > 0 ? 'translateX(50%)' : direction < 0 ? 'translateX(-50%)' : 'translateX(0)';
+        img.style.transition = 'none';
+        img.style.transform = slideIn;
+        
+        // Анимация входа
+        requestAnimationFrame(() => {
+            img.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+            img.style.transform = 'translateX(0)';
+            img.style.opacity = '1';
             
             setTimeout(() => {
-                img.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
-                img.style.transform = 'translateX(0)';
-                img.style.opacity = '1';
-            }, 10);
-        }, 150);
+                window.isPhotoSwitching = false;
+            }, 200);
+        });
+    };
+    
+    // Если фото уже загружено — показываем сразу после анимации выхода
+    if (preloadImg.complete) {
+        setTimeout(showNewPhoto, 150);
+    } else {
+        // Ждём загрузки фото
+        preloadImg.onload = () => setTimeout(showNewPhoto, 50);
+        preloadImg.onerror = () => setTimeout(showNewPhoto, 50);
     }
     
     if (counter) counter.textContent = `${photoIndex + 1} / ${window.currentAdPhotos.length}`;
