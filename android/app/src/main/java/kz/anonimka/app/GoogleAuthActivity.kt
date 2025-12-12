@@ -91,9 +91,8 @@ class GoogleAuthActivity : AppCompatActivity() {
         firebaseAuth = FirebaseAuth.getInstance()
 
         // Настройка Google Sign-In
-        // ⚠️ ВАЖНО: Замените на ваш Web Client ID из Firebase Console
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("YOUR_WEB_CLIENT_ID_HERE") // TODO: Замените на ваш ID
+            .requestIdToken("495614329334-1i0nh4mnd861gm9qri9o2usdduo4hmnc.apps.googleusercontent.com")
             .requestEmail()
             .build()
 

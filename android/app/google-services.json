@@ -12,7 +12,28 @@
           "package_name": "kz.anonimka.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "495614329334-noevqnvva7k1udcr6t03j81ftg092u4r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "kz.anonimka.app",
+            "certificate_hash": "ec000d6112ba6c0e6a6de2c3495e9ffebe20ac0c"
+          }
+        },
+        {
+          "client_id": "495614329334-p2oqjil3rq6qpi8g5mvbsq1e5ljbf83c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "kz.anonimka.app",
+            "certificate_hash": "3bb95443997c8898f17c17d3d81f84768ed7e687"
+          }
+        },
+        {
+          "client_id": "495614329334-1i0nh4mnd861gm9qri9o2usdduo4hmnc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBWqiI0d_sXl8eQlissBC6M2mTrUGaOUVQ"
@@ -20,7 +41,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "495614329334-1i0nh4mnd861gm9qri9o2usdduo4hmnc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
