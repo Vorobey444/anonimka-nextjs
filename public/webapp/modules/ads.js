@@ -839,32 +839,32 @@ async function submitAd() {
         // Получаем локацию пользователя
         const userLocation = typeof getUserLocation === 'function' ? getUserLocation() : null;
         
-        // Собираем данные из formData и DOM
+        // Собираем данные из formData и DOM (используем имена как ожидает сервер)
         const adData = {
             user_token: userToken,
             nickname: localStorage.getItem('userNickname'),
             gender: formData.gender || document.querySelector('input[name="gender"]:checked')?.value,
-            my_age: formData.myAge || document.querySelector('input[name="my_age"]')?.value,
-            body_type: formData.body || document.querySelector('input[name="body_type"]:checked')?.value,
+            myAge: formData.myAge || document.querySelector('input[name="my_age"]')?.value,
+            body: formData.body || document.querySelector('input[name="body_type"]:checked')?.value,
             orientation: formData.orientation || document.querySelector('input[name="orientation"]:checked')?.value,
             goal: formData.goal || formData.goals?.join(', ') || '',
             target: formData.target || document.querySelector('input[name="target"]:checked')?.value,
-            age_from: formData.ageFrom || document.querySelector('input[name="age_from"]')?.value,
-            age_to: formData.ageTo || document.querySelector('input[name="age_to"]')?.value,
+            ageFrom: formData.ageFrom || document.querySelector('input[name="age_from"]')?.value,
+            ageTo: formData.ageTo || document.querySelector('input[name="age_to"]')?.value,
             country: formData.country || userLocation?.country || '',
             region: formData.region || userLocation?.region || '',
             city: formData.city || userLocation?.city || '',
             text: formData.text || document.getElementById('adText')?.value || '',
-            photo_url: formData.adPhotoUrl || null,
-            photo_file_id: formData.adPhotoFileId || null,
+            photoUrl: formData.adPhotoUrl || null,
+            photoFileId: formData.adPhotoFileId || null,
             created_at: new Date().toISOString()
         };
         
         console.log('📋 [ADS] Данные анкеты:', adData);
         
         // Валидация
-        if (!adData.gender || !adData.my_age || !adData.city) {
-            console.error('❌ Не хватает данных:', { gender: adData.gender, my_age: adData.my_age, city: adData.city });
+        if (!adData.gender || !adData.myAge || !adData.city) {
+            console.error('❌ Не хватает данных:', { gender: adData.gender, myAge: adData.myAge, city: adData.city });
             tg.showAlert('Пожалуйста, заполните все обязательные поля');
             return;
         }
