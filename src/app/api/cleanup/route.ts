@@ -49,27 +49,36 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET endpoint для ручного запуска или проверки статистики
+ * GET endpoint - выполняет очистку (для Vercel Cron)
+ * Vercel Crons делают GET запросы, поэтому удаление здесь
  */
 export async function GET(request: NextRequest) {
     try {
-        // Получаем количество анкет старше 30 дней
-        const result = await sql`
-            SELECT COUNT(*) as count
-            FROM ads
+        console.log('[CLEANUP] Начало очистки старых анкет (GET/Cron)...');
+
+        // Удаляем анкеты старше 30 дней
+        const deleteResult = await sql`
+            DELETE FROM ads
             WHERE created_at < NOW() - INTERVAL '30 days'
+            RETURNING id, created_at
         `;
 
-        const oldAdsCount = parseInt(result.rows[0]?.count || '0');
+        const deletedCount = deleteResult.rowCount || 0;
+        const deletedIds = deleteResult.rows.map((row: any) => row.id);
+
+        console.log(`[CLEANUP] Удалено анкет: ${deletedCount}`);
+        if (deletedIds.length > 0) {
+            console.log(`[CLEANUP] ID удаленных анкет: ${deletedIds.join(', ')}`);
+        }
 
         return NextResponse.json({
             success: true,
-            oldAdsCount,
-            message: `Найдено ${oldAdsCount} анкет старше 30 дней, готовых к удалению`
+            deletedAds: deletedCount,
+            message: `Удалено ${deletedCount} анкет старше 30 дней`
         });
 
     } catch (error: any) {
-        console.error('[CLEANUP] Ошибка при проверке:', error);
+        console.error('[CLEANUP] Ошибка при очистке:', error);
         return NextResponse.json(
             { 
                 success: false, 
