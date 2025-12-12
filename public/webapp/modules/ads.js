@@ -1560,7 +1560,7 @@ function showAdDetails(index) {
     // Обновляем кнопку "Написать автору"
     const contactBtn = document.querySelector('#adDetails button.neon-button');
     if (contactBtn) {
-        contactBtn.onclick = () => contactAuthor(index);
+        contactBtn.onclick = () => contactAuthor(ad.id, ad.user_token);
     }
     
     showScreen('adDetails');
