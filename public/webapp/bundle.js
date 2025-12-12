@@ -2545,6 +2545,87 @@ window.handleLogout = handleLogout;
 window.updateLogoutButtonVisibility = updateLogoutButtonVisibility;
 window.saveNicknamePage = saveNicknamePage;
 
+// Инициализация обработчиков модального окна никнейма при загрузке
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('requiredNicknameInput');
+    const btn = document.getElementById('requiredNicknameBtn');
+    const statusEl = document.getElementById('requiredNicknameStatus');
+    
+    if (input && btn && statusEl) {
+        let checkTimeout;
+        
+        input.addEventListener('input', () => {
+            clearTimeout(checkTimeout);
+            const nickname = input.value.trim();
+            
+            if (!nickname) {
+                statusEl.textContent = '';
+                statusEl.className = 'nickname-status';
+                btn.disabled = true;
+                return;
+            }
+            
+            if (nickname.length < 3) {
+                statusEl.textContent = '⚠️ Минимум 3 символа';
+                statusEl.className = 'nickname-status taken';
+                btn.disabled = true;
+                return;
+            }
+            
+            statusEl.textContent = '⏳ Проверяем...';
+            statusEl.className = 'nickname-status';
+            
+            checkTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
+                    const data = await response.json();
+                    
+                    if (data.available) {
+                        statusEl.textContent = '✅ Доступен';
+                        statusEl.className = 'nickname-status available';
+                        btn.disabled = false;
+                    } else {
+                        statusEl.textContent = '❌ Уже занят';
+                        statusEl.className = 'nickname-status taken';
+                        btn.disabled = true;
+                    }
+                } catch (error) {
+                    console.error('Ошибка проверки никнейма:', error);
+                    statusEl.textContent = '';
+                    statusEl.className = 'nickname-status';
+                    btn.disabled = true;
+                }
+            }, 500);
+        });
+        
+        btn.addEventListener('click', async () => {
+            if (btn.disabled) return;
+            
+            const nickname = input.value.trim();
+            const statusClass = statusEl.className || '';
+            
+            if (!nickname || nickname.length < 3 || !statusClass.includes('available')) {
+                if (typeof tg !== 'undefined' && tg.showAlert) {
+                    tg.showAlert('Пожалуйста, выберите доступный никнейм');
+                }
+                return;
+            }
+            
+            await saveRequiredNickname(nickname);
+            const modal = document.getElementById('requiredNicknameModal');
+            if (modal) modal.style.display = 'none';
+        });
+        
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !btn.disabled) {
+                btn.click();
+            }
+        });
+        
+        console.log('✅ [AUTH] Обработчики модального окна никнейма инициализированы');
+    }
+});
+
 console.log('✅ [AUTH] Модуль авторизации инициализирован');
 
 } catch(e) { console.error('❌ Ошибка в модуле auth.js:', e); }
