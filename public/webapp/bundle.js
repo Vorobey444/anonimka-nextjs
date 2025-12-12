@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-12T08:06:30.228Z
+ * Автоматически сгенерирован: 2025-12-12T08:29:40.092Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -3933,7 +3933,7 @@ console.log('📊 [LOCATION-DATA] Всего стран:', Object.keys(locationD
 } catch(e) { console.error('❌ Ошибка в модуле location-data.js:', e); }
 })();
 
-// ========== photos.js (58.0 KB) ==========
+// ========== photos.js (58.1 KB) ==========
 (function() {
 try {
 /**
@@ -4635,9 +4635,12 @@ async function loadMyPhotosForStep9() {
             `;
             delBtn.onclick = async (e) => {
                 e.stopPropagation();
-                if (confirm('Удалить это фото?')) {
-                    await deleteStep9Photo(photo.id);
-                }
+                e.preventDefault();
+                tg.showConfirm('Удалить это фото?', async (confirmed) => {
+                    if (confirmed) {
+                        await deleteStep9Photo(photo.id);
+                    }
+                });
             };
             photoDiv.appendChild(delBtn);
             
@@ -4912,11 +4915,14 @@ async function deleteStep9Photo(photoId) {
         
         console.log('✅ Фото удалено');
         
-        // Просто удаляем элемент из DOM без перезагрузки экрана
+        // Удаляем элемент фото из DOM
         const photoElement = document.querySelector(`[data-photo-id="${photoId}"]`);
-        if (photoElement && photoElement.parentElement) {
-            photoElement.parentElement.remove();
+        if (photoElement) {
+            photoElement.remove();
         }
+        
+        // Обновляем номера и оверлеи
+        updatePhotoNumbers();
         
         // Проверяем, остались ли фото
         const gridDiv = document.getElementById('step9PhotoGrid');
