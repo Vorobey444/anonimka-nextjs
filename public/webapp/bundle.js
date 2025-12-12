@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-12T07:42:53.029Z
+ * Автоматически сгенерирован: 2025-12-12T07:53:06.964Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -3933,7 +3933,7 @@ console.log('📊 [LOCATION-DATA] Всего стран:', Object.keys(locationD
 } catch(e) { console.error('❌ Ошибка в модуле location-data.js:', e); }
 })();
 
-// ========== photos.js (55.6 KB) ==========
+// ========== photos.js (57.0 KB) ==========
 (function() {
 try {
 /**
@@ -4795,11 +4795,45 @@ function updatePhotoNumbers() {
     const grid = document.getElementById('step9PhotoGrid');
     if (!grid) return;
     
+    const isPremium = typeof userPremiumStatus !== 'undefined' && userPremiumStatus?.isPremium;
     const items = grid.querySelectorAll('.step9-photo-item');
+    
     items.forEach((item, index) => {
+        // Обновляем номер
         const numBadge = item.querySelector('div[style*="border-radius: 50%"]:not(button)');
         if (numBadge && numBadge.style.background.includes('rgba(0, 0, 0')) {
             numBadge.textContent = index + 1;
+        }
+        
+        // Обновляем оверлей "Скрыто" - удаляем старый и добавляем новый если нужно
+        const existingOverlay = item.querySelector('div[style*="background: rgba(0, 0, 0, 0.7)"]');
+        if (existingOverlay) {
+            existingOverlay.remove();
+        }
+        
+        // Для FREE аккаунтов затемняем 2-3 фото (index > 0)
+        if (!isPremium && index > 0) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                pointer-events: none;
+            `;
+            overlay.innerHTML = `
+                <div style="color: #888; font-size: 10px; text-align: center;">
+                    <div style="font-size: 16px;">🔒</div>
+                    <div>Скрыто</div>
+                </div>
+            `;
+            item.appendChild(overlay);
         }
     });
 }
