@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ data: null, error: { message: 'chatId required' } }, { status: 400 });
         }
         const result = await sql`
-          SELECT id, ad_id, user_token_1, user_token_2, status, created_at, 
+          SELECT id, ad_id, user_token_1, user_token_2, accepted, created_at, 
                  blocked_by, blocked_by_token, last_message_at
           FROM private_chats
           WHERE id = ${chatId}
