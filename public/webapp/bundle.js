@@ -5618,6 +5618,7 @@ function updateAdLimitBadge() {
  */
 function updatePremiumModalButtons() {
     const buyBtn = document.getElementById('buyPremiumBtn');
+    const dollarBtn = document.getElementById('dollarPaymentBtn');
     const referralBtn = document.getElementById('referralBtn');
     const trialBtn = document.getElementById('trialBtn');
     const freeBtn = document.querySelector('.pricing-card:not(.featured) .pricing-btn');
@@ -5635,10 +5636,12 @@ function updatePremiumModalButtons() {
         if (emailUser) {
             // Email пользователи не видят Stars и Referral
             if (buyBtn) buyBtn.style.display = 'none';
+            if (dollarBtn) dollarBtn.style.display = 'none';
             if (referralBtn) referralBtn.style.display = 'none';
         } else {
             // Telegram пользователи видят все
             if (buyBtn) buyBtn.style.display = 'block';
+            if (dollarBtn) dollarBtn.style.display = 'block';
             if (referralBtn) referralBtn.style.display = 'block';
         }
         
@@ -5653,6 +5656,7 @@ function updatePremiumModalButtons() {
             freeBtn.disabled = true;
         }
         if (buyBtn) buyBtn.style.display = 'none';
+        if (dollarBtn) dollarBtn.style.display = 'none';
         if (referralBtn) referralBtn.style.display = 'none';
         if (trialBtn) trialBtn.style.display = 'none';
     }
