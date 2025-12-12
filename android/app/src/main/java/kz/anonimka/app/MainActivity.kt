@@ -343,6 +343,12 @@ class MainActivity : AppCompatActivity() {
             }
             
             @JavascriptInterface
+            fun getDisplayNickname(): String {
+                if (!isAllowedDomain()) return ""
+                return authPrefs.getString("display_nickname", "") ?: ""
+            }
+            
+            @JavascriptInterface
             fun isAndroid(): Boolean {
                 return true
             }
@@ -808,7 +814,46 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadWebApp() {
         android.util.Log.d("Anonimka", "🌐 Loading webapp URL")
-        webView.loadUrl("https://ru.anonimka.kz/webapp")
+        
+        // Проверяем есть ли intent extras (из Google/Email авторизации)
+        val userToken = intent.getStringExtra("userToken")
+        val isNewUser = intent.getBooleanExtra("isNewUser", false)
+        
+        if (userToken != null) {
+            android.util.Log.d("Anonimka", "✅ Intent extras: userToken=${userToken.take(8)}..., isNewUser=$isNewUser")
+            
+            // Сохраняем в authPrefs если еще не сохранено
+            if (authPrefs.getString("user_token", null) == null) {
+                authPrefs.edit().apply {
+                    putString("user_token", userToken)
+                    apply()
+                }
+            }
+            
+            // Загружаем WebApp и после загрузки вызываем проверку онбординга
+            webView.loadUrl("https://ru.anonimka.kz/webapp")
+            
+            // После загрузки страницы запускаем проверку онбординга
+            webView.postDelayed({
+                webView.evaluateJavascript("""
+                    (function() {
+                        console.log('📱 [Android] Проверка онбординга после авторизации');
+                        if (typeof checkOnboardingStatus === 'function') {
+                            checkOnboardingStatus();
+                        } else {
+                            console.warn('⚠️ checkOnboardingStatus не найдена, ждем загрузки');
+                            setTimeout(function() {
+                                if (typeof checkOnboardingStatus === 'function') {
+                                    checkOnboardingStatus();
+                                }
+                            }, 1000);
+                        }
+                    })();
+                """.trimIndent(), null)
+            }, 2000)
+        } else {
+            webView.loadUrl("https://ru.anonimka.kz/webapp")
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

@@ -187,6 +187,7 @@ class GoogleAuthActivity : AppCompatActivity() {
                         val userData = jsonResponse.getJSONObject("user")
                         val userToken = userData.getString("userToken")
                         val isNewUser = jsonResponse.optBoolean("isNewUser", false)
+                        val displayNicknameFromDB = userData.optString("displayNickname", "")
                         
                         // Сохраняем данные
                         authPrefs.edit().apply {
@@ -194,9 +195,16 @@ class GoogleAuthActivity : AppCompatActivity() {
                             putString("email", email)
                             putString("auth_method", "google")
                             putLong("auth_time", System.currentTimeMillis())
-                            if (displayName != null) {
-                                putString("display_nickname", displayName)
+                            
+                            // Сохраняем никнейм только если он есть в БД (установлен пользователем)
+                            if (displayNicknameFromDB.isNotEmpty()) {
+                                putString("display_nickname", displayNicknameFromDB)
+                                Log.d("GoogleAuth", "✅ Никнейм из БД: $displayNicknameFromDB")
+                            } else {
+                                // Не сохраняем displayName из Google - пусть WebApp предложит установить
+                                Log.d("GoogleAuth", "ℹ️ Никнейм не установлен - WebApp запросит его")
                             }
+                            
                             apply()
                         }
                         

@@ -15785,6 +15785,19 @@ async function checkOnboardingStatus() {
         const localNickname = localStorage.getItem('userNickname');
         if (localNickname && localNickname.trim() !== '') {
             console.log('✅ Никнейм найден в localStorage:', localNickname);
+            
+            // Проверяем локацию
+            const savedLocation = localStorage.getItem('userLocation');
+            if (!savedLocation || savedLocation === 'null') {
+                console.log('⚠️ Локация не установлена - запускаем автоопределение');
+                if (typeof showAutoLocationDetection === 'function') {
+                    showAutoLocationDetection();
+                } else if (typeof autoDetectLocation === 'function') {
+                    autoDetectLocation();
+                }
+                return;
+            }
+            
             if (typeof showMainMenu === 'function') showMainMenu();
             return;
         }
@@ -15824,6 +15837,32 @@ async function checkOnboardingStatus() {
             localStorage.setItem('userNickname', nickname);
             localStorage.setItem('user_nickname', nickname);
             console.log('✅ Никнейм из БД:', nickname);
+            
+            // Проверяем локацию после никнейма
+            const savedLocation = localStorage.getItem('userLocation');
+            const hasLocationInDB = data.country && data.city;
+            
+            if (!savedLocation && !hasLocationInDB) {
+                console.log('⚠️ Локация не установлена - запускаем автоопределение');
+                if (typeof showAutoLocationDetection === 'function') {
+                    showAutoLocationDetection();
+                } else if (typeof autoDetectLocation === 'function') {
+                    autoDetectLocation();
+                }
+                return;
+            }
+            
+            // Если локация есть в БД, сохраняем в localStorage
+            if (hasLocationInDB && !savedLocation) {
+                const locationData = {
+                    country: data.country,
+                    region: data.region || '',
+                    city: data.city
+                };
+                localStorage.setItem('userLocation', JSON.stringify(locationData));
+                console.log('✅ Локация загружена из БД:', locationData);
+            }
+            
             if (typeof showMainMenu === 'function') showMainMenu();
         } else {
             console.log('⚠️ У пользователя нет никнейма');

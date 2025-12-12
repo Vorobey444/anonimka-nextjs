@@ -38,9 +38,6 @@ export async function POST(request: NextRequest) {
       // Создаём нового пользователя
       isNewUser = true;
       
-      // Генерируем никнейм из email или displayName
-      const nickname = displayName || email.split('@')[0];
-      
       // Получаем следующий ID из последовательности
       const nextIdResult = await sql`SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM users`;
       const nextId = nextIdResult.rows[0].next_id;
@@ -50,7 +47,6 @@ export async function POST(request: NextRequest) {
           id,
           user_token, 
           email, 
-          display_nickname, 
           auth_method,
           created_at,
           updated_at
@@ -59,7 +55,6 @@ export async function POST(request: NextRequest) {
           ${nextId},
           ${userToken},
           ${email.toLowerCase()},
-          ${nickname},
           'google',
           NOW(),
           NOW()
