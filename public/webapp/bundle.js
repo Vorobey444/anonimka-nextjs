@@ -2122,8 +2122,27 @@ async function showRequiredNicknameModal() {
             return;
         }
         
+        // Очищаем поле ввода и статус
+        input.value = '';
+        if (statusEl) {
+            statusEl.textContent = '';
+            statusEl.className = 'nickname-status';
+        }
+        btn.disabled = true;
+        
         // Показываем модальное окно
         modal.style.display = 'flex';
+        
+        // Блокируем закрытие по клику вне окна
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                e.stopPropagation();
+                if (typeof tg !== 'undefined' && tg.showAlert) {
+                    tg.showAlert('Пожалуйста, выберите никнейм для продолжения');
+                }
+            }
+        };
+        
         setTimeout(() => input.focus(), 100);
         
         // Дебаунс для проверки никнейма
@@ -15639,7 +15658,12 @@ function showNicknameEditorScreen() {
     
     const currentNicknameDisplay = document.getElementById('currentNicknameDisplay');
     const nicknameInputPage = document.getElementById('nicknameInputPage');
-    const savedNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname') || 'Аноним';
+    let savedNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname');
+    
+    // Проверяем на null/undefined и заменяем на "Аноним"
+    if (!savedNickname || savedNickname === 'null' || savedNickname === 'undefined' || savedNickname.trim() === '') {
+        savedNickname = 'Аноним';
+    }
     
     console.log('📝 [ONBOARDING] Показываем редактор никнейма, текущий:', savedNickname);
     
@@ -16381,6 +16405,19 @@ function goToHome() {
  */
 function showMainMenu() {
     console.log('🏠 [MENU] Переход в главное меню');
+    
+    // Проверяем наличие никнейма перед показом главного меню
+    const userNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname');
+    if (!userNickname || userNickname === 'null' || userNickname === 'undefined' || userNickname.trim() === '') {
+        console.warn('⚠️ [MENU] Никнейм не установлен, показываем модальное окно');
+        if (typeof showRequiredNicknameModal === 'function') {
+            showRequiredNicknameModal().then(() => {
+                // После установки никнейма показываем главное меню
+                showMainMenu();
+            });
+        }
+        return;
+    }
     
     // Убедимся что модальные окна авторизации скрыты
     const telegramModal = document.getElementById('telegramAuthModal');
