@@ -15658,6 +15658,9 @@ function showNicknameEditorScreen() {
     
     const currentNicknameDisplay = document.getElementById('currentNicknameDisplay');
     const nicknameInputPage = document.getElementById('nicknameInputPage');
+    const statusEl = document.getElementById('nicknamePageStatus');
+    const saveBtn = document.getElementById('saveNicknamePageBtn');
+    
     let savedNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname');
     
     // Проверяем на null/undefined и заменяем на "Аноним"
@@ -15674,6 +15677,73 @@ function showNicknameEditorScreen() {
     if (nicknameInputPage) {
         nicknameInputPage.value = savedNickname;
         setTimeout(() => nicknameInputPage.focus(), 300);
+        
+        // Добавляем проверку доступности в реальном времени
+        let checkTimeout;
+        nicknameInputPage.oninput = () => {
+            clearTimeout(checkTimeout);
+            const nickname = nicknameInputPage.value.trim();
+            
+            if (!nickname) {
+                if (statusEl) {
+                    statusEl.textContent = '';
+                    statusEl.className = 'nickname-status';
+                }
+                if (saveBtn) saveBtn.disabled = false; // Можно сохранить пустое (вернётся к старому)
+                return;
+            }
+            
+            if (nickname === savedNickname) {
+                if (statusEl) {
+                    statusEl.textContent = '✅ Текущий никнейм';
+                    statusEl.className = 'nickname-status available';
+                }
+                if (saveBtn) saveBtn.disabled = false;
+                return;
+            }
+            
+            if (nickname.length < 3) {
+                if (statusEl) {
+                    statusEl.textContent = '⚠️ Минимум 3 символа';
+                    statusEl.className = 'nickname-status taken';
+                }
+                if (saveBtn) saveBtn.disabled = true;
+                return;
+            }
+            
+            if (statusEl) {
+                statusEl.textContent = '⏳ Проверяем...';
+                statusEl.className = 'nickname-status';
+            }
+            
+            checkTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
+                    const data = await response.json();
+                    
+                    if (data.available) {
+                        if (statusEl) {
+                            statusEl.textContent = '✅ Доступен';
+                            statusEl.className = 'nickname-status available';
+                        }
+                        if (saveBtn) saveBtn.disabled = false;
+                    } else {
+                        if (statusEl) {
+                            statusEl.textContent = '❌ Уже занят';
+                            statusEl.className = 'nickname-status taken';
+                        }
+                        if (saveBtn) saveBtn.disabled = true;
+                    }
+                } catch (error) {
+                    console.error('Ошибка проверки никнейма:', error);
+                    if (statusEl) {
+                        statusEl.textContent = '';
+                        statusEl.className = 'nickname-status';
+                    }
+                    if (saveBtn) saveBtn.disabled = false;
+                }
+            }, 500);
+        };
     }
     
     // Показываем подсказку для пользователей с автоматическим никнеймом
