@@ -12340,101 +12340,138 @@ async function deleteMyAd(adId) {
 async function contactAuthor(adId, authorToken) {
     console.log('💬 [ADS] Создание чата с автором анкеты');
     
+    const userToken = localStorage.getItem('user_token');
+    if (!userToken || userToken === 'null' || userToken === 'undefined') {
+        tg.showAlert('⚠️ Сначала создайте анкету или авторизуйтесь');
+        return;
+    }
+    
+    if (!authorToken) {
+        tg.showAlert('⚠️ Не удалось определить автора анкеты');
+        return;
+    }
+    
+    // Проверяем что пользователь не пишет сам себе
+    if (userToken === authorToken) {
+        tg.showAlert('❌ Вы не можете написать сами себе');
+        return;
+    }
+    
+    // Проверяем, не заблокированы ли мы автором
     try {
-        const userToken = localStorage.getItem('user_token');
-        if (!userToken) {
-            tg.showAlert('Требуется авторизация');
-            return;
-        }
-        
-        // Проверяем что пользователь не пишет сам себе
-        if (userToken === authorToken) {
-            tg.showAlert('❌ Вы не можете написать сами себе');
-            return;
-        }
-        
-        // Закрываем модалку анкеты
-        closeAdModal();
-        
-        // Проверяем, существует ли уже чат
-        const checkResponse = await fetch('/api/neon-chats', {
+        const blockCheckResponse = await fetch('/api/user-blocks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'check-existing',
-                params: { user1_token: userToken, user2_token: authorToken, adId: adId }
-            })
-        });
-
-        const checkResult = await checkResponse.json();
-
-        if (checkResult.error) {
-            console.error('Error checking existing chat:', checkResult.error);
-            tg.showAlert('❌ Ошибка при проверке чата. Попробуйте позже.');
-            return;
-        }
-
-        const existingChat = checkResult.data;
-
-        if (existingChat) {
-            if (existingChat.blocked_by_token) {
-                tg.showAlert('❌ Чат заблокирован');
-                return;
-            }
-            if (existingChat.accepted) {
-                tg.showAlert('✅ Чат уже существует! Откройте раздел "Мои чаты"');
-                return;
-            } else {
-                tg.showAlert('✅ Запрос уже отправлен! Ожидайте ответа от автора.');
-                return;
-            }
-        }
-
-        // Создаем новый запрос на чат
-        const createResponse = await fetch('/api/neon-chats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'create',
-                params: { 
-                    user1_token: userToken, 
-                    user2_token: authorToken, 
-                    adId: adId,
-                    message: 'Хочу начать диалог'
+                action: 'is-blocked',
+                params: {
+                    blockerToken: authorToken,
+                    blockedToken: userToken
                 }
             })
         });
-
-        const createResult = await createResponse.json();
-
-        if (createResult.error) {
-            console.error('Error creating chat request:', createResult.error);
-            
-            // Специальная обработка для лимита запросов
-            if (createResult.error.message === 'LIMIT_REACHED') {
-                tg.showConfirm(
-                    '⚠️ Анкета перегружена запросами\n\n' +
-                    'Эта анкета уже получила максимум запросов.\n\n' +
-                    'Хотите получить PRO и написать автору в любом случае?',
-                    (confirmed) => {
-                        if (confirmed && typeof showPremiumModal === 'function') {
-                            showPremiumModal();
-                        }
-                    }
-                );
-                return;
-            }
-            
-            tg.showAlert('❌ ' + (createResult.error.details || createResult.error.message));
+        
+        const blockCheckData = await blockCheckResponse.json();
+        
+        if (blockCheckData.success && blockCheckData.isBlocked) {
+            tg.showAlert('Вы не можете создать чат с этим пользователем');
+            return;
+        }
+    } catch (error) {
+        console.error('Ошибка проверки блокировки:', error);
+        // Продолжаем, если проверка не удалась
+    }
+    
+    // Закрываем модалку анкеты
+    closeAdModal();
+    
+    // Запрашиваем текст сообщения через кастомное модальное окно
+    showCustomPrompt('Введите сообщение автору анкеты:', async (message) => {
+        if (!message || message.trim() === '') {
             return;
         }
         
-        tg.showAlert('✅ Запрос на чат отправлен!\n\nИди в раздел "Мои чаты" для просмотра ответа');
-        
-    } catch (error) {
-        console.error('❌ [ADS] Ошибка создания чата:', error);
-        tg.showAlert('Ошибка при создании чата');
-    }
+        try {
+            // Проверяем, существует ли уже чат
+            const checkResponse = await fetch('/api/neon-chats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'check-existing',
+                    params: { user1_token: userToken, user2_token: authorToken, adId: adId }
+                })
+            });
+
+            const checkResult = await checkResponse.json();
+
+            if (checkResult.error) {
+                console.error('Error checking existing chat:', checkResult.error);
+                tg.showAlert('❌ Ошибка при проверке чата. Попробуйте позже.');
+                return;
+            }
+
+            const existingChat = checkResult.data;
+
+            if (existingChat) {
+                if (existingChat.blocked_by_token) {
+                    tg.showAlert('❌ Чат заблокирован');
+                    return;
+                }
+                if (existingChat.accepted) {
+                    tg.showAlert('✅ Чат уже существует! Откройте раздел "Мои чаты"');
+                    return;
+                } else {
+                    tg.showAlert('✅ Запрос уже отправлен! Ожидайте ответа от автора.');
+                    return;
+                }
+            }
+
+            // Создаем новый запрос на чат
+            const createResponse = await fetch('/api/neon-chats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create',
+                    params: { 
+                        user1_token: userToken, 
+                        user2_token: authorToken, 
+                        adId: adId,
+                        message: message.trim()
+                    }
+                })
+            });
+
+            const createResult = await createResponse.json();
+
+            if (createResult.error) {
+                console.error('Error creating chat request:', createResult.error);
+                
+                // Специальная обработка для лимита запросов
+                if (createResult.error.message === 'LIMIT_REACHED') {
+                    tg.showConfirm(
+                        '⚠️ Анкета перегружена запросами\n\n' +
+                        'Эта анкета уже получила максимум запросов.\n\n' +
+                        'Хотите получить PRO и написать автору в любом случае?',
+                        (confirmed) => {
+                            if (confirmed && typeof showPremiumModal === 'function') {
+                                showPremiumModal();
+                            }
+                        }
+                    );
+                    return;
+                }
+                
+                tg.showAlert('❌ ' + (createResult.error.details || createResult.error.message));
+                return;
+            }
+            
+            tg.showAlert('✅ Запрос на чат отправлен!\n\nИди в раздел "Мои чаты" для просмотра ответа');
+            
+        } catch (error) {
+            console.error('❌ [ADS] Ошибка создания чата:', error);
+            tg.showAlert('Ошибка при создании чата');
+        }
+    });
 }
 
 /**
