@@ -1014,6 +1014,12 @@ async function loadAds(filters = {}, append = false) {
     try {
         console.log('📥 [ADS] Загрузка анкет:', { page: window.currentAdsPage, filters, append });
         
+        // DEBUG: показываем версию при первой загрузке
+        if (!window._adsVersionShown && !append) {
+            window._adsVersionShown = true;
+            console.log('🔔 ADS MODULE VERSION: 2.2.12-debug');
+        }
+        
         // По умолчанию включаем компактный режим
         if (window.localStorage.getItem('ads_compact') === null) {
             window.localStorage.setItem('ads_compact', '1');
@@ -1066,16 +1072,6 @@ async function loadAds(filters = {}, append = false) {
         
         console.log('✅ Получено анкет:', ads.length, 'Пагинация:', pagination);
         
-        // DEBUG: показываем первые 3 анкеты для отладки
-        if (ads.length > 0) {
-            console.log('📋 Первые анкеты:', ads.slice(0, 3).map(a => `${a.display_nickname} (${a.created_at})`));
-            // Показываем алерт с первой анкетой для проверки
-            if (!append && window.debugAdsOnce !== true) {
-                window.debugAdsOnce = true;
-                console.log('🔍 DEBUG первая анкета:', JSON.stringify(ads[0], null, 2));
-            }
-        }
-        
         if (append) {
             window.allLoadedAds.push(...ads);
         } else {
@@ -1126,6 +1122,16 @@ function displayAds(ads, city = null) {
     if (!adsList) return;
     
     console.log('📊 [ADS] displayAds вызвана с', ads.length, 'анкетами');
+    
+    // DEBUG: показать первую анкету алертом для проверки кэша
+    if (ads.length > 0 && !window._debugFirstAdShown) {
+        window._debugFirstAdShown = true;
+        const firstAd = ads[0];
+        const debugMsg = `DEBUG v2.2.12\nПервая анкета: ${firstAd.display_nickname}\nСоздана: ${firstAd.created_at}\nГород: ${firstAd.city}`;
+        console.log('🔔 ' + debugMsg);
+        // Раскомментируй для визуального алерта:
+        // alert(debugMsg);
+    }
     
     if (!ads || ads.length === 0) {
         adsList.innerHTML = `
