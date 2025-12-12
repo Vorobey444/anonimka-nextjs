@@ -5526,6 +5526,11 @@ async function loadPremiumStatus() {
         updatePremiumUI();
         updateAdLimitBadge();
         
+        // Обновляем скрытие кнопок реферала после загрузки статуса
+        if (typeof hideEmailUserFeatures === 'function') {
+            hideEmailUserFeatures();
+        }
+        
     } catch (error) {
         console.error('❌ [PREMIUM] Ошибка loadPremiumStatus:', error);
     }
@@ -17371,10 +17376,20 @@ console.log('✅ [BUNDLE] Все 18 модулей загружены!');
             console.log('✅ [APP] Никнейм инициализирован');
         }
         
-        // 4.1 Скрываем функции для email пользователей
+        // 4.1 Сначала загружаем Premium статус (ВАЖНО: до hideEmailUserFeatures!)
+        try {
+            if (typeof loadPremiumStatus === 'function') {
+                await loadPremiumStatus();
+                console.log('✅ [APP] Premium статус загружен (до скрытия кнопок)');
+            }
+        } catch (e) {
+            console.error('❌ [APP] Ошибка loadPremiumStatus:', e);
+        }
+        
+        // 4.2 Скрываем функции для email пользователей и PRO
         if (typeof hideEmailUserFeatures === 'function') {
             hideEmailUserFeatures();
-            console.log('✅ [APP] Email user features скрыты');
+            console.log('✅ [APP] Email/PRO user features скрыты');
         }
         
         // 5. Проверяем местоположение
@@ -17440,14 +17455,7 @@ console.log('✅ [BUNDLE] Все 18 модулей загружены!');
             console.error('❌ [APP] Ошибка updateLogoutButtonVisibility:', e);
         }
         
-        try {
-            if (typeof loadPremiumStatus === 'function') {
-                loadPremiumStatus();
-                console.log('✅ [APP] Premium статус загружен');
-            }
-        } catch (e) {
-            console.error('❌ [APP] Ошибка loadPremiumStatus:', e);
-        }
+        // Premium статус уже загружен в шаге 4.1
         
         try {
             if (typeof loadSiteStats === 'function') {
