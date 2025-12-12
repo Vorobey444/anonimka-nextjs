@@ -1479,29 +1479,31 @@ function showAdDetails(index) {
             
             ${ad.photo_urls && ad.photo_urls.length > 0 ? `
             <div class="ad-details-photos">
-                <div class="ad-main-photo" id="adMainPhotoContainer" style="position: relative; touch-action: pan-y; width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a1a2e 0%, #2e2e42 100%); border-radius: 12px; overflow: hidden;">
-                    <img id="adMainPhoto" 
-                        src="${getPhotoUrl(ad.photo_urls[0], 'medium')}" 
-                        alt="Фото анкеты" 
-                        loading="eager"
-                        data-full-url="${getPhotoUrl(ad.photo_urls[0], 'large')}"
-                        style="width: 100%; height: 100%; object-fit: contain; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;" 
-                        onload="this.style.opacity='1'"
-                        onerror="this.style.opacity='0.3'"
-                        onclick="openPhotoFullscreen(this.dataset.fullUrl || this.src)">
+                <div class="ad-main-photo" id="adMainPhotoContainer" style="position: relative; touch-action: pan-y; width: 100%; height: 400px; background: linear-gradient(135deg, #1a1a2e 0%, #2e2e42 100%); border-radius: 12px; overflow: hidden;">
+                    ${ad.photo_urls.map((photoUrl, photoIndex) => `
+                        <img class="ad-slide-photo" 
+                            data-index="${photoIndex}"
+                            src="${getPhotoUrl(photoUrl, 'medium')}" 
+                            alt="Фото ${photoIndex + 1}" 
+                            loading="eager"
+                            data-full-url="${getPhotoUrl(photoUrl, 'large')}"
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer; opacity: ${photoIndex === 0 ? '1' : '0'}; transition: opacity 0.25s ease; z-index: ${photoIndex === 0 ? '2' : '1'};" 
+                            onclick="openPhotoFullscreen(this.dataset.fullUrl || this.src)">
+                    `).join('')}
                     ${ad.photo_urls.length > 1 ? `
-                    <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px; color: white; font-size: 0.8rem;">
+                    <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px; color: white; font-size: 0.8rem; z-index: 10;">
                         <span id="photoCounter">1 / ${ad.photo_urls.length}</span>
                     </div>
+                    <button onclick="event.stopPropagation(); switchAdPhoto((window.currentPhotoIndex - 1 + window.currentAdPhotos.length) % window.currentAdPhotos.length)" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; z-index: 10;">❮</button>
+                    <button onclick="event.stopPropagation(); switchAdPhoto((window.currentPhotoIndex + 1) % window.currentAdPhotos.length)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; z-index: 10;">❯</button>
                     ` : ''}
                 </div>
                 ${ad.photo_urls.length > 1 ? `
                 <div class="ad-photo-gallery">
                     ${ad.photo_urls.map((photoUrl, photoIndex) => `
-                        <div class="ad-photo-thumbnail-small" onclick="event.stopPropagation(); switchAdPhoto(${photoIndex})" style="background: linear-gradient(135deg, #1a1a2e 0%, #2e2e42 100%);">
+                        <div class="ad-photo-thumbnail-small ${photoIndex === 0 ? 'active' : ''}" data-thumb-index="${photoIndex}" onclick="event.stopPropagation(); switchAdPhoto(${photoIndex})" style="background: linear-gradient(135deg, #1a1a2e 0%, #2e2e42 100%); border: 2px solid ${photoIndex === 0 ? 'var(--neon-cyan)' : 'transparent'}; border-radius: 8px;">
                             <img src="${getPhotoUrl(photoUrl, 'small')}" alt="Photo ${photoIndex + 1}" 
-                                loading="lazy" style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease;"
-                                onload="this.style.opacity='1'" onerror="this.style.opacity='0.3'">
+                                loading="eager" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
                         </div>
                     `).join('')}
                 </div>
@@ -1547,86 +1549,39 @@ function showAdDetails(index) {
     
     if (ad.photo_urls && ad.photo_urls.length > 1) {
         setupAdPhotoSwipe();
-        // Предзагружаем все фото для быстрого свайпа
-        preloadAdPhotos(ad.photo_urls);
     }
 }
 
 /**
- * Предзагрузка фото анкеты
+ * Переключение фото в анкете (все фото уже в DOM)
  */
-function preloadAdPhotos(photoUrls) {
-    if (!photoUrls || photoUrls.length <= 1) return;
-    
-    photoUrls.forEach((url, index) => {
-        if (index === 0) return; // Первое уже загружено
-        const img = new Image();
-        img.src = getPhotoUrl(url, 'medium');
-    });
-    console.log('📸 [ADS] Предзагружено', photoUrls.length - 1, 'фото');
-}
-
-/**
- * Переключение фото в анкете
- */
-function switchAdPhoto(photoIndex, direction = 0) {
+function switchAdPhoto(photoIndex) {
     if (!window.currentAdPhotos || photoIndex >= window.currentAdPhotos.length) return;
-    if (window.isPhotoSwitching) return; // Предотвращаем спам свайпов
+    if (photoIndex === window.currentPhotoIndex) return; // Уже на этом фото
     
     window.currentPhotoIndex = photoIndex;
-    window.isPhotoSwitching = true;
     
-    const img = document.getElementById('adMainPhoto');
-    const counter = document.getElementById('photoCounter');
-    const container = document.getElementById('adMainPhotoContainer');
-    
-    if (!img) return;
-    
-    const newSrc = getPhotoUrl(window.currentAdPhotos[photoIndex], 'medium');
-    const newFullUrl = getPhotoUrl(window.currentAdPhotos[photoIndex], 'large');
-    
-    // Предзагружаем новое фото
-    const preloadImg = new Image();
-    preloadImg.src = newSrc;
-    
-    // Анимация выхода старого фото
-    const slideOut = direction > 0 ? 'translateX(-100%)' : direction < 0 ? 'translateX(100%)' : 'translateX(0)';
-    img.style.transition = 'transform 0.2s ease-out, opacity 0.15s ease-out';
-    img.style.transform = slideOut;
-    img.style.opacity = '0';
-    
-    const showNewPhoto = () => {
-        // Меняем src когда фото скрыто
-        img.src = newSrc;
-        img.dataset.fullUrl = newFullUrl;
-        
-        // Позиционируем для входа
-        const slideIn = direction > 0 ? 'translateX(50%)' : direction < 0 ? 'translateX(-50%)' : 'translateX(0)';
-        img.style.transition = 'none';
-        img.style.transform = slideIn;
-        
-        // Анимация входа
-        requestAnimationFrame(() => {
-            img.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-            img.style.transform = 'translateX(0)';
+    // Переключаем видимость фото
+    const photos = document.querySelectorAll('.ad-slide-photo');
+    photos.forEach((img, idx) => {
+        if (idx === photoIndex) {
             img.style.opacity = '1';
-            
-            setTimeout(() => {
-                window.isPhotoSwitching = false;
-            }, 200);
-        });
-    };
+            img.style.zIndex = '2';
+        } else {
+            img.style.opacity = '0';
+            img.style.zIndex = '1';
+        }
+    });
     
-    // Если фото уже загружено — показываем сразу после анимации выхода
-    if (preloadImg.complete) {
-        setTimeout(showNewPhoto, 150);
-    } else {
-        // Ждём загрузки фото
-        preloadImg.onload = () => setTimeout(showNewPhoto, 50);
-        preloadImg.onerror = () => setTimeout(showNewPhoto, 50);
-    }
-    
+    // Обновляем счётчик
+    const counter = document.getElementById('photoCounter');
     if (counter) counter.textContent = `${photoIndex + 1} / ${window.currentAdPhotos.length}`;
+    
+    // Обновляем активный thumbnail
+    const thumbs = document.querySelectorAll('.ad-photo-thumbnail-small');
+    thumbs.forEach((thumb, idx) => {
+        thumb.style.borderColor = idx === photoIndex ? 'var(--neon-cyan)' : 'transparent';
+    });
 }
 
 /**
@@ -1652,10 +1607,10 @@ function setupAdPhotoSwipe() {
         if (Math.abs(diff) > 50) {
             if (diff > 0) {
                 const nextIndex = (window.currentPhotoIndex + 1) % window.currentAdPhotos.length;
-                switchAdPhoto(nextIndex, 1);
+                switchAdPhoto(nextIndex);
             } else {
                 const prevIndex = (window.currentPhotoIndex - 1 + window.currentAdPhotos.length) % window.currentAdPhotos.length;
-                switchAdPhoto(prevIndex, -1);
+                switchAdPhoto(prevIndex);
             }
         }
         isDragging = false;
