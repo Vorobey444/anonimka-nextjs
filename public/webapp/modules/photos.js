@@ -535,32 +535,45 @@ async function loadMyPhotosForStep9() {
         container.innerHTML = '';
         container.style.display = 'block';
         
-        // Инфо блок
+        // Проверяем Premium статус
+        const isPremium = typeof userPremiumStatus !== 'undefined' && userPremiumStatus?.isPremium;
+        
+        // Инфо блок с лимитами
         const infoDiv = document.createElement('div');
         infoDiv.style.cssText = `
             background: rgba(0, 255, 255, 0.1);
             border: 1px solid rgba(0, 255, 255, 0.3);
             border-radius: 8px;
-            padding: 8px 12px;
-            margin-bottom: 10px;
-            color: var(--neon-cyan);
+            padding: 10px 12px;
+            margin-bottom: 12px;
             font-size: 11px;
             text-align: center;
         `;
-        infoDiv.innerHTML = `ℹ️ Нажмите на фото чтобы выбрать • Зажмите и перетащите для изменения порядка`;
+        infoDiv.innerHTML = `
+            <div style="color: var(--neon-cyan); margin-bottom: 6px;">📷 Можно загрузить до 3 фото</div>
+            <div style="color: ${isPremium ? 'var(--neon-green)' : 'var(--text-gray)'}; font-size: 10px;">
+                ${isPremium 
+                    ? '✨ PRO: все 3 фото будут видны в анкете' 
+                    : '🔒 FREE: только 1 фото будет активно. Получите PRO для всех 3!'
+                }
+            </div>
+        `;
         container.appendChild(infoDiv);
         
-        // Компактная сетка фото 3x2 (маленькие превью)
+        // Горизонтальная сетка фото (3 в ряд)
         const gridDiv = document.createElement('div');
         gridDiv.id = 'step9PhotoGrid';
         gridDiv.style.cssText = `
-            display: grid;
-            grid-template-columns: repeat(3, 70px);
-            gap: 6px;
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
             justify-content: center;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding: 4px 0;
         `;
         
-        photos.slice(0, 6).forEach((photo, index) => {
+        photos.slice(0, 3).forEach((photo, index) => {
             const photoDiv = document.createElement('div');
             photoDiv.className = 'step9-photo-item';
             photoDiv.dataset.photoId = photo.id;
@@ -569,10 +582,11 @@ async function loadMyPhotosForStep9() {
             photoDiv.style.cssText = `
                 position: relative;
                 border: 2px solid ${isSelected ? 'var(--neon-pink)' : 'rgba(0, 255, 255, 0.5)'};
-                border-radius: 6px;
+                border-radius: 8px;
                 overflow: hidden;
-                width: 70px;
-                height: 70px;
+                width: 90px;
+                height: 90px;
+                min-width: 90px;
                 cursor: grab;
                 transition: transform 0.2s, border-color 0.2s;
                 background: #1a1a2e;
@@ -609,14 +623,14 @@ async function loadMyPhotosForStep9() {
             const numBadge = document.createElement('div');
             numBadge.style.cssText = `
                 position: absolute;
-                top: 2px;
-                left: 2px;
-                width: 16px;
-                height: 16px;
+                top: 4px;
+                left: 4px;
+                width: 18px;
+                height: 18px;
                 border-radius: 50%;
                 background: rgba(0, 0, 0, 0.7);
                 color: white;
-                font-size: 9px;
+                font-size: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -625,21 +639,21 @@ async function loadMyPhotosForStep9() {
             numBadge.textContent = index + 1;
             photoDiv.appendChild(numBadge);
             
-            // Кнопка удаления (маленькая)
+            // Кнопка удаления
             const delBtn = document.createElement('button');
             delBtn.innerHTML = '✕';
             delBtn.style.cssText = `
                 position: absolute;
-                top: 2px;
-                right: 2px;
-                width: 16px;
-                height: 16px;
+                top: 4px;
+                right: 4px;
+                width: 18px;
+                height: 18px;
                 border-radius: 50%;
                 background: rgba(255, 50, 50, 0.9);
                 color: white;
                 border: none;
                 cursor: pointer;
-                font-size: 10px;
+                font-size: 11px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
