@@ -1627,6 +1627,7 @@ function setupAdPhotoSwipe() {
  */
 function openPhotoFullscreen(photoUrl) {
     const overlay = document.createElement('div');
+    overlay.id = 'photoFullscreenOverlay';
     overlay.style.cssText = `
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0, 0, 0, 0.95); z-index: 10000;
@@ -1637,10 +1638,48 @@ function openPhotoFullscreen(photoUrl) {
     img.src = photoUrl;
     img.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain;';
     
+    // Кнопка закрытия
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '✕';
+    closeBtn.style.cssText = `
+        position: absolute; top: 20px; right: 20px;
+        background: rgba(255, 255, 255, 0.2); border: none;
+        color: white; width: 40px; height: 40px; border-radius: 50%;
+        font-size: 20px; cursor: pointer; z-index: 10001;
+    `;
+    closeBtn.onclick = (e) => { e.stopPropagation(); closePhotoFullscreen(); };
+    
     overlay.appendChild(img);
-    overlay.addEventListener('click', () => overlay.remove());
+    overlay.appendChild(closeBtn);
+    overlay.addEventListener('click', closePhotoFullscreen);
     document.body.appendChild(overlay);
+    
+    // Сохраняем состояние для обработки кнопки "Назад"
+    window.photoFullscreenOpen = true;
+    
+    // Добавляем в history для обработки кнопки "Назад" на Android
+    history.pushState({ photoFullscreen: true }, '');
 }
+
+/**
+ * Закрыть полноэкранный просмотр фото
+ */
+function closePhotoFullscreen() {
+    const overlay = document.getElementById('photoFullscreenOverlay');
+    if (overlay) {
+        overlay.remove();
+        window.photoFullscreenOpen = false;
+    }
+}
+
+// Обработка кнопки "Назад" для закрытия полноэкранного фото
+window.addEventListener('popstate', (event) => {
+    if (window.photoFullscreenOpen) {
+        closePhotoFullscreen();
+        // Предотвращаем дальнейшую навигацию
+        event.preventDefault();
+    }
+});
 
 /**
  * Получить URL фото с размером
