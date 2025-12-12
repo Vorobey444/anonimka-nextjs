@@ -12347,28 +12347,85 @@ async function contactAuthor(adId, authorToken) {
             return;
         }
         
+        // Проверяем что пользователь не пишет сам себе
+        if (userToken === authorToken) {
+            tg.showAlert('❌ Вы не можете написать сами себе');
+            return;
+        }
+        
         // Закрываем модалку анкеты
         closeAdModal();
         
-        // Создаём или открываем чат с автором
-        const response = await fetch('/api/neon-chats', {
+        // Проверяем, существует ли уже чат
+        const checkResponse = await fetch('/api/neon-chats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'request-chat',
-                params: {
-                    user_token: userToken,
-                    author_token: authorToken,
-                    ad_id: adId,
+                action: 'check-existing',
+                params: { user1_token: userToken, user2_token: authorToken, adId: adId }
+            })
+        });
+
+        const checkResult = await checkResponse.json();
+
+        if (checkResult.error) {
+            console.error('Error checking existing chat:', checkResult.error);
+            tg.showAlert('❌ Ошибка при проверке чата. Попробуйте позже.');
+            return;
+        }
+
+        const existingChat = checkResult.data;
+
+        if (existingChat) {
+            if (existingChat.blocked_by_token) {
+                tg.showAlert('❌ Чат заблокирован');
+                return;
+            }
+            if (existingChat.accepted) {
+                tg.showAlert('✅ Чат уже существует! Откройте раздел "Мои чаты"');
+                return;
+            } else {
+                tg.showAlert('✅ Запрос уже отправлен! Ожидайте ответа от автора.');
+                return;
+            }
+        }
+
+        // Создаем новый запрос на чат
+        const createResponse = await fetch('/api/neon-chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'create',
+                params: { 
+                    user1_token: userToken, 
+                    user2_token: authorToken, 
+                    adId: adId,
                     message: 'Хочу начать диалог'
                 }
             })
         });
-        
-        const result = await response.json();
-        
-        if (result.error) {
-            tg.showAlert('Ошибка: ' + result.error.message);
+
+        const createResult = await createResponse.json();
+
+        if (createResult.error) {
+            console.error('Error creating chat request:', createResult.error);
+            
+            // Специальная обработка для лимита запросов
+            if (createResult.error.message === 'LIMIT_REACHED') {
+                tg.showConfirm(
+                    '⚠️ Анкета перегружена запросами\n\n' +
+                    'Эта анкета уже получила максимум запросов.\n\n' +
+                    'Хотите получить PRO и написать автору в любом случае?',
+                    (confirmed) => {
+                        if (confirmed && typeof showPremiumModal === 'function') {
+                            showPremiumModal();
+                        }
+                    }
+                );
+                return;
+            }
+            
+            tg.showAlert('❌ ' + (createResult.error.details || createResult.error.message));
             return;
         }
         
