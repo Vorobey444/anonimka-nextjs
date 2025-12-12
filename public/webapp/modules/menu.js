@@ -269,6 +269,19 @@ function updateTelegramButtons(screenId) {
  * Обработчик кнопки назад в Telegram
  */
 function handleBackButton() {
+    // Сначала проверяем полноэкранный просмотр фото
+    if (window.photoFullscreenOpen && typeof closePhotoFullscreen === 'function') {
+        closePhotoFullscreen();
+        return;
+    }
+    
+    // Проверяем открытое бургер-меню
+    const burgerOverlay = document.getElementById('hamburgerMenuOverlay');
+    if (burgerOverlay && burgerOverlay.classList.contains('active')) {
+        closeBurgerMenu();
+        return;
+    }
+    
     const activeScreen = document.querySelector('.screen.active')?.id;
     
     switch(activeScreen) {
@@ -384,14 +397,6 @@ function showMainMenu() {
     }
     
     currentScreen = 'homeScreen';
-}
-
-/**
- * Обработчик кнопки "Назад"
- */
-function handleBackButton() {
-    console.log('⬅️ [MENU] Кнопка "Назад" нажата');
-    showMainMenu();
 }
 
 /**

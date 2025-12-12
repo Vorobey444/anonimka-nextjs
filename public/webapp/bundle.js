@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-12T09:15:09.168Z
+ * Автоматически сгенерирован: 2025-12-12T09:20:06.408Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -10443,7 +10443,7 @@ console.log('✅ [LOCATION] Модуль локации инициализиро
 } catch(e) { console.error('❌ Ошибка в модуле location.js:', e); }
 })();
 
-// ========== ads.js (99.6 KB) ==========
+// ========== ads.js (99.1 KB) ==========
 (function() {
 try {
 /**
@@ -12102,11 +12102,8 @@ function openPhotoFullscreen(photoUrl) {
     overlay.addEventListener('click', closePhotoFullscreen);
     document.body.appendChild(overlay);
     
-    // Сохраняем состояние для обработки кнопки "Назад"
+    // Сохраняем состояние для обработки кнопки "Назад" (проверяется в handleBackButton)
     window.photoFullscreenOpen = true;
-    
-    // Добавляем в history для обработки кнопки "Назад" на Android
-    history.pushState({ photoFullscreen: true }, '');
 }
 
 /**
@@ -12119,15 +12116,6 @@ function closePhotoFullscreen() {
         window.photoFullscreenOpen = false;
     }
 }
-
-// Обработка кнопки "Назад" для закрытия полноэкранного фото
-window.addEventListener('popstate', (event) => {
-    if (window.photoFullscreenOpen) {
-        closePhotoFullscreen();
-        // Предотвращаем дальнейшую навигацию
-        event.preventDefault();
-    }
-});
 
 /**
  * Получить URL фото с размером
@@ -15709,7 +15697,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (50.3 KB) ==========
+// ========== menu.js (50.6 KB) ==========
 (function() {
 try {
 /**
@@ -15983,6 +15971,19 @@ function updateTelegramButtons(screenId) {
  * Обработчик кнопки назад в Telegram
  */
 function handleBackButton() {
+    // Сначала проверяем полноэкранный просмотр фото
+    if (window.photoFullscreenOpen && typeof closePhotoFullscreen === 'function') {
+        closePhotoFullscreen();
+        return;
+    }
+    
+    // Проверяем открытое бургер-меню
+    const burgerOverlay = document.getElementById('hamburgerMenuOverlay');
+    if (burgerOverlay && burgerOverlay.classList.contains('active')) {
+        closeBurgerMenu();
+        return;
+    }
+    
     const activeScreen = document.querySelector('.screen.active')?.id;
     
     switch(activeScreen) {
@@ -16098,14 +16099,6 @@ function showMainMenu() {
     }
     
     currentScreen = 'homeScreen';
-}
-
-/**
- * Обработчик кнопки "Назад"
- */
-function handleBackButton() {
-    console.log('⬅️ [MENU] Кнопка "Назад" нажата');
-    showMainMenu();
 }
 
 /**

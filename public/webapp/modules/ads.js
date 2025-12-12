@@ -1654,11 +1654,8 @@ function openPhotoFullscreen(photoUrl) {
     overlay.addEventListener('click', closePhotoFullscreen);
     document.body.appendChild(overlay);
     
-    // Сохраняем состояние для обработки кнопки "Назад"
+    // Сохраняем состояние для обработки кнопки "Назад" (проверяется в handleBackButton)
     window.photoFullscreenOpen = true;
-    
-    // Добавляем в history для обработки кнопки "Назад" на Android
-    history.pushState({ photoFullscreen: true }, '');
 }
 
 /**
@@ -1671,15 +1668,6 @@ function closePhotoFullscreen() {
         window.photoFullscreenOpen = false;
     }
 }
-
-// Обработка кнопки "Назад" для закрытия полноэкранного фото
-window.addEventListener('popstate', (event) => {
-    if (window.photoFullscreenOpen) {
-        closePhotoFullscreen();
-        // Предотвращаем дальнейшую навигацию
-        event.preventDefault();
-    }
-});
 
 /**
  * Получить URL фото с размером
