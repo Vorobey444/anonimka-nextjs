@@ -1229,9 +1229,9 @@ function displayAds(ads, city = null) {
         <div class="ad-card ${compact ? 'compact' : ''} ${premiumClass}" onclick="showAdDetails(${index})">
             ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
             ${ad.photo_urls && ad.photo_urls.length > 0 ? `
-            <div class="ad-photo-thumbnails" style="display: grid; grid-template-columns: repeat(${Math.min(ad.photo_urls.length, 3)}, 1fr); gap: 4px; margin-bottom: 12px;">
+            <div class="ad-photo-thumbnails" style="display: flex; gap: 6px; margin-bottom: 12px; justify-content: center;">
                 ${ad.photo_urls.slice(0, 3).map((pUrl, photoIdx) => `
-                    <div style="aspect-ratio: 1; overflow: hidden; border-radius: 8px; background: linear-gradient(135deg, rgba(26, 26, 46, 0.8) 0%, rgba(46, 46, 66, 0.6) 100%); position: relative;">
+                    <div style="width: 80px; height: 80px; overflow: hidden; border-radius: 8px; background: linear-gradient(135deg, rgba(26, 26, 46, 0.8) 0%, rgba(46, 46, 66, 0.6) 100%); position: relative; flex-shrink: 0;">
                         <img 
                             src="${photoUrl(pUrl)}" 
                             alt="Фото ${photoIdx + 1}" 

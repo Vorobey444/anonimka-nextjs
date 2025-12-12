@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-12T07:29:30.040Z
+ * Автоматически сгенерирован: 2025-12-12T07:38:55.571Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -3933,7 +3933,7 @@ console.log('📊 [LOCATION-DATA] Всего стран:', Object.keys(locationD
 } catch(e) { console.error('❌ Ошибка в модуле location-data.js:', e); }
 })();
 
-// ========== photos.js (54.6 KB) ==========
+// ========== photos.js (55.6 KB) ==========
 (function() {
 try {
 /**
@@ -4556,6 +4556,30 @@ async function loadMyPhotosForStep9() {
             img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; pointer-events: none;';
             img.draggable = false;
             photoDiv.appendChild(img);
+            
+            // Для FREE аккаунтов затемняем 2-3 фото
+            if (!isPremium && index > 0) {
+                const overlay = document.createElement('div');
+                overlay.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.7);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-direction: column;
+                `;
+                overlay.innerHTML = `
+                    <div style="color: #888; font-size: 10px; text-align: center;">
+                        <div style="font-size: 16px;">🔒</div>
+                        <div>Скрыто</div>
+                    </div>
+                `;
+                photoDiv.appendChild(overlay);
+            }
             
             // Номер фото
             const numBadge = document.createElement('div');
@@ -11595,9 +11619,9 @@ function displayAds(ads, city = null) {
         <div class="ad-card ${compact ? 'compact' : ''} ${premiumClass}" onclick="showAdDetails(${index})">
             ${isPinned ? '<span class="pinned-badge">📌 Закреплено</span>' : ''}
             ${ad.photo_urls && ad.photo_urls.length > 0 ? `
-            <div class="ad-photo-thumbnails" style="display: grid; grid-template-columns: repeat(${Math.min(ad.photo_urls.length, 3)}, 1fr); gap: 4px; margin-bottom: 12px;">
+            <div class="ad-photo-thumbnails" style="display: flex; gap: 6px; margin-bottom: 12px; justify-content: center;">
                 ${ad.photo_urls.slice(0, 3).map((pUrl, photoIdx) => `
-                    <div style="aspect-ratio: 1; overflow: hidden; border-radius: 8px; background: linear-gradient(135deg, rgba(26, 26, 46, 0.8) 0%, rgba(46, 46, 66, 0.6) 100%); position: relative;">
+                    <div style="width: 80px; height: 80px; overflow: hidden; border-radius: 8px; background: linear-gradient(135deg, rgba(26, 26, 46, 0.8) 0%, rgba(46, 46, 66, 0.6) 100%); position: relative; flex-shrink: 0;">
                         <img 
                             src="${photoUrl(pUrl)}" 
                             alt="Фото ${photoIdx + 1}" 

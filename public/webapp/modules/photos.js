@@ -619,6 +619,30 @@ async function loadMyPhotosForStep9() {
             img.draggable = false;
             photoDiv.appendChild(img);
             
+            // Для FREE аккаунтов затемняем 2-3 фото
+            if (!isPremium && index > 0) {
+                const overlay = document.createElement('div');
+                overlay.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.7);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-direction: column;
+                `;
+                overlay.innerHTML = `
+                    <div style="color: #888; font-size: 10px; text-align: center;">
+                        <div style="font-size: 16px;">🔒</div>
+                        <div>Скрыто</div>
+                    </div>
+                `;
+                photoDiv.appendChild(overlay);
+            }
+            
             // Номер фото
             const numBadge = document.createElement('div');
             numBadge.style.cssText = `
