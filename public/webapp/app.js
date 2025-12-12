@@ -8,7 +8,7 @@
 console.log('🚀 ===== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ANONIMKA =====');
 
 // Версия для cache busting (меняйте при обновлениях)
-const appVersion = '2.2.9';
+const appVersion = '2.2.11';
 
 /**
  * Загрузка бандла
@@ -16,7 +16,8 @@ const appVersion = '2.2.9';
 function loadBundle() {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = `/webapp/bundle.js?v=${appVersion}`;
+        // Добавляем timestamp для гарантированного обхода кэша
+        script.src = `/webapp/bundle.js?v=${appVersion}&t=${Date.now()}`;
         script.type = 'text/javascript';
         
         script.onload = () => {
