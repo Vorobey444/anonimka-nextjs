@@ -194,12 +194,10 @@ async function loadMyPhotos() {
                             </div>
                         </div>
                         ${photo.caption ? `<div style="color: #e0e0e0; margin-bottom: 10px; font-size: 0.8rem; max-height: 30px; overflow: hidden;">${photo.caption}</div>` : ''}
-                        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
-                            <button onclick="editPhotoCaption(${photo.id}, '${(photo.caption || '').replace(/'/g, "\\'")}'); event.stopPropagation();" style="flex: 1; min-width: 60px; padding: 8px 6px; background: rgba(131, 56, 236, 0.2); border: 1px solid rgba(131, 56, 236, 0.5); color: #8338ec; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">✏️ Подпись</button>
-                            <button onclick="togglePhotoActive(${photo.id}, ${!isActive}); event.stopPropagation();" style="flex: 1; min-width: 60px; padding: 8px 6px; background: ${isActive ? 'rgba(0, 217, 255, 0.2)' : 'rgba(131, 56, 236, 0.2)'}; border: 1px solid ${isActive ? 'rgba(0, 217, 255, 0.5)' : 'rgba(131, 56, 236, 0.5)'}; color: ${isActive ? '#00d9ff' : '#8338ec'}; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">
-                                ${isActive ? '👁️ Видимо' : '🚫 Скрыто'}
-                            </button>
-                            <button onclick="deletePhoto(${photo.id}); event.stopPropagation();" style="flex: 1; min-width: 60px; padding: 8px 6px; background: rgba(255, 59, 48, 0.2); border: 1px solid rgba(255, 59, 48, 0.5); color: #ff3b30; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">🗑️ Удалить</button>
+                        <div style="display: flex; gap: 4px; margin-top: 6px;">
+                            <button onclick="editPhotoCaption(${photo.id}, '${(photo.caption || '').replace(/'/g, "\\'")}'); event.stopPropagation();" style="flex: 1; padding: 5px 2px; background: rgba(131, 56, 236, 0.2); border: 1px solid rgba(131, 56, 236, 0.5); color: #8338ec; border-radius: 4px; font-size: 0.65rem; cursor: pointer;">✏️</button>
+                            <button onclick="togglePhotoActive(${photo.id}, ${!isActive}); event.stopPropagation();" style="flex: 1; padding: 5px 2px; background: ${isActive ? 'rgba(0, 217, 255, 0.2)' : 'rgba(255, 59, 48, 0.2)'}; border: 1px solid ${isActive ? 'rgba(0, 217, 255, 0.5)' : 'rgba(255, 59, 48, 0.5)'}; color: ${isActive ? '#00d9ff' : '#ff3b30'}; border-radius: 4px; font-size: 0.65rem; cursor: pointer;">${isActive ? '👁️' : '🚫'}</button>
+                            <button onclick="deletePhoto(${photo.id}); event.stopPropagation();" style="flex: 1; padding: 5px 2px; background: rgba(255, 59, 48, 0.2); border: 1px solid rgba(255, 59, 48, 0.5); color: #ff3b30; border-radius: 4px; font-size: 0.65rem; cursor: pointer;">🗑️</button>
                         </div>
                     </div>
                 </div>
