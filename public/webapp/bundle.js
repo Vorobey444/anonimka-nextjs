@@ -6619,18 +6619,20 @@ function shareReferralLink() {
         return;
     }
     
-    // Пытаемся использовать Web Share API
-    if (navigator.share) {
-        navigator.share({
-            title: 'Anonimka - Анонимные знакомства',
-            text: 'Присоединяйтесь к анонимной доске знакомств!',
-            url: link
-        }).catch(err => console.log('Share отменён:', err));
-    } else {
-        // Fallback: копируем и показываем сообщение
-        navigator.clipboard.writeText(link);
-        tg.showAlert('✅ Ссылка скопирована!\n\nПоделитесь ей с друзьями в любом мессенджере.');
-    }
+    // Тексты для реферальной ссылки
+    const referralTexts = [
+        "Хотите кому-то понравиться, но без неловких взглядов?\nЗдесь никому не нужно быть красивым.\nТолько честным. Анонимно.\n\n",
+        "Один клик — и Вы в мире, где никто не знает, кто Вы.\nЗайдите. Напишите. Проверьте, кто ответит.\n\n",
+        "Никаких подписок, никаких лиц.\nТолько Вы и чужое сообщение, которое задело.\n\n",
+        "Зайдите просто из любопытства.\nВсе с этого начинают.\nА потом остаются.\n\n"
+    ];
+    
+    const randomText = referralTexts[Math.floor(Math.random() * referralTexts.length)];
+    const messageText = randomText + link;
+    
+    // Открываем Telegram с текстом для выбора чата
+    const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(randomText)}`;
+    window.open(telegramShareUrl, '_blank');
 }
 
 // Экспорт функций для onclick

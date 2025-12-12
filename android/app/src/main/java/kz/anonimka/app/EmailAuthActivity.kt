@@ -92,6 +92,11 @@ class EmailAuthActivity : AppCompatActivity() {
         verifyButton.setOnClickListener {
             verifyCode()
         }
+
+        // Google Sign-In button
+        findViewById<View>(R.id.googleSignInButton).setOnClickListener {
+            startActivity(Intent(this, GoogleAuthActivity::class.java))
+        }
     }
 
     private fun sendVerificationCode() {
