@@ -6281,28 +6281,29 @@ async function manualRefreshLimits() {
 }
 
 /**
- * Скрыть функции недоступные для email пользователей
+ * Скрыть функции недоступные для email пользователей или PRO пользователей
  */
 function hideEmailUserFeatures() {
     const emailUser = typeof isEmailUser === 'function' ? isEmailUser() : false;
+    const isPro = userPremiumStatus?.isPremium || false;
     
-    if (emailUser) {
-        console.log('📧 Email user detected - hiding Stars/Referral features');
-        
-        // Скрываем кнопку реферала на главной странице
-        const referralMainBtn = document.getElementById('referralMainButton');
+    // Скрываем кнопку реферала на главной странице для email пользователей или PRO
+    const referralMainBtn = document.getElementById('referralMainButton');
+    
+    if (isPro) {
+        console.log('💎 PRO user detected - hiding referral button (already has PRO)');
         if (referralMainBtn) {
             referralMainBtn.style.display = 'none';
-            console.log('✅ Скрыли кнопку реферала на главной');
+        }
+    } else if (emailUser) {
+        console.log('📧 Email user detected - hiding Stars/Referral features');
+        if (referralMainBtn) {
+            referralMainBtn.style.display = 'none';
         }
     } else {
-        console.log('📱 Telegram user detected - showing Referral button');
-        
-        // Показываем кнопку реферала для Telegram пользователей
-        const referralMainBtn = document.getElementById('referralMainButton');
+        console.log('📱 Telegram FREE user detected - showing Referral button');
         if (referralMainBtn) {
             referralMainBtn.style.display = 'block';
-            console.log('✅ Показали кнопку реферала на главной');
         }
     }
 }
