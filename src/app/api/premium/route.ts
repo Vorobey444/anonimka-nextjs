@@ -268,8 +268,42 @@ export async function POST(request: NextRequest) {
           }
 
           numericUserId = Number(tgId);
+          if (isNaN(numericUserId)) {
+            console.log('[PREMIUM API] ⚠️ tgId не конвертируется в число:', tgId);
+            return NextResponse.json({
+              data: {
+                isPremium: false,
+                tier: 'FREE',
+                telegramPremium: false,
+                limits: {
+                  photos: { used: 0, max: LIMITS.FREE.photos_per_day, remaining: LIMITS.FREE.photos_per_day },
+                  ads: { used: 0, max: LIMITS.FREE.ads_per_day, remaining: LIMITS.FREE.ads_per_day },
+                  pin: { used: 0, max: LIMITS.FREE.pin_per_3days, canUse: true }
+                }
+              },
+              error: null
+            });
+          }
         } else {
+          // userId это не токен - пробуем как число
           numericUserId = Number(userId);
+          if (isNaN(numericUserId)) {
+            // Это невалидный ID - возвращаем FREE статус по умолчанию
+            console.log('[PREMIUM API] ⚠️ Невалидный userId (NaN), возвращаем FREE статус');
+            return NextResponse.json({
+              data: {
+                isPremium: false,
+                tier: 'FREE',
+                telegramPremium: false,
+                limits: {
+                  photos: { used: 0, max: LIMITS.FREE.photos_per_day, remaining: LIMITS.FREE.photos_per_day },
+                  ads: { used: 0, max: LIMITS.FREE.ads_per_day, remaining: LIMITS.FREE.ads_per_day },
+                  pin: { used: 0, max: LIMITS.FREE.pin_per_3days, canUse: true }
+                }
+              },
+              error: null
+            });
+          }
         }
         
         // Получаем или создаём пользователя

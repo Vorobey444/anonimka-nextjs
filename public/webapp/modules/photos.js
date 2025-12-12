@@ -529,6 +529,9 @@ async function loadMyPhotosForStep9() {
         const photos = result.data;
         console.log(`✅ Загружено ${photos.length} фото`);
         
+        // Сохраняем порядок фото глобально
+        window.step9PhotoOrder = photos.map(p => p.id);
+        
         container.innerHTML = '';
         container.style.display = 'block';
         
@@ -538,41 +541,87 @@ async function loadMyPhotosForStep9() {
             background: rgba(0, 255, 255, 0.1);
             border: 1px solid rgba(0, 255, 255, 0.3);
             border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 12px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
             color: var(--neon-cyan);
-            font-size: 12px;
+            font-size: 11px;
+            text-align: center;
         `;
-        infoDiv.innerHTML = `ℹ️ Выберите фото для анкеты или добавьте новое`;
+        infoDiv.innerHTML = `ℹ️ Нажмите на фото чтобы выбрать • Зажмите и перетащите для изменения порядка`;
         container.appendChild(infoDiv);
         
-        // Сетка фото
+        // Компактная сетка фото 3x2
         const gridDiv = document.createElement('div');
+        gridDiv.id = 'step9PhotoGrid';
         gridDiv.style.cssText = `
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 8px;
         `;
         
         photos.slice(0, 6).forEach((photo, index) => {
             const photoDiv = document.createElement('div');
             photoDiv.className = 'step9-photo-item';
+            photoDiv.dataset.photoId = photo.id;
+            photoDiv.draggable = true;
             const isSelected = typeof formData !== 'undefined' && formData?.selectedPhotoId === photo.id;
             photoDiv.style.cssText = `
                 position: relative;
-                border: 2px solid ${isSelected ? 'var(--neon-pink)' : 'var(--neon-cyan)'};
+                border: 2px solid ${isSelected ? 'var(--neon-pink)' : 'rgba(0, 255, 255, 0.5)'};
                 border-radius: 8px;
                 overflow: hidden;
                 aspect-ratio: 1;
-                cursor: pointer;
+                cursor: grab;
+                transition: transform 0.2s, border-color 0.2s;
+                background: #1a1a2e;
             `;
-            photoDiv.onclick = () => selectStep9Photo(photo.id, photo.photo_url, photo.file_id);
+            
+            // Drag events
+            photoDiv.addEventListener('dragstart', handlePhotoDragStart);
+            photoDiv.addEventListener('dragend', handlePhotoDragEnd);
+            photoDiv.addEventListener('dragover', handlePhotoDragOver);
+            photoDiv.addEventListener('drop', handlePhotoDrop);
+            photoDiv.addEventListener('dragenter', handlePhotoDragEnter);
+            photoDiv.addEventListener('dragleave', handlePhotoDragLeave);
+            
+            // Touch events для мобильных
+            photoDiv.addEventListener('touchstart', handlePhotoTouchStart, { passive: false });
+            photoDiv.addEventListener('touchmove', handlePhotoTouchMove, { passive: false });
+            photoDiv.addEventListener('touchend', handlePhotoTouchEnd);
+            
+            // Клик для выбора
+            photoDiv.onclick = (e) => {
+                if (!window.isDragging) {
+                    selectStep9Photo(photo.id, photo.photo_url, photo.file_id);
+                }
+            };
             
             const img = document.createElement('img');
             img.src = photo.photo_url;
             img.alt = `Фото ${index + 1}`;
-            img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+            img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; pointer-events: none;';
+            img.draggable = false;
             photoDiv.appendChild(img);
+            
+            // Номер фото
+            const numBadge = document.createElement('div');
+            numBadge.style.cssText = `
+                position: absolute;
+                top: 4px;
+                left: 4px;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: rgba(0, 0, 0, 0.7);
+                color: white;
+                font-size: 11px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+            `;
+            numBadge.textContent = index + 1;
+            photoDiv.appendChild(numBadge);
             
             // Кнопка удаления
             const delBtn = document.createElement('button');
@@ -581,14 +630,17 @@ async function loadMyPhotosForStep9() {
                 position: absolute;
                 top: 4px;
                 right: 4px;
-                width: 24px;
-                height: 24px;
+                width: 22px;
+                height: 22px;
                 border-radius: 50%;
-                background: rgba(255, 0, 0, 0.9);
+                background: rgba(255, 50, 50, 0.9);
                 color: white;
                 border: none;
                 cursor: pointer;
-                font-size: 14px;
+                font-size: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             `;
             delBtn.onclick = async (e) => {
                 e.stopPropagation();
@@ -606,6 +658,182 @@ async function loadMyPhotosForStep9() {
     } catch (error) {
         console.error('Ошибка загрузки фото для шага 9:', error);
     }
+}
+
+// ===== DRAG AND DROP HANDLERS =====
+let draggedElement = null;
+let draggedPhotoId = null;
+
+function handlePhotoDragStart(e) {
+    window.isDragging = true;
+    draggedElement = this;
+    draggedPhotoId = this.dataset.photoId;
+    this.style.opacity = '0.5';
+    this.style.cursor = 'grabbing';
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', draggedPhotoId);
+}
+
+function handlePhotoDragEnd(e) {
+    window.isDragging = false;
+    this.style.opacity = '1';
+    this.style.cursor = 'grab';
+    document.querySelectorAll('.step9-photo-item').forEach(item => {
+        item.style.transform = '';
+        item.classList.remove('drag-over');
+    });
+    draggedElement = null;
+}
+
+function handlePhotoDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handlePhotoDragEnter(e) {
+    e.preventDefault();
+    if (this !== draggedElement) {
+        this.style.transform = 'scale(1.05)';
+        this.classList.add('drag-over');
+    }
+}
+
+function handlePhotoDragLeave(e) {
+    this.style.transform = '';
+    this.classList.remove('drag-over');
+}
+
+function handlePhotoDrop(e) {
+    e.preventDefault();
+    if (this !== draggedElement && draggedElement) {
+        const grid = this.parentNode;
+        const items = Array.from(grid.children);
+        const fromIndex = items.indexOf(draggedElement);
+        const toIndex = items.indexOf(this);
+        
+        if (fromIndex < toIndex) {
+            grid.insertBefore(draggedElement, this.nextSibling);
+        } else {
+            grid.insertBefore(draggedElement, this);
+        }
+        
+        // Обновляем номера
+        updatePhotoNumbers();
+        // Сохраняем новый порядок
+        savePhotoOrder();
+    }
+    this.style.transform = '';
+    this.classList.remove('drag-over');
+}
+
+// ===== TOUCH HANDLERS FOR MOBILE =====
+let touchStartY = 0;
+let touchStartX = 0;
+let touchElement = null;
+let touchTimeout = null;
+
+function handlePhotoTouchStart(e) {
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchElement = this;
+    
+    // Долгое нажатие для начала перетаскивания
+    touchTimeout = setTimeout(() => {
+        window.isDragging = true;
+        this.style.opacity = '0.7';
+        this.style.transform = 'scale(1.1)';
+        this.style.zIndex = '100';
+        navigator.vibrate && navigator.vibrate(50);
+    }, 300);
+}
+
+function handlePhotoTouchMove(e) {
+    if (!window.isDragging) {
+        clearTimeout(touchTimeout);
+        return;
+    }
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const grid = document.getElementById('step9PhotoGrid');
+    if (!grid) return;
+    
+    const items = Array.from(grid.querySelectorAll('.step9-photo-item'));
+    
+    // Находим элемент под пальцем
+    const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+    const photoUnder = elementUnder?.closest('.step9-photo-item');
+    
+    items.forEach(item => {
+        if (item === photoUnder && item !== touchElement) {
+            item.style.transform = 'scale(0.95)';
+        } else if (item !== touchElement) {
+            item.style.transform = '';
+        }
+    });
+}
+
+function handlePhotoTouchEnd(e) {
+    clearTimeout(touchTimeout);
+    
+    if (window.isDragging && touchElement) {
+        const touch = e.changedTouches[0];
+        const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+        const photoUnder = elementUnder?.closest('.step9-photo-item');
+        
+        if (photoUnder && photoUnder !== touchElement) {
+            const grid = photoUnder.parentNode;
+            const items = Array.from(grid.children);
+            const fromIndex = items.indexOf(touchElement);
+            const toIndex = items.indexOf(photoUnder);
+            
+            if (fromIndex < toIndex) {
+                grid.insertBefore(touchElement, photoUnder.nextSibling);
+            } else {
+                grid.insertBefore(touchElement, photoUnder);
+            }
+            
+            updatePhotoNumbers();
+            savePhotoOrder();
+        }
+        
+        touchElement.style.opacity = '1';
+        touchElement.style.transform = '';
+        touchElement.style.zIndex = '';
+    }
+    
+    window.isDragging = false;
+    touchElement = null;
+    
+    document.querySelectorAll('.step9-photo-item').forEach(item => {
+        item.style.transform = '';
+    });
+}
+
+function updatePhotoNumbers() {
+    const grid = document.getElementById('step9PhotoGrid');
+    if (!grid) return;
+    
+    const items = grid.querySelectorAll('.step9-photo-item');
+    items.forEach((item, index) => {
+        const numBadge = item.querySelector('div[style*="border-radius: 50%"]:not(button)');
+        if (numBadge && numBadge.style.background.includes('rgba(0, 0, 0')) {
+            numBadge.textContent = index + 1;
+        }
+    });
+}
+
+function savePhotoOrder() {
+    const grid = document.getElementById('step9PhotoGrid');
+    if (!grid) return;
+    
+    const items = grid.querySelectorAll('.step9-photo-item');
+    const newOrder = Array.from(items).map(item => item.dataset.photoId);
+    window.step9PhotoOrder = newOrder;
+    
+    console.log('📸 Новый порядок фото:', newOrder);
+    // TODO: Сохранить порядок на сервере если нужно
 }
 
 /**
@@ -1046,6 +1274,8 @@ window.movePhotoDown = movePhotoDown;
 window.loadMyPhotosForStep9 = loadMyPhotosForStep9;
 window.selectStep9Photo = selectStep9Photo;
 window.deleteStep9Photo = deleteStep9Photo;
+window.updatePhotoNumbers = updatePhotoNumbers;
+window.savePhotoOrder = savePhotoOrder;
 window.showPhotoSourceMenu = showPhotoSourceMenu;
 window.closePhotoSourceMenu = closePhotoSourceMenu;
 window.openGallery = openGallery;

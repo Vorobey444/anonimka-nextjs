@@ -495,6 +495,15 @@ function updateFormStep(step) {
         loadMyPhotosForStep9();
     }
     
+    // Обновляем кнопки навигации
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (prevBtn) prevBtn.style.display = step > 1 ? 'block' : 'none';
+    if (nextBtn) nextBtn.style.display = step < totalSteps ? 'block' : 'none';
+    if (submitBtn) submitBtn.style.display = step === totalSteps ? 'block' : 'none';
+    
     // Обновляем прогресс
     const progressBar = document.querySelector('.form-progress');
     if (progressBar) {
