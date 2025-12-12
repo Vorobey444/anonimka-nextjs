@@ -8155,6 +8155,27 @@ async function saveUserLocation(country, region, city) {
             }
         }
         
+        // Сохраняем локацию в БД через API
+        const userToken = localStorage.getItem('user_token');
+        if (userToken && userToken !== 'null') {
+            try {
+                const response = await fetch('/api/users/location', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userToken, country, region, city })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    console.log('✅ [LOCATION] Локация сохранена в БД');
+                } else {
+                    console.warn('⚠️ [LOCATION] Не удалось сохранить в БД:', data.error);
+                }
+            } catch (e) {
+                console.warn('⚠️ [LOCATION] Ошибка API сохранения:', e);
+            }
+        }
+        
         console.log('✅ [LOCATION] Локация сохранена');
         return true;
         
