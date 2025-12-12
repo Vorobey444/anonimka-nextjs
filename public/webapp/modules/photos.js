@@ -557,9 +557,10 @@ async function loadMyPhotosForStep9() {
         photos.slice(0, 6).forEach((photo, index) => {
             const photoDiv = document.createElement('div');
             photoDiv.className = 'step9-photo-item';
+            const isSelected = typeof formData !== 'undefined' && formData?.selectedPhotoId === photo.id;
             photoDiv.style.cssText = `
                 position: relative;
-                border: 2px solid ${formData?.selectedPhotoId === photo.id ? 'var(--neon-pink)' : 'var(--neon-cyan)'};
+                border: 2px solid ${isSelected ? 'var(--neon-pink)' : 'var(--neon-cyan)'};
                 border-radius: 8px;
                 overflow: hidden;
                 aspect-ratio: 1;
