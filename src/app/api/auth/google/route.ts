@@ -41,8 +41,13 @@ export async function POST(request: NextRequest) {
       // Генерируем никнейм из email или displayName
       const nickname = displayName || email.split('@')[0];
       
+      // Получаем следующий ID из последовательности
+      const nextIdResult = await sql`SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM users`;
+      const nextId = nextIdResult.rows[0].next_id;
+      
       const result = await sql`
         INSERT INTO users (
+          id,
           user_token, 
           email, 
           display_nickname, 
@@ -51,6 +56,7 @@ export async function POST(request: NextRequest) {
           updated_at
         )
         VALUES (
+          ${nextId},
           ${userToken},
           ${email.toLowerCase()},
           ${nickname},
