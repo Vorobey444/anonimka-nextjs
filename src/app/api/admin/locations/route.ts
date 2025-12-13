@@ -3,6 +3,34 @@ import { sql } from '@vercel/postgres';
 
 export const dynamic = 'force-dynamic';
 
+// Маппинг названий стран на ISO коды
+const COUNTRY_TO_ISO: Record<string, string> = {
+  'kazakhstan': 'KZ',
+  'казахстан': 'KZ',
+  'russia': 'RU',
+  'россия': 'RU',
+  'ukraine': 'UA',
+  'украина': 'UA',
+  'belarus': 'BY',
+  'беларусь': 'BY',
+  'uzbekistan': 'UZ',
+  'узбекистан': 'UZ',
+  'kyrgyzstan': 'KG',
+  'кыргызстан': 'KG',
+  'tajikistan': 'TJ',
+  'таджикистан': 'TJ',
+  'turkmenistan': 'TM',
+  'туркменистан': 'TM',
+  'azerbaijan': 'AZ',
+  'азербайджан': 'AZ',
+  'armenia': 'AM',
+  'армения': 'AM',
+  'georgia': 'GE',
+  'грузия': 'GE',
+  'moldova': 'MD',
+  'молдова': 'MD'
+};
+
 /**
  * API для проверки и миграции данных location
  * GET - получить статистику и примеры
@@ -36,12 +64,22 @@ export async function GET(request: NextRequest) {
       ORDER BY created_at DESC 
       LIMIT 20
     `;
+    
+    // Записи с полными названиями стран (нужна нормализация)
+    const needNormalization = await sql`
+      SELECT id, display_nickname, location->>'country' as country
+      FROM users 
+      WHERE location IS NOT NULL 
+        AND LENGTH(location->>'country') > 2
+      LIMIT 30
+    `;
 
     return NextResponse.json({
       success: true,
       stats: stats.rows[0],
       examples: examples.rows,
-      noLocation: noLocation.rows
+      noLocation: noLocation.rows,
+      needNormalization: needNormalization.rows
     });
 
   } catch (error: any) {
@@ -72,13 +110,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: `Обновлено ${result.rowCount} записей`,
-        updated: result.rows
+        count: result.rowCount
+      });
+    }
+
+    if (action === 'normalize_countries') {
+      // Нормализуем названия стран к ISO кодам
+      let totalUpdated = 0;
+      
+      for (const [countryName, isoCode] of Object.entries(COUNTRY_TO_ISO)) {
+        const result = await sql`
+          UPDATE users 
+          SET location = jsonb_set(location, '{country}', ${JSON.stringify(isoCode)}::jsonb)
+          WHERE location->>'country' = ${countryName}
+          RETURNING id
+        `;
+        totalUpdated += result.rowCount || 0;
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Нормализовано ${totalUpdated} записей`,
+        count: totalUpdated
       });
     }
 
     if (action === 'fix_format') {
       // Исправляем записи с неправильным форматом (если есть)
-      // Например, если location было строкой "Алматы" вместо JSON
       const result = await sql`
         UPDATE users 
         SET location = jsonb_build_object(
@@ -97,12 +155,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: `Исправлено ${result.rowCount} записей`,
+        count: result.rowCount,
         fixed: result.rows
       });
     }
 
     return NextResponse.json(
-      { success: false, error: 'Unknown action. Use: set_default_for_null or fix_format' },
+      { success: false, error: 'Unknown action. Use: set_default_for_null, normalize_countries, or fix_format' },
       { status: 400 }
     );
 
