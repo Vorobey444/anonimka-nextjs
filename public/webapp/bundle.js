@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T19:31:33.485Z
+ * Автоматически сгенерирован: 2025-12-13T19:43:25.412Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -13587,7 +13587,7 @@ console.log('✅ [ADS] Модуль анкет инициализирован');
 } catch(e) { console.error('❌ Ошибка в модуле ads.js:', e); }
 })();
 
-// ========== chats.js (66.5 KB) ==========
+// ========== chats.js (67.3 KB) ==========
 (function() {
 try {
 /**
@@ -14557,15 +14557,34 @@ async function updateChatBadge() {
     try {
         const userId = getCurrentUserId();
         const userToken = localStorage.getItem('user_token');
+        const telegramUser = localStorage.getItem('telegram_user');
         
-        if (!userId && !userToken) return;
+        // Проверяем что пользователь авторизован (любым способом)
+        if (!userId && !userToken && !telegramUser) {
+            return;
+        }
+        
+        // Используем user_token или извлекаем ID из telegram_user
+        let requestUserId = userToken;
+        if (!requestUserId && telegramUser) {
+            try {
+                const tgData = JSON.parse(telegramUser);
+                requestUserId = tgData.id.toString();
+            } catch (e) {
+                console.warn('⚠️ Не удалось распарсить telegram_user');
+                requestUserId = userId;
+            }
+        }
+        if (!requestUserId) {
+            requestUserId = userId;
+        }
         
         const response = await fetch('/api/neon-chats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'count-requests',
-                params: { userId: userToken || userId }
+                params: { userId: requestUserId }
             })
         });
         
