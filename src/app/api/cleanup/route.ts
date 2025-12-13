@@ -69,8 +69,9 @@ export async function GET(request: NextRequest) {
             LIMIT 10
         `;
 
-        console.log(`[CLEANUP] Найдено анкет для удаления: ${checkResult.rowCount}`);
-        if (checkResult.rowCount > 0) {
+        const foundCount = checkResult.rowCount || 0;
+        console.log(`[CLEANUP] Найдено анкет для удаления: ${foundCount}`);
+        if (foundCount > 0) {
             console.log('[CLEANUP] Примеры анкет для удаления:', checkResult.rows);
         }
 
