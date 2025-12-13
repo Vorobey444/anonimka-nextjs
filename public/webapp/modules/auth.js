@@ -34,7 +34,7 @@ function getCurrentUserId() {
     // Второй приоритет: Telegram ID (для Telegram пользователей)
     const tgId = tg?.initDataUnsafe?.user?.id;
     if (tgId) {
-        return tgId;
+        return String(tgId);
     }
     
     // Третий приоритет: сохранённый user_id (fallback для старых браузеров)

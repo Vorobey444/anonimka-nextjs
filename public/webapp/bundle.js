@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-12T13:07:58.258Z
+ * Автоматически сгенерирован: 2025-12-13T06:31:20.667Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -1755,7 +1755,7 @@ function getCurrentUserId() {
     // Второй приоритет: Telegram ID (для Telegram пользователей)
     const tgId = tg?.initDataUnsafe?.user?.id;
     if (tgId) {
-        return tgId;
+        return String(tgId);
     }
     
     // Третий приоритет: сохранённый user_id (fallback для старых браузеров)
@@ -2114,7 +2114,6 @@ async function showRequiredNicknameModal() {
         const input = document.getElementById('requiredNicknameInput');
         const btn = document.getElementById('requiredNicknameBtn');
         const terms = document.getElementById('agreeTermsCheckbox');
-        const statusEl = document.getElementById('requiredNicknameStatus');
         
         if (!modal || !input || !btn) {
             console.error('❌ [AUTH] Элементы модального окна не найдены');
@@ -2122,89 +2121,9 @@ async function showRequiredNicknameModal() {
             return;
         }
         
-        // Очищаем поле ввода и статус
-        input.value = '';
-        if (statusEl) {
-            statusEl.textContent = '';
-            statusEl.className = 'nickname-status';
-        }
-        btn.disabled = true;
-        
         // Показываем модальное окно
         modal.style.display = 'flex';
-        
-        // Блокируем закрытие по клику вне окна
-        modal.onclick = (e) => {
-            if (e.target === modal) {
-                e.stopPropagation();
-                if (typeof tg !== 'undefined' && tg.showAlert) {
-                    tg.showAlert('Пожалуйста, выберите никнейм для продолжения');
-                }
-            }
-        };
-        
         setTimeout(() => input.focus(), 100);
-        
-        // Дебаунс для проверки никнейма
-        let checkTimeout;
-        const checkNicknameDebounced = () => {
-            clearTimeout(checkTimeout);
-            const nickname = input.value.trim();
-            
-            if (!nickname) {
-                if (statusEl) {
-                    statusEl.textContent = '';
-                    statusEl.className = 'nickname-status';
-                }
-                btn.disabled = true;
-                return;
-            }
-            
-            if (nickname.length < 3) {
-                if (statusEl) {
-                    statusEl.textContent = '⚠️ Минимум 3 символа';
-                    statusEl.className = 'nickname-status taken';
-                }
-                btn.disabled = true;
-                return;
-            }
-            
-            if (statusEl) {
-                statusEl.textContent = '⏳ Проверяем...';
-                statusEl.className = 'nickname-status';
-            }
-            
-            checkTimeout = setTimeout(async () => {
-                try {
-                    const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
-                    const data = await response.json();
-                    
-                    if (data.available) {
-                        if (statusEl) {
-                            statusEl.textContent = '✅ Доступен';
-                            statusEl.className = 'nickname-status available';
-                        }
-                        btn.disabled = false;
-                    } else {
-                        if (statusEl) {
-                            statusEl.textContent = '❌ Уже занят';
-                            statusEl.className = 'nickname-status taken';
-                        }
-                        btn.disabled = true;
-                    }
-                } catch (error) {
-                    console.error('Ошибка проверки никнейма:', error);
-                    if (statusEl) {
-                        statusEl.textContent = '';
-                        statusEl.className = 'nickname-status';
-                    }
-                    btn.disabled = true;
-                }
-            }, 500);
-        };
-        
-        // Добавляем обработчик ввода
-        input.oninput = checkNicknameDebounced;
         
         // Обработчик кнопки
         const handleConfirm = async () => {
@@ -2227,13 +2146,6 @@ async function showRequiredNicknameModal() {
                 return;
             }
             
-            // Проверяем доступность еще раз перед сохранением
-            const statusElClass = statusEl?.className || '';
-            if (!statusElClass.includes('available')) {
-                tg.showAlert('Этот никнейм недоступен. Пожалуйста, выберите другой.');
-                return;
-            }
-            
             // Сохраняем никнейм
             await saveRequiredNickname(nickname);
             modal.style.display = 'none';
@@ -2245,12 +2157,9 @@ async function showRequiredNicknameModal() {
         btn.parentNode.replaceChild(newBtn, btn);
         newBtn.onclick = handleConfirm;
         
-        // Изначально кнопка заблокирована
-        newBtn.disabled = true;
-        
         // Также разрешаем подтверждение через Enter
         input.onkeypress = (e) => {
-            if (e.key === 'Enter' && !newBtn.disabled) {
+            if (e.key === 'Enter' && e.ctrlKey) {
                 handleConfirm();
             }
         };
@@ -2563,87 +2472,6 @@ window.getCurrentUserInfo = getCurrentUserInfo;
 window.handleLogout = handleLogout;
 window.updateLogoutButtonVisibility = updateLogoutButtonVisibility;
 window.saveNicknamePage = saveNicknamePage;
-
-// Инициализация обработчиков модального окна никнейма при загрузке
-document.addEventListener('DOMContentLoaded', () => {
-    const input = document.getElementById('requiredNicknameInput');
-    const btn = document.getElementById('requiredNicknameBtn');
-    const statusEl = document.getElementById('requiredNicknameStatus');
-    
-    if (input && btn && statusEl) {
-        let checkTimeout;
-        
-        input.addEventListener('input', () => {
-            clearTimeout(checkTimeout);
-            const nickname = input.value.trim();
-            
-            if (!nickname) {
-                statusEl.textContent = '';
-                statusEl.className = 'nickname-status';
-                btn.disabled = true;
-                return;
-            }
-            
-            if (nickname.length < 3) {
-                statusEl.textContent = '⚠️ Минимум 3 символа';
-                statusEl.className = 'nickname-status taken';
-                btn.disabled = true;
-                return;
-            }
-            
-            statusEl.textContent = '⏳ Проверяем...';
-            statusEl.className = 'nickname-status';
-            
-            checkTimeout = setTimeout(async () => {
-                try {
-                    const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
-                    const data = await response.json();
-                    
-                    if (data.available) {
-                        statusEl.textContent = '✅ Доступен';
-                        statusEl.className = 'nickname-status available';
-                        btn.disabled = false;
-                    } else {
-                        statusEl.textContent = '❌ Уже занят';
-                        statusEl.className = 'nickname-status taken';
-                        btn.disabled = true;
-                    }
-                } catch (error) {
-                    console.error('Ошибка проверки никнейма:', error);
-                    statusEl.textContent = '';
-                    statusEl.className = 'nickname-status';
-                    btn.disabled = true;
-                }
-            }, 500);
-        });
-        
-        btn.addEventListener('click', async () => {
-            if (btn.disabled) return;
-            
-            const nickname = input.value.trim();
-            const statusClass = statusEl.className || '';
-            
-            if (!nickname || nickname.length < 3 || !statusClass.includes('available')) {
-                if (typeof tg !== 'undefined' && tg.showAlert) {
-                    tg.showAlert('Пожалуйста, выберите доступный никнейм');
-                }
-                return;
-            }
-            
-            await saveRequiredNickname(nickname);
-            const modal = document.getElementById('requiredNicknameModal');
-            if (modal) modal.style.display = 'none';
-        });
-        
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !btn.disabled) {
-                btn.click();
-            }
-        });
-        
-        console.log('✅ [AUTH] Обработчики модального окна никнейма инициализированы');
-    }
-});
 
 console.log('✅ [AUTH] Модуль авторизации инициализирован');
 
@@ -5698,11 +5526,6 @@ async function loadPremiumStatus() {
         updatePremiumUI();
         updateAdLimitBadge();
         
-        // Обновляем скрытие кнопок реферала после загрузки статуса
-        if (typeof hideEmailUserFeatures === 'function') {
-            hideEmailUserFeatures();
-        }
-        
     } catch (error) {
         console.error('❌ [PREMIUM] Ошибка loadPremiumStatus:', error);
     }
@@ -5790,7 +5613,6 @@ function updateAdLimitBadge() {
  */
 function updatePremiumModalButtons() {
     const buyBtn = document.getElementById('buyPremiumBtn');
-    const dollarBtn = document.getElementById('dollarPaymentBtn');
     const referralBtn = document.getElementById('referralBtn');
     const trialBtn = document.getElementById('trialBtn');
     const freeBtn = document.querySelector('.pricing-card:not(.featured) .pricing-btn');
@@ -5808,12 +5630,10 @@ function updatePremiumModalButtons() {
         if (emailUser) {
             // Email пользователи не видят Stars и Referral
             if (buyBtn) buyBtn.style.display = 'none';
-            if (dollarBtn) dollarBtn.style.display = 'none';
             if (referralBtn) referralBtn.style.display = 'none';
         } else {
             // Telegram пользователи видят все
             if (buyBtn) buyBtn.style.display = 'block';
-            if (dollarBtn) dollarBtn.style.display = 'block';
             if (referralBtn) referralBtn.style.display = 'block';
         }
         
@@ -5828,7 +5648,6 @@ function updatePremiumModalButtons() {
             freeBtn.disabled = true;
         }
         if (buyBtn) buyBtn.style.display = 'none';
-        if (dollarBtn) dollarBtn.style.display = 'none';
         if (referralBtn) referralBtn.style.display = 'none';
         if (trialBtn) trialBtn.style.display = 'none';
     }
@@ -6791,20 +6610,18 @@ function shareReferralLink() {
         return;
     }
     
-    // Тексты для реферальной ссылки
-    const referralTexts = [
-        "Хотите кому-то понравиться, но без неловких взглядов?\nЗдесь никому не нужно быть красивым.\nТолько честным. Анонимно.\n\n",
-        "Один клик — и Вы в мире, где никто не знает, кто Вы.\nЗайдите. Напишите. Проверьте, кто ответит.\n\n",
-        "Никаких подписок, никаких лиц.\nТолько Вы и чужое сообщение, которое задело.\n\n",
-        "Зайдите просто из любопытства.\nВсе с этого начинают.\nА потом остаются.\n\n"
-    ];
-    
-    const randomText = referralTexts[Math.floor(Math.random() * referralTexts.length)];
-    const messageText = randomText + link;
-    
-    // Открываем Telegram с текстом для выбора чата
-    const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(randomText)}`;
-    window.open(telegramShareUrl, '_blank');
+    // Пытаемся использовать Web Share API
+    if (navigator.share) {
+        navigator.share({
+            title: 'Anonimka - Анонимные знакомства',
+            text: 'Присоединяйтесь к анонимной доске знакомств!',
+            url: link
+        }).catch(err => console.log('Share отменён:', err));
+    } else {
+        // Fallback: копируем и показываем сообщение
+        navigator.clipboard.writeText(link);
+        tg.showAlert('✅ Ссылка скопирована!\n\nПоделитесь ей с друзьями в любом мессенджере.');
+    }
 }
 
 // Экспорт функций для onclick
@@ -8324,27 +8141,6 @@ async function saveUserLocation(country, region, city) {
                 console.log('✅ [LOCATION] Локация сохранена в CloudStorage');
             } catch (e) {
                 console.warn('⚠️ [LOCATION] CloudStorage недоступен, только localStorage:', e);
-            }
-        }
-        
-        // Сохраняем локацию в БД через API
-        const userToken = localStorage.getItem('user_token');
-        if (userToken && userToken !== 'null') {
-            try {
-                const response = await fetch('/api/users/location', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userToken, country, region, city })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    console.log('✅ [LOCATION] Локация сохранена в БД');
-                } else {
-                    console.warn('⚠️ [LOCATION] Не удалось сохранить в БД:', data.error);
-                }
-            } catch (e) {
-                console.warn('⚠️ [LOCATION] Ошибка API сохранения:', e);
             }
         }
         
@@ -10646,7 +10442,7 @@ console.log('✅ [LOCATION] Модуль локации инициализиро
 } catch(e) { console.error('❌ Ошибка в модуле location.js:', e); }
 })();
 
-// ========== ads.js (100.0 KB) ==========
+// ========== ads.js (104.3 KB) ==========
 (function() {
 try {
 /**
@@ -15121,75 +14917,7 @@ function showOnboardingScreen() {
     screen.style.display = 'flex';
     console.log('📱 [ONBOARDING] Показан экран онбординга, шаг:', onboardingStep);
     
-    // Инициализируем проверку никнейма
-    initializeOnboardingNicknameCheck();
-    
     updateOnboardingStep();
-}
-
-/**
- * Инициализация проверки никнейма в онбординге
- */
-function initializeOnboardingNicknameCheck() {
-    const nicknameInput = document.getElementById('onboardingNicknameInput');
-    const statusEl = document.getElementById('nicknameStatus');
-    const continueBtn = document.getElementById('onboardingContinue');
-    
-    if (!nicknameInput || !statusEl) {
-        console.warn('⚠️ [ONBOARDING] Элементы проверки никнейма не найдены');
-        return;
-    }
-    
-    // Удаляем старые обработчики если были
-    nicknameInput.oninput = null;
-    
-    let checkTimeout;
-    
-    nicknameInput.oninput = () => {
-        clearTimeout(checkTimeout);
-        const nickname = nicknameInput.value.trim();
-        
-        if (!nickname) {
-            statusEl.textContent = '';
-            statusEl.className = 'nickname-status';
-            if (continueBtn) continueBtn.disabled = true;
-            return;
-        }
-        
-        if (nickname.length < 3) {
-            statusEl.textContent = '⚠️ Минимум 3 символа';
-            statusEl.className = 'nickname-status taken';
-            if (continueBtn) continueBtn.disabled = true;
-            return;
-        }
-        
-        statusEl.textContent = '⏳ Проверяем...';
-        statusEl.className = 'nickname-status';
-        
-        checkTimeout = setTimeout(async () => {
-            try {
-                const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
-                const data = await response.json();
-                
-                if (data.available) {
-                    statusEl.textContent = '✅ Доступен';
-                    statusEl.className = 'nickname-status available';
-                    if (continueBtn) continueBtn.disabled = false;
-                } else {
-                    statusEl.textContent = '❌ Уже занят';
-                    statusEl.className = 'nickname-status taken';
-                    if (continueBtn) continueBtn.disabled = true;
-                }
-            } catch (error) {
-                console.error('Ошибка проверки никнейма:', error);
-                statusEl.textContent = '';
-                statusEl.className = 'nickname-status';
-                if (continueBtn) continueBtn.disabled = true;
-            }
-        }, 500);
-    };
-    
-    console.log('✅ [ONBOARDING] Проверка никнейма инициализирована');
 }
 
 /**
@@ -15726,15 +15454,7 @@ function showNicknameEditorScreen() {
     
     const currentNicknameDisplay = document.getElementById('currentNicknameDisplay');
     const nicknameInputPage = document.getElementById('nicknameInputPage');
-    const statusEl = document.getElementById('nicknamePageStatus');
-    const saveBtn = document.getElementById('saveNicknamePageBtn');
-    
-    let savedNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname');
-    
-    // Проверяем на null/undefined и заменяем на "Аноним"
-    if (!savedNickname || savedNickname === 'null' || savedNickname === 'undefined' || savedNickname.trim() === '') {
-        savedNickname = 'Аноним';
-    }
+    const savedNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname') || 'Аноним';
     
     console.log('📝 [ONBOARDING] Показываем редактор никнейма, текущий:', savedNickname);
     
@@ -15745,73 +15465,6 @@ function showNicknameEditorScreen() {
     if (nicknameInputPage) {
         nicknameInputPage.value = savedNickname;
         setTimeout(() => nicknameInputPage.focus(), 300);
-        
-        // Добавляем проверку доступности в реальном времени
-        let checkTimeout;
-        nicknameInputPage.oninput = () => {
-            clearTimeout(checkTimeout);
-            const nickname = nicknameInputPage.value.trim();
-            
-            if (!nickname) {
-                if (statusEl) {
-                    statusEl.textContent = '';
-                    statusEl.className = 'nickname-status';
-                }
-                if (saveBtn) saveBtn.disabled = false; // Можно сохранить пустое (вернётся к старому)
-                return;
-            }
-            
-            if (nickname === savedNickname) {
-                if (statusEl) {
-                    statusEl.textContent = '✅ Текущий никнейм';
-                    statusEl.className = 'nickname-status available';
-                }
-                if (saveBtn) saveBtn.disabled = false;
-                return;
-            }
-            
-            if (nickname.length < 3) {
-                if (statusEl) {
-                    statusEl.textContent = '⚠️ Минимум 3 символа';
-                    statusEl.className = 'nickname-status taken';
-                }
-                if (saveBtn) saveBtn.disabled = true;
-                return;
-            }
-            
-            if (statusEl) {
-                statusEl.textContent = '⏳ Проверяем...';
-                statusEl.className = 'nickname-status';
-            }
-            
-            checkTimeout = setTimeout(async () => {
-                try {
-                    const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
-                    const data = await response.json();
-                    
-                    if (data.available) {
-                        if (statusEl) {
-                            statusEl.textContent = '✅ Доступен';
-                            statusEl.className = 'nickname-status available';
-                        }
-                        if (saveBtn) saveBtn.disabled = false;
-                    } else {
-                        if (statusEl) {
-                            statusEl.textContent = '❌ Уже занят';
-                            statusEl.className = 'nickname-status taken';
-                        }
-                        if (saveBtn) saveBtn.disabled = true;
-                    }
-                } catch (error) {
-                    console.error('Ошибка проверки никнейма:', error);
-                    if (statusEl) {
-                        statusEl.textContent = '';
-                        statusEl.className = 'nickname-status';
-                    }
-                    if (saveBtn) saveBtn.disabled = false;
-                }
-            }, 500);
-        };
     }
     
     // Показываем подсказку для пользователей с автоматическим никнеймом
@@ -16100,19 +15753,6 @@ async function checkOnboardingStatus() {
         const localNickname = localStorage.getItem('userNickname');
         if (localNickname && localNickname.trim() !== '') {
             console.log('✅ Никнейм найден в localStorage:', localNickname);
-            
-            // Проверяем локацию
-            const savedLocation = localStorage.getItem('userLocation');
-            if (!savedLocation || savedLocation === 'null') {
-                console.log('⚠️ Локация не установлена - запускаем автоопределение');
-                if (typeof showAutoLocationDetection === 'function') {
-                    showAutoLocationDetection();
-                } else if (typeof autoDetectLocation === 'function') {
-                    autoDetectLocation();
-                }
-                return;
-            }
-            
             if (typeof showMainMenu === 'function') showMainMenu();
             return;
         }
@@ -16152,49 +15792,14 @@ async function checkOnboardingStatus() {
             localStorage.setItem('userNickname', nickname);
             localStorage.setItem('user_nickname', nickname);
             console.log('✅ Никнейм из БД:', nickname);
-            
-            // Проверяем локацию после никнейма
-            const savedLocation = localStorage.getItem('userLocation');
-            const hasLocationInDB = data.country && data.city;
-            
-            if (!savedLocation && !hasLocationInDB) {
-                console.log('⚠️ Локация не установлена - запускаем автоопределение');
-                if (typeof showAutoLocationDetection === 'function') {
-                    showAutoLocationDetection();
-                } else if (typeof autoDetectLocation === 'function') {
-                    autoDetectLocation();
-                }
-                return;
-            }
-            
-            // Если локация есть в БД, сохраняем в localStorage
-            if (hasLocationInDB && !savedLocation) {
-                const locationData = {
-                    country: data.country,
-                    region: data.region || '',
-                    city: data.city
-                };
-                localStorage.setItem('userLocation', JSON.stringify(locationData));
-                console.log('✅ Локация загружена из БД:', locationData);
-            }
-            
             if (typeof showMainMenu === 'function') showMainMenu();
         } else {
             console.log('⚠️ У пользователя нет никнейма');
-            if (typeof showRequiredNicknameModal === 'function') {
-                showRequiredNicknameModal().then(() => {
-                    // После выбора никнейма проверяем локацию и показываем меню
-                    if (typeof checkOnboardingStatus === 'function') {
-                        checkOnboardingStatus();
-                    }
-                });
-            }
+            if (typeof showOnboardingScreen === 'function') showOnboardingScreen();
         }
     } catch (error) {
         console.error('❌ Ошибка checkOnboardingStatus:', error);
-        if (typeof showRequiredNicknameModal === 'function') {
-            showRequiredNicknameModal();
-        }
+        if (typeof showOnboardingScreen === 'function') showOnboardingScreen();
     }
 }
 
@@ -16552,19 +16157,6 @@ function goToHome() {
  */
 function showMainMenu() {
     console.log('🏠 [MENU] Переход в главное меню');
-    
-    // Проверяем наличие никнейма перед показом главного меню
-    const userNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname');
-    if (!userNickname || userNickname === 'null' || userNickname === 'undefined' || userNickname.trim() === '') {
-        console.warn('⚠️ [MENU] Никнейм не установлен, показываем модальное окно');
-        if (typeof showRequiredNicknameModal === 'function') {
-            showRequiredNicknameModal().then(() => {
-                // После установки никнейма показываем главное меню
-                showMainMenu();
-            });
-        }
-        return;
-    }
     
     // Убедимся что модальные окна авторизации скрыты
     const telegramModal = document.getElementById('telegramAuthModal');
@@ -17705,181 +17297,3 @@ console.log('✅ [MENU] Модуль навигации загружен');
 })();
 
 console.log('✅ [BUNDLE] Все 18 модулей загружены!');
-
-// ========== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ==========
-(async function initializeApplication() {
-    try {
-        console.log('⚙️ [APP] Инициализация приложения...');
-        
-        // Проверяем параметры URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const authParam = urlParams.get('auth');
-        console.log('🔗 [APP] URL параметр auth:', authParam);
-        
-        // 1. Инициализируем Telegram WebApp
-        if (typeof initializeTelegramWebApp === 'function') {
-            initializeTelegramWebApp();
-            console.log('✅ [APP] Telegram WebApp инициализирован');
-        }
-        
-        // 2. Проверяем авторизацию
-        let isAuthorized = false;
-        if (typeof checkTelegramAuth === 'function') {
-            isAuthorized = await checkTelegramAuth();
-        }
-        
-        // Если пришли с параметром auth=telegram, показываем модалку авторизации
-        if (authParam === 'telegram') {
-            console.log('📱 [APP] Параметр auth=telegram - показываем модальное окно');
-            if (typeof showTelegramAuthModal === 'function') {
-                showTelegramAuthModal();
-            }
-            window.history.replaceState({}, '', window.location.pathname);
-            return;
-        }
-        
-        // Если пришли с параметром auth=email
-        if (authParam === 'email') {
-            console.log('📧 [APP] Параметр auth=email - показываем модальное окно');
-            if (typeof showEmailAuthModal === 'function') {
-                showEmailAuthModal();
-            }
-            window.history.replaceState({}, '', window.location.pathname);
-            return;
-        }
-        
-        if (!isAuthorized) {
-            console.warn('⚠️ [APP] Пользователь не авторизирован');
-            
-            // Проверяем, это Android устройство?
-            const isAndroid = navigator.userAgent.includes('Android');
-            
-            if (isAndroid) {
-                console.log('📱 [APP] Android устройство - показываем Email авторизацию');
-                if (typeof showEmailAuthModal === 'function') {
-                    showEmailAuthModal();
-                }
-            } else {
-                console.log('🌐 [APP] Браузер - показываем Telegram авторизацию');
-                if (typeof showTelegramAuthModal === 'function') {
-                    showTelegramAuthModal();
-                }
-            }
-        }
-        
-        // 3. Инициализируем пользователя в БД (если авторизован)
-        if (isAuthorized && typeof initializeUserInDatabase === 'function') {
-            await initializeUserInDatabase();
-            console.log('✅ [APP] Пользователь инициализирован в БД');
-        }
-        
-        // 4. Инициализируем никнейм
-        if (typeof initializeNickname === 'function') {
-            await initializeNickname();
-            console.log('✅ [APP] Никнейм инициализирован');
-        }
-        
-        // 4.1 Сначала загружаем Premium статус (ВАЖНО: до hideEmailUserFeatures!)
-        try {
-            if (typeof loadPremiumStatus === 'function') {
-                await loadPremiumStatus();
-                console.log('✅ [APP] Premium статус загружен (до скрытия кнопок)');
-            }
-        } catch (e) {
-            console.error('❌ [APP] Ошибка loadPremiumStatus:', e);
-        }
-        
-        // 4.2 Скрываем функции для email пользователей и PRO
-        if (typeof hideEmailUserFeatures === 'function') {
-            hideEmailUserFeatures();
-            console.log('✅ [APP] Email/PRO user features скрыты');
-        }
-        
-        // 5. Проверяем местоположение
-        if (typeof checkUserLocation === 'function') {
-            await checkUserLocation();
-            console.log('✅ [APP] Местоположение проверено');
-        }
-        
-        // 6. Обрабатываем реферальную ссылку
-        if (typeof handleReferralLink === 'function') {
-            await handleReferralLink();
-            console.log('✅ [APP] Реферальная ссылка обработана');
-        }
-        
-        // 6.1 Завершаем отложенный реферал если есть
-        if (typeof finalizePendingReferral === 'function') {
-            await finalizePendingReferral();
-            console.log('✅ [APP] Отложенный реферал завершён');
-        }
-        
-        // 7. Проверяем, нужен ли онбординг
-        if (typeof checkOnboarding === 'function') {
-            const needsOnboarding = checkOnboarding();
-            
-            if (!needsOnboarding) {
-                if (typeof initializeMenuModule === 'function') {
-                    initializeMenuModule();
-                    console.log('✅ [APP] Меню инициализировано');
-                }
-            }
-        } else {
-            if (typeof initializeMenuModule === 'function') {
-                initializeMenuModule();
-                console.log('✅ [APP] Меню инициализировано (fallback)');
-            }
-        }
-        
-        // 8. Дополнительные инициализации
-        try {
-            if (typeof updateChatBadge === 'function') {
-                updateChatBadge();
-                console.log('✅ [APP] Счётчик чатов обновлён');
-            }
-        } catch (e) {
-            console.error('❌ [APP] Ошибка updateChatBadge:', e);
-        }
-        
-        try {
-            if (typeof markMessagesAsDelivered === 'function') {
-                markMessagesAsDelivered();
-                console.log('✅ [APP] Сообщения помечены как доставленные');
-            }
-        } catch (e) {
-            console.error('❌ [APP] Ошибка markMessagesAsDelivered:', e);
-        }
-        
-        try {
-            if (typeof updateLogoutButtonVisibility === 'function') {
-                updateLogoutButtonVisibility();
-                console.log('✅ [APP] Видимость кнопки выхода обновлена');
-            }
-        } catch (e) {
-            console.error('❌ [APP] Ошибка updateLogoutButtonVisibility:', e);
-        }
-        
-        // Premium статус уже загружен в шаге 4.1
-        
-        try {
-            if (typeof loadSiteStats === 'function') {
-                loadSiteStats();
-                console.log('✅ [APP] Статистика сайта загружена');
-            }
-        } catch (e) {
-            console.error('❌ [APP] Ошибка loadSiteStats:', e);
-        }
-        
-        console.log('✅ [APP] ===== ПРИЛОЖЕНИЕ ГОТОВО =====');
-        
-    } catch (error) {
-        console.error('❌ [APP] Ошибка инициализации приложения:', error);
-        
-        if (typeof logErrorToServer === 'function') {
-            logErrorToServer('App Initialization Error', error);
-        }
-        
-        if (typeof tg !== 'undefined' && tg?.showAlert) {
-            tg.showAlert('Ошибка при инициализации приложения');
-        }
-    }
-})();
