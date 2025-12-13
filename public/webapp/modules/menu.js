@@ -1570,10 +1570,18 @@ if (document.readyState === 'loading') {
         if (!checkAuthParam() && typeof checkOnboardingStatus === 'function') {
             checkOnboardingStatus();
         }
+        // Всегда обновляем видимость кнопки выхода после старта UI
+        if (typeof updateLogoutButtonVisibility === 'function') {
+            try { updateLogoutButtonVisibility(); } catch (e) { console.error('❌ [MENU] Ошибка updateLogoutButtonVisibility:', e); }
+        }
     });
 } else {
     console.log('🚀 [MENU] DOM уже загружен - запуск приложения');
     if (!checkAuthParam() && typeof checkOnboardingStatus === 'function') {
         setTimeout(() => checkOnboardingStatus(), 100);
+    }
+    // И сразу обновляем кнопку выхода
+    if (typeof updateLogoutButtonVisibility === 'function') {
+        try { updateLogoutButtonVisibility(); } catch (e) { console.error('❌ [MENU] Ошибка updateLogoutButtonVisibility:', e); }
     }
 }

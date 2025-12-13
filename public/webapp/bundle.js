@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T18:50:27.725Z
+ * Автоматически сгенерирован: 2025-12-13T18:52:01.813Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -16659,7 +16659,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (55.3 KB) ==========
+// ========== menu.js (55.9 KB) ==========
 (function() {
 try {
 /**
@@ -18234,11 +18234,19 @@ if (document.readyState === 'loading') {
         if (!checkAuthParam() && typeof checkOnboardingStatus === 'function') {
             checkOnboardingStatus();
         }
+        // Всегда обновляем видимость кнопки выхода после старта UI
+        if (typeof updateLogoutButtonVisibility === 'function') {
+            try { updateLogoutButtonVisibility(); } catch (e) { console.error('❌ [MENU] Ошибка updateLogoutButtonVisibility:', e); }
+        }
     });
 } else {
     console.log('🚀 [MENU] DOM уже загружен - запуск приложения');
     if (!checkAuthParam() && typeof checkOnboardingStatus === 'function') {
         setTimeout(() => checkOnboardingStatus(), 100);
+    }
+    // И сразу обновляем кнопку выхода
+    if (typeof updateLogoutButtonVisibility === 'function') {
+        try { updateLogoutButtonVisibility(); } catch (e) { console.error('❌ [MENU] Ошибка updateLogoutButtonVisibility:', e); }
     }
 }
 
