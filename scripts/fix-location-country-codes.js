@@ -25,16 +25,16 @@ async function fixLocationCountryCodes() {
     try {
         // Подсчитываем записи ДО исправления
         const beforeStats = await sql`
-            SELECT location_country, COUNT(*) as count 
+            SELECT location->>'country' as country, COUNT(*) as count 
             FROM users 
-            WHERE location_country IS NOT NULL 
-            GROUP BY location_country 
+            WHERE location IS NOT NULL 
+            GROUP BY location->>'country'
             ORDER BY count DESC
         `;
         
         console.log('📊 Статистика ДО исправления:');
         beforeStats.forEach(row => {
-            console.log(`   ${row.location_country}: ${row.count} записей`);
+            console.log(`   ${row.country}: ${row.count} записей`);
         });
         console.log('');
 
@@ -57,8 +57,8 @@ async function fixLocationCountryCodes() {
             for (const oldCode of update.old) {
                 const result = await sql`
                     UPDATE users 
-                    SET location_country = ${update.new} 
-                    WHERE location_country = ${oldCode}
+                    SET location = jsonb_set(location, '{country}', ${JSON.stringify(update.new)}, false)
+                    WHERE location->>'country' = ${oldCode}
                 `;
                 
                 const updatedCount = result.count || 0;
@@ -73,32 +73,32 @@ async function fixLocationCountryCodes() {
 
         // Подсчитываем записи ПОСЛЕ исправления
         const afterStats = await sql`
-            SELECT location_country, COUNT(*) as count 
+            SELECT location->>'country' as country, COUNT(*) as count 
             FROM users 
-            WHERE location_country IS NOT NULL 
-            GROUP BY location_country 
+            WHERE location IS NOT NULL 
+            GROUP BY location->>'country'
             ORDER BY count DESC
         `;
         
         console.log('📊 Статистика ПОСЛЕ исправления:');
         afterStats.forEach(row => {
-            console.log(`   ${row.location_country}: ${row.count} записей`);
+            console.log(`   ${row.country}: ${row.count} записей`);
         });
         console.log('');
 
         // Проверяем оставшиеся нестандартные коды
         const invalidCodes = await sql`
-            SELECT DISTINCT location_country 
+            SELECT DISTINCT location->>'country' as country
             FROM users 
-            WHERE location_country IS NOT NULL 
-              AND location_country NOT IN ('KZ', 'RU', 'KG', 'UZ', 'TJ', 'TM', 'BY')
-            ORDER BY location_country
+            WHERE location IS NOT NULL 
+              AND location->>'country' NOT IN ('KZ', 'RU', 'KG', 'UZ', 'TJ', 'TM', 'BY')
+            ORDER BY country
         `;
 
         if (invalidCodes.length > 0) {
             console.log('⚠️ Обнаружены нестандартные коды стран:');
             invalidCodes.forEach(row => {
-                console.log(`   - ${row.location_country}`);
+                console.log(`   - ${row.country}`);
             });
         } else {
             console.log('✅ Все коды стран приведены к стандарту ISO!');
