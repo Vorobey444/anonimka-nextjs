@@ -5,7 +5,7 @@ import { sendPushNotification } from '@/utils/fcm';
 export const dynamic = 'force-dynamic';
 
 /**
- * API для отправки уведомлений в Telegram о новых запросах на чат
+ * API для отправки уведомлений в Telegram и Push о новых запросах на чат
  */
 export async function POST(request: NextRequest) {
   try {
@@ -24,27 +24,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Определяем получателя (поддерживаем оба формата: tg_id и token)
+    // Определяем получателя и его FCM токен
     let recipientTgId = receiverTgId;
+    let recipientFcmToken: string | null = null;
 
-    // Если передан токен вместо tg_id, получаем tg_id из базы
-    if (!recipientTgId && receiverToken) {
-      console.log('[SEND-NOTIFICATION] Получаем tg_id по токену:', receiverToken);
+    // Получаем данные пользователя из базы
+    if (receiverToken) {
+      console.log('[SEND-NOTIFICATION] Получаем данные по токену:', receiverToken);
       
       try {
-        // Сначала проверяем таблицу users (для Email-авторизации)
+        // Получаем id и fcm_token из users
         const userResult = await sql`
-          SELECT id 
+          SELECT id, fcm_token 
           FROM users 
-          WHERE user_token = ${receiverToken} AND id IS NOT NULL
+          WHERE user_token = ${receiverToken}
           LIMIT 1
         `;
 
-        if (userResult.rows.length > 0 && userResult.rows[0].id) {
-          recipientTgId = userResult.rows[0].id;
-          console.log('[SEND-NOTIFICATION] Найден Telegram ID в users:', recipientTgId);
-        } else {
-          // Если в users не нашли, проверяем таблицу ads (для старых пользователей)
+        if (userResult.rows.length > 0) {
+          if (userResult.rows[0].id) {
+            recipientTgId = userResult.rows[0].id;
+            console.log('[SEND-NOTIFICATION] Найден Telegram ID:', recipientTgId);
+          }
+          if (userResult.rows[0].fcm_token) {
+            recipientFcmToken = userResult.rows[0].fcm_token;
+            console.log('[SEND-NOTIFICATION] Найден FCM токен для Push');
+          }
+        }
+        
+        // Если нет tg_id в users, проверяем ads
+        if (!recipientTgId) {
           const adResult = await sql`
             SELECT tg_id 
             FROM ads 
@@ -55,70 +64,80 @@ export async function POST(request: NextRequest) {
           if (adResult.rows.length > 0 && adResult.rows[0].tg_id) {
             recipientTgId = adResult.rows[0].tg_id;
             console.log('[SEND-NOTIFICATION] Найден tg_id в ads:', recipientTgId);
-          } else {
-            // Нет tg_id - проверяем FCM токен для Push-уведомления (Email-пользователи)
-            console.log('[SEND-NOTIFICATION] tg_id не найден, проверяем FCM токен для Push');
-            
-            const fcmResult = await sql`
-              SELECT fcm_token FROM users WHERE user_token = ${receiverToken} LIMIT 1
-            `;
-            
-            if (fcmResult.rows.length > 0 && fcmResult.rows[0].fcm_token) {
-              const fcmToken = fcmResult.rows[0].fcm_token;
-              console.log('[SEND-NOTIFICATION] Найден FCM токен, отправляем Push');
-              
-              // Отправляем Push-уведомление
-              const pushTitle = '💬 Новый запрос на чат';
-              const pushBody = messageText.length > 100 
-                ? messageText.substring(0, 100) + '...' 
-                : messageText;
-              
-              const pushSent = await sendPushNotification(fcmToken, {
-                title: pushTitle,
-                body: pushBody,
-                chatId: adId || 'unknown',
-                senderNickname: 'Аноним'
-              });
-              
-              if (pushSent) {
-                console.log('[SEND-NOTIFICATION] ✅ Push-уведомление отправлено');
-                return NextResponse.json({
-                  success: true,
-                  message: 'Push notification sent successfully',
-                  notificationType: 'push'
-                });
-              } else {
-                console.warn('[SEND-NOTIFICATION] ⚠️ Не удалось отправить Push-уведомление');
-              }
-            }
-            
-            console.warn('[SEND-NOTIFICATION] Нет ни tg_id, ни fcm_token - уведомление не отправлено');
-            return NextResponse.json(
-              { 
-                success: false, 
-                error: 'No notification method available',
-                details: 'Пользователь не привязал Telegram и не настроил Push-уведомления.'
-              },
-              { status: 200 } // 200 чтобы не блокировать создание чата
-            );
           }
         }
       } catch (dbError) {
         console.error('[SEND-NOTIFICATION] Ошибка запроса к БД:', dbError);
       }
+    } else if (receiverTgId) {
+      // Если передан tg_id напрямую, ищем FCM токен по нему
+      try {
+        const userResult = await sql`
+          SELECT fcm_token 
+          FROM users 
+          WHERE id = ${receiverTgId}
+          LIMIT 1
+        `;
+        
+        if (userResult.rows.length > 0 && userResult.rows[0].fcm_token) {
+          recipientFcmToken = userResult.rows[0].fcm_token;
+          console.log('[SEND-NOTIFICATION] Найден FCM токен для tg_id:', receiverTgId);
+        }
+      } catch (dbError) {
+        console.error('[SEND-NOTIFICATION] Ошибка получения FCM токена:', dbError);
+      }
     }
 
-    // Если не удалось получить tg_id получателя
-    if (!recipientTgId) {
-      console.warn('[SEND-NOTIFICATION] Не удалось определить Telegram ID получателя');
+    // Если нет ни tg_id, ни fcm_token - уведомление не отправить
+    if (!recipientTgId && !recipientFcmToken) {
+      console.warn('[SEND-NOTIFICATION] Нет ни tg_id, ни fcm_token - уведомление не отправлено');
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Recipient Telegram ID not found',
-          details: 'Автор анкеты не привязал Telegram аккаунт. Уведомление не отправлено.'
+          error: 'No notification method available',
+          details: 'Пользователь не привязал Telegram и не настроил Push-уведомления.'
         },
-        { status: 200 } // 200 чтобы не блокировать создание чата
+        { status: 200 }
       );
+    }
+
+    // Результаты отправки
+    let telegramSent = false;
+    let pushSent = false;
+
+    // 1. Отправляем FCM Push уведомление (для Android)
+    if (recipientFcmToken) {
+      try {
+        const pushTitle = '💬 Новый запрос на чат';
+        const pushBody = messageText && messageText.length > 100 
+          ? messageText.substring(0, 100) + '...' 
+          : (messageText || 'Новое сообщение');
+        
+        pushSent = await sendPushNotification(recipientFcmToken, {
+          title: pushTitle,
+          body: pushBody,
+          chatId: adId ? String(adId) : 'unknown',
+          senderNickname: 'Аноним'
+        });
+        
+        if (pushSent) {
+          console.log('[SEND-NOTIFICATION] ✅ Push уведомление отправлено');
+        } else {
+          console.warn('[SEND-NOTIFICATION] ⚠️ Не удалось отправить Push');
+        }
+      } catch (pushError) {
+        console.error('[SEND-NOTIFICATION] Ошибка Push:', pushError);
+      }
+    }
+
+    // 2. Отправляем Telegram уведомление (если нет tg_id - пропускаем)
+    if (!recipientTgId) {
+      // Только Push был отправлен
+      return NextResponse.json({
+        success: pushSent,
+        message: pushSent ? 'Push notification sent' : 'No notification sent',
+        notificationType: pushSent ? 'push' : 'none'
+      });
     }
 
     // Получаем информацию об объявлении для красивого уведомления
@@ -137,6 +156,7 @@ export async function POST(request: NextRequest) {
       } catch (err) {
         console.warn('[SEND-NOTIFICATION] Не удалось загрузить информацию об анкете:', err);
       }
+    }
     }
 
     // Формируем текст уведомления
@@ -225,12 +245,13 @@ export async function POST(request: NextRequest) {
       
       // 403 - бот заблокирован пользователем (обычная ситуация)
       if (errorCode === 403) {
-        console.log(`[SEND-NOTIFICATION] Пользователь ${recipientTgId} заблокировал бота - пропускаем уведомление`);
+        console.log(`[SEND-NOTIFICATION] Пользователь ${recipientTgId} заблокировал бота - пропускаем Telegram`);
         return NextResponse.json(
           { 
-            success: false, 
+            success: pushSent, // успех если Push был отправлен
             error: 'Bot blocked by user',
-            details: 'Пользователь заблокировал бота. Уведомление не отправлено.'
+            details: 'Пользователь заблокировал бота.',
+            pushSent: pushSent
           },
           { status: 200 }
         );
@@ -241,9 +262,10 @@ export async function POST(request: NextRequest) {
         console.warn(`[SEND-NOTIFICATION] Некорректные параметры для ${recipientTgId}:`, errorDesc);
         return NextResponse.json(
           { 
-            success: false, 
+            success: pushSent,
             error: 'Invalid parameters',
-            details: errorDesc
+            details: errorDesc,
+            pushSent: pushSent
           },
           { status: 200 }
         );
@@ -253,21 +275,24 @@ export async function POST(request: NextRequest) {
       console.error('[SEND-NOTIFICATION] Telegram API ошибка:', telegramResult);
       return NextResponse.json(
         { 
-          success: false, 
+          success: pushSent,
           error: 'Failed to send Telegram notification',
-          details: errorDesc
+          details: errorDesc,
+          pushSent: pushSent
         },
         { status: 200 }
       );
     }
 
     console.log('[SEND-NOTIFICATION] Telegram уведомление успешно отправлено:', telegramResult.result.message_id);
+    telegramSent = true;
 
     return NextResponse.json({
       success: true,
-      message: 'Telegram notification sent successfully',
-      notificationType: 'telegram',
-      telegramMessageId: telegramResult.result.message_id
+      message: pushSent ? 'Both Push and Telegram notifications sent' : 'Telegram notification sent successfully',
+      notificationType: pushSent ? 'both' : 'telegram',
+      telegramMessageId: telegramResult.result.message_id,
+      pushSent: pushSent
     });
 
   } catch (error: any) {

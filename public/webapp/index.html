@@ -2195,7 +2195,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.2.21'; // FIX: age range auto-sync От/До
+        const bugFixVersion = '2.2.22'; // FIX: push for Android + photo lock with PRO + trial→female_bonus
         const lastVersion = localStorage.getItem('app_version');
         
         // ВСЕГДА очищаем fetch кэш при загрузке
@@ -2209,7 +2209,7 @@
         }
         
         if (lastVersion !== bugFixVersion) {
-            console.log('[CACHE] Обнаружена новая версия 2.2.21, очищаем кеш...');
+            console.log('[CACHE] Обнаружена новая версия 2.2.22, очищаем кеш...');
             localStorage.setItem('app_version', bugFixVersion);
             
             // Удаляем все зарегистрированные Service Workers

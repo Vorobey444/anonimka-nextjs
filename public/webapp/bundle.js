@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T08:33:02.745Z
+ * Автоматически сгенерирован: 2025-12-13T08:39:33.473Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -4019,7 +4019,7 @@ console.log('📊 [LOCATION-DATA] Всего стран:', Object.keys(locationD
 } catch(e) { console.error('❌ Ошибка в модуле location-data.js:', e); }
 })();
 
-// ========== photos.js (57.9 KB) ==========
+// ========== photos.js (58.5 KB) ==========
 (function() {
 try {
 /**
@@ -4564,8 +4564,18 @@ async function loadMyPhotosForStep9() {
         container.innerHTML = '';
         container.style.display = 'block';
         
-        // Проверяем Premium статус
-        const isPremium = typeof userPremiumStatus !== 'undefined' && userPremiumStatus?.isPremium;
+        // Проверяем Premium статус (с учётом даты истечения)
+        let isPremium = false;
+        if (typeof userPremiumStatus !== 'undefined' && userPremiumStatus?.isPremium) {
+            // Проверяем, не истёк ли премиум
+            if (userPremiumStatus.premiumUntil) {
+                isPremium = new Date(userPremiumStatus.premiumUntil) > new Date();
+            } else {
+                // Если premiumUntil не задан - считаем бессрочным
+                isPremium = true;
+            }
+        }
+        console.log('📸 [loadMyPhotosForStep9] isPremium:', isPremium);
         
         // Инфо блок с лимитами
         const infoDiv = document.createElement('div');
@@ -10557,7 +10567,7 @@ console.log('✅ [LOCATION] Модуль локации инициализиро
 } catch(e) { console.error('❌ Ошибка в модуле location.js:', e); }
 })();
 
-// ========== ads.js (105.7 KB) ==========
+// ========== ads.js (106.8 KB) ==========
 (function() {
 try {
 /**
@@ -11059,9 +11069,23 @@ function updateFormStep(step) {
         }
     }
     
-    // Шаг 9 - загружаем галерею фото пользователя
-    if (step === 9 && typeof loadMyPhotosForStep9 === 'function') {
-        loadMyPhotosForStep9();
+    // Шаг 9 - загружаем галерею фото пользователя (сначала обновляем Premium статус)
+    if (step === 9) {
+        // Обновляем статус Premium перед показом фото
+        if (typeof loadPremiumStatus === 'function') {
+            loadPremiumStatus().then(() => {
+                if (typeof loadMyPhotosForStep9 === 'function') {
+                    loadMyPhotosForStep9();
+                }
+            }).catch(() => {
+                // В случае ошибки всё равно загружаем фото
+                if (typeof loadMyPhotosForStep9 === 'function') {
+                    loadMyPhotosForStep9();
+                }
+            });
+        } else if (typeof loadMyPhotosForStep9 === 'function') {
+            loadMyPhotosForStep9();
+        }
     }
     
     // Обновляем кнопки навигации
@@ -11149,9 +11173,21 @@ function showStep(step) {
         });
     }
     
-    // Загружаем существующие фото на шаге 9
-    if (step === 9 && typeof loadMyPhotosForStep9 === 'function') {
-        loadMyPhotosForStep9();
+    // Загружаем существующие фото на шаге 9 (сначала обновляем Premium статус)
+    if (step === 9) {
+        if (typeof loadPremiumStatus === 'function') {
+            loadPremiumStatus().then(() => {
+                if (typeof loadMyPhotosForStep9 === 'function') {
+                    loadMyPhotosForStep9();
+                }
+            }).catch(() => {
+                if (typeof loadMyPhotosForStep9 === 'function') {
+                    loadMyPhotosForStep9();
+                }
+            });
+        } else if (typeof loadMyPhotosForStep9 === 'function') {
+            loadMyPhotosForStep9();
+        }
     }
     
     // Обновляем кнопки навигации

@@ -497,9 +497,23 @@ function updateFormStep(step) {
         }
     }
     
-    // Шаг 9 - загружаем галерею фото пользователя
-    if (step === 9 && typeof loadMyPhotosForStep9 === 'function') {
-        loadMyPhotosForStep9();
+    // Шаг 9 - загружаем галерею фото пользователя (сначала обновляем Premium статус)
+    if (step === 9) {
+        // Обновляем статус Premium перед показом фото
+        if (typeof loadPremiumStatus === 'function') {
+            loadPremiumStatus().then(() => {
+                if (typeof loadMyPhotosForStep9 === 'function') {
+                    loadMyPhotosForStep9();
+                }
+            }).catch(() => {
+                // В случае ошибки всё равно загружаем фото
+                if (typeof loadMyPhotosForStep9 === 'function') {
+                    loadMyPhotosForStep9();
+                }
+            });
+        } else if (typeof loadMyPhotosForStep9 === 'function') {
+            loadMyPhotosForStep9();
+        }
     }
     
     // Обновляем кнопки навигации
@@ -587,9 +601,21 @@ function showStep(step) {
         });
     }
     
-    // Загружаем существующие фото на шаге 9
-    if (step === 9 && typeof loadMyPhotosForStep9 === 'function') {
-        loadMyPhotosForStep9();
+    // Загружаем существующие фото на шаге 9 (сначала обновляем Premium статус)
+    if (step === 9) {
+        if (typeof loadPremiumStatus === 'function') {
+            loadPremiumStatus().then(() => {
+                if (typeof loadMyPhotosForStep9 === 'function') {
+                    loadMyPhotosForStep9();
+                }
+            }).catch(() => {
+                if (typeof loadMyPhotosForStep9 === 'function') {
+                    loadMyPhotosForStep9();
+                }
+            });
+        } else if (typeof loadMyPhotosForStep9 === 'function') {
+            loadMyPhotosForStep9();
+        }
     }
     
     // Обновляем кнопки навигации

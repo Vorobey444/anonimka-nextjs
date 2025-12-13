@@ -540,8 +540,18 @@ async function loadMyPhotosForStep9() {
         container.innerHTML = '';
         container.style.display = 'block';
         
-        // Проверяем Premium статус
-        const isPremium = typeof userPremiumStatus !== 'undefined' && userPremiumStatus?.isPremium;
+        // Проверяем Premium статус (с учётом даты истечения)
+        let isPremium = false;
+        if (typeof userPremiumStatus !== 'undefined' && userPremiumStatus?.isPremium) {
+            // Проверяем, не истёк ли премиум
+            if (userPremiumStatus.premiumUntil) {
+                isPremium = new Date(userPremiumStatus.premiumUntil) > new Date();
+            } else {
+                // Если premiumUntil не задан - считаем бессрочным
+                isPremium = true;
+            }
+        }
+        console.log('📸 [loadMyPhotosForStep9] isPremium:', isPremium);
         
         // Инфо блок с лимитами
         const infoDiv = document.createElement('div');

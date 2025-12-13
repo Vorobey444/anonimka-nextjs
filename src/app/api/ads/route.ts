@@ -962,12 +962,38 @@ export async function POST(req: NextRequest) {
               console.log('[ADS API] ✅ Бонус PRO для девушки активирован до', premiumUntil.toISOString());
             }
           } else {
-            // Не первая анкета — проверяем, нужно ли отменить бонус
+            // Не первая анкета — проверяем, нужно ли отменить или выдать бонус
             console.log('[ADS API] Не первая анкета. first_ad_gender:', user.first_ad_gender, ', текущий:', currentGender);
             console.log('[ADS API] DEBUG: auto_premium_source =', user.auto_premium_source, ', is_premium =', user.is_premium, ', premium_until =', user.premium_until);
             
+            // Если у пользователя был trial7h и он создает анкету "Девушка" — переключаем на female_bonus (1 год)
+            if (user.auto_premium_source === 'trial7h' && currentGender === 'Девушка') {
+              console.log('[ADS API] 🎀 Trial7h пользователь создал анкету девушки — переключаем на female_bonus');
+              
+              const premiumUntil = new Date();
+              premiumUntil.setFullYear(premiumUntil.getFullYear() + 1);
+              
+              await sql`
+                UPDATE users
+                SET is_premium = TRUE,
+                    premium_until = ${premiumUntil.toISOString()},
+                    auto_premium_source = 'female_bonus',
+                    first_ad_gender = 'Девушка',
+                    updated_at = NOW()
+                WHERE id = ${numericTgId}
+              `;
+              
+              await sql`
+                INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
+                VALUES (${finalUserToken}, TRUE, ${premiumUntil.toISOString()}, NOW())
+                ON CONFLICT (user_token) DO UPDATE
+                SET is_premium = TRUE, premium_until = ${premiumUntil.toISOString()}, updated_at = NOW()
+              `;
+              
+              console.log('[ADS API] ✅ Trial7h переключен на female_bonus до', premiumUntil.toISOString());
+            }
             // Если у пользователя был female_bonus и он создает анкету "Мужчина"
-            if (user.auto_premium_source === 'female_bonus' && currentGender === 'Мужчина') {
+            else if (user.auto_premium_source === 'female_bonus' && currentGender === 'Мужчина') {
               console.log('[ADS API] 🚫 Девушка создала мужскую анкету — отменяем бонус PRO');
               
               // Проверяем, есть ли РЕАЛЬНО оплаченная подписка (по транзакциям)
@@ -1070,6 +1096,31 @@ export async function POST(req: NextRequest) {
               
               console.log('[ADS API] ✅ Бонус PRO для девушки (email) активирован до', premiumUntil.toISOString());
             }
+          } else if (user.auto_premium_source === 'trial7h' && currentGender === 'Девушка') {
+            // Если у пользователя был trial7h и он создает анкету "Девушка" — переключаем на female_bonus
+            console.log('[ADS API] 🎀 Trial7h email пользователь создал анкету девушки — переключаем на female_bonus');
+            
+            const premiumUntil = new Date();
+            premiumUntil.setFullYear(premiumUntil.getFullYear() + 1);
+            
+            await sql`
+              UPDATE users
+              SET is_premium = TRUE,
+                  premium_until = ${premiumUntil.toISOString()},
+                  auto_premium_source = 'female_bonus',
+                  first_ad_gender = 'Девушка',
+                  updated_at = NOW()
+              WHERE user_token = ${finalUserToken}
+            `;
+            
+            await sql`
+              INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
+              VALUES (${finalUserToken}, TRUE, ${premiumUntil.toISOString()}, NOW())
+              ON CONFLICT (user_token) DO UPDATE
+              SET is_premium = TRUE, premium_until = ${premiumUntil.toISOString()}, updated_at = NOW()
+            `;
+            
+            console.log('[ADS API] ✅ Trial7h (email) переключен на female_bonus до', premiumUntil.toISOString());
           } else if (user.auto_premium_source === 'female_bonus' && currentGender === 'Мужчина') {
             console.log('[ADS API] 🚫 Email девушка создала мужскую анкету — отменяем бонус PRO');
             
