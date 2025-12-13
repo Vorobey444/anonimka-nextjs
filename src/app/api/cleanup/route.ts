@@ -55,6 +55,24 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
     try {
         console.log('[CLEANUP] Начало очистки старых анкет (GET/Cron)...');
+        console.log('[CLEANUP] Текущая дата/время сервера:', new Date().toISOString());
+
+        // Сначала проверяем, сколько анкет подпадают под удаление
+        const checkResult = await sql`
+            SELECT id, created_at, 
+                   NOW() as current_time,
+                   NOW() - INTERVAL '30 days' as cutoff_date,
+                   AGE(NOW(), created_at) as age
+            FROM ads
+            WHERE created_at < NOW() - INTERVAL '30 days'
+            ORDER BY created_at
+            LIMIT 10
+        `;
+
+        console.log(`[CLEANUP] Найдено анкет для удаления: ${checkResult.rowCount}`);
+        if (checkResult.rowCount > 0) {
+            console.log('[CLEANUP] Примеры анкет для удаления:', checkResult.rows);
+        }
 
         // Удаляем анкеты старше 30 дней
         const deleteResult = await sql`
@@ -74,6 +92,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             success: true,
             deletedAds: deletedCount,
+            serverTime: new Date().toISOString(),
             message: `Удалено ${deletedCount} анкет старше 30 дней`
         });
 
