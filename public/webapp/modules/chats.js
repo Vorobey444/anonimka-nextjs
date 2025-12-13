@@ -24,6 +24,11 @@ let isUserBlocked = false;
 // Переменная для ответа на сообщение
 let replyToMessage = null;
 
+// Кеширование для оптимизации обновления сообщений
+let lastMessagesHash = null;
+let lastMessageLoadTime = 0;
+const MESSAGE_POLL_INTERVAL = 3000; // 3 секунды
+
 /**
  * ===== ОСНОВНЫЕ ФУНКЦИИ ЧАТОВ =====
  */
@@ -286,7 +291,7 @@ async function openChat(chatId) {
  */
 async function loadChatMessages(chatId, silent = false) {
     try {
-        console.log('📥 [CHATS] Загрузка сообщений чата:', chatId);
+        console.log('📥 [CHATS] Загрузка сообщений чата:', chatId, 'silent:', silent);
         
         const messagesContainer = document.getElementById('chatMessages');
         const scrollContainer = document.querySelector('.chat-messages-container');
@@ -324,18 +329,23 @@ async function loadChatMessages(chatId, silent = false) {
             return;
         }
         
+        // Создаём хеш сообщений для быстрой проверки изменений
+        const messagesHash = messages.map(m => m.id).join(',');
+        
+        // В silent режиме проверяем, изменились ли сообщения
+        if (silent && lastMessagesHash === messagesHash) {
+            console.log('⏭️ [CHATS] Нет новых сообщений, пропускаем обновление');
+            return;
+        }
+        
+        // Обновляем кеш
+        lastMessagesHash = messagesHash;
+        lastMessageLoadTime = Date.now();
+        
         // Получаем user_token для сравнения
         let myUserId = localStorage.getItem('user_token');
         if (!myUserId || myUserId === 'null' || myUserId === 'undefined') {
             myUserId = getCurrentUserId();
-        }
-        
-        // Проверяем, нужно ли обновлять
-        if (silent && messagesContainer) {
-            const currentMessagesCount = messagesContainer.querySelectorAll('.message').length;
-            if (currentMessagesCount === messages.length) {
-                return; // Нет новых сообщений
-            }
         }
         
         // Сохраняем позицию скролла для silent режима
@@ -646,7 +656,7 @@ function startChatPolling(chatId, userId) {
             clearInterval(chatPollingInterval);
             chatPollingInterval = null;
         }
-    }, 3000); // Каждые 3 секунды
+    }, 5000); // Каждые 5 секунд (было 3 сек)
 }
 
 /**
