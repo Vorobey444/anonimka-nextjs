@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T20:04:06.073Z
+ * Автоматически сгенерирован: 2025-12-13T20:08:57.690Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -6507,7 +6507,7 @@ console.log('✅ [PREMIUM] Модуль Premium инициализирован')
 } catch(e) { console.error('❌ Ошибка в модуле premium.js:', e); }
 })();
 
-// ========== referral.js (12.8 KB) ==========
+// ========== referral.js (13.2 KB) ==========
 (function() {
 try {
 /**
@@ -6575,10 +6575,12 @@ async function handleReferralLink() {
         
         // Получаем текущего пользователя
         const userToken = localStorage.getItem('user_token');
-        const userId = getCurrentUserId();
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : getCurrentUserId());
         
         // Если токена нет, сохраняем реферера на потом
-        if (!userToken || userToken === 'null') {
+        if (!userId || userId === 'null') {
             console.log('⏳ [REFERRAL] Токен не создан, сохраняем реферера для последующей обработки');
             localStorage.setItem('pending_referral', referrerId);
             return;
@@ -6592,7 +6594,7 @@ async function handleReferralLink() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 referrer_token: referrerId,
-                new_user_token: userToken
+                new_user_token: userId
             })
         });
         
@@ -6620,8 +6622,11 @@ async function finalizePendingReferral() {
         
         const referrerId = localStorage.getItem('pending_referral');
         const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
         
-        if (!referrerId || !userToken) {
+        if (!referrerId || !userId) {
             console.log('ℹ️ [REFERRAL] Нечего завершать');
             return;
         }
@@ -6632,7 +6637,7 @@ async function finalizePendingReferral() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 referrer_token: referrerId,
-                new_user_token: userToken
+                new_user_token: userId
             })
         });
         
@@ -10836,7 +10841,7 @@ console.log('✅ [LOCATION] Модуль локации инициализиро
 } catch(e) { console.error('❌ Ошибка в модуле location.js:', e); }
 })();
 
-// ========== ads.js (108.2 KB) ==========
+// ========== ads.js (109.1 KB) ==========
 (function() {
 try {
 /**
@@ -11117,7 +11122,10 @@ function showCreateAd() {
     
     // Проверяем авторизацию
     const userToken = localStorage.getItem('user_token');
-    if (!userToken) {
+    const savedUser = localStorage.getItem('telegram_user');
+    const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+    
+    if (!userToken && !tgId) {
         tg.showAlert('Требуется авторизация');
         return;
     }
@@ -11609,7 +11617,11 @@ async function pinMyAd(adId, shouldPin) {
         }
         
         const userToken = localStorage.getItem('user_token');
-        if (!userToken) {
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
+        
+        if (!userId) {
             tg.showAlert('Требуется авторизация');
             return;
         }
@@ -11621,7 +11633,7 @@ async function pinMyAd(adId, shouldPin) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 id: adId,
-                user_token: userToken,
+                user_token: userId,
                 is_pinned: shouldPin,
                 pinned_until: pinnedUntil
             })
@@ -11705,7 +11717,11 @@ async function submitAd() {
         
         // Проверяем авторизацию
         const userToken = localStorage.getItem('user_token');
-        if (!userToken) {
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
+        
+        if (!userId) {
             tg.showAlert('Требуется авторизация');
             return;
         }
@@ -11715,7 +11731,7 @@ async function submitAd() {
         
         // Собираем данные из formData и DOM (используем имена как ожидает сервер)
         const adData = {
-            user_token: userToken,
+            user_token: userId,
             nickname: localStorage.getItem('userNickname'),
             gender: formData.gender || document.querySelector('input[name="gender"]:checked')?.value,
             myAge: formData.myAge || document.querySelector('input[name="my_age"]')?.value,
@@ -12621,9 +12637,11 @@ async function loadMyAds() {
     
     try {
         const userToken = localStorage.getItem('user_token');
-        const userId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : (typeof getCurrentUserId === 'function' ? getCurrentUserId() : null));
         
-        if (!userToken && !userId) {
+        if (!userId) {
             myAdsList.innerHTML = `
                 <div class="no-ads">
                     <div class="neon-icon">🔐</div>
@@ -12745,13 +12763,16 @@ async function deleteMyAd(adId) {
         
         try {
             const userToken = localStorage.getItem('user_token');
+            const savedUser = localStorage.getItem('telegram_user');
+            const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+            const userId = userToken || (tgId ? String(tgId) : null);
             
             const response = await fetch(`/api/ads/${adId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ user_token: userToken })
+                body: JSON.stringify({ user_token: userId })
             });
             
             const result = await response.json();
@@ -13603,7 +13624,7 @@ console.log('✅ [ADS] Модуль анкет инициализирован');
 } catch(e) { console.error('❌ Ошибка в модуле ads.js:', e); }
 })();
 
-// ========== chats.js (68.6 KB) ==========
+// ========== chats.js (69.4 KB) ==========
 (function() {
 try {
 /**
@@ -13764,7 +13785,11 @@ function updateChatsList(acceptedChats, pendingRequests) {
     const chatRequests = document.getElementById('chatRequests');
     const activeCount = document.getElementById('activeChatsCount');
     const requestsCount = document.getElementById('requestsCount');
-    const userId = localStorage.getItem('user_token') || getCurrentUserId();
+    
+    const userToken = localStorage.getItem('user_token');
+    const savedUser = localStorage.getItem('telegram_user');
+    const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+    const userId = userToken || (tgId ? String(tgId) : getCurrentUserId());
     
     if (activeCount) activeCount.textContent = acceptedChats.length;
     if (requestsCount) requestsCount.textContent = pendingRequests.length;
@@ -14084,10 +14109,12 @@ async function sendMessage() {
     try {
         const userId = getCurrentUserId();
         const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
         const nickname = getUserNickname();
         
         // Проверяем что у нас есть senderId
-        const senderId = userToken || userId;
+        const senderId = userToken || (tgId ? String(tgId) : userId);
         if (!senderId || senderId === 'null' || senderId === 'undefined') {
             console.error('❌ [CHATS] Ошибка: нет senderId (userToken или userId)');
             tg.showAlert('Ошибка: не авторизованы. Пожалуйста, авторизуйтесь.');
@@ -14422,7 +14449,11 @@ async function toggleBlockUser() {
         }
         
         try {
-            let userId = localStorage.getItem('user_token');
+            const userToken = localStorage.getItem('user_token');
+            const savedUser = localStorage.getItem('telegram_user');
+            const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+            let userId = userToken || (tgId ? String(tgId) : null);
+            
             if (!userId || userId === 'null') {
                 userId = getCurrentUserId();
             }
@@ -14474,7 +14505,10 @@ async function toggleBlockUser() {
         if (!confirmed) return;
         
         try {
-            const blockerToken = localStorage.getItem('user_token') || getCurrentUserId();
+            const userToken = localStorage.getItem('user_token');
+            const savedUser = localStorage.getItem('telegram_user');
+            const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+            const blockerToken = userToken || (tgId ? String(tgId) : getCurrentUserId());
             const targetToken = window.currentOpponentToken || currentOpponentId;
             
             console.log('📤 [toggleBlockUser] Отправляем запрос:', { action, blockerToken: blockerToken?.substring(0, 16), targetToken: targetToken?.substring(0, 16) });

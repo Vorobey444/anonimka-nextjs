@@ -276,7 +276,10 @@ function showCreateAd() {
     
     // Проверяем авторизацию
     const userToken = localStorage.getItem('user_token');
-    if (!userToken) {
+    const savedUser = localStorage.getItem('telegram_user');
+    const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+    
+    if (!userToken && !tgId) {
         tg.showAlert('Требуется авторизация');
         return;
     }
@@ -768,7 +771,11 @@ async function pinMyAd(adId, shouldPin) {
         }
         
         const userToken = localStorage.getItem('user_token');
-        if (!userToken) {
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
+        
+        if (!userId) {
             tg.showAlert('Требуется авторизация');
             return;
         }
@@ -780,7 +787,7 @@ async function pinMyAd(adId, shouldPin) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 id: adId,
-                user_token: userToken,
+                user_token: userId,
                 is_pinned: shouldPin,
                 pinned_until: pinnedUntil
             })
@@ -864,7 +871,11 @@ async function submitAd() {
         
         // Проверяем авторизацию
         const userToken = localStorage.getItem('user_token');
-        if (!userToken) {
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
+        
+        if (!userId) {
             tg.showAlert('Требуется авторизация');
             return;
         }
@@ -874,7 +885,7 @@ async function submitAd() {
         
         // Собираем данные из formData и DOM (используем имена как ожидает сервер)
         const adData = {
-            user_token: userToken,
+            user_token: userId,
             nickname: localStorage.getItem('userNickname'),
             gender: formData.gender || document.querySelector('input[name="gender"]:checked')?.value,
             myAge: formData.myAge || document.querySelector('input[name="my_age"]')?.value,
@@ -1780,9 +1791,11 @@ async function loadMyAds() {
     
     try {
         const userToken = localStorage.getItem('user_token');
-        const userId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : (typeof getCurrentUserId === 'function' ? getCurrentUserId() : null));
         
-        if (!userToken && !userId) {
+        if (!userId) {
             myAdsList.innerHTML = `
                 <div class="no-ads">
                     <div class="neon-icon">🔐</div>
@@ -1904,13 +1917,16 @@ async function deleteMyAd(adId) {
         
         try {
             const userToken = localStorage.getItem('user_token');
+            const savedUser = localStorage.getItem('telegram_user');
+            const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+            const userId = userToken || (tgId ? String(tgId) : null);
             
             const response = await fetch(`/api/ads/${adId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ user_token: userToken })
+                body: JSON.stringify({ user_token: userId })
             });
             
             const result = await response.json();

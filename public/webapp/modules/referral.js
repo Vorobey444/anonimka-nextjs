@@ -63,10 +63,12 @@ async function handleReferralLink() {
         
         // Получаем текущего пользователя
         const userToken = localStorage.getItem('user_token');
-        const userId = getCurrentUserId();
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : getCurrentUserId());
         
         // Если токена нет, сохраняем реферера на потом
-        if (!userToken || userToken === 'null') {
+        if (!userId || userId === 'null') {
             console.log('⏳ [REFERRAL] Токен не создан, сохраняем реферера для последующей обработки');
             localStorage.setItem('pending_referral', referrerId);
             return;
@@ -80,7 +82,7 @@ async function handleReferralLink() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 referrer_token: referrerId,
-                new_user_token: userToken
+                new_user_token: userId
             })
         });
         
@@ -108,8 +110,11 @@ async function finalizePendingReferral() {
         
         const referrerId = localStorage.getItem('pending_referral');
         const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
         
-        if (!referrerId || !userToken) {
+        if (!referrerId || !userId) {
             console.log('ℹ️ [REFERRAL] Нечего завершать');
             return;
         }
@@ -120,7 +125,7 @@ async function finalizePendingReferral() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 referrer_token: referrerId,
-                new_user_token: userToken
+                new_user_token: userId
             })
         });
         

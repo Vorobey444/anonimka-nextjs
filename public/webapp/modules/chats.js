@@ -156,7 +156,11 @@ function updateChatsList(acceptedChats, pendingRequests) {
     const chatRequests = document.getElementById('chatRequests');
     const activeCount = document.getElementById('activeChatsCount');
     const requestsCount = document.getElementById('requestsCount');
-    const userId = localStorage.getItem('user_token') || getCurrentUserId();
+    
+    const userToken = localStorage.getItem('user_token');
+    const savedUser = localStorage.getItem('telegram_user');
+    const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+    const userId = userToken || (tgId ? String(tgId) : getCurrentUserId());
     
     if (activeCount) activeCount.textContent = acceptedChats.length;
     if (requestsCount) requestsCount.textContent = pendingRequests.length;
@@ -476,10 +480,12 @@ async function sendMessage() {
     try {
         const userId = getCurrentUserId();
         const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
         const nickname = getUserNickname();
         
         // Проверяем что у нас есть senderId
-        const senderId = userToken || userId;
+        const senderId = userToken || (tgId ? String(tgId) : userId);
         if (!senderId || senderId === 'null' || senderId === 'undefined') {
             console.error('❌ [CHATS] Ошибка: нет senderId (userToken или userId)');
             tg.showAlert('Ошибка: не авторизованы. Пожалуйста, авторизуйтесь.');
@@ -814,7 +820,11 @@ async function toggleBlockUser() {
         }
         
         try {
-            let userId = localStorage.getItem('user_token');
+            const userToken = localStorage.getItem('user_token');
+            const savedUser = localStorage.getItem('telegram_user');
+            const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+            let userId = userToken || (tgId ? String(tgId) : null);
+            
             if (!userId || userId === 'null') {
                 userId = getCurrentUserId();
             }
@@ -866,7 +876,10 @@ async function toggleBlockUser() {
         if (!confirmed) return;
         
         try {
-            const blockerToken = localStorage.getItem('user_token') || getCurrentUserId();
+            const userToken = localStorage.getItem('user_token');
+            const savedUser = localStorage.getItem('telegram_user');
+            const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+            const blockerToken = userToken || (tgId ? String(tgId) : getCurrentUserId());
             const targetToken = window.currentOpponentToken || currentOpponentId;
             
             console.log('📤 [toggleBlockUser] Отправляем запрос:', { action, blockerToken: blockerToken?.substring(0, 16), targetToken: targetToken?.substring(0, 16) });
