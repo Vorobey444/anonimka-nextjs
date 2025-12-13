@@ -666,11 +666,18 @@ async function detectAndSaveLocation(userToken) {
         console.log('⚠️ [LOCATION] Используем значение по умолчанию:', locationData);
     }
     
-    // Сохраняем локально
+    // Сохраняем локально (все форматы для совместимости)
     localStorage.setItem('userCountry', locationData.country);
     localStorage.setItem('userCity', locationData.city);
     if (locationData.region) {
         localStorage.setItem('userRegion', locationData.region);
+    }
+    // Сохраняем как JSON объект для location.js
+    localStorage.setItem('userLocation', JSON.stringify(locationData));
+    
+    // Обновляем глобальную переменную если модуль location загружен
+    if (typeof currentUserLocation !== 'undefined') {
+        currentUserLocation = locationData;
     }
     
     // Сохраняем на сервер
@@ -689,6 +696,10 @@ async function detectAndSaveLocation(userToken) {
         const result = await response.json();
         if (result.success) {
             console.log('✅ [LOCATION] Локация сохранена в БД');
+            // Обновляем отображение локации в главном меню
+            if (typeof updateLocationDisplay === 'function') {
+                updateLocationDisplay();
+            }
         } else {
             console.error('❌ [LOCATION] Ошибка сохранения:', result.error);
         }
