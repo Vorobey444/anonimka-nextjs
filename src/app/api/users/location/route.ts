@@ -3,12 +3,46 @@ import { sql } from '@vercel/postgres';
 
 export const dynamic = 'force-dynamic';
 
+// Маппинг полных названий стран на ISO коды
+const COUNTRY_MAPPING: Record<string, string> = {
+  'kazakhstan': 'KZ',
+  'казахстан': 'KZ',
+  'russia': 'RU',
+  'россия': 'RU',
+  'ukraine': 'UA',
+  'украина': 'UA',
+  'belarus': 'BY',
+  'беларусь': 'BY',
+  'uzbekistan': 'UZ',
+  'узбекистан': 'UZ',
+  'kyrgyzstan': 'KG',
+  'кыргызстан': 'KG',
+  'tajikistan': 'TJ',
+  'таджикистан': 'TJ',
+  'turkmenistan': 'TM',
+  'туркменистан': 'TM',
+  'azerbaijan': 'AZ',
+  'азербайджан': 'AZ',
+  'armenia': 'AM',
+  'армения': 'AM',
+  'georgia': 'GE',
+  'грузия': 'GE',
+  'moldova': 'MD',
+  'молдова': 'MD'
+};
+
 /**
  * API для сохранения локации пользователя
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userToken, country, region, city } = await request.json();
+    let { userToken, country, region, city } = await request.json();
+    
+    // Конвертируем полное название страны в ISO код
+    if (country && country.length > 2) {
+      const countryLower = country.toLowerCase();
+      country = COUNTRY_MAPPING[countryLower] || country.substring(0, 2).toUpperCase();
+    }
 
     if (!userToken) {
       return NextResponse.json(
