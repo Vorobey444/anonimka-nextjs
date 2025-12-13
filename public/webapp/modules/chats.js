@@ -291,12 +291,11 @@ async function openChat(chatId) {
  */
 async function loadChatMessages(chatId, silent = false) {
     try {
-        console.log('📥 [CHATS] Загрузка сообщений чата:', chatId, 'silent:', silent);
-        
         const messagesContainer = document.getElementById('chatMessages');
         const scrollContainer = document.querySelector('.chat-messages-container');
         
-        if (!silent && messagesContainer) {
+        // Показываем статус загрузки только при первой загрузке (не silent и контейнер пуст)
+        if (!silent && messagesContainer && messagesContainer.children.length === 0) {
             messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 20px;">Загрузка сообщений...</p>';
         }
         
@@ -313,165 +312,138 @@ async function loadChatMessages(chatId, silent = false) {
         
         if (result.error) {
             console.error('❌ [CHATS] Ошибка загрузки сообщений:', result.error);
-            if (!silent && messagesContainer) {
-                messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Ошибка загрузки сообщений</p>';
-            }
             return;
         }
         
         const messages = result.data || [];
-        console.log(`✅ [CHATS] Загружено ${messages.length} сообщений`);
         
         if (messages.length === 0) {
-            if (messagesContainer) {
+            if (!silent && messagesContainer) {
                 messagesContainer.innerHTML = '<p style="text-align: center; color: var(--text-gray);">Нет сообщений. Начните диалог!</p>';
             }
             return;
         }
         
-        // Создаём хеш сообщений для быстрой проверки изменений
-        const messagesHash = messages.map(m => m.id).join(',');
-        
-        // В silent режиме проверяем, изменились ли сообщения
-        if (silent && lastMessagesHash === messagesHash) {
-            console.log('⏭️ [CHATS] Нет новых сообщений, пропускаем обновление');
-            return;
-        }
-        
-        // Обновляем кеш
-        lastMessagesHash = messagesHash;
-        lastMessageLoadTime = Date.now();
-        
-        // Получаем user_token для сравнения
+        // Получаем user_token
         let myUserId = localStorage.getItem('user_token');
         if (!myUserId || myUserId === 'null' || myUserId === 'undefined') {
             myUserId = getCurrentUserId();
         }
         
-        // Сохраняем позицию скролла для silent режима
-        const wasAtBottom = silent && scrollContainer ? 
-            (scrollContainer.scrollHeight - scrollContainer.scrollTop <= scrollContainer.clientHeight + 50) : 
-            true;
+        const messagesHash = messages.map(m => m.id).join(',');
         
-        // Сохраняем никнейм оппонента
-        const firstOpponentMessage = messages.find(msg => msg.sender_token != myUserId);
-        if (firstOpponentMessage && firstOpponentMessage.sender_nickname) {
-            window.currentOpponentNickname = firstOpponentMessage.sender_nickname;
+        // SILENT MODE - добавляем только новые сообщения
+        if (silent && lastMessagesHash) {
+            // Проверяем, есть ли новые сообщения
+            if (messagesHash === lastMessagesHash) {
+                return; // Ничего не изменилось
+            }
+            
+            const lastIds = lastMessagesHash.split(',').map(Number);
+            const newMessages = messages.filter(m => !lastIds.includes(m.id));
+            
+            if (newMessages.length > 0 && messagesContainer) {
+                console.log(`➕ [CHATS] Добавлено ${newMessages.length} новых сообщений`);
+                
+                // Добавляем только новые сообщения в конец (без перестройки всего списка)
+                newMessages.forEach(msg => {
+                    const messageHtml = renderSingleMessage(msg, myUserId, messages);
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = messageHtml;
+                    messagesContainer.appendChild(tempDiv.firstChild);
+                });
+                
+                // Скроллим вниз к новому сообщению
+                if (scrollContainer) {
+                    setTimeout(() => {
+                        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                    }, 0);
+                }
+            }
+            
+            lastMessagesHash = messagesHash;
+            return;
         }
         
+        // ПОЛНАЯ ЗАГРУЗКА (первый раз или не silent)
         if (messagesContainer) {
-            messagesContainer.innerHTML = messages.map(msg => {
-                const isMine = msg.sender_token == myUserId;
-                const messageClass = isMine ? 'sent' : 'received';
-                const time = formatMessageTime(msg.created_at);
-                
-                // Индикатор ответа
-                let replyIndicatorHtml = '';
-                if (msg.reply_to_message_id) {
-                    const originalMsg = messages.find(m => m.id == msg.reply_to_message_id);
-                    const replyToNickname = originalMsg?.sender_nickname || 'Собеседник';
-                    const replyToText = originalMsg?.message || '📸 Фото';
-                    const replyPreviewText = replyToText.length > 30 ? replyToText.substring(0, 30) + '...' : replyToText;
-                    
-                    replyIndicatorHtml = `
-                        <div class="message-reply-indicator" onclick="scrollToMessage(${msg.reply_to_message_id})">
-                            <div class="reply-indicator-line"></div>
-                            <div class="reply-indicator-content">
-                                <div class="reply-indicator-nickname">${escapeHtml(replyToNickname)}</div>
-                                <div class="reply-indicator-text">${escapeHtml(replyPreviewText)}</div>
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                // Никнейм для входящих
-                let nicknameHtml = '';
-                if (!isMine) {
-                    const nickname = msg.sender_nickname || 'Собеседник';
-                    nicknameHtml = `<div class="message-nickname">${escapeHtml(nickname)}</div>`;
-                }
-                
-                // Фото/видео
-                let photoHtml = '';
-                if (msg.photo_url) {
-                    const isVideo = msg.photo_url.includes('.mp4') || msg.photo_url.includes('.mov') || msg.photo_url.includes('video');
-                    
-                    if (isVideo) {
-                        photoHtml = `<video src="${escapeHtml(msg.photo_url)}" class="message-photo" controls playsinline controlslist="nodownload" disablePictureInPicture></video>`;
-                    } else {
-                        photoHtml = `<div class="message-photo-secure" style="background-image: url('${escapeHtml(msg.photo_url)}');" onclick="showPhotoModal('${escapeHtml(msg.photo_url)}')"></div>`;
-                    }
-                }
-                
-                // Текст сообщения
-                let messageTextHtml = '';
-                if (msg.message) {
-                    messageTextHtml = `<div class="message-text">${escapeHtml(msg.message)}</div>`;
-                }
-                
-                // Статусы доставки
-                let statusIcon = '';
-                if (isMine) {
-                    if (msg.read) {
-                        statusIcon = '<span class="message-status read">✓✓</span>';
-                    } else if (msg.delivered) {
-                        statusIcon = '<span class="message-status delivered">✓✓</span>';
-                    } else {
-                        statusIcon = '<span class="message-status sent">✓</span>';
-                    }
-                }
-                
-                const nickname = msg.sender_nickname || 'Собеседник';
-                
-                // Реакции
-                let reactionHtml = '';
-                if (msg.reactions && msg.reactions.length > 0) {
-                    const topReaction = msg.reactions[0];
-                    reactionHtml = `
-                        <div class="message-reaction" data-message-id="${msg.id}">
-                            <span class="message-reaction-emoji">${topReaction.emoji}</span>
-                            ${topReaction.count > 1 ? `<span class="message-reaction-count">${topReaction.count}</span>` : ''}
-                        </div>
-                    `;
-                }
-                
-                return `
-                    <div class="message ${messageClass}" 
-                         data-message-id="${msg.id}" 
-                         data-nickname="${escapeHtml(nickname)}"
-                         data-is-mine="${isMine}">
-                        ${replyIndicatorHtml}
-                        ${nicknameHtml}
-                        ${photoHtml}
-                        ${messageTextHtml}
-                        <div class="message-time">${time} ${statusIcon}</div>
-                        ${reactionHtml}
-                    </div>
-                `;
-            }).join('');
-            
-            // Обработчики реакций
-            if (typeof setupMessageReactions === 'function') {
-                setupMessageReactions();
-            }
-            
-            // Обработчики свайпов
-            if (typeof setupMessageSwipeHandlers === 'function') {
-                setupMessageSwipeHandlers();
-            }
+            messagesContainer.innerHTML = messages.map(msg => renderSingleMessage(msg, myUserId, messages)).join('');
         }
         
         // Скроллим вниз
-        if (scrollContainer && (!silent || wasAtBottom)) {
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        if (scrollContainer) {
             setTimeout(() => {
                 scrollContainer.scrollTop = scrollContainer.scrollHeight;
-            }, 100);
+            }, 0);
         }
         
+        lastMessagesHash = messagesHash;
+        
+        // Инициализируем обработчики
+        if (typeof setupMessageReactions === 'function') setupMessageReactions();
+        if (typeof setupMessageSwipeHandlers === 'function') setupMessageSwipeHandlers();
+        
     } catch (error) {
-        console.error('❌ [CHATS] Ошибка при загрузке сообщений:', error);
+        console.error('❌ [CHATS] Ошибка loadChatMessages:', error);
     }
+}
+
+/**
+ * Отрисовка одного сообщения
+ */
+function renderSingleMessage(msg, myUserId, allMessages) {
+    const isMine = msg.sender_token == myUserId;
+    const messageClass = isMine ? 'sent' : 'received';
+    const time = formatMessageTime(msg.created_at);
+    
+    // Никнейм для входящих
+    let nicknameHtml = '';
+    if (!isMine) {
+        const nickname = msg.sender_nickname || 'Собеседник';
+        nicknameHtml = `<div class="message-nickname">${escapeHtml(nickname)}</div>`;
+    }
+    
+    // Фото/видео
+    let photoHtml = '';
+    if (msg.photo_url) {
+        const isVideo = msg.photo_url.includes('.mp4') || msg.photo_url.includes('.mov') || msg.photo_url.includes('video');
+        photoHtml = isVideo 
+            ? `<video src="${escapeHtml(msg.photo_url)}" class="message-photo" controls playsinline controlslist="nodownload" disablePictureInPicture></video>`
+            : `<div class="message-photo-secure" style="background-image: url('${escapeHtml(msg.photo_url)}');" onclick="showPhotoModal('${escapeHtml(msg.photo_url)}')"></div>`;
+    }
+    
+    // Текст сообщения
+    let messageTextHtml = '';
+    if (msg.message) {
+        messageTextHtml = `<div class="message-text">${escapeHtml(msg.message)}</div>`;
+    }
+    
+    // Статусы доставки
+    let statusIcon = '';
+    if (isMine) {
+        if (msg.read) {
+            statusIcon = '<span class="message-status read">✓✓</span>';
+        } else if (msg.delivered) {
+            statusIcon = '<span class="message-status delivered">✓✓</span>';
+        } else {
+            statusIcon = '<span class="message-status sent">✓</span>';
+        }
+    }
+    
+    const nickname = msg.sender_nickname || 'Собеседник';
+    
+    return `
+        <div class="message ${messageClass}" 
+             data-message-id="${msg.id}" 
+             data-nickname="${escapeHtml(nickname)}"
+             data-is-mine="${isMine}">
+            ${nicknameHtml}
+            ${photoHtml}
+            ${messageTextHtml}
+            <div class="message-time">${time} ${statusIcon}</div>
+        </div>
+    `;
+}
 }
 
 /**
@@ -484,12 +456,46 @@ async function sendMessage() {
     if (!messageText || !currentChatId) return;
     
     try {
-        console.log('📤 [CHATS] Отправка сообщения в чат:', currentChatId);
-        
         const userId = getCurrentUserId();
         const userToken = localStorage.getItem('user_token');
         const nickname = getUserNickname();
         
+        // OPTIMISTIC UPDATE: Показываем сообщение сразу же, до отправки на сервер
+        const messagesContainer = document.getElementById('chatMessages');
+        const scrollContainer = document.querySelector('.chat-messages-container');
+        
+        // Создаем временное сообщение с ID = -1 (будет заменено после ответа сервера)
+        const optimisticMessage = {
+            id: -1,
+            sender_token: userToken || userId,
+            sender_nickname: nickname,
+            message: messageText,
+            created_at: new Date().toISOString(),
+            delivered: false,
+            read: false,
+            photo_url: null
+        };
+        
+        if (messagesContainer) {
+            const messageHtml = renderSingleMessage(optimisticMessage, userToken || userId, []);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = messageHtml;
+            const messageEl = tempDiv.firstChild;
+            messageEl.style.opacity = '0.7'; // Делаем полупрозрачным чтобы показать что отправляется
+            messagesContainer.appendChild(messageEl);
+            
+            // Скроллим к новому сообщению
+            if (scrollContainer) {
+                setTimeout(() => {
+                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                }, 0);
+            }
+        }
+        
+        // Очищаем поле ввода
+        if (input) input.value = '';
+        
+        // Отправляем на сервер
         const response = await fetch('/api/neon-messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -510,19 +516,36 @@ async function sendMessage() {
         if (result.error) {
             console.error('❌ [CHATS] Ошибка отправки сообщения:', result.error);
             
+            // Удаляем optimistic сообщение при ошибке
+            const tempMsg = document.querySelector('[data-message-id="-1"]');
+            if (tempMsg) tempMsg.remove();
+            
+            // Восстанавливаем текст в поле ввода
+            if (input) input.value = messageText;
+            
             if (result.error.message === 'Chat is blocked') {
                 tg.showAlert('Чат заблокирован');
             }
             return;
         }
         
-        console.log('✅ [CHATS] Сообщение отправлено');
+        console.log('✅ [CHATS] Сообщение отправлено, ID:', result.data?.id);
         
-        // Очищаем поле ввода
-        if (input) input.value = '';
+        // Убираем полупрозрачность
+        const tempMsg = document.querySelector('[data-message-id="-1"]');
+        if (tempMsg) {
+            tempMsg.style.opacity = '1';
+            if (result.data?.id) {
+                tempMsg.setAttribute('data-message-id', result.data.id);
+            }
+        }
         
-        // Перезагружаем сообщения
-        await loadChatMessages(currentChatId);
+        // Обновляем кеш хеша (добавляем ID нового сообщения)
+        if (result.data?.id) {
+            if (lastMessagesHash) {
+                lastMessagesHash = lastMessagesHash + ',' + result.data.id;
+            }
+        }
         
     } catch (error) {
         console.error('❌ [CHATS] Ошибка при отправке сообщения:', error);
