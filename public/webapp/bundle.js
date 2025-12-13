@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T20:15:34.839Z
+ * Автоматически сгенерирован: 2025-12-13T20:20:43.941Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -13625,7 +13625,7 @@ console.log('✅ [ADS] Модуль анкет инициализирован');
 } catch(e) { console.error('❌ Ошибка в модуле ads.js:', e); }
 })();
 
-// ========== chats.js (69.8 KB) ==========
+// ========== chats.js (71.0 KB) ==========
 (function() {
 try {
 /**
@@ -14110,7 +14110,10 @@ async function sendMessage() {
     const input = document.getElementById('messageInput');
     const messageText = input?.value?.trim();
     
-    if (!messageText || !currentChatId) return;
+    // Проверяем наличие фото или текста
+    const hasPhoto = window.selectedPhoto instanceof File;
+    
+    if ((!messageText && !hasPhoto) || !currentChatId) return;
     
     try {
         const userId = getCurrentUserId();
@@ -14127,7 +14130,21 @@ async function sendMessage() {
             return;
         }
         
-        console.log('📤 [CHATS] Отправка сообщения:', { senderId: senderId.substring(0, 16) + '...', chatId: currentChatId });
+        console.log('📤 [CHATS] Отправка сообщения:', { senderId: senderId.substring(0, 16) + '...', chatId: currentChatId, hasPhoto });
+        
+        // Загружаем фото если есть
+        let photoData = null;
+        if (hasPhoto) {
+            try {
+                console.log('📸 [CHATS] Загрузка фото...');
+                photoData = await uploadPhotoToTelegram(window.selectedPhoto, senderId);
+                console.log('✅ [CHATS] Фото загружено:', photoData);
+            } catch (error) {
+                console.error('❌ [CHATS] Ошибка загрузки фото:', error);
+                tg.showAlert('Ошибка загрузки фото');
+                return;
+            }
+        }
         
         // OPTIMISTIC UPDATE: Показываем сообщение сразу же, до отправки на сервер
         const messagesContainer = document.getElementById('chatMessages');
@@ -14138,11 +14155,11 @@ async function sendMessage() {
             id: -1,
             sender_token: senderId,
             sender_nickname: nickname,
-            message: messageText,
+            message: messageText || '',
             created_at: new Date().toISOString(),
             delivered: false,
             read: false,
-            photo_url: null
+            photo_url: photoData ? photoData.photo_url : null
         };
         
         if (messagesContainer) {
@@ -14165,8 +14182,13 @@ async function sendMessage() {
             }
         }
         
-        // Очищаем поле ввода
+        // Очищаем поле ввода и фото
         if (input) input.value = '';
+        if (window.selectedPhoto) {
+            window.selectedPhoto = null;
+            const preview = document.getElementById('photoPreview');
+            if (preview) preview.style.display = 'none';
+        }
         
         // Отправляем на сервер
         const response = await fetch('/api/neon-messages', {
@@ -14177,8 +14199,10 @@ async function sendMessage() {
                 params: {
                     chatId: currentChatId,
                     senderId: senderId,
-                    messageText: messageText,
+                    messageText: messageText || '',
                     senderNickname: nickname,
+                    photoUrl: photoData ? photoData.photo_url : null,
+                    photoFileId: photoData ? photoData.file_id : null,
                     skipNotification: false
                 }
             })
