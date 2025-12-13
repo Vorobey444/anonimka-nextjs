@@ -123,9 +123,9 @@ class GoogleAuthActivity : AppCompatActivity() {
                 finish()
             }
         } catch (e: ApiException) {
-            Log.e("GoogleAuth", "❌ Google Sign-In ошибка: ${e.statusCode}", e)
+            Log.e("GoogleAuth", "❌ Google Sign-In ошибка код: ${e.statusCode}, сообщение: ${e.message}", e)
             progressBar.visibility = View.GONE
-            Toast.makeText(this, "Google вход не удался", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Google вход не удался (код: ${e.statusCode})", Toast.LENGTH_LONG).show()
             finish()
         }
     }

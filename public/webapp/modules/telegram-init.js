@@ -164,7 +164,7 @@ function trackPageVisit(page = 'home') {
  */
 function startStatsAutoUpdate() {
     // Функция будет переопределена в menu.js
-    // Здесь делаем отложенный вызов чтобы дождаться загрузки menu.js
+    // Здесь делаем отложенный вызов чтобы дождаться загрузки menu.js и инициализации
     setTimeout(() => {
         if (typeof window.loadSiteStats === 'function') {
             window.loadSiteStats();
@@ -172,7 +172,7 @@ function startStatsAutoUpdate() {
         } else {
             console.warn('📊 loadSiteStats not available yet');
         }
-    }, 100);
+    }, 500);
 }
 
 /**

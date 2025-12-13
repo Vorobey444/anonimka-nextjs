@@ -1243,7 +1243,9 @@ async function loadSiteStats() {
                     console.error('[ADMIN STATS] Ошибка проверки статуса админа по токену:', err);
                 }
             } else {
-                console.warn('[ADMIN STATS] Ни userId, ни userToken не найдены');
+                console.warn('[ADMIN STATS] Ни userId, ни userToken не найдены - пропускаем проверку');
+                // Не устанавливаем adminCheckCompleted = true, чтобы попробовать снова
+                return;
             }
             
             adminCheckCompleted = true;

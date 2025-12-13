@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T12:37:00.065Z
+ * Автоматически сгенерирован: 2025-12-13T16:40:15.136Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -175,7 +175,7 @@ function trackPageVisit(page = 'home') {
  */
 function startStatsAutoUpdate() {
     // Функция будет переопределена в menu.js
-    // Здесь делаем отложенный вызов чтобы дождаться загрузки menu.js
+    // Здесь делаем отложенный вызов чтобы дождаться загрузки menu.js и инициализации
     setTimeout(() => {
         if (typeof window.loadSiteStats === 'function') {
             window.loadSiteStats();
@@ -183,7 +183,7 @@ function startStatsAutoUpdate() {
         } else {
             console.warn('📊 loadSiteStats not available yet');
         }
-    }, 100);
+    }, 500);
 }
 
 /**
@@ -16413,7 +16413,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (51.4 KB) ==========
+// ========== menu.js (51.6 KB) ==========
 (function() {
 try {
 /**
@@ -17661,7 +17661,9 @@ async function loadSiteStats() {
                     console.error('[ADMIN STATS] Ошибка проверки статуса админа по токену:', err);
                 }
             } else {
-                console.warn('[ADMIN STATS] Ни userId, ни userToken не найдены');
+                console.warn('[ADMIN STATS] Ни userId, ни userToken не найдены - пропускаем проверку');
+                // Не устанавливаем adminCheckCompleted = true, чтобы попробовать снова
+                return;
             }
             
             adminCheckCompleted = true;
