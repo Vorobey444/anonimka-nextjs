@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T08:11:53.799Z
+ * Автоматически сгенерирован: 2025-12-13T08:24:33.677Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -8140,7 +8140,7 @@ console.log('✅ [ADMIN] Модуль админ-панели инициализ
 } catch(e) { console.error('❌ Ошибка в модуле admin.js:', e); }
 })();
 
-// ========== location.js (97.7 KB) ==========
+// ========== location.js (96.7 KB) ==========
 (function() {
 try {
 /**
@@ -9973,6 +9973,15 @@ function selectSetupCountry(countryCode) {
     
     console.log('📍 [LOCATION] Доступно городов:', allCities.length);
     
+    // Инициализируем обработчики для поля ввода города
+    initSetupCityInputHandlers();
+    
+    // Фокус на поле ввода города
+    const cityInput2 = document.querySelector('.setup-city-input');
+    if (cityInput2) {
+        setTimeout(() => cityInput2.focus(), 150);
+    }
+    
     // Показываем все доступные города
     setTimeout(() => {
         showAllSetupCities();
@@ -10298,36 +10307,8 @@ function initLocationHandlers() {
             const country = this.dataset.country;
             console.log('📍 [LOCATION] Клик по стране:', country);
             
-            // Убираем active с других кнопок
-            document.querySelectorAll('.setup-country').forEach(b => b.classList.remove('active'));
-            // Добавляем active на текущую
-            this.classList.add('active');
-            
-            // Сохраняем выбор
-            setupSelectedCountry = country;
-            selectedCountry = country;
-            
-            // Показываем выбор города (не региона!)
-            const citySection = document.querySelector('.setup-city-selection');
-            if (citySection) {
-                citySection.style.display = 'block';
-                console.log('📍 [LOCATION] Показана секция выбора города');
-            } else {
-                console.warn('⚠️ [LOCATION] Секция .setup-city-selection не найдена');
-            }
-            
-            // Инициализируем обработчики для поля ввода города (если ещё не были)
-            initSetupCityInputHandlers();
-            
-            // Фокус на поле ввода города
-            const cityInput = document.querySelector('.setup-city-input');
-            if (cityInput) {
-                setTimeout(() => {
-                    cityInput.focus();
-                    // Показываем все города сразу
-                    showAllSetupCities();
-                }, 100);
-            }
+            // Вызываем полную функцию выбора страны
+            selectSetupCountry(country);
         });
     });
     
@@ -15007,7 +14988,7 @@ console.log('✅ [CHATS] Модуль чатов инициализирован'
 } catch(e) { console.error('❌ Ошибка в модуле chats.js:', e); }
 })();
 
-// ========== onboarding.js (48.5 KB) ==========
+// ========== onboarding.js (50.4 KB) ==========
 (function() {
 try {
 /**
@@ -16195,6 +16176,23 @@ async function checkOnboardingStatus() {
         const localNickname = localStorage.getItem('userNickname');
         if (localNickname && localNickname.trim() !== '') {
             console.log('✅ Никнейм найден в localStorage:', localNickname);
+            
+            // Проверяем есть ли локация
+            const userLocation = localStorage.getItem('userLocation');
+            if (!userLocation) {
+                console.log('⚠️ Локация не найдена, предлагаем выбрать');
+                // Показываем главное меню, а затем экран выбора локации
+                if (typeof showMainMenu === 'function') showMainMenu();
+                setTimeout(() => {
+                    if (typeof showLocationSetup === 'function') {
+                        showLocationSetup();
+                    } else if (typeof showScreen === 'function') {
+                        showScreen('locationSetup');
+                    }
+                }, 500);
+                return;
+            }
+            
             if (typeof showMainMenu === 'function') showMainMenu();
             return;
         }
@@ -16234,6 +16232,28 @@ async function checkOnboardingStatus() {
             localStorage.setItem('userNickname', nickname);
             localStorage.setItem('user_nickname', nickname);
             console.log('✅ Никнейм из БД:', nickname);
+            
+            // Проверяем локацию из БД
+            if (data.location) {
+                localStorage.setItem('userLocation', JSON.stringify(data.location));
+                console.log('✅ Локация из БД:', data.location);
+            }
+            
+            // Проверяем есть ли локация
+            const userLocation = localStorage.getItem('userLocation');
+            if (!userLocation) {
+                console.log('⚠️ Локация не найдена, предлагаем выбрать');
+                if (typeof showMainMenu === 'function') showMainMenu();
+                setTimeout(() => {
+                    if (typeof showLocationSetup === 'function') {
+                        showLocationSetup();
+                    } else if (typeof showScreen === 'function') {
+                        showScreen('locationSetup');
+                    }
+                }, 500);
+                return;
+            }
+            
             if (typeof showMainMenu === 'function') showMainMenu();
         } else {
             console.log('⚠️ У пользователя нет никнейма');

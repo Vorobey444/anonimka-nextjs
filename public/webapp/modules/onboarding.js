@@ -1183,6 +1183,23 @@ async function checkOnboardingStatus() {
         const localNickname = localStorage.getItem('userNickname');
         if (localNickname && localNickname.trim() !== '') {
             console.log('✅ Никнейм найден в localStorage:', localNickname);
+            
+            // Проверяем есть ли локация
+            const userLocation = localStorage.getItem('userLocation');
+            if (!userLocation) {
+                console.log('⚠️ Локация не найдена, предлагаем выбрать');
+                // Показываем главное меню, а затем экран выбора локации
+                if (typeof showMainMenu === 'function') showMainMenu();
+                setTimeout(() => {
+                    if (typeof showLocationSetup === 'function') {
+                        showLocationSetup();
+                    } else if (typeof showScreen === 'function') {
+                        showScreen('locationSetup');
+                    }
+                }, 500);
+                return;
+            }
+            
             if (typeof showMainMenu === 'function') showMainMenu();
             return;
         }
@@ -1222,6 +1239,28 @@ async function checkOnboardingStatus() {
             localStorage.setItem('userNickname', nickname);
             localStorage.setItem('user_nickname', nickname);
             console.log('✅ Никнейм из БД:', nickname);
+            
+            // Проверяем локацию из БД
+            if (data.location) {
+                localStorage.setItem('userLocation', JSON.stringify(data.location));
+                console.log('✅ Локация из БД:', data.location);
+            }
+            
+            // Проверяем есть ли локация
+            const userLocation = localStorage.getItem('userLocation');
+            if (!userLocation) {
+                console.log('⚠️ Локация не найдена, предлагаем выбрать');
+                if (typeof showMainMenu === 'function') showMainMenu();
+                setTimeout(() => {
+                    if (typeof showLocationSetup === 'function') {
+                        showLocationSetup();
+                    } else if (typeof showScreen === 'function') {
+                        showScreen('locationSetup');
+                    }
+                }, 500);
+                return;
+            }
+            
             if (typeof showMainMenu === 'function') showMainMenu();
         } else {
             console.log('⚠️ У пользователя нет никнейма');

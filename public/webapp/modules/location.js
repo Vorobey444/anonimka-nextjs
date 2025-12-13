@@ -1828,6 +1828,15 @@ function selectSetupCountry(countryCode) {
     
     console.log('📍 [LOCATION] Доступно городов:', allCities.length);
     
+    // Инициализируем обработчики для поля ввода города
+    initSetupCityInputHandlers();
+    
+    // Фокус на поле ввода города
+    const cityInput2 = document.querySelector('.setup-city-input');
+    if (cityInput2) {
+        setTimeout(() => cityInput2.focus(), 150);
+    }
+    
     // Показываем все доступные города
     setTimeout(() => {
         showAllSetupCities();
@@ -2153,36 +2162,8 @@ function initLocationHandlers() {
             const country = this.dataset.country;
             console.log('📍 [LOCATION] Клик по стране:', country);
             
-            // Убираем active с других кнопок
-            document.querySelectorAll('.setup-country').forEach(b => b.classList.remove('active'));
-            // Добавляем active на текущую
-            this.classList.add('active');
-            
-            // Сохраняем выбор
-            setupSelectedCountry = country;
-            selectedCountry = country;
-            
-            // Показываем выбор города (не региона!)
-            const citySection = document.querySelector('.setup-city-selection');
-            if (citySection) {
-                citySection.style.display = 'block';
-                console.log('📍 [LOCATION] Показана секция выбора города');
-            } else {
-                console.warn('⚠️ [LOCATION] Секция .setup-city-selection не найдена');
-            }
-            
-            // Инициализируем обработчики для поля ввода города (если ещё не были)
-            initSetupCityInputHandlers();
-            
-            // Фокус на поле ввода города
-            const cityInput = document.querySelector('.setup-city-input');
-            if (cityInput) {
-                setTimeout(() => {
-                    cityInput.focus();
-                    // Показываем все города сразу
-                    showAllSetupCities();
-                }, 100);
-            }
+            // Вызываем полную функцию выбора страны
+            selectSetupCountry(country);
         });
     });
     
