@@ -163,8 +163,16 @@ function trackPageVisit(page = 'home') {
  * Запуск автоматического обновления статистики
  */
 function startStatsAutoUpdate() {
-    // Реализация в отдельном модуле статистики
-    console.log('📊 Stats auto-update started');
+    // Функция будет переопределена в menu.js
+    // Здесь делаем отложенный вызов чтобы дождаться загрузки menu.js
+    setTimeout(() => {
+        if (typeof window.loadSiteStats === 'function') {
+            window.loadSiteStats();
+            console.log('📊 Stats auto-update started (deferred)');
+        } else {
+            console.warn('📊 loadSiteStats not available yet');
+        }
+    }, 100);
 }
 
 /**

@@ -1,12 +1,12 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T09:40:29.733Z
+ * Автоматически сгенерирован: 2025-12-13T12:37:00.065Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
 
 
-// ========== telegram-init.js (10.1 KB) ==========
+// ========== telegram-init.js (10.5 KB) ==========
 (function() {
 try {
 /**
@@ -174,8 +174,16 @@ function trackPageVisit(page = 'home') {
  * Запуск автоматического обновления статистики
  */
 function startStatsAutoUpdate() {
-    // Реализация в отдельном модуле статистики
-    console.log('📊 Stats auto-update started');
+    // Функция будет переопределена в menu.js
+    // Здесь делаем отложенный вызов чтобы дождаться загрузки menu.js
+    setTimeout(() => {
+        if (typeof window.loadSiteStats === 'function') {
+            window.loadSiteStats();
+            console.log('📊 Stats auto-update started (deferred)');
+        } else {
+            console.warn('📊 loadSiteStats not available yet');
+        }
+    }, 100);
 }
 
 /**
