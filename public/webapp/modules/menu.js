@@ -1542,14 +1542,9 @@ function checkAuthParam() {
         // Очищаем параметр из URL
         window.history.replaceState({}, '', window.location.pathname);
         
-        // Проверяем, не авторизован ли уже пользователь
-        if (typeof isUserAuthorized === 'function' && isUserAuthorized()) {
-            console.log('✅ [MENU] Пользователь уже авторизован, не показываем модалку');
-            return false;
-        }
-        
         if (authParam === 'telegram') {
-            console.log('📱 [MENU] Параметр auth=telegram - показываем модальное окно');
+            console.log('📱 [MENU] Параметр auth=telegram');
+            // Позволяем пользователю переавторизоваться через Telegram (напр. переключение аккаунта)
             if (typeof showTelegramAuthModal === 'function') {
                 setTimeout(() => showTelegramAuthModal(), 100);
                 return true;
@@ -1557,7 +1552,8 @@ function checkAuthParam() {
         }
         
         if (authParam === 'email') {
-            console.log('📧 [MENU] Параметр auth=email - показываем модальное окно');
+            console.log('📧 [MENU] Параметр auth=email');
+            // Позволяем пользователю авторизоваться через email (независимо от Telegram авторизации)
             if (typeof showEmailAuthModal === 'function') {
                 setTimeout(() => showEmailAuthModal(), 100);
                 return true;

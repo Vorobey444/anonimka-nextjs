@@ -100,29 +100,21 @@ async function initializeApplication() {
             isAuthorized = await checkTelegramAuth();
         }
         
-        // Если пришли с параметром auth=telegram, показываем модалку авторизации ТОЛЬКО если не авторизован
+        // Если пришли с параметром auth=telegram, показываем модалку авторизации
         if (authParam === 'telegram') {
-            if (!isAuthorized) {
-                console.log('📱 [APP] Параметр auth=telegram - показываем модальное окно');
-                if (typeof showTelegramAuthModal === 'function') {
-                    showTelegramAuthModal();
-                }
-            } else {
-                console.log('✅ [APP] Пользователь уже авторизован, не показываем модалку');
+            console.log('📱 [APP] Параметр auth=telegram - показываем модальное окно');
+            if (typeof showTelegramAuthModal === 'function') {
+                showTelegramAuthModal();
             }
             window.history.replaceState({}, '', window.location.pathname);
             return;
         }
         
-        // Если пришли с параметром auth=email, показываем модалку ТОЛЬКО если не авторизован
+        // Если пришли с параметром auth=email, показываем модалку email авторизации
         if (authParam === 'email') {
-            if (!isAuthorized) {
-                console.log('📧 [APP] Параметр auth=email - показываем модальное окно');
-                if (typeof showEmailAuthModal === 'function') {
-                    showEmailAuthModal();
-                }
-            } else {
-                console.log('✅ [APP] Пользователь уже авторизован, не показываем модалку');
+            console.log('📧 [APP] Параметр auth=email - показываем модальное окно');
+            if (typeof showEmailAuthModal === 'function') {
+                showEmailAuthModal();
             }
             window.history.replaceState({}, '', window.location.pathname);
             return;

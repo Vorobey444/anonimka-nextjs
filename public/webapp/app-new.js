@@ -373,7 +373,17 @@ function markMessagesAsDelivered() {
 }
 
 function updateLogoutButtonVisibility() {
-    console.log('🚪 Видимость кнопки выхода обновлена');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    
+    // Показываем кнопку логаута, если пользователь авторизован
+    if (typeof isUserAuthorized === 'function' && isUserAuthorized()) {
+        logoutBtn.style.display = 'flex';
+        console.log('🚪 Кнопка выхода показана');
+    } else {
+        logoutBtn.style.display = 'none';
+        console.log('🚪 Кнопка выхода скрыта');
+    }
 }
 
 function loadPremiumStatus() {

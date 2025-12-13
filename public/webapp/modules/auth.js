@@ -106,6 +106,11 @@ function checkTelegramAuth() {
         localStorage.setItem('user_id', userData.id.toString());
         console.log('✅ Авторизован через Telegram WebApp, user_id:', userData.id);
         
+        // Обновляем видимость кнопки выхода
+        if (typeof updateLogoutButtonVisibility === 'function') {
+            setTimeout(() => updateLogoutButtonVisibility(), 100);
+        }
+        
         // Закрываем все модальные окна авторизации
         const modal = document.getElementById('telegramAuthModal');
         const emailModal = document.getElementById('emailAuthModal');
@@ -129,6 +134,11 @@ function checkTelegramAuth() {
     
     if (userToken && userToken !== 'null' && userToken !== 'undefined' && authMethod === 'email') {
         console.log('✅ Найдена email авторизация, user_token:', userToken.substring(0, 16) + '...');
+        
+        // Обновляем видимость кнопки выхода
+        if (typeof updateLogoutButtonVisibility === 'function') {
+            setTimeout(() => updateLogoutButtonVisibility(), 100);
+        }
         
         // Закрываем модальные окна
         const telegramModal = document.getElementById('telegramAuthModal');
@@ -156,6 +166,11 @@ function checkTelegramAuth() {
             if (authTime && (now - parseInt(authTime)) < 30 * 24 * 60 * 60 * 1000) {
                 console.log('✅ Telegram авторизация действительна');
                 
+                // Обновляем видимость кнопки выхода
+                if (typeof updateLogoutButtonVisibility === 'function') {
+                    setTimeout(() => updateLogoutButtonVisibility(), 100);
+                }
+                
                 // Восстанавливаем user_id если его нет
                 if (!localStorage.getItem('user_id') && userData.id) {
                     localStorage.setItem('user_id', userData.id.toString());
@@ -181,6 +196,10 @@ function checkTelegramAuth() {
     // Проверяем обычный user_token без auth_method
     if (userToken && userToken !== 'null' && userToken !== 'undefined') {
         console.log('✅ Пользователь авторизован по токену');
+        // Обновляем видимость кнопки выхода
+        if (typeof updateLogoutButtonVisibility === 'function') {
+            setTimeout(() => updateLogoutButtonVisibility(), 100);
+        }
         return true;
     }
     

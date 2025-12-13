@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T18:26:34.005Z
+ * Автоматически сгенерирован: 2025-12-13T18:33:23.586Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -1724,7 +1724,7 @@ console.log('✅ Модуль утилит инициализирован');
 } catch(e) { console.error('❌ Ошибка в модуле utils.js:', e); }
 })();
 
-// ========== auth.js (36.2 KB) ==========
+// ========== auth.js (37.1 KB) ==========
 (function() {
 try {
 /**
@@ -1835,6 +1835,11 @@ function checkTelegramAuth() {
         localStorage.setItem('user_id', userData.id.toString());
         console.log('✅ Авторизован через Telegram WebApp, user_id:', userData.id);
         
+        // Обновляем видимость кнопки выхода
+        if (typeof updateLogoutButtonVisibility === 'function') {
+            setTimeout(() => updateLogoutButtonVisibility(), 100);
+        }
+        
         // Закрываем все модальные окна авторизации
         const modal = document.getElementById('telegramAuthModal');
         const emailModal = document.getElementById('emailAuthModal');
@@ -1858,6 +1863,11 @@ function checkTelegramAuth() {
     
     if (userToken && userToken !== 'null' && userToken !== 'undefined' && authMethod === 'email') {
         console.log('✅ Найдена email авторизация, user_token:', userToken.substring(0, 16) + '...');
+        
+        // Обновляем видимость кнопки выхода
+        if (typeof updateLogoutButtonVisibility === 'function') {
+            setTimeout(() => updateLogoutButtonVisibility(), 100);
+        }
         
         // Закрываем модальные окна
         const telegramModal = document.getElementById('telegramAuthModal');
@@ -1885,6 +1895,11 @@ function checkTelegramAuth() {
             if (authTime && (now - parseInt(authTime)) < 30 * 24 * 60 * 60 * 1000) {
                 console.log('✅ Telegram авторизация действительна');
                 
+                // Обновляем видимость кнопки выхода
+                if (typeof updateLogoutButtonVisibility === 'function') {
+                    setTimeout(() => updateLogoutButtonVisibility(), 100);
+                }
+                
                 // Восстанавливаем user_id если его нет
                 if (!localStorage.getItem('user_id') && userData.id) {
                     localStorage.setItem('user_id', userData.id.toString());
@@ -1910,6 +1925,10 @@ function checkTelegramAuth() {
     // Проверяем обычный user_token без auth_method
     if (userToken && userToken !== 'null' && userToken !== 'undefined') {
         console.log('✅ Пользователь авторизован по токену');
+        // Обновляем видимость кнопки выхода
+        if (typeof updateLogoutButtonVisibility === 'function') {
+            setTimeout(() => updateLogoutButtonVisibility(), 100);
+        }
         return true;
     }
     
@@ -16622,7 +16641,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (55.4 KB) ==========
+// ========== menu.js (55.3 KB) ==========
 (function() {
 try {
 /**
@@ -18169,14 +18188,9 @@ function checkAuthParam() {
         // Очищаем параметр из URL
         window.history.replaceState({}, '', window.location.pathname);
         
-        // Проверяем, не авторизован ли уже пользователь
-        if (typeof isUserAuthorized === 'function' && isUserAuthorized()) {
-            console.log('✅ [MENU] Пользователь уже авторизован, не показываем модалку');
-            return false;
-        }
-        
         if (authParam === 'telegram') {
-            console.log('📱 [MENU] Параметр auth=telegram - показываем модальное окно');
+            console.log('📱 [MENU] Параметр auth=telegram');
+            // Позволяем пользователю переавторизоваться через Telegram (напр. переключение аккаунта)
             if (typeof showTelegramAuthModal === 'function') {
                 setTimeout(() => showTelegramAuthModal(), 100);
                 return true;
@@ -18184,7 +18198,8 @@ function checkAuthParam() {
         }
         
         if (authParam === 'email') {
-            console.log('📧 [MENU] Параметр auth=email - показываем модальное окно');
+            console.log('📧 [MENU] Параметр auth=email');
+            // Позволяем пользователю авторизоваться через email (независимо от Telegram авторизации)
             if (typeof showEmailAuthModal === 'function') {
                 setTimeout(() => showEmailAuthModal(), 100);
                 return true;
