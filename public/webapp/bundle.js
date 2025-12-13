@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T20:47:34.651Z
+ * Автоматически сгенерирован: 2025-12-13T20:51:44.156Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -4095,7 +4095,7 @@ console.log('📊 [LOCATION-DATA] Всего стран:', Object.keys(locationD
 } catch(e) { console.error('❌ Ошибка в модуле location-data.js:', e); }
 })();
 
-// ========== photos.js (59.4 KB) ==========
+// ========== photos.js (61.4 KB) ==========
 (function() {
 try {
 /**
@@ -5523,7 +5523,52 @@ window.deletePhotoFromStep9 = deletePhotoFromStep9;
 async function openCamera() {
     if (typeof closePhotoSourceMenu === 'function') closePhotoSourceMenu();
     
-    // Проверяем поддержку getUserMedia
+    // Проверяем, запущено ли приложение в нативной среде Capacitor (Android/iOS)
+    if (window.Capacitor && window.Capacitor.isNativePlatform() && window.CapacitorCamera) {
+        try {
+            console.log('📸 [PHOTOS] Используем нативную камеру Capacitor');
+            
+            const CameraSource = {
+                Camera: 'CAMERA',
+                Photos: 'PHOTOS'
+            };
+            
+            const CameraResultType = {
+                Uri: 'uri',
+                Base64: 'base64',
+                DataUrl: 'dataUrl'
+            };
+            
+            const image = await window.CapacitorCamera.getPhoto({
+                quality: 90,
+                allowEditing: false,
+                resultType: CameraResultType.DataUrl,
+                source: CameraSource.Camera, // Принудительно используем камеру, а не галерею
+                saveToGallery: false,
+                correctOrientation: true
+            });
+            
+            // Конвертируем dataUrl в File объект
+            const response = await fetch(image.dataUrl);
+            const blob = await response.blob();
+            const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+            
+            // Вызываем обработчик фото
+            if (typeof handlePhotoSelect === 'function') {
+                const event = { target: { files: [file] } };
+                handlePhotoSelect(event);
+            }
+            
+            console.log('✅ [PHOTOS] Фото получено из нативной камеры');
+            return;
+            
+        } catch (error) {
+            console.error('❌ [PHOTOS] Ошибка нативной камеры:', error);
+            // Fallback на обычный input если нативная камера не сработала
+        }
+    }
+    
+    // Для веб-версии: проверяем поддержку getUserMedia
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         // Fallback на обычный input с capture
         const cameraInput = document.getElementById('cameraInput');

@@ -16,6 +16,13 @@
     <script src="https://telegram.org/js/telegram-widget.js?22"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Capacitor Core (для нативных функций в Android/iOS) -->
+    <script type="module">
+        import { Capacitor } from 'https://cdn.jsdelivr.net/npm/@capacitor/core@7/dist/esm/index.js';
+        import { Camera } from 'https://cdn.jsdelivr.net/npm/@capacitor/camera@7/dist/esm/index.js';
+        window.Capacitor = Capacitor;
+        window.CapacitorCamera = Camera;
+    </script>
     <!-- Supabase scripts removed (deprecated). All data flows via our Next.js API. -->
     <script src="/webapp/local-chat-storage.js?v=1.0"></script>
     <!-- Скрываем модальное окно авторизации при загрузке страницы (без !important, чтобы JS мог показать) -->
@@ -1523,7 +1530,7 @@
 
             <div class="chat-input-container">
                 <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoSelect(event)" />
-                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoSelect(event)" />
+                <input type="file" id="cameraInput" accept="image/*" capture style="display: none;" onchange="handlePhotoSelect(event)" />
                 <button class="attach-photo-button" onclick="showPhotoSourceMenu()" title="Прикрепить фото">
                     <span>📷</span>
                 </button>
