@@ -1447,6 +1447,7 @@ async function openCamera() {
                 <video id="cameraPreview" autoplay playsinline style="
                     max-width: 100%; max-height: 70vh; border-radius: 12px;
                 "></video>
+                <canvas id="cameraCanvas" style="display: none;"></canvas>
                 <div style="display: flex; gap: 15px; margin-top: 20px;">
                     <button onclick="switchCamera()" style="
                         background: rgba(131, 56, 236, 0.2); border: 2px solid var(--neon-purple);
