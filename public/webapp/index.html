@@ -1428,10 +1428,10 @@
                 
                 <!-- Табы навигации -->
                 <div class="admin-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
-                    <button class="admin-tab active" data-tab="overview" onclick="switchAdminTab('overview')" style="flex: 1; min-width: 80px; padding: 0.6rem; border-radius: 8px; background: var(--neon-cyan); color: #000; border: none; font-weight: bold; cursor: pointer;">📊 Обзор</button>
-                    <button class="admin-tab" data-tab="users" onclick="switchAdminTab('users')" style="flex: 1; min-width: 80px; padding: 0.6rem; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">👥 Юзеры</button>
-                    <button class="admin-tab" data-tab="ads" onclick="switchAdminTab('ads')" style="flex: 1; min-width: 80px; padding: 0.6rem; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">📋 Анкеты</button>
-                    <button class="admin-tab" data-tab="chats" onclick="switchAdminTab('chats')" style="flex: 1; min-width: 80px; padding: 0.6rem; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">💬 Чаты</button>
+                    <button class="admin-tab active" data-tab="overview" data-onclick="switchAdminTab" data-arg="overview" style="flex: 1; min-width: 80px; padding: 0.6rem; border-radius: 8px; background: var(--neon-cyan); color: #000; border: none; font-weight: bold; cursor: pointer;">📊 Обзор</button>
+                    <button class="admin-tab" data-tab="users" data-onclick="switchAdminTab" data-arg="users" style="flex: 1; min-width: 80px; padding: 0.6rem; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">👥 Юзеры</button>
+                    <button class="admin-tab" data-tab="ads" data-onclick="switchAdminTab" data-arg="ads" style="flex: 1; min-width: 80px; padding: 0.6rem; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">📋 Анкеты</button>
+                    <button class="admin-tab" data-tab="chats" data-onclick="switchAdminTab" data-arg="chats" style="flex: 1; min-width: 80px; padding: 0.6rem; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">💬 Чаты</button>
                 </div>
 
                 <!-- Секция: Обзор -->
@@ -2334,7 +2334,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.2.40'; // FIX: admin stats + telegram auth
+        const bugFixVersion = '2.2.41'; // FIX: admin stats + telegram auth
         const lastVersion = localStorage.getItem('app_version');
         
         // ВСЕГДА очищаем fetch кэш при загрузке
@@ -2393,34 +2393,44 @@
         script.onload = function() {
             console.log('[ADMIN INIT] Инициализирую админ-панель');
             
-            // Инициализируем обработчики табов
-            const tabs = document.querySelectorAll('.admin-tab');
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabName = this.getAttribute('data-tab');
-                    if (typeof window.switchAdminTab === 'function') {
-                        window.switchAdminTab(tabName);
-                    } else {
-                        console.error('[ADMIN INIT] switchAdminTab не найдена');
-                    }
+            // Небольшая задержка для убедитесь что бандл полностью загружен
+            setTimeout(() => {
+                // Инициализируем обработчики табов с отладкой
+                const tabs = document.querySelectorAll('.admin-tab');
+                console.log('[ADMIN INIT] Найдено табов:', tabs.length);
+                
+                tabs.forEach((tab, idx) => {
+                    const tabName = tab.getAttribute('data-tab');
+                    console.log(`[ADMIN INIT] Таб ${idx}: ${tabName}, switchAdminTab доступна?`, typeof window.switchAdminTab);
+                    
+                    tab.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('[ADMIN TAB CLICK] Клик по табу:', tabName);
+                        if (typeof window.switchAdminTab === 'function') {
+                            console.log('[ADMIN TAB CLICK] Вызываю switchAdminTab');
+                            window.switchAdminTab(tabName);
+                        } else {
+                            console.error('[ADMIN TAB CLICK] switchAdminTab НЕ функция!', typeof window.switchAdminTab);
+                        }
+                    });
                 });
-            });
-            
-            // Инициализируем поиск пользователей
-            const searchInput = document.getElementById('adminUserSearch');
-            if (searchInput) {
-                searchInput.addEventListener('keyup', function() {
-                    if (typeof window.loadAdminUsers === 'function') {
-                        window.loadAdminUsers();
-                    }
+                
+                // Инициализируем поиск пользователей
+                const searchInput = document.getElementById('adminUserSearch');
+                if (searchInput) {
+                    searchInput.addEventListener('keyup', function() {
+                        if (typeof window.loadAdminUsers === 'function') {
+                            window.loadAdminUsers();
+                        }
+                    });
+                }
+                
+                console.log('[ADMIN INIT] Готово. Функции доступны:', {
+                    switchAdminTab: typeof window.switchAdminTab,
+                    loadAdminUsers: typeof window.loadAdminUsers,
+                    banUser: typeof window.banUser
                 });
-            }
-            
-            console.log('[ADMIN INIT] Готово. Функции доступны:', {
-                switchAdminTab: typeof window.switchAdminTab,
-                loadAdminUsers: typeof window.loadAdminUsers,
-                banUser: typeof window.banUser
-            });
+            }, 100);
         };
     </script>
 </body>
