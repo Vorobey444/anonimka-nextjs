@@ -6776,8 +6776,10 @@ body.emoji-flags-supported .country-code {
 .world-chat-footer {
     position: fixed;
     bottom: 0;
-    left: 0;
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 600px;
     background: rgba(0, 0, 0, 0.95);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     z-index: 100;
@@ -6848,8 +6850,10 @@ body.emoji-flags-supported .country-code {
     position: fixed;
     top: 60px; /* Высота header */
     bottom: 0; /* До самого низа */
-    left: 0;
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 600px;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 10px;
