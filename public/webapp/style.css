@@ -109,6 +109,22 @@ body {
     min-height: 200px !important;
 }
 
+/* Внутренние элементы админ панели - без ограничений */
+#adminScreen .admin-container * {
+    max-width: none !important;
+}
+
+#adminScreen .admin-section {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+#adminScreen .admin-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+}
+
 /* Главное меню - всегда вертикальный layout */
 #mainMenu.screen.active {
     display: flex !important;
