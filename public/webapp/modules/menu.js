@@ -1542,6 +1542,12 @@ function checkAuthParam() {
         // Очищаем параметр из URL
         window.history.replaceState({}, '', window.location.pathname);
         
+        // Проверяем, не авторизован ли уже пользователь
+        if (typeof isUserAuthorized === 'function' && isUserAuthorized()) {
+            console.log('✅ [MENU] Пользователь уже авторизован, не показываем модалку');
+            return false;
+        }
+        
         if (authParam === 'telegram') {
             console.log('📱 [MENU] Параметр auth=telegram - показываем модальное окно');
             if (typeof showTelegramAuthModal === 'function') {
