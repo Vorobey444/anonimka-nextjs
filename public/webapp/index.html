@@ -2195,7 +2195,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.2.16'; // FIX: onboarding nickname realtime check + smart Готово button
+        const bugFixVersion = '2.2.17'; // FIX: auto-detect location after nickname (GPS → IP → Timezone)
         const lastVersion = localStorage.getItem('app_version');
         
         // ВСЕГДА очищаем fetch кэш при загрузке
@@ -2209,7 +2209,7 @@
         }
         
         if (lastVersion !== bugFixVersion) {
-            console.log('[CACHE] Обнаружена новая версия 2.2.16, очищаем кеш...');
+            console.log('[CACHE] Обнаружена новая версия 2.2.17, очищаем кеш...');
             localStorage.setItem('app_version', bugFixVersion);
             
             // Удаляем все зарегистрированные Service Workers

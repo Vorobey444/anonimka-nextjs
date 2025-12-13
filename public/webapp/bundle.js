@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T07:26:50.268Z
+ * Автоматически сгенерирован: 2025-12-13T07:44:05.696Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -14989,7 +14989,7 @@ console.log('✅ [CHATS] Модуль чатов инициализирован'
 } catch(e) { console.error('❌ Ошибка в модуле chats.js:', e); }
 })();
 
-// ========== onboarding.js (38.7 KB) ==========
+// ========== onboarding.js (47.4 KB) ==========
 (function() {
 try {
 /**
@@ -15015,6 +15015,8 @@ let onboardingData = {
     goals: [],
     languages: []
 };
+let isNicknameAvailable = false;
+let nicknameCheckTimeout = null;
 
 /**
  * ===== УПРАВЛЕНИЕ ПРОЦЕССОМ ОНБОРДИНГА =====
@@ -15401,10 +15403,6 @@ function toggleOnboardingLanguage(language) {
  * ===== СТАТУС НИКНЕЙМА =====
  */
 
-// Таймер для debounce проверки никнейма
-let nicknameCheckTimeout = null;
-let isNicknameAvailable = false;
-
 /**
  * Проверка доступности никнейма
  */
@@ -15576,6 +15574,9 @@ async function completeOnboarding() {
         localStorage.setItem('userNickname', nickname);
         localStorage.setItem('user_nickname', nickname);
         
+        // Определяем и сохраняем местоположение
+        await detectAndSaveLocation(userToken);
+        
         // Сохраняем данные локально
         localStorage.setItem('onboardingCompleted', 'true');
         
@@ -15608,6 +15609,212 @@ async function completeOnboarding() {
         }
         updateContinueButton();
     }
+}
+
+/**
+ * Определение и сохранение местоположения пользователя
+ * Приоритет: GPS → IP → Timezone
+ */
+async function detectAndSaveLocation(userToken) {
+    console.log('📍 [LOCATION] Начинаем определение местоположения...');
+    
+    let locationData = null;
+    
+    // 1. Пробуем GPS (Geolocation API)
+    try {
+        locationData = await getLocationByGPS();
+        if (locationData) {
+            console.log('✅ [LOCATION] Получено по GPS:', locationData);
+        }
+    } catch (e) {
+        console.log('⚠️ [LOCATION] GPS недоступен:', e.message);
+    }
+    
+    // 2. Если GPS не сработал - пробуем по IP
+    if (!locationData) {
+        try {
+            locationData = await getLocationByIP();
+            if (locationData) {
+                console.log('✅ [LOCATION] Получено по IP:', locationData);
+            }
+        } catch (e) {
+            console.log('⚠️ [LOCATION] IP геолокация недоступна:', e.message);
+        }
+    }
+    
+    // 3. Если IP не сработал - определяем по часовому поясу
+    if (!locationData) {
+        try {
+            locationData = getLocationByTimezone();
+            if (locationData) {
+                console.log('✅ [LOCATION] Получено по часовому поясу:', locationData);
+            }
+        } catch (e) {
+            console.log('⚠️ [LOCATION] Timezone определение не удалось:', e.message);
+        }
+    }
+    
+    // 4. Если ничего не определилось - ставим по умолчанию
+    if (!locationData) {
+        locationData = { country: 'KZ', city: 'Алматы', region: null };
+        console.log('⚠️ [LOCATION] Используем значение по умолчанию:', locationData);
+    }
+    
+    // Сохраняем локально
+    localStorage.setItem('userCountry', locationData.country);
+    localStorage.setItem('userCity', locationData.city);
+    if (locationData.region) {
+        localStorage.setItem('userRegion', locationData.region);
+    }
+    
+    // Сохраняем на сервер
+    try {
+        const response = await fetch('/api/users/location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userToken: userToken,
+                country: locationData.country,
+                region: locationData.region,
+                city: locationData.city
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            console.log('✅ [LOCATION] Локация сохранена в БД');
+        } else {
+            console.error('❌ [LOCATION] Ошибка сохранения:', result.error);
+        }
+    } catch (error) {
+        console.error('❌ [LOCATION] Ошибка запроса:', error);
+    }
+}
+
+/**
+ * Получить локацию по GPS
+ */
+function getLocationByGPS() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Geolocation не поддерживается'));
+            return;
+        }
+        
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    const { latitude, longitude } = position.coords;
+                    console.log('📍 [GPS] Координаты:', latitude, longitude);
+                    
+                    // Реверс-геокодинг через бесплатный API
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ru`
+                    );
+                    const data = await response.json();
+                    
+                    if (data && data.address) {
+                        const country = data.address.country_code?.toUpperCase() || 'KZ';
+                        const city = data.address.city || data.address.town || data.address.village || data.address.state || 'Неизвестно';
+                        const region = data.address.state || null;
+                        
+                        resolve({ country, city, region });
+                    } else {
+                        reject(new Error('Не удалось определить адрес'));
+                    }
+                } catch (e) {
+                    reject(e);
+                }
+            },
+            (error) => {
+                reject(new Error('GPS отклонен: ' + error.message));
+            },
+            { timeout: 10000, enableHighAccuracy: false }
+        );
+    });
+}
+
+/**
+ * Получить локацию по IP
+ */
+async function getLocationByIP() {
+    // Пробуем несколько бесплатных сервисов
+    const services = [
+        'https://ipapi.co/json/',
+        'https://ip-api.com/json/?lang=ru'
+    ];
+    
+    for (const url of services) {
+        try {
+            const response = await fetch(url, { timeout: 5000 });
+            const data = await response.json();
+            
+            if (data) {
+                // ipapi.co формат
+                if (data.country_code) {
+                    return {
+                        country: data.country_code,
+                        city: data.city || 'Неизвестно',
+                        region: data.region || null
+                    };
+                }
+                // ip-api.com формат
+                if (data.countryCode) {
+                    return {
+                        country: data.countryCode,
+                        city: data.city || 'Неизвестно',
+                        region: data.regionName || null
+                    };
+                }
+            }
+        } catch (e) {
+            console.log('⚠️ [IP] Сервис недоступен:', url);
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Получить локацию по часовому поясу
+ */
+function getLocationByTimezone() {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    console.log('🕐 [TIMEZONE]:', timezone);
+    
+    // Маппинг часовых поясов на локации
+    const timezoneMap = {
+        'Asia/Almaty': { country: 'KZ', city: 'Алматы', region: 'Алматы' },
+        'Asia/Qyzylorda': { country: 'KZ', city: 'Кызылорда', region: 'Кызылординская область' },
+        'Asia/Aqtobe': { country: 'KZ', city: 'Актобе', region: 'Актюбинская область' },
+        'Asia/Aqtau': { country: 'KZ', city: 'Актау', region: 'Мангистауская область' },
+        'Asia/Atyrau': { country: 'KZ', city: 'Атырау', region: 'Атырауская область' },
+        'Asia/Oral': { country: 'KZ', city: 'Уральск', region: 'Западно-Казахстанская область' },
+        'Europe/Moscow': { country: 'RU', city: 'Москва', region: 'Москва' },
+        'Europe/Kiev': { country: 'UA', city: 'Киев', region: 'Киев' },
+        'Europe/Minsk': { country: 'BY', city: 'Минск', region: 'Минск' },
+        'Asia/Tashkent': { country: 'UZ', city: 'Ташкент', region: 'Ташкент' },
+        'Asia/Bishkek': { country: 'KG', city: 'Бишкек', region: 'Чуйская область' },
+        'Asia/Dushanbe': { country: 'TJ', city: 'Душанбе', region: 'Душанбе' },
+        'Asia/Ashgabat': { country: 'TM', city: 'Ашхабад', region: 'Ашхабад' },
+        'Asia/Baku': { country: 'AZ', city: 'Баку', region: 'Баку' },
+        'Asia/Yerevan': { country: 'AM', city: 'Ереван', region: 'Ереван' },
+        'Asia/Tbilisi': { country: 'GE', city: 'Тбилиси', region: 'Тбилиси' }
+    };
+    
+    if (timezoneMap[timezone]) {
+        return timezoneMap[timezone];
+    }
+    
+    // Если точного совпадения нет - определяем по префиксу
+    if (timezone.startsWith('Asia/')) {
+        return { country: 'KZ', city: 'Алматы', region: null };
+    }
+    if (timezone.startsWith('Europe/')) {
+        return { country: 'RU', city: 'Москва', region: null };
+    }
+    
+    return null;
 }
 
 /**
