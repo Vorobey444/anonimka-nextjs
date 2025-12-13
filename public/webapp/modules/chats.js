@@ -444,7 +444,6 @@ function renderSingleMessage(msg, myUserId, allMessages) {
         </div>
     `;
 }
-}
 
 /**
  * Отправить сообщение
