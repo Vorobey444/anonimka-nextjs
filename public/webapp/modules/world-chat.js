@@ -420,6 +420,10 @@ async function sendWorldChatMessage() {
     
     try {
         const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
+        
         const nickname = localStorage.getItem('userNickname') || 'Аноним';
         const isPremium = typeof userPremiumStatus !== 'undefined' ? userPremiumStatus.isPremium : false;
         const city = localStorage.getItem('userCity') || 'Алматы';
@@ -430,7 +434,7 @@ async function sendWorldChatMessage() {
             body: JSON.stringify({
                 action: 'send-message',
                 params: {
-                    userToken: userToken,
+                    userToken: userId,
                     nickname: nickname,
                     message: message,
                     isPremium: isPremium,

@@ -6789,10 +6789,12 @@ body.emoji-flags-supported .country-code {
     gap: 6px;
     padding: 8px 12px 4px 12px;
     background: transparent;
+    justify-content: center;
+    align-items: center;
 }
 
 .world-chat-tab {
-    flex: 1;
+    flex: 0 1 auto;
     padding: 6px 8px;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -6803,6 +6805,7 @@ body.emoji-flags-supported .country-code {
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
+    min-width: 80px;
 }
 
 .world-chat-tab:hover {
@@ -6827,7 +6830,7 @@ body.emoji-flags-supported .country-code {
     font-weight: bold;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-left: 5px;
+    margin-left: auto;
     min-width: 35px;
 }
 
@@ -7087,13 +7090,14 @@ body.emoji-flags-supported .country-code {
     .world-chat-tab {
         padding: 5px 6px;
         font-size: 12px;
+        min-width: 70px;
     }
     
     .world-chat-font-size-btn {
         padding: 5px 8px;
         font-size: 13px;
         min-width: 30px;
-        margin-left: 3px;
+        margin-left: auto;
     }
     
     .world-chat-messages-container {

@@ -317,6 +317,16 @@ function openBurgerMenu() {
     if (overlay) {
         overlay.classList.add('active');
         console.log('📖 [MENU] Бургер-меню открыто');
+        
+        // Добавляем обработчик клика вне меню
+        setTimeout(() => {
+            overlay.onclick = (e) => {
+                // Если клик был по overlay (фону), а не по содержимому меню
+                if (e.target === overlay) {
+                    closeBurgerMenu();
+                }
+            };
+        }, 100);
     }
 }
 

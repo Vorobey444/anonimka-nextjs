@@ -82,6 +82,15 @@ async function showPremiumModal() {
     
     modal.style.display = 'flex';
     
+    // Добавляем обработчик клика вне модального окна
+    setTimeout(() => {
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                closePremiumModal();
+            }
+        };
+    }, 100);
+    
     // Обновляем статус
     await loadPremiumStatus();
     updatePremiumModalButtons();

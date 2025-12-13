@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T20:31:47.114Z
+ * Автоматически сгенерирован: 2025-12-13T20:43:08.529Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -5645,7 +5645,7 @@ console.log('✅ [PHOTOS] Модуль фото инициализирован')
 } catch(e) { console.error('❌ Ошибка в модуле photos.js:', e); }
 })();
 
-// ========== premium.js (34.9 KB) ==========
+// ========== premium.js (35.2 KB) ==========
 (function() {
 try {
 /**
@@ -5731,6 +5731,15 @@ async function showPremiumModal() {
     }
     
     modal.style.display = 'flex';
+    
+    // Добавляем обработчик клика вне модального окна
+    setTimeout(() => {
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                closePremiumModal();
+            }
+        };
+    }, 100);
     
     // Обновляем статус
     await loadPremiumStatus();
@@ -6836,7 +6845,7 @@ console.log('✅ [REFERRAL] Модуль реферальной программ
 } catch(e) { console.error('❌ Ошибка в модуле referral.js:', e); }
 })();
 
-// ========== world-chat.js (31.6 KB) ==========
+// ========== world-chat.js (31.8 KB) ==========
 (function() {
 try {
 /**
@@ -7261,6 +7270,10 @@ async function sendWorldChatMessage() {
     
     try {
         const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
+        
         const nickname = localStorage.getItem('userNickname') || 'Аноним';
         const isPremium = typeof userPremiumStatus !== 'undefined' ? userPremiumStatus.isPremium : false;
         const city = localStorage.getItem('userCity') || 'Алматы';
@@ -7271,7 +7284,7 @@ async function sendWorldChatMessage() {
             body: JSON.stringify({
                 action: 'send-message',
                 params: {
-                    userToken: userToken,
+                    userToken: userId,
                     nickname: nickname,
                     message: message,
                     isPremium: isPremium,
@@ -16858,7 +16871,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (56.4 KB) ==========
+// ========== menu.js (56.8 KB) ==========
 (function() {
 try {
 /**
@@ -17180,6 +17193,16 @@ function openBurgerMenu() {
     if (overlay) {
         overlay.classList.add('active');
         console.log('📖 [MENU] Бургер-меню открыто');
+        
+        // Добавляем обработчик клика вне меню
+        setTimeout(() => {
+            overlay.onclick = (e) => {
+                // Если клик был по overlay (фону), а не по содержимому меню
+                if (e.target === overlay) {
+                    closeBurgerMenu();
+                }
+            };
+        }, 100);
     }
 }
 
