@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T06:52:31.934Z
+ * Автоматически сгенерирован: 2025-12-13T06:57:07.404Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -5456,7 +5456,7 @@ console.log('✅ [PHOTOS] Модуль фото инициализирован')
 } catch(e) { console.error('❌ Ошибка в модуле photos.js:', e); }
 })();
 
-// ========== premium.js (34.7 KB) ==========
+// ========== premium.js (34.9 KB) ==========
 (function() {
 try {
 /**
@@ -5615,6 +5615,7 @@ function updatePremiumModalButtons() {
     const buyBtn = document.getElementById('buyPremiumBtn');
     const referralBtn = document.getElementById('referralBtn');
     const trialBtn = document.getElementById('trialBtn');
+    const dollarBtn = document.getElementById('dollarPaymentBtn');
     const freeBtn = document.querySelector('.pricing-card:not(.featured) .pricing-btn');
     
     if (!userPremiumStatus.isPremium) {
@@ -5631,10 +5632,12 @@ function updatePremiumModalButtons() {
             // Email пользователи не видят Stars и Referral
             if (buyBtn) buyBtn.style.display = 'none';
             if (referralBtn) referralBtn.style.display = 'none';
+            if (dollarBtn) dollarBtn.style.display = 'block';
         } else {
             // Telegram пользователи видят все
             if (buyBtn) buyBtn.style.display = 'block';
             if (referralBtn) referralBtn.style.display = 'block';
+            if (dollarBtn) dollarBtn.style.display = 'block';
         }
         
         // Trial показываем только если не использован
@@ -5650,6 +5653,7 @@ function updatePremiumModalButtons() {
         if (buyBtn) buyBtn.style.display = 'none';
         if (referralBtn) referralBtn.style.display = 'none';
         if (trialBtn) trialBtn.style.display = 'none';
+        if (dollarBtn) dollarBtn.style.display = 'none';
     }
 }
 
@@ -15834,7 +15838,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (51.3 KB) ==========
+// ========== menu.js (51.4 KB) ==========
 (function() {
 try {
 /**
@@ -16223,6 +16227,11 @@ function showMainMenu() {
     // Обновляем счетчик непрочитанных чатов
     if (typeof updateChatBadge === 'function') {
         updateChatBadge();
+    }
+    
+    // Загружаем превью мирового чата
+    if (typeof loadWorldChatPreview === 'function') {
+        loadWorldChatPreview();
     }
     
     // Обновляем Telegram кнопки

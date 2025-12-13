@@ -154,6 +154,7 @@ function updatePremiumModalButtons() {
     const buyBtn = document.getElementById('buyPremiumBtn');
     const referralBtn = document.getElementById('referralBtn');
     const trialBtn = document.getElementById('trialBtn');
+    const dollarBtn = document.getElementById('dollarPaymentBtn');
     const freeBtn = document.querySelector('.pricing-card:not(.featured) .pricing-btn');
     
     if (!userPremiumStatus.isPremium) {
@@ -170,10 +171,12 @@ function updatePremiumModalButtons() {
             // Email пользователи не видят Stars и Referral
             if (buyBtn) buyBtn.style.display = 'none';
             if (referralBtn) referralBtn.style.display = 'none';
+            if (dollarBtn) dollarBtn.style.display = 'block';
         } else {
             // Telegram пользователи видят все
             if (buyBtn) buyBtn.style.display = 'block';
             if (referralBtn) referralBtn.style.display = 'block';
+            if (dollarBtn) dollarBtn.style.display = 'block';
         }
         
         // Trial показываем только если не использован
@@ -189,6 +192,7 @@ function updatePremiumModalButtons() {
         if (buyBtn) buyBtn.style.display = 'none';
         if (referralBtn) referralBtn.style.display = 'none';
         if (trialBtn) trialBtn.style.display = 'none';
+        if (dollarBtn) dollarBtn.style.display = 'none';
     }
 }
 

@@ -386,6 +386,11 @@ function showMainMenu() {
         updateChatBadge();
     }
     
+    // Загружаем превью мирового чата
+    if (typeof loadWorldChatPreview === 'function') {
+        loadWorldChatPreview();
+    }
+    
     // Обновляем Telegram кнопки
     if (typeof updateTelegramButtons === 'function') {
         updateTelegramButtons('homeScreen');
