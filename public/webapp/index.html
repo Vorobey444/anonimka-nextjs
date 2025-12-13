@@ -2194,7 +2194,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.2.13'; // FIX: force fresh ads data
+        const bugFixVersion = '2.2.14'; // FIX: nickname modal improvements
         const lastVersion = localStorage.getItem('app_version');
         
         // ВСЕГДА очищаем fetch кэш при загрузке
@@ -2208,7 +2208,7 @@
         }
         
         if (lastVersion !== bugFixVersion) {
-            console.log('[CACHE] Обнаружена новая версия 2.2.13, очищаем кеш...');
+            console.log('[CACHE] Обнаружена новая версия 2.2.14, очищаем кеш...');
             localStorage.setItem('app_version', bugFixVersion);
             
             // Удаляем все зарегистрированные Service Workers
