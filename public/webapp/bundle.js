@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T08:39:33.473Z
+ * Автоматически сгенерирован: 2025-12-13T09:40:29.733Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -10567,7 +10567,7 @@ console.log('✅ [LOCATION] Модуль локации инициализиро
 } catch(e) { console.error('❌ Ошибка в модуле location.js:', e); }
 })();
 
-// ========== ads.js (106.8 KB) ==========
+// ========== ads.js (107.6 KB) ==========
 (function() {
 try {
 /**
@@ -11501,7 +11501,16 @@ async function submitAd() {
             return;
         }
         
-        console.log('✅ [ADS] Анкета опубликована:', result.data);
+        console.log('✅ [ADS] Анкета опубликована:', result.ad);
+        
+        // Синхронизируем user_token если сервер вернул другой
+        if (result.ad && result.ad.user_token) {
+            const currentToken = localStorage.getItem('user_token');
+            if (currentToken !== result.ad.user_token) {
+                console.log('🔄 [ADS] Обновляем user_token в localStorage');
+                localStorage.setItem('user_token', result.ad.user_token);
+            }
+        }
         
         // Выполняем реферальную награду если нужно
         if (typeof processReferralReward === 'function') {
@@ -12367,6 +12376,10 @@ async function loadMyAds() {
         let myAds = [];
         if (userToken) {
             myAds = allAds.filter(ad => ad.user_token === userToken);
+            console.log('🔍 Фильтрация по user_token:', userToken.substring(0, 16) + '...', 
+                'найдено:', myAds.length,
+                'первые 3 токена анкет:', allAds.slice(0, 3).map(a => a.user_token?.substring(0, 16) + '...')
+            );
         } else if (userId) {
             myAds = allAds.filter(ad => String(ad.tg_id) === String(userId));
         }
