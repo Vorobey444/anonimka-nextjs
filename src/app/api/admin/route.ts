@@ -13,7 +13,11 @@ type AdminAction =
   | 'unban-user'
   | 'block-ad'
   | 'unblock-ad'
-  | 'notify-user';
+  | 'notify-user'
+  | 'get-chat-messages'
+  | 'get-user-chats'
+  | 'delete-message'
+  | 'delete-ad';
 
 type AdminUser = {
   user_token: string;
@@ -331,6 +335,68 @@ export async function POST(req: NextRequest) {
             telegramError
           }
         });
+      }
+
+      case 'get-chat-messages': {
+        const chatId: number | undefined = params?.chatId;
+        if (!chatId) return badRequest('chatId is required');
+
+        const messages = await sql`
+          SELECT 
+            id, chat_id, sender_token, message, created_at, is_read, sender_nickname, reply_to_id
+          FROM messages 
+          WHERE chat_id = ${chatId}
+          ORDER BY created_at ASC
+          LIMIT 500
+        `;
+
+        return NextResponse.json({ success: true, data: messages.rows });
+      }
+
+      case 'get-user-chats': {
+        const userToken: string | undefined = params?.userToken;
+        if (!userToken) return badRequest('userToken is required');
+
+        const chats = await sql`
+          SELECT 
+            pc.id,
+            pc.ad_id,
+            pc.user_token_1,
+            pc.user_token_2,
+            pc.created_at,
+            pc.last_message_at,
+            (SELECT COUNT(*)::int FROM messages WHERE chat_id = pc.id) AS message_count,
+            (SELECT message FROM messages WHERE chat_id = pc.id ORDER BY created_at DESC LIMIT 1) AS last_message,
+            (SELECT display_nickname FROM users WHERE user_token = pc.user_token_1 LIMIT 1) AS user1_nickname,
+            (SELECT display_nickname FROM users WHERE user_token = pc.user_token_2 LIMIT 1) AS user2_nickname
+          FROM private_chats pc
+          WHERE pc.user_token_1 = ${userToken} OR pc.user_token_2 = ${userToken}
+          ORDER BY pc.last_message_at DESC NULLS LAST
+          LIMIT 100
+        `;
+
+        return NextResponse.json({ success: true, data: chats.rows });
+      }
+
+      case 'delete-message': {
+        const messageId: number | undefined = params?.messageId;
+        if (!messageId) return badRequest('messageId is required');
+
+        await sql`DELETE FROM messages WHERE id = ${messageId}`;
+
+        return NextResponse.json({ success: true });
+      }
+
+      case 'delete-ad': {
+        const adId: number | undefined = params?.adId;
+        if (!adId) return badRequest('adId is required');
+
+        // Удаляем связанные сообщения и чаты
+        await sql`DELETE FROM messages WHERE chat_id IN (SELECT id FROM private_chats WHERE ad_id = ${adId})`;
+        await sql`DELETE FROM private_chats WHERE ad_id = ${adId}`;
+        await sql`DELETE FROM ads WHERE id = ${adId}`;
+
+        return NextResponse.json({ success: true });
       }
 
       default:

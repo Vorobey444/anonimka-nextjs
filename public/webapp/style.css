@@ -218,6 +218,23 @@ body {
     color: var(--text-muted);
 }
 
+/* Маленькие кнопки для админки */
+#adminScreen .neon-button.small {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.75rem !important;
+    min-width: auto !important;
+}
+
+#adminScreen .neon-button.danger {
+    background: rgba(255, 107, 107, 0.2) !important;
+    border-color: #ff6b6b !important;
+    color: #ff6b6b !important;
+}
+
+#adminScreen .neon-button.danger:hover {
+    background: rgba(255, 107, 107, 0.4) !important;
+}
+
 /* Главное меню - всегда вертикальный layout */
 #mainMenu.screen.active {
     display: flex !important;
