@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         userId = result.rows[0].id;
         console.log('[NICKNAME API] Найден пользователь по userToken, id:', userId, 'email:', result.rows[0].email);
       } else {
-        console.error('[NICKNAME API] ❌ Пользователь не найден! userToken:', userToken.substring(0, 16) + '...');
+        console.error('[NICKNAME API] ❌ Пользователь не найден! userToken:', tokenValue?.substring(0, 16) + '...');
         
         return NextResponse.json(
           { 
