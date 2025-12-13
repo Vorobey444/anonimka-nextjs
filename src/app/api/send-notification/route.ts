@@ -29,30 +29,39 @@ export async function POST(request: NextRequest) {
     let recipientFcmToken: string | null = null;
 
     // Получаем данные пользователя из базы
+    let isRealTelegramUser = false; // Флаг: это настоящий Telegram пользователь
+    
     if (receiverToken) {
       console.log('[SEND-NOTIFICATION] Получаем данные по токену:', receiverToken);
       
       try {
-        // Получаем id и fcm_token из users
+        // Получаем id, fcm_token и auth_method из users
         const userResult = await sql`
-          SELECT id, fcm_token 
+          SELECT id, fcm_token, auth_method 
           FROM users 
           WHERE user_token = ${receiverToken}
           LIMIT 1
         `;
 
         if (userResult.rows.length > 0) {
-          if (userResult.rows[0].id) {
+          const authMethod = userResult.rows[0].auth_method;
+          
+          // ID считается реальным Telegram ID только если auth_method = 'telegram' или NULL (старые пользователи)
+          if (userResult.rows[0].id && (!authMethod || authMethod === 'telegram')) {
             recipientTgId = userResult.rows[0].id;
-            console.log('[SEND-NOTIFICATION] Найден Telegram ID:', recipientTgId);
+            isRealTelegramUser = true;
+            console.log('[SEND-NOTIFICATION] Найден реальный Telegram ID:', recipientTgId);
+          } else if (userResult.rows[0].id) {
+            console.log('[SEND-NOTIFICATION] ID найден, но это не Telegram пользователь (auth_method:', authMethod, ')');
           }
+          
           if (userResult.rows[0].fcm_token) {
             recipientFcmToken = userResult.rows[0].fcm_token;
             console.log('[SEND-NOTIFICATION] Найден FCM токен для Push');
           }
         }
         
-        // Если нет tg_id в users, проверяем ads
+        // Если нет tg_id в users, проверяем ads (только для старых записей)
         if (!recipientTgId) {
           const adResult = await sql`
             SELECT tg_id 
@@ -63,6 +72,7 @@ export async function POST(request: NextRequest) {
 
           if (adResult.rows.length > 0 && adResult.rows[0].tg_id) {
             recipientTgId = adResult.rows[0].tg_id;
+            isRealTelegramUser = true; // tg_id в ads — это всегда реальный Telegram ID
             console.log('[SEND-NOTIFICATION] Найден tg_id в ads:', recipientTgId);
           }
         }
@@ -70,18 +80,31 @@ export async function POST(request: NextRequest) {
         console.error('[SEND-NOTIFICATION] Ошибка запроса к БД:', dbError);
       }
     } else if (receiverTgId) {
-      // Если передан tg_id напрямую, ищем FCM токен по нему
+      // Если передан tg_id напрямую — проверяем auth_method
       try {
         const userResult = await sql`
-          SELECT fcm_token 
+          SELECT fcm_token, auth_method 
           FROM users 
           WHERE id = ${receiverTgId}
           LIMIT 1
         `;
         
-        if (userResult.rows.length > 0 && userResult.rows[0].fcm_token) {
-          recipientFcmToken = userResult.rows[0].fcm_token;
-          console.log('[SEND-NOTIFICATION] Найден FCM токен для tg_id:', receiverTgId);
+        if (userResult.rows.length > 0) {
+          const authMethod = userResult.rows[0].auth_method;
+          
+          // Проверяем, является ли это реальным Telegram пользователем
+          if (!authMethod || authMethod === 'telegram') {
+            isRealTelegramUser = true;
+            console.log('[SEND-NOTIFICATION] Это реальный Telegram пользователь');
+          } else {
+            console.log('[SEND-NOTIFICATION] Это НЕ Telegram пользователь (auth_method:', authMethod, ')');
+            recipientTgId = null; // Сбрасываем, чтобы не отправлять Telegram уведомление
+          }
+          
+          if (userResult.rows[0].fcm_token) {
+            recipientFcmToken = userResult.rows[0].fcm_token;
+            console.log('[SEND-NOTIFICATION] Найден FCM токен');
+          }
         }
       } catch (dbError) {
         console.error('[SEND-NOTIFICATION] Ошибка получения FCM токена:', dbError);
