@@ -1424,7 +1424,7 @@
                 <h2>🛠️ Админ-панель</h2>
             </div>
             
-            <div class="admin-container" style="padding: 1rem; overflow-y: auto; flex: 1;">
+            <div class="admin-container" style="padding: 1rem; overflow-y: auto; flex: 1; position: relative; z-index: 10; width: 100%; max-width: 600px;">
                 <!-- Статистика -->
                 <div class="admin-section" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
                     <h3 style="color: var(--neon-cyan); margin-bottom: 1rem;">📊 Статистика</h3>
@@ -2333,7 +2333,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.2.33'; // FIX: admin stats + telegram auth
+        const bugFixVersion = '2.2.34'; // FIX: admin stats + telegram auth
         const lastVersion = localStorage.getItem('app_version');
         
         // ВСЕГДА очищаем fetch кэш при загрузке
