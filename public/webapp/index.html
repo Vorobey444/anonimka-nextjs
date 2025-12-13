@@ -34,6 +34,21 @@
         .nickname-status.taken {
             color: #ff3b30;
         }
+        
+        /* Кастомный чекбокс */
+        #termsCheckbox:checked + .custom-checkbox {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+        }
+        #termsCheckbox:checked + .custom-checkbox .checkmark {
+            display: block !important;
+            animation: checkmarkPop 0.3s ease;
+        }
+        @keyframes checkmarkPop {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -1909,19 +1924,27 @@
                 </div>
 
                 <!-- Согласие с правилами (показывается только если ещё не принято) -->
-                <div id="termsAgreementSection" style="display: none; margin-bottom: 20px;">
-                    <label style="display: flex; align-items: flex-start; cursor: pointer; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                        <input 
-                            type="checkbox" 
-                            id="termsCheckbox" 
-                            style="margin-right: 10px; margin-top: 2px; cursor: pointer;"
-                        />
+                <div id="termsAgreementSection" style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: flex-start; cursor: pointer; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease;">
+                        <div style="position: relative; min-width: 24px; height: 24px; margin-right: 10px; margin-top: 2px;">
+                            <input 
+                                type="checkbox" 
+                                id="termsCheckbox" 
+                                style="position: absolute; opacity: 0; cursor: pointer; width: 24px; height: 24px;"
+                            />
+                            <div class="custom-checkbox" style="width: 24px; height: 24px; border: 2px solid var(--primary-color); border-radius: 6px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.05); transition: all 0.3s ease;">
+                                <span class="checkmark" style="display: none; color: #00ff88; font-size: 18px; font-weight: bold;">✓</span>
+                            </div>
+                        </div>
                         <span style="font-size: 0.85rem; line-height: 1.5; color: var(--text-light);">
-                            Я принимаю 
+                            Согласен с 
                             <a href="/TERMS_OF_SERVICE.md" target="_blank" style="color: var(--primary-color); text-decoration: underline;">
-                                правила использования
+                                правилами
                             </a> 
-                            и подтверждаю, что мне есть 18 лет
+                            и 
+                            <a href="/PRIVACY_POLICY.md" target="_blank" style="color: var(--primary-color); text-decoration: underline;">
+                                политикой
+                            </a>
                         </span>
                     </label>
                 </div>
@@ -1931,7 +1954,7 @@
                     class="neon-button primary full-width" 
                     style="padding: 14px; font-size: 1rem; font-weight: 600;"
                 >
-                    ✅ Сохранить и продолжить
+                    ⏳ Сохраняем...
                 </button>
             </div>
         </div>

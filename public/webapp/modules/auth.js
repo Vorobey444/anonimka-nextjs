@@ -392,7 +392,8 @@ async function showRequiredNicknameModal() {
         const modal = document.getElementById('requiredNicknameModal');
         const input = document.getElementById('requiredNicknameInput');
         const btn = document.getElementById('requiredNicknameBtn');
-        const terms = document.getElementById('agreeTermsCheckbox');
+        const terms = document.getElementById('termsCheckbox');
+        const statusEl = document.getElementById('requiredNicknameStatus');
         
         if (!modal || !input || !btn) {
             console.error('❌ [AUTH] Элементы модального окна не найдены');
@@ -403,6 +404,48 @@ async function showRequiredNicknameModal() {
         // Показываем модальное окно
         modal.style.display = 'flex';
         setTimeout(() => input.focus(), 100);
+        
+        let checkTimeout = null;
+        let lastNickname = '';
+        
+        // Проверка доступности никнейма
+        const checkNicknameAvailability = async (nickname) => {
+            if (!nickname || nickname.length < 3) {
+                if (statusEl) statusEl.textContent = '';
+                return;
+            }
+            
+            if (statusEl) statusEl.textContent = '🔍 Проверка...';
+            
+            try {
+                const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
+                const result = await response.json();
+                
+                if (statusEl) {
+                    if (result.available) {
+                        statusEl.textContent = '✅ Никнейм доступен';
+                        statusEl.className = 'nickname-status available';
+                    } else {
+                        statusEl.textContent = '❌ Никнейм занят';
+                        statusEl.className = 'nickname-status taken';
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка проверки никнейма:', error);
+                if (statusEl) statusEl.textContent = '';
+            }
+        };
+        
+        // Проверка при вводе (с debounce)
+        input.addEventListener('input', () => {
+            const nickname = input.value.trim();
+            if (checkTimeout) clearTimeout(checkTimeout);
+            
+            if (nickname !== lastNickname) {
+                lastNickname = nickname;
+                checkTimeout = setTimeout(() => checkNicknameAvailability(nickname), 500);
+            }
+        });
         
         // Обработчик кнопки
         const handleConfirm = async () => {
@@ -423,6 +466,19 @@ async function showRequiredNicknameModal() {
             if (terms && !terms.checked) {
                 tg.showAlert('Пожалуйста, согласитесь с условиями использования');
                 return;
+            }
+            
+            // Проверяем доступность перед сохранением
+            try {
+                const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
+                const result = await response.json();
+                
+                if (!result.available) {
+                    tg.showAlert('Этот никнейм уже занят. Выберите другой.');
+                    return;
+                }
+            } catch (error) {
+                console.error('Ошибка проверки никнейма:', error);
             }
             
             // Сохраняем никнейм
