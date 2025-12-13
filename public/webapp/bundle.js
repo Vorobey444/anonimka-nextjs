@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T19:43:25.412Z
+ * Автоматически сгенерирован: 2025-12-13T19:53:47.883Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -13587,7 +13587,7 @@ console.log('✅ [ADS] Модуль анкет инициализирован');
 } catch(e) { console.error('❌ Ошибка в модуле ads.js:', e); }
 })();
 
-// ========== chats.js (67.3 KB) ==========
+// ========== chats.js (68.2 KB) ==========
 (function() {
 try {
 /**
@@ -13665,13 +13665,32 @@ async function loadMyChats() {
     try {
         console.log('📥 [CHATS] Загрузка списка чатов');
         
-        const userId = getCurrentUserId();
-        const userToken = localStorage.getItem('user_token');
+        const savedUserToken = localStorage.getItem('user_token');
+        const telegramUser = localStorage.getItem('telegram_user');
         
-        if (!userId && !userToken) {
+        // Проверяем авторизацию любым способом
+        if ((!savedUserToken || savedUserToken === 'null' || savedUserToken === 'undefined') && 
+            (!telegramUser || telegramUser === 'null' || telegramUser === 'undefined')) {
             console.error('❌ [CHATS] Нет авторизации');
             return;
         }
+        
+        // Получаем правильный user ID для API запросов
+        let userToken = savedUserToken;
+        if (!userToken && telegramUser) {
+            try {
+                const tgData = JSON.parse(telegramUser);
+                userToken = tgData.id.toString();
+            } catch (e) {
+                console.warn('⚠️ Не удалось распарсить telegram_user');
+                userToken = getCurrentUserId();
+            }
+        }
+        if (!userToken) {
+            userToken = getCurrentUserId();
+        }
+        
+        console.log('🔍 [CHATS] Загрузка чатов для userId:', userToken);
         
         // Запрашиваем активные чаты
         const acceptedResponse = await fetch('/api/neon-chats', {
@@ -13679,7 +13698,7 @@ async function loadMyChats() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'get-active',
-                params: { userId: userToken || userId }
+                params: { userId: userToken }
             })
         });
         const acceptedResult = await acceptedResponse.json();
@@ -13690,7 +13709,7 @@ async function loadMyChats() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'get-pending',
-                params: { user_token: userToken || userId }
+                params: { user_token: userToken }
             })
         });
         const pendingResult = await pendingResponse.json();
