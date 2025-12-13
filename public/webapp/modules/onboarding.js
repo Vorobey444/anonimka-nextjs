@@ -1221,7 +1221,11 @@ async function checkOnboardingStatus() {
         }
         
         if (!tgId && !userToken) {
-            console.log('⚠️ Нет ни tgId ни userToken');
+            console.log('⚠️ Нет ни tgId ни userToken - показываем модалку авторизации');
+            // Показываем модалку авторизации через Telegram
+            if (typeof showTelegramAuthModal === 'function') {
+                setTimeout(() => showTelegramAuthModal(), 100);
+            }
             return;
         }
         

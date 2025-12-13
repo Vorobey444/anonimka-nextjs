@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T18:33:23.586Z
+ * Автоматически сгенерирован: 2025-12-13T18:39:24.356Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -13526,7 +13526,7 @@ console.log('✅ [ADS] Модуль анкет инициализирован');
 } catch(e) { console.error('❌ Ошибка в модуле ads.js:', e); }
 })();
 
-// ========== chats.js (65.6 KB) ==========
+// ========== chats.js (66.2 KB) ==========
 (function() {
 try {
 /**
@@ -13990,6 +13990,16 @@ async function sendMessage() {
         const userToken = localStorage.getItem('user_token');
         const nickname = getUserNickname();
         
+        // Проверяем что у нас есть senderId
+        const senderId = userToken || userId;
+        if (!senderId || senderId === 'null' || senderId === 'undefined') {
+            console.error('❌ [CHATS] Ошибка: нет senderId (userToken или userId)');
+            tg.showAlert('Ошибка: не авторизованы. Пожалуйста, авторизуйтесь.');
+            return;
+        }
+        
+        console.log('📤 [CHATS] Отправка сообщения:', { senderId: senderId.substring(0, 16) + '...', chatId: currentChatId });
+        
         // OPTIMISTIC UPDATE: Показываем сообщение сразу же, до отправки на сервер
         const messagesContainer = document.getElementById('chatMessages');
         const scrollContainer = document.querySelector('.chat-messages-container');
@@ -13997,7 +14007,7 @@ async function sendMessage() {
         // Создаем временное сообщение с ID = -1 (будет заменено после ответа сервера)
         const optimisticMessage = {
             id: -1,
-            sender_token: userToken || userId,
+            sender_token: senderId,
             sender_nickname: nickname,
             message: messageText,
             created_at: new Date().toISOString(),
@@ -14007,7 +14017,7 @@ async function sendMessage() {
         };
         
         if (messagesContainer) {
-            const messageHtml = renderSingleMessage(optimisticMessage, userToken || userId, []);
+            const messageHtml = renderSingleMessage(optimisticMessage, senderId, []);
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = messageHtml;
             const messageEl = tempDiv.firstChild;
@@ -14033,7 +14043,7 @@ async function sendMessage() {
                 action: 'send-message',
                 params: {
                     chatId: currentChatId,
-                    senderId: userToken || userId,
+                    senderId: senderId,
                     messageText: messageText,
                     senderNickname: nickname,
                     skipNotification: false
@@ -15305,7 +15315,7 @@ console.log('✅ [CHATS] Модуль чатов инициализирован'
 } catch(e) { console.error('❌ Ошибка в модуле chats.js:', e); }
 })();
 
-// ========== onboarding.js (50.4 KB) ==========
+// ========== onboarding.js (50.7 KB) ==========
 (function() {
 try {
 /**
@@ -16531,7 +16541,11 @@ async function checkOnboardingStatus() {
         }
         
         if (!tgId && !userToken) {
-            console.log('⚠️ Нет ни tgId ни userToken');
+            console.log('⚠️ Нет ни tgId ни userToken - показываем модалку авторизации');
+            // Показываем модалку авторизации через Telegram
+            if (typeof showTelegramAuthModal === 'function') {
+                setTimeout(() => showTelegramAuthModal(), 100);
+            }
             return;
         }
         

@@ -459,6 +459,16 @@ async function sendMessage() {
         const userToken = localStorage.getItem('user_token');
         const nickname = getUserNickname();
         
+        // Проверяем что у нас есть senderId
+        const senderId = userToken || userId;
+        if (!senderId || senderId === 'null' || senderId === 'undefined') {
+            console.error('❌ [CHATS] Ошибка: нет senderId (userToken или userId)');
+            tg.showAlert('Ошибка: не авторизованы. Пожалуйста, авторизуйтесь.');
+            return;
+        }
+        
+        console.log('📤 [CHATS] Отправка сообщения:', { senderId: senderId.substring(0, 16) + '...', chatId: currentChatId });
+        
         // OPTIMISTIC UPDATE: Показываем сообщение сразу же, до отправки на сервер
         const messagesContainer = document.getElementById('chatMessages');
         const scrollContainer = document.querySelector('.chat-messages-container');
@@ -466,7 +476,7 @@ async function sendMessage() {
         // Создаем временное сообщение с ID = -1 (будет заменено после ответа сервера)
         const optimisticMessage = {
             id: -1,
-            sender_token: userToken || userId,
+            sender_token: senderId,
             sender_nickname: nickname,
             message: messageText,
             created_at: new Date().toISOString(),
@@ -476,7 +486,7 @@ async function sendMessage() {
         };
         
         if (messagesContainer) {
-            const messageHtml = renderSingleMessage(optimisticMessage, userToken || userId, []);
+            const messageHtml = renderSingleMessage(optimisticMessage, senderId, []);
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = messageHtml;
             const messageEl = tempDiv.firstChild;
@@ -502,7 +512,7 @@ async function sendMessage() {
                 action: 'send-message',
                 params: {
                     chatId: currentChatId,
-                    senderId: userToken || userId,
+                    senderId: senderId,
                     messageText: messageText,
                     senderNickname: nickname,
                     skipNotification: false
