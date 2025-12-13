@@ -235,15 +235,58 @@ function showTelegramAuthModal() {
         loginWidgetDivider.style.display = 'flex';
     }
     
-    // Проверяем авторизацию каждые 2 секунды через API сервера
+    // Проверяем авторизацию каждые 2 секунды
+    let pollAttempts = 0;
     const checkInterval = setInterval(async () => {
+        pollAttempts++;
+        console.log(`🔄 [AUTH POLL] Попытка ${pollAttempts}: проверка авторизации...`);
+        
         try {
-            // Проверяем на сервере, не авторизовался ли пользователь через QR на телефоне
+            // ПРИОРИТЕТ 1: Проверяем локальное хранилище (авторизация через Telegram WebApp или Login Widget)
+            const savedUser = localStorage.getItem('telegram_user');
+            const authTime = localStorage.getItem('telegram_auth_time');
+            const userToken = localStorage.getItem('user_token');
+            
+            if ((savedUser && authTime) || userToken) {
+                console.log('✅ [AUTH POLL] Обнаружена локальная авторизация!');
+                
+                let userData = null;
+                if (savedUser) {
+                    try {
+                        userData = JSON.parse(savedUser);
+                    } catch (e) {
+                        console.warn('⚠️ Не удалось распарсить telegram_user');
+                    }
+                }
+                
+                // Закрываем модальное окно
+                clearInterval(checkInterval);
+                modal.style.display = 'none';
+                localStorage.removeItem('telegram_auth_token');
+                
+                // Показываем уведомление
+                const welcomeName = userData?.first_name || 'Пользователь';
+                tg.showAlert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${welcomeName}!`);
+                
+                // Обновляем кнопку выхода
+                if (typeof updateLogoutButtonVisibility === 'function') {
+                    updateLogoutButtonVisibility();
+                }
+                
+                // Проверяем онбординг
+                if (typeof checkOnboardingStatus === 'function') {
+                    setTimeout(() => checkOnboardingStatus(), 500);
+                }
+                
+                return;
+            }
+            
+            // ПРИОРИТЕТ 2: Проверяем на сервере через API
             const response = await fetch(`/api/auth?token=${authToken}`);
             const data = await response.json();
             
             if (data.authorized && data.user) {
-                console.log('✅ Авторизация через QR получена с сервера:', data.user);
+                console.log('✅ [AUTH POLL] Авторизация через API получена:', data.user.first_name);
                 
                 // Сохраняем данные пользователя
                 localStorage.setItem('telegram_user', JSON.stringify(data.user));
@@ -255,46 +298,31 @@ function showTelegramAuthModal() {
                 modal.style.display = 'none';
                 
                 // Показываем уведомление
-                tg.showAlert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${data.user.first_name}!\n\nТеперь вы можете пользоваться сайтом как с компьютера, так и с телефона.`);
+                tg.showAlert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${data.user.first_name}!`);
                 
-                // Перезагружаем страницу через 1 секунду
-                setTimeout(() => location.reload(), 1000);
+                // Обновляем кнопку выхода
+                if (typeof updateLogoutButtonVisibility === 'function') {
+                    updateLogoutButtonVisibility();
+                }
+                
+                // Проверяем онбординг
+                if (typeof checkOnboardingStatus === 'function') {
+                    setTimeout(() => checkOnboardingStatus(), 500);
+                }
+                
                 return;
             }
             
-            // Также проверяем localStorage (на случай авторизации через Login Widget)
-            const savedUser = localStorage.getItem('telegram_user');
-            const authTime = localStorage.getItem('telegram_auth_time');
-            
-            if (savedUser && authTime) {
-                const userData = JSON.parse(savedUser);
-                const timeDiff = Date.now() - parseInt(authTime);
-                
-                // Если авторизация произошла менее 10 секунд назад
-                if (timeDiff < 10000) {
-                    console.log('✅ Обнаружена авторизация через Login Widget');
-                    
-                    // Закрываем модальное окно
-                    clearInterval(checkInterval);
-                    modal.style.display = 'none';
-                    localStorage.removeItem('telegram_auth_token');
-                    
-                    // Показываем уведомление
-                    tg.showAlert(`✅ Авторизация успешна!\n\nДобро пожаловать, ${userData.first_name}!`);
-                    
-                    // Перезагружаем страницу
-                    setTimeout(() => location.reload(), 1000);
-                }
-            }
+            console.log(`⏳ [AUTH POLL] Авторизация ещё не получена (попытка ${pollAttempts})`);
         } catch (error) {
-            console.error('Ошибка проверки авторизации:', error);
+            console.error('❌ [AUTH POLL] Ошибка проверки авторизации:', error);
         }
     }, 2000);
     
     // Останавливаем проверку через 10 минут
     setTimeout(() => {
         clearInterval(checkInterval);
-        console.log('⏰ Timeout: проверка авторизации остановлена');
+        console.log('⏰ [AUTH POLL] Timeout: проверка авторизации остановлена после 10 минут');
     }, 600000);
 }
 
