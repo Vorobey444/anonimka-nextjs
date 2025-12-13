@@ -1417,6 +1417,65 @@
             </div>
         </div>
 
+        <!-- Экран админ-панели -->
+        <div id="adminScreen" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="showMainMenu()">← Назад</button>
+                <h2>🛠️ Админ-панель</h2>
+            </div>
+            
+            <div class="admin-container" style="padding: 1rem; overflow-y: auto; flex: 1;">
+                <!-- Статистика -->
+                <div class="admin-section" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                    <h3 style="color: var(--neon-cyan); margin-bottom: 1rem;">📊 Статистика</h3>
+                    <div class="admin-stats-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem;">
+                        <div class="admin-stat-card" style="background: rgba(0,217,255,0.1); border: 1px solid var(--neon-cyan); border-radius: 8px; padding: 0.8rem; text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--neon-cyan);" id="adminTotalUsers">-</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Пользователей</div>
+                        </div>
+                        <div class="admin-stat-card" style="background: rgba(255,0,110,0.1); border: 1px solid var(--neon-pink); border-radius: 8px; padding: 0.8rem; text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--neon-pink);" id="adminOnlineNow">-</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Онлайн (24ч)</div>
+                        </div>
+                        <div class="admin-stat-card" style="background: rgba(0,255,136,0.1); border: 1px solid var(--neon-green); border-radius: 8px; padding: 0.8rem; text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--neon-green);" id="adminTotalAds">-</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Анкет</div>
+                        </div>
+                        <div class="admin-stat-card" style="background: rgba(255,107,107,0.1); border: 1px solid #ff6b6b; border-radius: 8px; padding: 0.8rem; text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: #ff6b6b;" id="adminBlockedUsers">-</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Заблокировано</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Модерация -->
+                <div class="admin-section" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                    <h3 style="color: var(--neon-pink); margin-bottom: 1rem;">🔧 Модерация</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                        <button class="neon-button" onclick="loadModerationQueue()" style="width: 100%;">
+                            📋 Очередь модерации
+                        </button>
+                        <button class="neon-button secondary" onclick="loadReportedContent()" style="width: 100%;">
+                            🚨 Жалобы пользователей
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Управление -->
+                <div class="admin-section" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem;">
+                    <h3 style="color: var(--neon-green); margin-bottom: 1rem;">⚙️ Управление</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                        <button class="neon-button" onclick="showBroadcastModal()" style="width: 100%;">
+                            📢 Рассылка сообщений
+                        </button>
+                        <button class="neon-button secondary" onclick="showPremiumManager()" style="width: 100%;">
+                            💎 Управление Premium
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Экран открытого чата -->
         <div id="chatView" class="screen">
             <div class="header chat-header">
@@ -2274,7 +2333,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.2.32'; // FIX: admin stats + telegram auth
+        const bugFixVersion = '2.2.33'; // FIX: admin stats + telegram auth
         const lastVersion = localStorage.getItem('app_version');
         
         // ВСЕГДА очищаем fetch кэш при загрузке

@@ -715,6 +715,7 @@ async function unblockUserFromList(blockedId) {
  * Показать админ-панель
  */
 function showAdminPanel() {
+    console.log('🛠️ [ADMIN] Открытие админ-панели');
     const adminScreen = document.getElementById('adminScreen');
     if (adminScreen) {
         const screens = document.querySelectorAll('.screen');
@@ -725,8 +726,38 @@ function showAdminPanel() {
         
         adminScreen.classList.add('active');
         adminScreen.style.display = 'flex';
+        adminScreen.style.flexDirection = 'column';
+        
+        // Загружаем статистику для админ-панели
+        loadAdminPanelStats();
+    } else {
+        console.error('❌ [ADMIN] adminScreen не найден!');
     }
     closeBurgerMenu();
+}
+
+/**
+ * Загрузить статистику для админ-панели
+ */
+async function loadAdminPanelStats() {
+    try {
+        const response = await fetch('/api/analytics?metric=all');
+        const data = await response.json();
+        
+        const adminTotalUsers = document.getElementById('adminTotalUsers');
+        const adminOnlineNow = document.getElementById('adminOnlineNow');
+        const adminTotalAds = document.getElementById('adminTotalAds');
+        const adminBlockedUsers = document.getElementById('adminBlockedUsers');
+        
+        if (adminTotalUsers) adminTotalUsers.textContent = data.total_unique_users || 0;
+        if (adminOnlineNow) adminOnlineNow.textContent = data.unique_last_24h || 0;
+        if (adminTotalAds) adminTotalAds.textContent = data.total_ads || 0;
+        if (adminBlockedUsers) adminBlockedUsers.textContent = data.blocked_users || 0;
+        
+        console.log('✅ [ADMIN] Статистика загружена');
+    } catch (err) {
+        console.error('❌ [ADMIN] Ошибка загрузки статистики:', err);
+    }
 }
 
 /**
