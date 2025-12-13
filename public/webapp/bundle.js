@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T20:27:26.579Z
+ * Автоматически сгенерирован: 2025-12-13T20:31:47.114Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -17513,7 +17513,7 @@ async function showBlockedUsers() {
                 <div class="blocked-user-info">
                     <span class="blocked-user-icon">👤</span>
                     <div class="blocked-user-details">
-                        <div class="blocked-user-name">${escapeHtmlFn(user.blocked_nickname || 'Неизвестный')}</div>
+                        <div class="blocked-user-name">${escapeHtmlFn(user.blocked_display_nickname || 'Неизвестный')}</div>
                         <div class="blocked-user-date">Заблокирован ${formatTimeFn(user.created_at)}</div>
                     </div>
                 </div>
