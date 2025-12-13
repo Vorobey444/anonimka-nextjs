@@ -105,7 +105,7 @@ body {
 
 /* Админ экран - расширенная ширина */
 #adminScreen.screen.active > .admin-container {
-    max-width: 600px !important;
+    max-width: 700px !important;
     min-height: 200px !important;
 }
 
@@ -115,14 +115,107 @@ body {
 }
 
 #adminScreen .admin-section {
-    display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+}
+
+#adminScreen .admin-section.active {
+    display: block !important;
 }
 
 #adminScreen .admin-stats-grid {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
+}
+
+/* Админ панель - строки списка */
+#adminScreen .admin-row {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.8rem;
+    margin-bottom: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+#adminScreen .admin-row .meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+}
+
+#adminScreen .admin-row .meta strong {
+    color: var(--neon-cyan);
+    font-size: 0.95rem;
+}
+
+#adminScreen .admin-row .meta span {
+    color: var(--text-muted);
+}
+
+#adminScreen .admin-row .actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+#adminScreen .admin-row .actions button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+/* Админ пилюли (статусы) */
+#adminScreen .admin-pill {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+#adminScreen .admin-pill.ok {
+    background: rgba(0, 255, 136, 0.2);
+    color: var(--neon-green);
+}
+
+#adminScreen .admin-pill.warn {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+}
+
+#adminScreen .admin-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+#adminScreen .admin-card {
+    background: rgba(0, 217, 255, 0.1);
+    border: 1px solid var(--neon-cyan);
+    border-radius: 8px;
+    padding: 0.8rem;
+    text-align: center;
+}
+
+#adminScreen .admin-card .label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+#adminScreen .admin-card .value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--neon-cyan);
+}
+
+#adminScreen .admin-empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
 }
 
 /* Главное меню - всегда вертикальный layout */

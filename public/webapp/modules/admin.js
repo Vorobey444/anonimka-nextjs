@@ -14,13 +14,41 @@ function formatDateTime(dateStr) {
 
 // Переключение вкладок админ-панели
 function switchAdminTab(tab) {
+    // Обновляем стили табов
     document.querySelectorAll('.admin-tab').forEach(btn => {
         const isActive = btn.getAttribute('data-tab') === tab;
         btn.classList.toggle('active', isActive);
+        if (isActive) {
+            btn.style.background = 'var(--neon-cyan)';
+            btn.style.color = '#000';
+            btn.style.border = 'none';
+        } else {
+            btn.style.background = 'rgba(255,255,255,0.1)';
+            btn.style.color = '#fff';
+            btn.style.border = '1px solid rgba(255,255,255,0.2)';
+        }
     });
-    document.querySelectorAll('.admin-section').forEach(section => {
-        section.classList.toggle('active', section.id.toLowerCase().includes(tab));
+    
+    // Скрываем все секции
+    document.querySelectorAll('#adminScreen .admin-section').forEach(section => {
+        section.style.display = 'none';
+        section.classList.remove('active');
     });
+    
+    // Показываем нужную секцию
+    const sectionMap = {
+        'overview': 'adminSectionOverview',
+        'users': 'adminSectionUsers',
+        'ads': 'adminSectionAds',
+        'chats': 'adminSectionChats'
+    };
+    
+    const sectionId = sectionMap[tab];
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.style.display = 'block';
+        section.classList.add('active');
+    }
 
     // Загружаем данные под выбранную вкладку
     if (tab === 'overview') {
@@ -74,23 +102,22 @@ function showAdminPanel() {
         closeHamburgerMenu();
     }
     
-    const panel = document.getElementById('adminPanel');
+    // Используем #adminScreen
+    const panel = document.getElementById('adminScreen');
     if (panel) {
         document.querySelectorAll('.screen').forEach(s => {
             s.classList.remove('active');
-            if (s.id !== 'adminPanel') {
-                s.style.display = 'none';
-            }
+            s.style.display = 'none';
         });
-        panel.style.display = 'block';
+        panel.style.display = 'flex';
+        panel.style.flexDirection = 'column';
         panel.classList.add('active');
+        
+        // Загружаем обзор по умолчанию
+        switchAdminTab('overview');
+    } else {
+        console.error('[ADMIN PANEL] adminScreen не найден!');
     }
-    
-    if (typeof showScreen === 'function') {
-        showScreen('adminPanel');
-    }
-    
-    switchAdminTab('overview');
 }
 
 // Загрузка обзора админки
