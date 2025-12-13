@@ -418,7 +418,7 @@ async function showRequiredNicknameModal() {
         const updateButtonState = () => {
             const nickname = input.value.trim();
             const isChecked = terms ? terms.checked : true;
-            const isValid = nickname.length >= 3 && isNicknameAvailable;
+            const isValid = nickname.length >= 1 && isNicknameAvailable;
             
             if (isValid && isChecked) {
                 btn.disabled = false;
@@ -433,15 +433,8 @@ async function showRequiredNicknameModal() {
         
         // Проверка доступности никнейма
         const checkNicknameAvailability = async (nickname) => {
-            if (!nickname || nickname.length < 3) {
-                if (statusEl) {
-                    if (nickname.length > 0 && nickname.length < 3) {
-                        statusEl.textContent = '⚠️ Минимум 3 символа';
-                        statusEl.className = 'nickname-status';
-                    } else {
-                        statusEl.textContent = '';
-                    }
-                }
+            if (!nickname || nickname.length === 0) {
+                if (statusEl) statusEl.textContent = '';
                 isNicknameAvailable = false;
                 updateButtonState();
                 return;
@@ -495,9 +488,9 @@ async function showRequiredNicknameModal() {
         const handleConfirm = async () => {
             const nickname = input.value.trim();
             
-            // Валидация минимальной длины
-            if (!nickname || nickname.length < 3) {
-                tg.showAlert('Никнейм должен содержать минимум 3 символа');
+            // Валидация - не пустой
+            if (!nickname || nickname.length === 0) {
+                tg.showAlert('Введите никнейм');
                 return;
             }
             

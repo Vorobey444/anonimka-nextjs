@@ -116,10 +116,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Валидация никнейма
-    // 1. Проверка минимальной длины (3 символа)
-    if (nickname.length < 3) {
+    // 1. Проверка что никнейм не пустой
+    if (!nickname || nickname.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Никнейм должен содержать минимум 3 символа', code: 'NICKNAME_TOO_SHORT' },
+        { success: false, error: 'Никнейм не может быть пустым', code: 'NICKNAME_EMPTY' },
         { status: 400 }
       );
     }
