@@ -1909,13 +1909,14 @@
                         type="text" 
                         id="requiredNicknameInput" 
                         class="neon-input" 
-                        placeholder="Введите никнейм..."
+                        placeholder="Введите никнейм (минимум 3 символа)..."
+                        minlength="3"
                         maxlength="20"
                         style="width: 100%; padding: 12px; font-size: 1rem;"
                     />
                     <div id="requiredNicknameStatus" class="nickname-status" style="margin-top: 8px; font-size: 0.85rem; font-weight: 600; min-height: 20px;"></div>
                     <p style="font-size: 0.75rem; color: var(--text-gray); margin-top: 5px;">
-                        Только буквы (рус/eng), цифры, _ и -
+                        Минимум 3 символа. Только буквы (рус/eng), цифры, _ и -
                     </p>
                 </div>
 
@@ -1953,8 +1954,9 @@
                     id="requiredNicknameBtn"
                     class="neon-button primary full-width" 
                     style="padding: 14px; font-size: 1rem; font-weight: 600;"
+                    disabled
                 >
-                    ⏳ Сохраняем...
+                    ✅ Готово
                 </button>
             </div>
         </div>
@@ -2194,7 +2196,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.2.14'; // FIX: nickname modal improvements
+        const bugFixVersion = '2.2.15'; // FIX: proper nickname validation with 3 char min + smart button activation
         const lastVersion = localStorage.getItem('app_version');
         
         // ВСЕГДА очищаем fetch кэш при загрузке
@@ -2208,7 +2210,7 @@
         }
         
         if (lastVersion !== bugFixVersion) {
-            console.log('[CACHE] Обнаружена новая версия 2.2.14, очищаем кеш...');
+            console.log('[CACHE] Обнаружена новая версия 2.2.15, очищаем кеш...');
             localStorage.setItem('app_version', bugFixVersion);
             
             // Удаляем все зарегистрированные Service Workers

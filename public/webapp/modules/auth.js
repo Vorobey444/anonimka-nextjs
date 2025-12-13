@@ -405,17 +405,51 @@ async function showRequiredNicknameModal() {
         modal.style.display = 'flex';
         setTimeout(() => input.focus(), 100);
         
+        // Делаем кнопку неактивной по умолчанию
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+        
         let checkTimeout = null;
         let lastNickname = '';
+        let isNicknameAvailable = false;
+        
+        // Функция проверки готовности к сохранению
+        const updateButtonState = () => {
+            const nickname = input.value.trim();
+            const isChecked = terms ? terms.checked : true;
+            const isValid = nickname.length >= 3 && isNicknameAvailable;
+            
+            if (isValid && isChecked) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            } else {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+            }
+        };
         
         // Проверка доступности никнейма
         const checkNicknameAvailability = async (nickname) => {
             if (!nickname || nickname.length < 3) {
-                if (statusEl) statusEl.textContent = '';
+                if (statusEl) {
+                    if (nickname.length > 0 && nickname.length < 3) {
+                        statusEl.textContent = '⚠️ Минимум 3 символа';
+                        statusEl.className = 'nickname-status';
+                    } else {
+                        statusEl.textContent = '';
+                    }
+                }
+                isNicknameAvailable = false;
+                updateButtonState();
                 return;
             }
             
             if (statusEl) statusEl.textContent = '🔍 Проверка...';
+            isNicknameAvailable = false;
+            updateButtonState();
             
             try {
                 const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
@@ -425,14 +459,19 @@ async function showRequiredNicknameModal() {
                     if (result.available) {
                         statusEl.textContent = '✅ Никнейм доступен';
                         statusEl.className = 'nickname-status available';
+                        isNicknameAvailable = true;
                     } else {
                         statusEl.textContent = '❌ Никнейм занят';
                         statusEl.className = 'nickname-status taken';
+                        isNicknameAvailable = false;
                     }
                 }
+                updateButtonState();
             } catch (error) {
                 console.error('Ошибка проверки никнейма:', error);
                 if (statusEl) statusEl.textContent = '';
+                isNicknameAvailable = false;
+                updateButtonState();
             }
         };
         
@@ -447,11 +486,16 @@ async function showRequiredNicknameModal() {
             }
         });
         
+        // Обновляем состояние кнопки при изменении чекбокса
+        if (terms) {
+            terms.addEventListener('change', updateButtonState);
+        }
+        
         // Обработчик кнопки
         const handleConfirm = async () => {
             const nickname = input.value.trim();
             
-            // Валидация
+            // Валидация минимальной длины
             if (!nickname || nickname.length < 3) {
                 tg.showAlert('Никнейм должен содержать минимум 3 символа');
                 return;
@@ -469,16 +513,9 @@ async function showRequiredNicknameModal() {
             }
             
             // Проверяем доступность перед сохранением
-            try {
-                const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
-                const result = await response.json();
-                
-                if (!result.available) {
-                    tg.showAlert('Этот никнейм уже занят. Выберите другой.');
-                    return;
-                }
-            } catch (error) {
-                console.error('Ошибка проверки никнейма:', error);
+            if (!isNicknameAvailable) {
+                tg.showAlert('Этот никнейм уже занят или недоступен. Выберите другой.');
+                return;
             }
             
             // Сохраняем никнейм
