@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T19:04:54.613Z
+ * Автоматически сгенерирован: 2025-12-13T19:09:43.276Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -2591,7 +2591,7 @@ console.log('✅ [AUTH] Модуль авторизации инициализи
 } catch(e) { console.error('❌ Ошибка в модуле auth.js:', e); }
 })();
 
-// ========== auth-modals.js (54.5 KB) ==========
+// ========== auth-modals.js (55.3 KB) ==========
 (function() {
 try {
 // ================================================
@@ -2600,6 +2600,9 @@ try {
 // ================================================
 
 console.log('📦 Загружен модуль: auth-modals.js');
+
+// Глобальная переменная для хранения активного polling интервала
+let activeAuthPollInterval = null;
 
 /**
  * Скрыть модальные окна авторизации немедленно (IIFE)
@@ -2831,9 +2834,16 @@ function showTelegramAuthModal() {
         loginWidgetDivider.style.display = 'flex';
     }
     
+    // Останавливаем предыдущий polling, если он был запущен
+    if (activeAuthPollInterval) {
+        console.log('🛑 [AUTH POLL] Остановка предыдущего polling интервала');
+        clearInterval(activeAuthPollInterval);
+        activeAuthPollInterval = null;
+    }
+    
     // Проверяем авторизацию каждые 2 секунды
     let pollAttempts = 0;
-    const checkInterval = setInterval(async () => {
+    activeAuthPollInterval = setInterval(async () => {
         pollAttempts++;
         console.log(`🔄 [AUTH POLL] Попытка ${pollAttempts}: проверка авторизации...`);
         
@@ -2856,7 +2866,8 @@ function showTelegramAuthModal() {
                 }
                 
                 // Закрываем модальное окно
-                clearInterval(checkInterval);
+                clearInterval(activeAuthPollInterval);
+                activeAuthPollInterval = null;
                 modal.style.display = 'none';
                 localStorage.removeItem('telegram_auth_token');
                 
@@ -2890,7 +2901,8 @@ function showTelegramAuthModal() {
                 localStorage.removeItem('telegram_auth_token');
                 
                 // Закрываем модальное окно
-                clearInterval(checkInterval);
+                clearInterval(activeAuthPollInterval);
+                activeAuthPollInterval = null;
                 modal.style.display = 'none';
                 
                 // Показываем уведомление
@@ -2917,8 +2929,11 @@ function showTelegramAuthModal() {
     
     // Останавливаем проверку через 10 минут
     setTimeout(() => {
-        clearInterval(checkInterval);
-        console.log('⏰ [AUTH POLL] Timeout: проверка авторизации остановлена после 10 минут');
+        if (activeAuthPollInterval) {
+            clearInterval(activeAuthPollInterval);
+            activeAuthPollInterval = null;
+            console.log('⏰ [AUTH POLL] Timeout: проверка авторизации остановлена после 10 минут');
+        }
     }, 600000);
 }
 
