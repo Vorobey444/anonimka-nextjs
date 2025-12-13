@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T19:53:47.883Z
+ * Автоматически сгенерирован: 2025-12-13T20:00:45.276Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -13587,7 +13587,7 @@ console.log('✅ [ADS] Модуль анкет инициализирован');
 } catch(e) { console.error('❌ Ошибка в модуле ads.js:', e); }
 })();
 
-// ========== chats.js (68.2 KB) ==========
+// ========== chats.js (68.6 KB) ==========
 (function() {
 try {
 /**
@@ -14314,11 +14314,20 @@ async function checkBlockStatus(chatId) {
         console.log('🔍 [CHATS] Проверка статуса блокировки');
         
         const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
         
-        if (!userToken || !chatId) {
-            console.warn('⚠️ [CHATS] Нет userToken или chatId для проверки блокировки');
+        if (!userToken && !tgId) {
+            console.warn('⚠️ [CHATS] Нет userToken или telegram_user для проверки блокировки');
             return;
         }
+        
+        if (!chatId) {
+            console.warn('⚠️ [CHATS] Нет chatId для проверки блокировки');
+            return;
+        }
+        
+        const userId = userToken || (tgId ? String(tgId) : null);
         
         // Сначала получаем информацию о чате чтобы узнать токен оппонента
         const chatResponse = await fetch('/api/neon-chats', {
@@ -14326,7 +14335,10 @@ async function checkBlockStatus(chatId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'get-chat-info',
-                params: { chatId }
+                params: { 
+                    chatId,
+                    user_token: userId
+                }
             })
         });
         
@@ -14340,7 +14352,7 @@ async function checkBlockStatus(chatId) {
         const chat = chatResult.data;
         
         // Определяем токен оппонента
-        const opponentToken = chat.user_token_1 === userToken ? chat.user_token_2 : chat.user_token_1;
+        const opponentToken = chat.user_token_1 === userId ? chat.user_token_2 : chat.user_token_1;
         
         if (!opponentToken) {
             console.warn('⚠️ [CHATS] Не удалось определить токен оппонента');
@@ -14354,7 +14366,7 @@ async function checkBlockStatus(chatId) {
             body: JSON.stringify({
                 action: 'check-block-status',
                 params: { 
-                    user1_token: userToken, 
+                    user1_token: userId, 
                     user2_token: opponentToken 
                 }
             })

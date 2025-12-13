@@ -722,11 +722,20 @@ async function checkBlockStatus(chatId) {
         console.log('🔍 [CHATS] Проверка статуса блокировки');
         
         const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
         
-        if (!userToken || !chatId) {
-            console.warn('⚠️ [CHATS] Нет userToken или chatId для проверки блокировки');
+        if (!userToken && !tgId) {
+            console.warn('⚠️ [CHATS] Нет userToken или telegram_user для проверки блокировки');
             return;
         }
+        
+        if (!chatId) {
+            console.warn('⚠️ [CHATS] Нет chatId для проверки блокировки');
+            return;
+        }
+        
+        const userId = userToken || (tgId ? String(tgId) : null);
         
         // Сначала получаем информацию о чате чтобы узнать токен оппонента
         const chatResponse = await fetch('/api/neon-chats', {
@@ -734,7 +743,10 @@ async function checkBlockStatus(chatId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'get-chat-info',
-                params: { chatId }
+                params: { 
+                    chatId,
+                    user_token: userId
+                }
             })
         });
         
@@ -748,7 +760,7 @@ async function checkBlockStatus(chatId) {
         const chat = chatResult.data;
         
         // Определяем токен оппонента
-        const opponentToken = chat.user_token_1 === userToken ? chat.user_token_2 : chat.user_token_1;
+        const opponentToken = chat.user_token_1 === userId ? chat.user_token_2 : chat.user_token_1;
         
         if (!opponentToken) {
             console.warn('⚠️ [CHATS] Не удалось определить токен оппонента');
@@ -762,7 +774,7 @@ async function checkBlockStatus(chatId) {
             body: JSON.stringify({
                 action: 'check-block-status',
                 params: { 
-                    user1_token: userToken, 
+                    user1_token: userId, 
                     user2_token: opponentToken 
                 }
             })
