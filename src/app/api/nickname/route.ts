@@ -116,7 +116,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Валидация никнейма
-    // 1. Проверка на пробелы
+    // 1. Проверка минимальной длины (3 символа)
+    if (nickname.length < 3) {
+      return NextResponse.json(
+        { success: false, error: 'Никнейм должен содержать минимум 3 символа', code: 'NICKNAME_TOO_SHORT' },
+        { status: 400 }
+      );
+    }
+
+    // 2. Проверка максимальной длины (20 символов)
+    if (nickname.length > 20) {
+      return NextResponse.json(
+        { success: false, error: 'Никнейм не должен превышать 20 символов', code: 'NICKNAME_TOO_LONG' },
+        { status: 400 }
+      );
+    }
+
+    // 3. Проверка на пробелы
     if (nickname.includes(' ')) {
       return NextResponse.json(
         { success: false, error: 'Nickname cannot contain spaces', code: 'INVALID_NICKNAME' },
@@ -124,7 +140,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Разрешаем только латиницу, русский язык, цифры, подчеркивание и дефис
+    // 4. Разрешаем только латиницу, русский язык, цифры, подчеркивание и дефис
     const validPattern = /^[a-zA-Zа-яА-ЯёЁ0-9_-]+$/;
     if (!validPattern.test(nickname)) {
       return NextResponse.json(
