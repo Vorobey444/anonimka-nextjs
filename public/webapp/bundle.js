@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T17:17:39.733Z
+ * Автоматически сгенерирован: 2025-12-13T17:19:52.941Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -16413,7 +16413,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (53.5 KB) ==========
+// ========== menu.js (53.6 KB) ==========
 (function() {
 try {
 /**
@@ -17905,11 +17905,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const hamburgerBtn = document.querySelector('.hamburger-menu');
     
     if (overlay && menu) {
-        document.addEventListener('click', (e) => {
-            // Если меню открыто и клик НЕ внутри меню и НЕ на кнопке открытия
-            if (overlay.classList.contains('active') && 
-                !menu.contains(e.target) && 
-                !hamburgerBtn?.contains(e.target)) {
+        // Используем mousedown вместо click чтобы не конфликтовать с onclick кнопки
+        overlay.addEventListener('click', (e) => {
+            // Закрываем только если клик был на overlay (не на меню)
+            if (e.target === overlay) {
+                console.log('📖 [MENU] Клик на overlay - закрываем меню');
                 closeBurgerMenu();
             }
         });
