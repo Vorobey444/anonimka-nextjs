@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T06:46:31.330Z
+ * Автоматически сгенерирован: 2025-12-13T06:52:31.934Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -15834,7 +15834,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (50.6 KB) ==========
+// ========== menu.js (51.3 KB) ==========
 (function() {
 try {
 /**
@@ -17318,6 +17318,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('✅ [MENU] Модуль навигации загружен');
+
+// Автоматически запускаем приложение после загрузки модуля
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('🚀 [MENU] DOMContentLoaded - запуск приложения');
+        if (typeof checkOnboardingStatus === 'function') {
+            checkOnboardingStatus();
+        }
+    });
+} else {
+    console.log('🚀 [MENU] DOM уже загружен - запуск приложения');
+    if (typeof checkOnboardingStatus === 'function') {
+        setTimeout(() => checkOnboardingStatus(), 100);
+    }
+}
 
 } catch(e) { console.error('❌ Ошибка в модуле menu.js:', e); }
 })();

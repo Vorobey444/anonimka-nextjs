@@ -1479,3 +1479,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('✅ [MENU] Модуль навигации загружен');
+
+// Автоматически запускаем приложение после загрузки модуля
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('🚀 [MENU] DOMContentLoaded - запуск приложения');
+        if (typeof checkOnboardingStatus === 'function') {
+            checkOnboardingStatus();
+        }
+    });
+} else {
+    console.log('🚀 [MENU] DOM уже загружен - запуск приложения');
+    if (typeof checkOnboardingStatus === 'function') {
+        setTimeout(() => checkOnboardingStatus(), 100);
+    }
+}
