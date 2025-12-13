@@ -908,19 +908,22 @@ export async function POST(req: NextRequest) {
     
     console.log("[ADS API] Объявление создано, ID:", newAd.id);
     
-    // 🎀 Проверяем бонус для девушек (только для Telegram пользователей)
-    if (numericTgId !== null) {
+    // 🎀 Проверяем бонус для девушек (универсальная логика для всех типов пользователей)
+    if (finalUserToken) {
       try {
-        // Проверяем, первая ли это анкета пользователя
+        console.log('[ADS API] 🎀 Проверяем female_bonus для пользователя:', finalUserToken.substring(0, 8) + '...');
+        
+        // Получаем данные пользователя по user_token (работает для Telegram, Email, Google)
         const userCheck = await sql`
-          SELECT first_ad_gender, auto_premium_source, is_premium, premium_until
+          SELECT id, first_ad_gender, auto_premium_source, is_premium, premium_until
           FROM users
-          WHERE id = ${numericTgId}
+          WHERE user_token = ${finalUserToken}
           LIMIT 1
         `;
 
         if (userCheck.rows.length > 0) {
           const user = userCheck.rows[0];
+          const userId = user.id;
           const currentGender = gender; // "Девушка", "Мужчина", "Пара"
           
           // Если first_ad_gender еще не установлен — это первая анкета
@@ -932,7 +935,7 @@ export async function POST(req: NextRequest) {
               UPDATE users
               SET first_ad_gender = ${currentGender},
                   updated_at = NOW()
-              WHERE id = ${numericTgId}
+              WHERE user_token = ${finalUserToken}
             `;
             
             // Если первая анкета — "Девушка", выдаем бонус PRO на 1 год
@@ -948,7 +951,7 @@ export async function POST(req: NextRequest) {
                     premium_until = ${premiumUntil.toISOString()},
                     auto_premium_source = 'female_bonus',
                     updated_at = NOW()
-                WHERE id = ${numericTgId}
+                WHERE user_token = ${finalUserToken}
               `;
               
               // Синхронизируем с premium_tokens
@@ -964,7 +967,7 @@ export async function POST(req: NextRequest) {
           } else {
             // Не первая анкета — проверяем, нужно ли отменить или выдать бонус
             console.log('[ADS API] Не первая анкета. first_ad_gender:', user.first_ad_gender, ', текущий:', currentGender);
-            console.log('[ADS API] DEBUG: auto_premium_source =', user.auto_premium_source, ', is_premium =', user.is_premium, ', premium_until =', user.premium_until);
+            console.log('[ADS API] DEBUG: auto_premium_source =', user.auto_premium_source, ', is_premium =', user.is_premium);
             
             // Если у пользователя был trial7h и он создает анкету "Девушка" — переключаем на female_bonus (1 год)
             if (user.auto_premium_source === 'trial7h' && currentGender === 'Девушка') {
@@ -980,7 +983,7 @@ export async function POST(req: NextRequest) {
                     auto_premium_source = 'female_bonus',
                     first_ad_gender = 'Девушка',
                     updated_at = NOW()
-                WHERE id = ${numericTgId}
+                WHERE user_token = ${finalUserToken}
               `;
               
               await sql`
@@ -997,14 +1000,13 @@ export async function POST(req: NextRequest) {
               console.log('[ADS API] 🚫 Девушка создала мужскую анкету — отменяем бонус PRO');
               
               // Проверяем, есть ли РЕАЛЬНО оплаченная подписка (по транзакциям)
-              // premium_transactions может использовать user_id или telegram_id
               const paidCheck = await sql`
                 SELECT COUNT(*) as count FROM premium_transactions
-                WHERE (user_id = ${numericTgId} OR telegram_id = ${numericTgId}) AND status IN ('completed', 'success')
+                WHERE (user_id = ${userId} OR telegram_id = ${userId}) AND status IN ('completed', 'success')
                 LIMIT 1
               `;
-              const hasPaidSubscription = paidCheck.rows[0]?.count > 0;
-              console.log('[ADS API] DEBUG: hasPaidSubscription =', hasPaidSubscription, 'для user_id=', numericTgId);
+              const hasPaidSubscription = parseInt(paidCheck.rows[0]?.count || '0') > 0;
+              console.log('[ADS API] DEBUG: hasPaidSubscription =', hasPaidSubscription, 'для user_id=', userId);
               
               if (hasPaidSubscription) {
                 console.log('[ADS API] ⚠️ Обнаружена платная подписка — сохраняем PRO, но убираем источник бонуса');
@@ -1013,7 +1015,7 @@ export async function POST(req: NextRequest) {
                   UPDATE users
                   SET auto_premium_source = NULL,
                       updated_at = NOW()
-                  WHERE id = ${numericTgId}
+                  WHERE user_token = ${finalUserToken}
                 `;
               } else {
                 console.log('[ADS API] 💔 Платной подписки нет — полностью отменяем PRO');
@@ -1024,7 +1026,7 @@ export async function POST(req: NextRequest) {
                       premium_until = NULL,
                       auto_premium_source = NULL,
                       updated_at = NOW()
-                  WHERE id = ${numericTgId}
+                  WHERE user_token = ${finalUserToken}
                 `;
                 
                 // Синхронизируем с premium_tokens
@@ -1037,123 +1039,15 @@ export async function POST(req: NextRequest) {
                 console.log('[ADS API] ❌ Бонус PRO отменен');
               }
             } else {
-              console.log('[ADS API] ℹ️ Не срабатывает условие отмены: auto_premium_source !== female_bonus или пол не Мужчина');
+              console.log('[ADS API] ℹ️ Условие бонуса не применимо');
             }
           }
+        } else {
+          console.log('[ADS API] ⚠️ Пользователь не найден в users по user_token');
         }
       } catch (bonusError) {
         console.error('[ADS API] Ошибка при проверке бонуса для девушек:', bonusError);
         // Не прерываем создание анкеты если бонус не сработал
-      }
-    } else if (finalUserToken) {
-      // 🎀 Бонус для девушек для EMAIL пользователей
-      try {
-        console.log('[ADS API] 🎀 Проверяем female_bonus для email пользователя');
-        
-        const userCheck = await sql`
-          SELECT id, first_ad_gender, auto_premium_source, is_premium, premium_until
-          FROM users
-          WHERE user_token = ${finalUserToken}
-          LIMIT 1
-        `;
-
-        if (userCheck.rows.length > 0) {
-          const user = userCheck.rows[0];
-          const currentGender = gender;
-          
-          // Если first_ad_gender еще не установлен — это первая анкета
-          if (!user.first_ad_gender) {
-            console.log('[ADS API] 🎀 Первая анкета email пользователя, пол:', currentGender);
-            
-            await sql`
-              UPDATE users
-              SET first_ad_gender = ${currentGender},
-                  updated_at = NOW()
-              WHERE user_token = ${finalUserToken}
-            `;
-            
-            if (currentGender === 'Девушка') {
-              console.log('[ADS API] 🎀 Активируем бонус PRO для девушки (email) на 1 год');
-              
-              const premiumUntil = new Date();
-              premiumUntil.setFullYear(premiumUntil.getFullYear() + 1);
-              
-              await sql`
-                UPDATE users
-                SET is_premium = TRUE,
-                    premium_until = ${premiumUntil.toISOString()},
-                    auto_premium_source = 'female_bonus',
-                    updated_at = NOW()
-                WHERE user_token = ${finalUserToken}
-              `;
-              
-              await sql`
-                INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
-                VALUES (${finalUserToken}, TRUE, ${premiumUntil.toISOString()}, NOW())
-                ON CONFLICT (user_token) DO UPDATE
-                SET is_premium = TRUE, premium_until = ${premiumUntil.toISOString()}, updated_at = NOW()
-              `;
-              
-              console.log('[ADS API] ✅ Бонус PRO для девушки (email) активирован до', premiumUntil.toISOString());
-            }
-          } else if (user.auto_premium_source === 'trial7h' && currentGender === 'Девушка') {
-            // Если у пользователя был trial7h и он создает анкету "Девушка" — переключаем на female_bonus
-            console.log('[ADS API] 🎀 Trial7h email пользователь создал анкету девушки — переключаем на female_bonus');
-            
-            const premiumUntil = new Date();
-            premiumUntil.setFullYear(premiumUntil.getFullYear() + 1);
-            
-            await sql`
-              UPDATE users
-              SET is_premium = TRUE,
-                  premium_until = ${premiumUntil.toISOString()},
-                  auto_premium_source = 'female_bonus',
-                  first_ad_gender = 'Девушка',
-                  updated_at = NOW()
-              WHERE user_token = ${finalUserToken}
-            `;
-            
-            await sql`
-              INSERT INTO premium_tokens (user_token, is_premium, premium_until, updated_at)
-              VALUES (${finalUserToken}, TRUE, ${premiumUntil.toISOString()}, NOW())
-              ON CONFLICT (user_token) DO UPDATE
-              SET is_premium = TRUE, premium_until = ${premiumUntil.toISOString()}, updated_at = NOW()
-            `;
-            
-            console.log('[ADS API] ✅ Trial7h (email) переключен на female_bonus до', premiumUntil.toISOString());
-          } else if (user.auto_premium_source === 'female_bonus' && currentGender === 'Мужчина') {
-            console.log('[ADS API] 🚫 Email девушка создала мужскую анкету — отменяем бонус PRO');
-            
-            // Проверяем реальные платежи для email пользователей
-            const paidCheck = await sql`
-              SELECT COUNT(*) as count FROM premium_transactions
-              WHERE (user_id = ${user.id} OR telegram_id = ${user.id}) AND status IN ('completed', 'success')
-              LIMIT 1
-            `;
-            const hasPaidSubscription = paidCheck.rows[0]?.count > 0;
-            
-            if (!hasPaidSubscription) {
-              await sql`
-                UPDATE users
-                SET is_premium = FALSE,
-                    premium_until = NULL,
-                    auto_premium_source = NULL,
-                    updated_at = NOW()
-                WHERE user_token = ${finalUserToken}
-              `;
-              
-              await sql`
-                UPDATE premium_tokens
-                SET is_premium = FALSE, premium_until = NULL, updated_at = NOW()
-                WHERE user_token = ${finalUserToken}
-              `;
-              
-              console.log('[ADS API] ❌ Бонус PRO отменен (email)');
-            }
-          }
-        }
-      } catch (bonusError) {
-        console.error('[ADS API] Ошибка при проверке бонуса для email девушек:', bonusError);
       }
     }
     
