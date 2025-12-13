@@ -40,7 +40,17 @@ export async function POST(request: NextRequest) {
       
       // Получаем следующий ID из последовательности
       const nextIdResult = await sql`SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM users`;
-      const nextId = nextIdResult.rows[0].next_id;
+      const nextId = nextIdResult.rows[0]?.next_id;
+      
+      if (!nextId || isNaN(nextId)) {
+        console.error('[Google Auth] ❌ Не удалось получить nextId:', nextId);
+        return NextResponse.json(
+          { success: false, error: 'Failed to generate user ID' },
+          { status: 500 }
+        );
+      }
+      
+      console.log('[Google Auth] 🔢 Следующий ID для создания:', nextId);
       
       const result = await sql`
         INSERT INTO users (
@@ -52,7 +62,7 @@ export async function POST(request: NextRequest) {
           updated_at
         )
         VALUES (
-          ${nextId},
+          ${nextId}::BIGINT,
           ${userToken},
           ${email.toLowerCase()},
           'google',
@@ -63,7 +73,7 @@ export async function POST(request: NextRequest) {
       `;
       
       userData = result.rows[0];
-      console.log('[Google Auth] ✅ Новый пользователь создан:', email);
+      console.log('[Google Auth] ✅ Новый пользователь создан:', email, 'ID:', userData.id);
     } else {
       // Пользователь уже существует
       userData = existingUser.rows[0];
