@@ -391,6 +391,11 @@ function showMainMenu() {
         loadWorldChatPreview();
     }
     
+    // Загружаем статистику для админов
+    if (typeof loadSiteStats === 'function') {
+        loadSiteStats();
+    }
+    
     // Обновляем Telegram кнопки
     if (typeof updateTelegramButtons === 'function') {
         updateTelegramButtons('homeScreen');
