@@ -2054,6 +2054,20 @@ async function saveSetupLocation() {
  */
 function updateLocationDisplay() {
     const locationDisplay = document.getElementById('userLocationDisplay');
+    
+    // Если currentUserLocation не установлен, пробуем загрузить из localStorage
+    if (!currentUserLocation) {
+        const savedLocation = localStorage.getItem('userLocation');
+        if (savedLocation) {
+            try {
+                currentUserLocation = JSON.parse(savedLocation);
+                console.log('📍 [LOCATION] Загружена локация из localStorage:', currentUserLocation);
+            } catch (e) {
+                console.warn('⚠️ [LOCATION] Ошибка парсинга localStorage');
+            }
+        }
+    }
+    
     console.log('📍 [LOCATION] updateLocationDisplay:', { 
         hasDisplay: !!locationDisplay, 
         currentUserLocation 
@@ -2086,6 +2100,9 @@ function updateLocationDisplay() {
         locationDisplay.textContent = `${flag} ${city}`;
         
         console.log('✅ [LOCATION] Отображение обновлено:', `${flag} ${city}`);
+    } else if (locationDisplay) {
+        // Если локация не определена, показываем placeholder
+        locationDisplay.textContent = '📍 Укажите город';
     }
 }
 
@@ -2261,6 +2278,7 @@ window.showPopularLocations = showPopularLocations;
 window.selectPopularLocation = selectPopularLocation;
 window.confirmDetectedLocation = confirmDetectedLocation;
 window.updateLocationDisplay = updateLocationDisplay;
+window.currentUserLocation = currentUserLocation; // Экспорт для onboarding.js
 window.showAutoLocationDetection = showAutoLocationDetection;
 window.showManualLocationSetup = showManualLocationSetup;
 window.resetFilterLocationSelection = resetFilterLocationSelection;

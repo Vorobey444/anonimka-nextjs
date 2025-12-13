@@ -675,9 +675,20 @@ async function detectAndSaveLocation(userToken) {
     // Сохраняем как JSON объект для location.js
     localStorage.setItem('userLocation', JSON.stringify(locationData));
     
-    // Обновляем глобальную переменную если модуль location загружен
-    if (typeof currentUserLocation !== 'undefined') {
+    // Обновляем глобальную переменную в модуле location.js
+    if (typeof window.currentUserLocation !== 'undefined') {
+        window.currentUserLocation = locationData;
+    }
+    // Также пробуем установить напрямую (если переменная глобальная)
+    try {
         currentUserLocation = locationData;
+    } catch (e) {
+        // Переменная не в глобальной области - игнорируем
+    }
+    
+    // Обновляем отображение локации сразу (до запроса на сервер)
+    if (typeof updateLocationDisplay === 'function') {
+        updateLocationDisplay();
     }
     
     // Сохраняем на сервер

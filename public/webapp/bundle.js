@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T07:55:21.621Z
+ * Автоматически сгенерирован: 2025-12-13T08:11:53.799Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -8140,7 +8140,7 @@ console.log('✅ [ADMIN] Модуль админ-панели инициализ
 } catch(e) { console.error('❌ Ошибка в модуле admin.js:', e); }
 })();
 
-// ========== location.js (96.8 KB) ==========
+// ========== location.js (97.7 KB) ==========
 (function() {
 try {
 /**
@@ -10199,6 +10199,20 @@ async function saveSetupLocation() {
  */
 function updateLocationDisplay() {
     const locationDisplay = document.getElementById('userLocationDisplay');
+    
+    // Если currentUserLocation не установлен, пробуем загрузить из localStorage
+    if (!currentUserLocation) {
+        const savedLocation = localStorage.getItem('userLocation');
+        if (savedLocation) {
+            try {
+                currentUserLocation = JSON.parse(savedLocation);
+                console.log('📍 [LOCATION] Загружена локация из localStorage:', currentUserLocation);
+            } catch (e) {
+                console.warn('⚠️ [LOCATION] Ошибка парсинга localStorage');
+            }
+        }
+    }
+    
     console.log('📍 [LOCATION] updateLocationDisplay:', { 
         hasDisplay: !!locationDisplay, 
         currentUserLocation 
@@ -10231,6 +10245,9 @@ function updateLocationDisplay() {
         locationDisplay.textContent = `${flag} ${city}`;
         
         console.log('✅ [LOCATION] Отображение обновлено:', `${flag} ${city}`);
+    } else if (locationDisplay) {
+        // Если локация не определена, показываем placeholder
+        locationDisplay.textContent = '📍 Укажите город';
     }
 }
 
@@ -10406,6 +10423,7 @@ window.showPopularLocations = showPopularLocations;
 window.selectPopularLocation = selectPopularLocation;
 window.confirmDetectedLocation = confirmDetectedLocation;
 window.updateLocationDisplay = updateLocationDisplay;
+window.currentUserLocation = currentUserLocation; // Экспорт для onboarding.js
 window.showAutoLocationDetection = showAutoLocationDetection;
 window.showManualLocationSetup = showManualLocationSetup;
 window.resetFilterLocationSelection = resetFilterLocationSelection;
@@ -14989,7 +15007,7 @@ console.log('✅ [CHATS] Модуль чатов инициализирован'
 } catch(e) { console.error('❌ Ошибка в модуле chats.js:', e); }
 })();
 
-// ========== onboarding.js (48.0 KB) ==========
+// ========== onboarding.js (48.5 KB) ==========
 (function() {
 try {
 /**
@@ -15669,9 +15687,20 @@ async function detectAndSaveLocation(userToken) {
     // Сохраняем как JSON объект для location.js
     localStorage.setItem('userLocation', JSON.stringify(locationData));
     
-    // Обновляем глобальную переменную если модуль location загружен
-    if (typeof currentUserLocation !== 'undefined') {
+    // Обновляем глобальную переменную в модуле location.js
+    if (typeof window.currentUserLocation !== 'undefined') {
+        window.currentUserLocation = locationData;
+    }
+    // Также пробуем установить напрямую (если переменная глобальная)
+    try {
         currentUserLocation = locationData;
+    } catch (e) {
+        // Переменная не в глобальной области - игнорируем
+    }
+    
+    // Обновляем отображение локации сразу (до запроса на сервер)
+    if (typeof updateLocationDisplay === 'function') {
+        updateLocationDisplay();
     }
     
     // Сохраняем на сервер

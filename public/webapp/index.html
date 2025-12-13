@@ -2195,7 +2195,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.2.18'; // FIX: location display update after onboarding
+        const bugFixVersion = '2.2.19'; // FIX: location display loads from localStorage if not set
         const lastVersion = localStorage.getItem('app_version');
         
         // ВСЕГДА очищаем fetch кэш при загрузке
@@ -2209,7 +2209,7 @@
         }
         
         if (lastVersion !== bugFixVersion) {
-            console.log('[CACHE] Обнаружена новая версия 2.2.18, очищаем кеш...');
+            console.log('[CACHE] Обнаружена новая версия 2.2.19, очищаем кеш...');
             localStorage.setItem('app_version', bugFixVersion);
             
             // Удаляем все зарегистрированные Service Workers

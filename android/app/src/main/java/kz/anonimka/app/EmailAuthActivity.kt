@@ -62,6 +62,14 @@ class EmailAuthActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Проверяем, авторизован ли уже пользователь
+        if (isUserLoggedIn()) {
+            android.util.Log.d("EmailAuth", "✅ Пользователь уже авторизован, переходим в MainActivity")
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            return
+        }
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.TRANSPARENT
@@ -334,5 +342,18 @@ class EmailAuthActivity : AppCompatActivity() {
             }
             .setCancelable(true)
             .show()
+    }
+    
+    /**
+     * Проверяем, авторизован ли пользователь
+     */
+    private fun isUserLoggedIn(): Boolean {
+        val userToken = authPrefs.getString("user_token", null)
+        val authMethod = authPrefs.getString("auth_method", null)
+        
+        android.util.Log.d("EmailAuth", "isUserLoggedIn check: userToken=${userToken?.take(16)}..., authMethod=$authMethod")
+        
+        // Если есть токен - пользователь авторизован
+        return !userToken.isNullOrEmpty()
     }
 }
