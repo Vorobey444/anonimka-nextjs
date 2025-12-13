@@ -72,11 +72,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { tgId, nickname, userToken } = body;
+    // Поддерживаем оба варианта: user_token и userToken
+    const { tgId, nickname, userToken, user_token } = body;
+    const tokenValue = userToken || user_token;
 
-    console.log('[NICKNAME API] Установка никнейма:', { tgId, nickname, userToken: userToken?.substring(0, 16) + '...' });
+    console.log('[NICKNAME API] Установка никнейма:', { tgId, nickname, userToken: tokenValue?.substring(0, 16) + '...' });
 
-    if ((!tgId && !userToken) || !nickname) {
+    if ((!tgId && !tokenValue) || !nickname) {
       return NextResponse.json(
         { success: false, error: 'Missing (tgId or userToken) and nickname' },
         { status: 400 }
@@ -84,13 +86,13 @@ export async function POST(request: NextRequest) {
     }
 
     let userId: number | null = null;
-    let userTokenValue: string | null = userToken || null;
+    let userTokenValue: string | null = tokenValue || null;
     
     // Если передан userToken - ищем пользователя по нему
-    if (userToken) {
-      console.log('[NICKNAME API] Поиск пользователя по userToken:', userToken.substring(0, 16) + '...');
+    if (tokenValue) {
+      console.log('[NICKNAME API] Поиск пользователя по userToken:', tokenValue.substring(0, 16) + '...');
       const result = await sql`
-        SELECT id, user_token, email, auth_method FROM users WHERE user_token = ${userToken} LIMIT 1
+        SELECT id, user_token, email, auth_method FROM users WHERE user_token = ${tokenValue} LIMIT 1
       `;
       
       console.log('[NICKNAME API] Результат поиска:', result.rows.length > 0 ? result.rows[0] : 'не найдено');
