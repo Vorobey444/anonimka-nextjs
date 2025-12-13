@@ -1220,7 +1220,12 @@ async function loadSiteStats() {
             }
             
             const userToken = localStorage.getItem('user_token');
-            console.log('[ADMIN STATS] Проверка админа для user_id:', userId, 'user_token:', userToken ? 'есть' : 'нет');
+            console.log('[ADMIN STATS] 🔍 Проверка админа - userId:', userId, 'userToken:', userToken ? userToken.substring(0, 16) + '...' : 'нет');
+            
+            // DEBUG: показываем что происходит
+            if (userId == 884253640 || userId == 543332884) {
+                console.log('[ADMIN STATS] 🎯 ОБНАРУЖЕН ПОТЕНЦИАЛЬНЫЙ АДМИН! userId:', userId);
+            }
             
             if (userId) {
                 try {

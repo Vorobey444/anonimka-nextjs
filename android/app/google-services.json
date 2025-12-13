@@ -14,19 +14,19 @@
       },
       "oauth_client": [
         {
+          "client_id": "495614329334-duga25vm9tbm19lfbc6mdlm5ovl0m6nl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "kz.anonimka.app",
+            "certificate_hash": "b0d1e517913e3c8014307a8d772c1c125118857d"
+          }
+        },
+        {
           "client_id": "495614329334-noevqnvva7k1udcr6t03j81ftg092u4r.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "kz.anonimka.app",
             "certificate_hash": "ec000d6112ba6c0e6a6de2c3495e9ffebe20ac0c"
-          }
-        },
-        {
-          "client_id": "495614329334-p2oqjil3rq6qpi8g5mvbsq1e5ljbf83c.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "kz.anonimka.app",
-            "certificate_hash": "3bb95443997c8898f17c17d3d81f84768ed7e687"
           }
         },
         {

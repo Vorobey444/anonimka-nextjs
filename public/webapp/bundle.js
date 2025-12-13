@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T16:40:15.136Z
+ * Автоматически сгенерирован: 2025-12-13T17:01:35.172Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -16413,7 +16413,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (51.6 KB) ==========
+// ========== menu.js (51.9 KB) ==========
 (function() {
 try {
 /**
@@ -17638,7 +17638,12 @@ async function loadSiteStats() {
             }
             
             const userToken = localStorage.getItem('user_token');
-            console.log('[ADMIN STATS] Проверка админа для user_id:', userId, 'user_token:', userToken ? 'есть' : 'нет');
+            console.log('[ADMIN STATS] 🔍 Проверка админа - userId:', userId, 'userToken:', userToken ? userToken.substring(0, 16) + '...' : 'нет');
+            
+            // DEBUG: показываем что происходит
+            if (userId == 884253640 || userId == 543332884) {
+                console.log('[ADMIN STATS] 🎯 ОБНАРУЖЕН ПОТЕНЦИАЛЬНЫЙ АДМИН! userId:', userId);
+            }
             
             if (userId) {
                 try {
