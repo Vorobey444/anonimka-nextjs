@@ -189,9 +189,12 @@ function initializeMenuButtons() {
  * Открыть/закрыть бургер-меню
  */
 function toggleBurgerMenu() {
+    console.log('🍔 [MENU] toggleBurgerMenu вызван');
     const overlay = document.getElementById('hamburgerMenuOverlay');
+    console.log('🍔 [MENU] hamburgerMenuOverlay найден:', !!overlay);
     if (overlay) {
         overlay.classList.toggle('active');
+        console.log('🍔 [MENU] classList после toggle:', overlay.classList.contains('active'));
     }
 }
 

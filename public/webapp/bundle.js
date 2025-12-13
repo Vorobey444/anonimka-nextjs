@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T17:14:15.827Z
+ * Автоматически сгенерирован: 2025-12-13T17:17:39.733Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -16413,7 +16413,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (53.3 KB) ==========
+// ========== menu.js (53.5 KB) ==========
 (function() {
 try {
 /**
@@ -16607,9 +16607,12 @@ function initializeMenuButtons() {
  * Открыть/закрыть бургер-меню
  */
 function toggleBurgerMenu() {
+    console.log('🍔 [MENU] toggleBurgerMenu вызван');
     const overlay = document.getElementById('hamburgerMenuOverlay');
+    console.log('🍔 [MENU] hamburgerMenuOverlay найден:', !!overlay);
     if (overlay) {
         overlay.classList.toggle('active');
+        console.log('🍔 [MENU] classList после toggle:', overlay.classList.contains('active'));
     }
 }
 
