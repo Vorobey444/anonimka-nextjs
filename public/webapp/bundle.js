@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T20:20:43.941Z
+ * Автоматически сгенерирован: 2025-12-13T20:27:26.579Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -8425,7 +8425,7 @@ console.log('[ADMIN] Экспортированные функции:', Object.k
 } catch(e) { console.error('❌ Ошибка в модуле admin.js:', e); }
 })();
 
-// ========== location.js (96.7 KB) ==========
+// ========== location.js (96.9 KB) ==========
 (function() {
 try {
 /**
@@ -8521,13 +8521,17 @@ async function saveUserLocation(country, region, city) {
         
         // Сохраняем локацию в базу данных
         const userToken = localStorage.getItem('user_token');
-        if (userToken) {
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
+        
+        if (userId) {
             try {
                 const response = await fetch('/api/users/location', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        userToken,
+                        userToken: userId,
                         country,
                         region: region || null,
                         city
@@ -15510,7 +15514,7 @@ console.log('✅ [CHATS] Модуль чатов инициализирован'
 } catch(e) { console.error('❌ Ошибка в модуле chats.js:', e); }
 })();
 
-// ========== onboarding.js (50.7 KB) ==========
+// ========== onboarding.js (51.0 KB) ==========
 (function() {
 try {
 /**
@@ -16053,8 +16057,11 @@ async function completeOnboarding() {
     
     try {
         const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
         
-        if (!userToken) {
+        if (!userId) {
             console.error('❌ [ONBOARDING] Токен не найден');
             if (typeof tg !== 'undefined' && tg.showAlert) {
                 tg.showAlert('Ошибка: пользователь не авторизован');
@@ -16071,7 +16078,7 @@ async function completeOnboarding() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                user_token: userToken,
+                user_token: userId,
                 nickname: nickname
             })
         });
@@ -16370,9 +16377,10 @@ function checkOnboarding() {
     // Также проверяем наличие никнейма - если есть, значит уже зарегистрирован
     const hasNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname');
     const hasUserToken = localStorage.getItem('user_token');
+    const hasTelegramUser = localStorage.getItem('telegram_user');
     
-    // Если есть никнейм и токен - онбординг не нужен
-    if (hasNickname && hasUserToken && hasNickname !== 'null' && hasNickname !== 'undefined') {
+    // Если есть никнейм и (токен ИЛИ telegram_user) - онбординг не нужен
+    if (hasNickname && (hasUserToken || hasTelegramUser) && hasNickname !== 'null' && hasNickname !== 'undefined') {
         console.log('✅ [ONBOARDING] Никнейм найден, онбординг не нужен:', hasNickname);
         // Синхронизируем флаг
         localStorage.setItem('onboardingCompleted', 'true');
@@ -16850,7 +16858,7 @@ console.log('✅ [ONBOARDING] Модуль онбординга загружен
 } catch(e) { console.error('❌ Ошибка в модуле onboarding.js:', e); }
 })();
 
-// ========== menu.js (55.9 KB) ==========
+// ========== menu.js (56.4 KB) ==========
 (function() {
 try {
 /**
@@ -17445,23 +17453,21 @@ async function showBlockedUsers() {
     `;
     
     try {
-        // Получаем идентификатор пользователя (userToken для email, userId для Telegram)
-        let userToken = localStorage.getItem('user_token');
+        // Получаем идентификатор пользователя
+        const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : (typeof getCurrentUserId === 'function' ? getCurrentUserId() : null));
         
-        // Fallback на Telegram ID если токена нет
-        if (!userToken || userToken === 'null' || userToken === 'undefined') {
-            const userId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
-            if (!userId || userId.startsWith('web_')) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="neon-icon">🔒</div>
-                        <h3>Требуется авторизация</h3>
-                        <p>Для просмотра заблокированных пользуйтесь Telegram</p>
-                    </div>
-                `;
-                return;
-            }
-            userToken = userId;
+        if (!userId || userId === 'null' || userId === 'undefined' || userId.startsWith('web_')) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="neon-icon">🔒</div>
+                    <h3>Требуется авторизация</h3>
+                    <p>Для просмотра заблокированных пользуйтесь Telegram</p>
+                </div>
+            `;
+            return;
         }
         
         const response = await fetch('/api/user-blocks', {
@@ -17469,7 +17475,7 @@ async function showBlockedUsers() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'get-blocked-users',
-                params: { userToken: userToken }
+                params: { userToken: userId }
             })
         });
         
@@ -17534,6 +17540,9 @@ async function showBlockedUsers() {
  */
 async function unblockUserFromList(blockedId) {
     const userToken = localStorage.getItem('user_token');
+    const savedUser = localStorage.getItem('telegram_user');
+    const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+    const userId = userToken || (tgId ? String(tgId) : null);
     
     tg.showConfirm('Разблокировать пользователя?', async (confirmed) => {
         if (!confirmed) return;
@@ -17544,7 +17553,7 @@ async function unblockUserFromList(blockedId) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'unblock-user',
-                    params: { blockerToken: userToken, blockedToken: blockedId }
+                    params: { blockerToken: userId, blockedToken: blockedId }
                 })
             });
             
@@ -17846,8 +17855,12 @@ function openAffiliateProgram() {
  */
 async function votePoll(pollId, answer) {
     const userToken = localStorage.getItem('user_token');
-    if (!userToken) {
-        alert('Ошибка: токен пользователя не найден');
+    const savedUser = localStorage.getItem('telegram_user');
+    const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+    const userId = userToken || (tgId ? String(tgId) : null);
+    
+    if (!userId) {
+        alert('Ошибка: пользователь не авторизован');
         return;
     }
     
@@ -17856,7 +17869,7 @@ async function votePoll(pollId, answer) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-User-Token': userToken
+                'X-User-Token': userId
             },
             body: JSON.stringify({
                 poll_id: pollId,
@@ -17899,8 +17912,12 @@ async function loadPollResults(pollId) {
     
     try {
         const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
+        
         const headers = { 'Content-Type': 'application/json' };
-        if (userToken) headers['X-User-Token'] = userToken;
+        if (userId) headers['X-User-Token'] = userId;
         
         const response = await fetch(`/api/poll?poll_id=${pollId}`, { headers });
         const data = await response.json();

@@ -91,13 +91,17 @@ async function saveUserLocation(country, region, city) {
         
         // Сохраняем локацию в базу данных
         const userToken = localStorage.getItem('user_token');
-        if (userToken) {
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
+        
+        if (userId) {
             try {
                 const response = await fetch('/api/users/location', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        userToken,
+                        userToken: userId,
                         country,
                         region: region || null,
                         city

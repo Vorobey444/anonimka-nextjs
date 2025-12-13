@@ -538,8 +538,11 @@ async function completeOnboarding() {
     
     try {
         const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
         
-        if (!userToken) {
+        if (!userId) {
             console.error('❌ [ONBOARDING] Токен не найден');
             if (typeof tg !== 'undefined' && tg.showAlert) {
                 tg.showAlert('Ошибка: пользователь не авторизован');
@@ -556,7 +559,7 @@ async function completeOnboarding() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                user_token: userToken,
+                user_token: userId,
                 nickname: nickname
             })
         });
@@ -855,9 +858,10 @@ function checkOnboarding() {
     // Также проверяем наличие никнейма - если есть, значит уже зарегистрирован
     const hasNickname = localStorage.getItem('userNickname') || localStorage.getItem('user_nickname');
     const hasUserToken = localStorage.getItem('user_token');
+    const hasTelegramUser = localStorage.getItem('telegram_user');
     
-    // Если есть никнейм и токен - онбординг не нужен
-    if (hasNickname && hasUserToken && hasNickname !== 'null' && hasNickname !== 'undefined') {
+    // Если есть никнейм и (токен ИЛИ telegram_user) - онбординг не нужен
+    if (hasNickname && (hasUserToken || hasTelegramUser) && hasNickname !== 'null' && hasNickname !== 'undefined') {
         console.log('✅ [ONBOARDING] Никнейм найден, онбординг не нужен:', hasNickname);
         // Синхронизируем флаг
         localStorage.setItem('onboardingCompleted', 'true');
