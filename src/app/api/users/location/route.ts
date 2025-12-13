@@ -26,13 +26,18 @@ export async function POST(request: NextRequest) {
 
     console.log('[Location] Сохранение локации:', { userToken, country, region, city });
 
+    // Формируем JSON объект для location
+    const locationData = JSON.stringify({
+      country,
+      region: region || null,
+      city
+    });
+
     // Обновляем локацию пользователя в БД
     await sql`
       UPDATE users 
       SET 
-        country = ${country},
-        region = ${region || ''},
-        city = ${city},
+        location = ${locationData}::jsonb,
         updated_at = NOW()
       WHERE user_token = ${userToken}
     `;
