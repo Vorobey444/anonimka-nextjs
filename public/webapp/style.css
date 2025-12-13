@@ -103,6 +103,12 @@ body {
     flex-shrink: 0 !important;
 }
 
+/* Админ экран - расширенная ширина */
+#adminScreen.screen.active > .admin-container {
+    max-width: 600px !important;
+    min-height: 200px !important;
+}
+
 /* Главное меню - всегда вертикальный layout */
 #mainMenu.screen.active {
     display: flex !important;
