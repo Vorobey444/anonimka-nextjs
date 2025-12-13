@@ -352,8 +352,8 @@
                         </label>
                     </div>
                     
-                    <button id="onboardingContinue" class="onboarding-button" onclick="completeOnboarding()">
-                        ⏳ Сохраняем...
+                    <button id="onboardingContinue" class="onboarding-button" disabled onclick="completeOnboarding()">
+                        ⏳ Заполните данные...
                     </button>
                 </div>
             </div>
@@ -2195,7 +2195,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.2.15'; // FIX: proper nickname validation with 3 char min + smart button activation
+        const bugFixVersion = '2.2.16'; // FIX: onboarding nickname realtime check + smart Готово button
         const lastVersion = localStorage.getItem('app_version');
         
         // ВСЕГДА очищаем fetch кэш при загрузке
@@ -2209,7 +2209,7 @@
         }
         
         if (lastVersion !== bugFixVersion) {
-            console.log('[CACHE] Обнаружена новая версия 2.2.15, очищаем кеш...');
+            console.log('[CACHE] Обнаружена новая версия 2.2.16, очищаем кеш...');
             localStorage.setItem('app_version', bugFixVersion);
             
             // Удаляем все зарегистрированные Service Workers

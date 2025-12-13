@@ -407,24 +407,43 @@ function toggleOnboardingLanguage(language) {
  * ===== СТАТУС НИКНЕЙМА =====
  */
 
+// Таймер для debounce проверки никнейма
+let nicknameCheckTimeout = null;
+let isNicknameAvailable = false;
+
 /**
  * Проверка доступности никнейма
  */
 async function checkNicknameAvailability(nickname) {
+    // Если никнейм пустой - сбрасываем
+    if (!nickname || nickname.length < 1) {
+        isNicknameAvailable = false;
+        showNicknameStatus('', '');
+        updateContinueButton();
+        return;
+    }
+    
+    // Показываем статус проверки
+    showNicknameStatus('checking', '⏳ Проверяем...');
+    
     try {
         const response = await fetch(`/api/nickname?nickname=${encodeURIComponent(nickname)}`);
         const data = await response.json();
         
         if (data.available) {
+            isNicknameAvailable = true;
             showNicknameStatus('available', '✅ Доступен');
         } else {
+            isNicknameAvailable = false;
             showNicknameStatus('taken', '❌ Уже занят');
         }
         
         updateContinueButton();
     } catch (error) {
         console.error('Ошибка проверки никнейма:', error);
-        showNicknameStatus('', '');
+        isNicknameAvailable = false;
+        showNicknameStatus('error', '❌ Ошибка проверки');
+        updateContinueButton();
     }
 }
 
@@ -445,7 +464,7 @@ function showNicknameStatus(type, message) {
 }
 
 /**
- * Обновить состояние кнопки "Продолжить"
+ * Обновить состояние кнопки "Готово"
  */
 function updateContinueButton() {
     const nicknameInput = document.getElementById('onboardingNicknameInput');
@@ -459,10 +478,12 @@ function updateContinueButton() {
     const agreed = agreeCheckbox?.checked || false;
     const nicknameAvailable = statusEl?.classList.contains('available');
     
+    // Никнейм от 1 символа + доступен + чекбокс нажат
     const canContinue = nickname.length >= 1 && nicknameAvailable && agreed;
     
     continueBtn.disabled = !canContinue;
-    continueBtn.textContent = canContinue ? '🚀 Продолжить' : '⏳ Сохраняем...';
+    continueBtn.textContent = canContinue ? '✅ Готово' : '⏳ Заполните данные...';
+    continueBtn.style.opacity = canContinue ? '1' : '0.5';
 }
 
 /**
@@ -474,66 +495,124 @@ function updateContinueButton() {
  */
 async function completeOnboarding() {
     console.log('✅ [ONBOARDING] Завершение онбординга');
-    console.log('📊 [ONBOARDING] Данные профиля:', onboardingData);
+    
+    // Получаем никнейм и проверяем чекбокс
+    const nicknameInput = document.getElementById('onboardingNicknameInput');
+    const agreeCheckbox = document.getElementById('agreeTerms');
+    const continueBtn = document.getElementById('onboardingContinue');
+    
+    const nickname = nicknameInput?.value.trim() || '';
+    const agreed = agreeCheckbox?.checked || false;
+    
+    // Проверяем условия
+    if (!nickname || nickname.length < 1) {
+        if (typeof tg !== 'undefined' && tg.showAlert) {
+            tg.showAlert('Введите никнейм');
+        } else {
+            alert('Введите никнейм');
+        }
+        return;
+    }
+    
+    if (!isNicknameAvailable) {
+        if (typeof tg !== 'undefined' && tg.showAlert) {
+            tg.showAlert('Этот никнейм уже занят');
+        } else {
+            alert('Этот никнейм уже занят');
+        }
+        return;
+    }
+    
+    if (!agreed) {
+        if (typeof tg !== 'undefined' && tg.showAlert) {
+            tg.showAlert('Примите условия использования');
+        } else {
+            alert('Примите условия использования');
+        }
+        return;
+    }
+    
+    // Блокируем кнопку
+    if (continueBtn) {
+        continueBtn.disabled = true;
+        continueBtn.textContent = '⏳ Сохраняем...';
+    }
     
     try {
         const userToken = localStorage.getItem('user_token');
         
         if (!userToken) {
             console.error('❌ [ONBOARDING] Токен не найден');
-            tg.showAlert('Ошибка: пользователь не авторизирован');
+            if (typeof tg !== 'undefined' && tg.showAlert) {
+                tg.showAlert('Ошибка: пользователь не авторизован');
+            } else {
+                alert('Ошибка: пользователь не авторизован');
+            }
+            updateContinueButton();
             return;
         }
         
-        // Отправляем профиль на сервер
-        const response = await fetch('/api/profile', {
-            method: 'PUT',
+        // Сначала сохраняем никнейм
+        console.log('📝 [ONBOARDING] Сохраняем никнейм:', nickname);
+        const nicknameResponse = await fetch('/api/nickname', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_token: userToken,
-                gender: onboardingData.gender,
-                age: onboardingData.age,
-                orientation: onboardingData.orientation,
-                goals: onboardingData.goals,
-                languages: onboardingData.languages
+                nickname: nickname
             })
         });
         
-        const data = await response.json();
+        const nicknameData = await nicknameResponse.json();
         
-        if (data.success) {
-            console.log('✅ [ONBOARDING] Профиль сохранен');
-            
-            // Сохраняем данные локально
-            localStorage.setItem('onboardingCompleted', 'true');
-            localStorage.setItem('userProfile', JSON.stringify(onboardingData));
-            
-            // Обработка реферальной награды если нужна
-            if (typeof processReferralReward === 'function') {
-                await processReferralReward();
+        if (!nicknameData.success) {
+            console.error('❌ [ONBOARDING] Ошибка сохранения никнейма:', nicknameData.message);
+            if (typeof tg !== 'undefined' && tg.showAlert) {
+                tg.showAlert(nicknameData.message || 'Ошибка сохранения никнейма');
+            } else {
+                alert(nicknameData.message || 'Ошибка сохранения никнейма');
             }
-            
-            // Закрываем онбординг
-            hideOnboardingScreen();
-            
-            // Инициализируем меню
-            if (typeof initializeMenuModule === 'function') {
-                initializeMenuModule();
-            }
-            
-            // Показываем главный экран
-            if (typeof goToHome === 'function') {
-                goToHome();
-            }
-            
-        } else {
-            console.error('❌ [ONBOARDING] Ошибка сохранения:', data.message);
-            tg.showAlert('Ошибка при сохранении профиля');
+            updateContinueButton();
+            return;
+        }
+        
+        console.log('✅ [ONBOARDING] Никнейм сохранен');
+        
+        // Сохраняем никнейм локально
+        localStorage.setItem('userNickname', nickname);
+        localStorage.setItem('user_nickname', nickname);
+        
+        // Сохраняем данные локально
+        localStorage.setItem('onboardingCompleted', 'true');
+        
+        // Обработка реферальной награды если нужна
+        if (typeof processReferralReward === 'function') {
+            await processReferralReward();
+        }
+        
+        // Закрываем онбординг
+        hideOnboardingScreen();
+        
+        // Инициализируем меню
+        if (typeof initializeMenuModule === 'function') {
+            initializeMenuModule();
+        }
+        
+        // Показываем главный экран
+        if (typeof goToHome === 'function') {
+            goToHome();
+        } else if (typeof showMainMenu === 'function') {
+            showMainMenu();
         }
         
     } catch (error) {
         console.error('❌ [ONBOARDING] Ошибка завершения:', error);
-        tg.showAlert('Ошибка при завершении регистрации');
+        if (typeof tg !== 'undefined' && tg.showAlert) {
+            tg.showAlert('Ошибка при завершении регистрации');
+        } else {
+            alert('Ошибка при завершении регистрации');
+        }
+        updateContinueButton();
     }
 }
 
@@ -923,6 +1002,60 @@ async function checkOnboardingStatus() {
         console.error('❌ Ошибка checkOnboardingStatus:', error);
         if (typeof showOnboardingScreen === 'function') showOnboardingScreen();
     }
+}
+
+/**
+ * Инициализация обработчиков событий для онбординга
+ */
+function initOnboardingEventListeners() {
+    console.log('🎯 [ONBOARDING] Инициализация обработчиков событий');
+    
+    // Обработчик ввода никнейма
+    const nicknameInput = document.getElementById('onboardingNicknameInput');
+    if (nicknameInput) {
+        nicknameInput.addEventListener('input', function() {
+            const nickname = this.value.trim();
+            
+            // Очищаем предыдущий таймер
+            if (nicknameCheckTimeout) {
+                clearTimeout(nicknameCheckTimeout);
+            }
+            
+            // Если пустое поле - сбрасываем
+            if (!nickname || nickname.length < 1) {
+                isNicknameAvailable = false;
+                showNicknameStatus('', '');
+                updateContinueButton();
+                return;
+            }
+            
+            // Debounce: проверяем через 300мс после последнего ввода
+            nicknameCheckTimeout = setTimeout(() => {
+                checkNicknameAvailability(nickname);
+            }, 300);
+        });
+        console.log('✅ [ONBOARDING] Обработчик никнейма установлен');
+    }
+    
+    // Обработчик чекбокса
+    const agreeCheckbox = document.getElementById('agreeTerms');
+    if (agreeCheckbox) {
+        agreeCheckbox.addEventListener('change', function() {
+            updateContinueButton();
+        });
+        console.log('✅ [ONBOARDING] Обработчик чекбокса установлен');
+    }
+    
+    // Начальное состояние кнопки
+    updateContinueButton();
+}
+
+// Запускаем инициализацию при загрузке страницы
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initOnboardingEventListeners);
+} else {
+    // DOM уже загружен
+    setTimeout(initOnboardingEventListeners, 100);
 }
 
 console.log('✅ [ONBOARDING] Модуль онбординга загружен');
