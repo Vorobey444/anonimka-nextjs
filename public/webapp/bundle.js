@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T19:09:43.276Z
+ * Автоматически сгенерирован: 2025-12-13T19:31:33.485Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -2591,7 +2591,7 @@ console.log('✅ [AUTH] Модуль авторизации инициализи
 } catch(e) { console.error('❌ Ошибка в модуле auth.js:', e); }
 })();
 
-// ========== auth-modals.js (55.3 KB) ==========
+// ========== auth-modals.js (55.5 KB) ==========
 (function() {
 try {
 // ================================================
@@ -2891,6 +2891,12 @@ function showTelegramAuthModal() {
             // ПРИОРИТЕТ 2: Проверяем на сервере через API
             const response = await fetch(`/api/auth?token=${authToken}`);
             const data = await response.json();
+            
+            console.log(`🔍 [AUTH POLL] API response:`, { 
+                authorized: data.authorized, 
+                hasUser: !!data.user,
+                token: authToken.substring(0, 20) + '...'
+            });
             
             if (data.authorized && data.user) {
                 console.log('✅ [AUTH POLL] Авторизация через API получена:', data.user.first_name);
@@ -10814,7 +10820,7 @@ console.log('✅ [LOCATION] Модуль локации инициализиро
 } catch(e) { console.error('❌ Ошибка в модуле location.js:', e); }
 })();
 
-// ========== ads.js (107.6 KB) ==========
+// ========== ads.js (108.2 KB) ==========
 (function() {
 try {
 /**
@@ -12759,9 +12765,21 @@ async function deleteMyAd(adId) {
 async function contactAuthor(adId, authorToken) {
     console.log('💬 [ADS] Создание чата с автором анкеты');
     
-    const userToken = localStorage.getItem('user_token');
-    if (!userToken || userToken === 'null' || userToken === 'undefined') {
+    // Проверяем авторизацию: user_token ИЛИ telegram_user
+    const savedUserToken = localStorage.getItem('user_token');
+    const telegramUser = localStorage.getItem('telegram_user');
+    
+    if ((!savedUserToken || savedUserToken === 'null' || savedUserToken === 'undefined') && 
+        (!telegramUser || telegramUser === 'null' || telegramUser === 'undefined')) {
         tg.showAlert('⚠️ Сначала создайте анкету или авторизуйтесь');
+        return;
+    }
+    
+    // Получаем правильный user token для API запросов
+    const userToken = savedUserToken || (telegramUser ? JSON.parse(telegramUser).id.toString() : null);
+    
+    if (!userToken) {
+        tg.showAlert('⚠️ Не удалось определить ваш ID');
         return;
     }
     

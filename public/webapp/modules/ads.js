@@ -1940,9 +1940,21 @@ async function deleteMyAd(adId) {
 async function contactAuthor(adId, authorToken) {
     console.log('💬 [ADS] Создание чата с автором анкеты');
     
-    const userToken = localStorage.getItem('user_token');
-    if (!userToken || userToken === 'null' || userToken === 'undefined') {
+    // Проверяем авторизацию: user_token ИЛИ telegram_user
+    const savedUserToken = localStorage.getItem('user_token');
+    const telegramUser = localStorage.getItem('telegram_user');
+    
+    if ((!savedUserToken || savedUserToken === 'null' || savedUserToken === 'undefined') && 
+        (!telegramUser || telegramUser === 'null' || telegramUser === 'undefined')) {
         tg.showAlert('⚠️ Сначала создайте анкету или авторизуйтесь');
+        return;
+    }
+    
+    // Получаем правильный user token для API запросов
+    const userToken = savedUserToken || (telegramUser ? JSON.parse(telegramUser).id.toString() : null);
+    
+    if (!userToken) {
+        tg.showAlert('⚠️ Не удалось определить ваш ID');
         return;
     }
     

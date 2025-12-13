@@ -296,6 +296,12 @@ function showTelegramAuthModal() {
             const response = await fetch(`/api/auth?token=${authToken}`);
             const data = await response.json();
             
+            console.log(`🔍 [AUTH POLL] API response:`, { 
+                authorized: data.authorized, 
+                hasUser: !!data.user,
+                token: authToken.substring(0, 20) + '...'
+            });
+            
             if (data.authorized && data.user) {
                 console.log('✅ [AUTH POLL] Авторизация через API получена:', data.user.first_name);
                 
