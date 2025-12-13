@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T18:39:24.356Z
+ * Автоматически сгенерирован: 2025-12-13T18:50:27.725Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -13526,7 +13526,7 @@ console.log('✅ [ADS] Модуль анкет инициализирован');
 } catch(e) { console.error('❌ Ошибка в модуле ads.js:', e); }
 })();
 
-// ========== chats.js (66.2 KB) ==========
+// ========== chats.js (66.5 KB) ==========
 (function() {
 try {
 /**
@@ -14020,9 +14020,13 @@ async function sendMessage() {
             const messageHtml = renderSingleMessage(optimisticMessage, senderId, []);
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = messageHtml;
-            const messageEl = tempDiv.firstChild;
-            messageEl.style.opacity = '0.7'; // Делаем полупрозрачным чтобы показать что отправляется
-            messagesContainer.appendChild(messageEl);
+            const messageEl = tempDiv.firstElementChild; // безопаснее, игнорирует текстовые узлы
+            if (messageEl) {
+                messageEl.style.opacity = '0.7'; // Делаем полупрозрачным чтобы показать что отправляется
+                messagesContainer.appendChild(messageEl);
+            } else {
+                console.warn('⚠️ [CHATS] Не удалось создать элемент сообщения для оптимистичного обновления');
+            }
             
             // Скроллим к новому сообщению
             if (scrollContainer) {

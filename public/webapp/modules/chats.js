@@ -489,9 +489,13 @@ async function sendMessage() {
             const messageHtml = renderSingleMessage(optimisticMessage, senderId, []);
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = messageHtml;
-            const messageEl = tempDiv.firstChild;
-            messageEl.style.opacity = '0.7'; // Делаем полупрозрачным чтобы показать что отправляется
-            messagesContainer.appendChild(messageEl);
+            const messageEl = tempDiv.firstElementChild; // безопаснее, игнорирует текстовые узлы
+            if (messageEl) {
+                messageEl.style.opacity = '0.7'; // Делаем полупрозрачным чтобы показать что отправляется
+                messagesContainer.appendChild(messageEl);
+            } else {
+                console.warn('⚠️ [CHATS] Не удалось создать элемент сообщения для оптимистичного обновления');
+            }
             
             // Скроллим к новому сообщению
             if (scrollContainer) {
