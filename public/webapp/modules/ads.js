@@ -347,6 +347,13 @@ function initFormHandlers() {
         btn.onclick = () => selectOrientation(btn.dataset.orientation);
     });
     
+    // Обработчик синхронизации возраста "От" и "До"
+    const ageFromInput = document.getElementById('ageFrom');
+    if (ageFromInput) {
+        ageFromInput.addEventListener('input', () => syncAgeFromTo('ageFrom'));
+        ageFromInput.addEventListener('change', () => syncAgeFromTo('ageFrom'));
+    }
+    
     console.log('✅ [ADS] Обработчики формы инициализированы');
 }
 
@@ -2272,11 +2279,13 @@ function increaseAge(inputId) {
     
     if (isNaN(currentValue) || !input.value) {
         input.value = 18;
+        syncAgeFromTo(inputId);
         return;
     }
     
     if (currentValue < maxValue) {
         input.value = currentValue + 1;
+        syncAgeFromTo(inputId);
     }
 }
 
@@ -2292,11 +2301,34 @@ function decreaseAge(inputId) {
     
     if (isNaN(currentValue) || !input.value) {
         input.value = 18;
+        syncAgeFromTo(inputId);
         return;
     }
     
     if (currentValue > minValue) {
         input.value = currentValue - 1;
+        syncAgeFromTo(inputId);
+    }
+}
+
+/**
+ * Синхронизация полей "От" и "До" для возраста партнера
+ * Если "От" >= "До", то "До" автоматически увеличивается
+ */
+function syncAgeFromTo(changedInputId) {
+    const ageFromInput = document.getElementById('ageFrom');
+    const ageToInput = document.getElementById('ageTo');
+    
+    if (!ageFromInput || !ageToInput) return;
+    
+    const ageFrom = parseInt(ageFromInput.value) || 0;
+    const ageTo = parseInt(ageToInput.value) || 0;
+    
+    // Если изменили "От" и оно >= "До", увеличиваем "До"
+    if (changedInputId === 'ageFrom' && ageFrom > 0 && ageTo > 0 && ageFrom >= ageTo) {
+        const newAgeTo = Math.min(ageFrom + 1, 99);
+        ageToInput.value = newAgeTo;
+        console.log(`📅 [AGE] Авто-синхронизация: От=${ageFrom}, До=${newAgeTo}`);
     }
 }
 
