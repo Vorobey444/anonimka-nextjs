@@ -87,6 +87,11 @@ body {
     box-sizing: border-box; /* Учитываем padding в высоте */
 }
 
+/* Экран чата - без отступов, на весь экран */
+#chatView.screen {
+    padding: 0 !important;
+}
+
 /* CSS Version 7.0 - Вертикальный layout везде */
 .screen.active {
     display: flex !important;
@@ -101,6 +106,11 @@ body {
     width: 100% !important;
     max-width: 400px !important;
     flex-shrink: 0 !important;
+}
+
+/* Экран чата - на полную ширину без ограничений */
+#chatView.screen.active > * {
+    max-width: 100% !important;
 }
 
 /* Админ экран - расширенная ширина */
