@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T20:00:45.276Z
+ * Автоматически сгенерирован: 2025-12-13T20:04:06.073Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -4095,7 +4095,7 @@ console.log('📊 [LOCATION-DATA] Всего стран:', Object.keys(locationD
 } catch(e) { console.error('❌ Ошибка в модуле location-data.js:', e); }
 })();
 
-// ========== photos.js (58.5 KB) ==========
+// ========== photos.js (59.4 KB) ==========
 (function() {
 try {
 /**
@@ -4197,12 +4197,16 @@ async function compressImage(file, maxSizeMB = 4) {
  */
 function showMyPhotos() {
     const userToken = localStorage.getItem('user_token');
-    if (!userToken) {
+    const savedUser = localStorage.getItem('telegram_user');
+    const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+    
+    if (!userToken && !tgId) {
         tg.showAlert('❌ Требуется авторизация');
         return;
     }
     
-    const url = window.location.origin + '/my-photo?userToken=' + userToken;
+    const userId = userToken || String(tgId);
+    const url = window.location.origin + '/my-photo?userToken=' + userId;
     window.location.href = url;
     
     if (typeof closeHamburgerMenu === 'function') {
@@ -4221,8 +4225,11 @@ async function loadMyPhotos() {
     const limitText = document.getElementById('photosLimitText');
     
     const userToken = localStorage.getItem('user_token');
+    const savedUser = localStorage.getItem('telegram_user');
+    const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+    const userId = userToken || (tgId ? String(tgId) : null);
     
-    if (!userToken) {
+    if (!userId) {
         if (gallery) {
             gallery.innerHTML = `
                 <div style="text-align: center; padding: 40px 20px; color: #888;">
@@ -4238,7 +4245,7 @@ async function loadMyPhotos() {
             gallery.innerHTML = `<p style="color: #888; text-align: center; padding: 20px;">⏳ Загрузка...</p>`;
         }
         
-        const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
+        const resp = await fetch(`/api/user-photos?userToken=${userId}`);
         
         if (!resp.ok) {
             throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
@@ -4529,7 +4536,11 @@ async function addAdPhoto() {
                 fileToUpload = await compressImage(file, 4);
             }
             
-            const userId = localStorage.getItem('user_token');
+            const userToken = localStorage.getItem('user_token');
+            const savedUser = localStorage.getItem('telegram_user');
+            const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+            const userId = userToken || (tgId ? String(tgId) : null);
+            
             if (!userId) {
                 throw new Error('Требуется авторизация');
             }
@@ -4552,12 +4563,11 @@ async function addAdPhoto() {
             console.log('📸 [addAdPhoto] photoData:', photoData);
             
             // Сохраняем фото в БД user_photos
-            const userToken = localStorage.getItem('user_token');
             await fetch('/api/user-photos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userToken,
+                    userToken: userId,
                     fileId: photoData.file_id,
                     photoUrl: photoData.photo_url
                 })
@@ -4608,9 +4618,13 @@ async function loadMyPhotosForStep9() {
     try {
         console.log('📸 [loadMyPhotosForStep9] Загрузка фото...');
         const userToken = localStorage.getItem('user_token');
-        if (!userToken) return;
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        const userId = userToken || (tgId ? String(tgId) : null);
         
-        const resp = await fetch(`/api/user-photos?userToken=${userToken}`);
+        if (!userId) return;
+        
+        const resp = await fetch(`/api/user-photos?userToken=${userId}`);
         const result = await resp.json();
         
         const container = document.getElementById('step9PhotoGallery');
@@ -5311,9 +5325,11 @@ function closePhotoModal() {
  */
 async function addPhotoFromGallery() {
     const userToken = localStorage.getItem('user_token');
-    const userId = getCurrentUserId();
+    const savedUser = localStorage.getItem('telegram_user');
+    const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+    const userId = userToken || (tgId ? String(tgId) : getCurrentUserId());
     
-    if (!userToken) {
+    if (!userToken && !tgId) {
         tg.showAlert('Требуется авторизация');
         return;
     }
@@ -5344,8 +5360,8 @@ async function addPhotoFromGallery() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userToken,
-                    tgId: userId,
+                    userToken: userId,
+                    tgId: tgId,
                     fileId: photoData.file_id,
                     photoUrl: photoData.photo_url,
                     caption: null
