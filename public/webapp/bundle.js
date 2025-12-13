@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T06:31:20.667Z
+ * Автоматически сгенерирован: 2025-12-13T06:46:31.330Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -8050,7 +8050,7 @@ console.log('✅ [ADMIN] Модуль админ-панели инициализ
 } catch(e) { console.error('❌ Ошибка в модуле admin.js:', e); }
 })();
 
-// ========== location.js (95.7 KB) ==========
+// ========== location.js (96.8 KB) ==========
 (function() {
 try {
 /**
@@ -8141,6 +8141,32 @@ async function saveUserLocation(country, region, city) {
                 console.log('✅ [LOCATION] Локация сохранена в CloudStorage');
             } catch (e) {
                 console.warn('⚠️ [LOCATION] CloudStorage недоступен, только localStorage:', e);
+            }
+        }
+        
+        // Сохраняем локацию в базу данных
+        const userToken = localStorage.getItem('user_token');
+        if (userToken) {
+            try {
+                const response = await fetch('/api/users/location', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userToken,
+                        country,
+                        region: region || null,
+                        city
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    console.log('✅ [LOCATION] Локация сохранена в БД');
+                } else {
+                    console.warn('⚠️ [LOCATION] Ошибка сохранения в БД:', result.error);
+                }
+            } catch (dbError) {
+                console.warn('⚠️ [LOCATION] Не удалось сохранить в БД:', dbError);
             }
         }
         
