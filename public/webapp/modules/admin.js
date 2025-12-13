@@ -541,3 +541,4 @@ window.sendAdminNotification = sendAdminNotification;
 window.fetchAdminData = fetchAdminData;
 
 console.log('✅ [ADMIN] Модуль админ-панели v2 инициализирован');
+console.log('[ADMIN] Экспортированные функции:', Object.keys(window).filter(k => k.includes('Admin') || k.includes('admin') || ['switchAdminTab', 'banUser', 'blockAd', 'deleteAd', 'sendNotification'].includes(k)));

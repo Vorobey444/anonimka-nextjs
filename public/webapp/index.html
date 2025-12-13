@@ -2334,7 +2334,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.2.39'; // FIX: admin stats + telegram auth
+        const bugFixVersion = '2.2.40'; // FIX: admin stats + telegram auth
         const lastVersion = localStorage.getItem('app_version');
         
         // ВСЕГДА очищаем fetch кэш при загрузке
@@ -2388,6 +2388,40 @@
         const script = document.createElement('script');
         script.src = `/webapp/bundle.js?v=${bugFixVersion}&t=${timestamp}`;
         document.body.appendChild(script);
+        
+        // Инициализация админ-панели после загрузки бандла
+        script.onload = function() {
+            console.log('[ADMIN INIT] Инициализирую админ-панель');
+            
+            // Инициализируем обработчики табов
+            const tabs = document.querySelectorAll('.admin-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    if (typeof window.switchAdminTab === 'function') {
+                        window.switchAdminTab(tabName);
+                    } else {
+                        console.error('[ADMIN INIT] switchAdminTab не найдена');
+                    }
+                });
+            });
+            
+            // Инициализируем поиск пользователей
+            const searchInput = document.getElementById('adminUserSearch');
+            if (searchInput) {
+                searchInput.addEventListener('keyup', function() {
+                    if (typeof window.loadAdminUsers === 'function') {
+                        window.loadAdminUsers();
+                    }
+                });
+            }
+            
+            console.log('[ADMIN INIT] Готово. Функции доступны:', {
+                switchAdminTab: typeof window.switchAdminTab,
+                loadAdminUsers: typeof window.loadAdminUsers,
+                banUser: typeof window.banUser
+            });
+        };
     </script>
 </body>
 </html>

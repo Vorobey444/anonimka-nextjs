@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T17:50:40.150Z
+ * Автоматически сгенерирован: 2025-12-13T17:57:08.059Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -7784,7 +7784,7 @@ console.log('✅ [DEBUG] Модуль отладки инициализиров�
 } catch(e) { console.error('❌ Ошибка в модуле debug.js:', e); }
 })();
 
-// ========== admin.js (22.7 KB) ==========
+// ========== admin.js (23.0 KB) ==========
 (function() {
 try {
 // ============================================================================
@@ -8330,6 +8330,7 @@ window.sendAdminNotification = sendAdminNotification;
 window.fetchAdminData = fetchAdminData;
 
 console.log('✅ [ADMIN] Модуль админ-панели v2 инициализирован');
+console.log('[ADMIN] Экспортированные функции:', Object.keys(window).filter(k => k.includes('Admin') || k.includes('admin') || ['switchAdminTab', 'banUser', 'blockAd', 'deleteAd', 'sendNotification'].includes(k)));
 
 } catch(e) { console.error('❌ Ошибка в модуле admin.js:', e); }
 })();
