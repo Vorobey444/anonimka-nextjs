@@ -1424,9 +1424,9 @@
                 <h2>🛠️ Админ-панель</h2>
             </div>
             
-            <div class="admin-container" style="padding: 1rem; overflow-y: auto; flex: 1; position: relative; z-index: 10; width: 100%; max-width: 600px;">
+            <div class="admin-container" style="padding: 1rem; overflow-y: auto; flex: 1; position: relative; z-index: 10; width: 100%; max-width: 600px; background: rgba(20,20,30,0.95);">
                 <!-- Статистика -->
-                <div class="admin-section" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                <div class="admin-section" style="background: rgba(255,255,255,0.08); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(0,217,255,0.3);">
                     <h3 style="color: var(--neon-cyan); margin-bottom: 1rem;">📊 Статистика</h3>
                     <div class="admin-stats-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem;">
                         <div class="admin-stat-card" style="background: rgba(0,217,255,0.1); border: 1px solid var(--neon-cyan); border-radius: 8px; padding: 0.8rem; text-align: center;">
@@ -2333,7 +2333,7 @@
         }
         
         // Принудительная очистка кеша с версией исправления
-        const bugFixVersion = '2.2.34'; // FIX: admin stats + telegram auth
+        const bugFixVersion = '2.2.35'; // FIX: admin stats + telegram auth
         const lastVersion = localStorage.getItem('app_version');
         
         // ВСЕГДА очищаем fetch кэш при загрузке
