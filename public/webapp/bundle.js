@@ -1,6 +1,6 @@
 /**
  * ANONIMKA BUNDLE
- * Автоматически сгенерирован: 2025-12-13T20:08:57.690Z
+ * Автоматически сгенерирован: 2025-12-13T20:12:24.960Z
  * Модулей: 18
  */
 console.log('📦 [BUNDLE] Загрузка объединённого бандла...');
@@ -13624,7 +13624,7 @@ console.log('✅ [ADS] Модуль анкет инициализирован');
 } catch(e) { console.error('❌ Ошибка в модуле ads.js:', e); }
 })();
 
-// ========== chats.js (69.4 KB) ==========
+// ========== chats.js (69.8 KB) ==========
 (function() {
 try {
 /**
@@ -13976,8 +13976,12 @@ async function loadChatMessages(chatId, silent = false) {
             return;
         }
         
-        // Получаем user_token
-        let myUserId = localStorage.getItem('user_token');
+        // Получаем userId (поддержка telegram_user)
+        const userToken = localStorage.getItem('user_token');
+        const savedUser = localStorage.getItem('telegram_user');
+        const tgId = savedUser ? JSON.parse(savedUser)?.id : null;
+        let myUserId = userToken || (tgId ? String(tgId) : null);
+        
         if (!myUserId || myUserId === 'null' || myUserId === 'undefined') {
             myUserId = getCurrentUserId();
         }
@@ -14044,7 +14048,8 @@ async function loadChatMessages(chatId, silent = false) {
  * Отрисовка одного сообщения
  */
 function renderSingleMessage(msg, myUserId, allMessages) {
-    const isMine = msg.sender_token == myUserId;
+    // Приводим оба значения к строке для корректного сравнения
+    const isMine = String(msg.sender_token) === String(myUserId);
     const messageClass = isMine ? 'sent' : 'received';
     const time = formatMessageTime(msg.created_at);
     
