@@ -1492,17 +1492,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
 console.log('✅ [MENU] Модуль навигации загружен');
 
+// Проверка параметра auth в URL
+function checkAuthParam() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authParam = urlParams.get('auth');
+    
+    if (authParam) {
+        console.log('🔗 [MENU] URL параметр auth:', authParam);
+        
+        // Очищаем параметр из URL
+        window.history.replaceState({}, '', window.location.pathname);
+        
+        if (authParam === 'telegram') {
+            console.log('📱 [MENU] Параметр auth=telegram - показываем модальное окно');
+            if (typeof showTelegramAuthModal === 'function') {
+                setTimeout(() => showTelegramAuthModal(), 100);
+                return true;
+            }
+        }
+        
+        if (authParam === 'email') {
+            console.log('📧 [MENU] Параметр auth=email - показываем модальное окно');
+            if (typeof showEmailAuthModal === 'function') {
+                setTimeout(() => showEmailAuthModal(), 100);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 // Автоматически запускаем приложение после загрузки модуля
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         console.log('🚀 [MENU] DOMContentLoaded - запуск приложения');
-        if (typeof checkOnboardingStatus === 'function') {
+        if (!checkAuthParam() && typeof checkOnboardingStatus === 'function') {
             checkOnboardingStatus();
         }
     });
 } else {
     console.log('🚀 [MENU] DOM уже загружен - запуск приложения');
-    if (typeof checkOnboardingStatus === 'function') {
+    if (!checkAuthParam() && typeof checkOnboardingStatus === 'function') {
         setTimeout(() => checkOnboardingStatus(), 100);
     }
 }
